@@ -1,0 +1,24 @@
+{
+  "name": "Winnie Fun",
+  "short_name": "Winnie Fun",
+  "description": "Premium global platform for games, voice chat, social media, gift cards, subscriptions, and AI top-ups.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07081a",
+  "theme_color": "#6d28ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

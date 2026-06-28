@@ -1,0 +1,140 @@
+import { AnimatePresence, motion } from "framer-motion";
+import { Search, ShoppingCart, Star, TrendingUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import ProductPurchaseModal from "../../components/ProductPurchaseModal";
+import PurchaseSuccessModal from "../../components/PurchaseSuccessModal";
+import { bestSellingProductsAll } from "../../data/homeContent";
+import { createPurchaseReceipt } from "../../utils/purchaseReceipt";
+
+export default function CustomerBestSelling({ loginOnPurchase = false, basePath = "/customer" }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [purchaseItem, setPurchaseItem] = useState(null);
+  const [completedPurchase, setCompletedPurchase] = useState(null);
+
+  const visibleProducts = useMemo(() => {
+    const searchValue = query.trim().toLowerCase();
+    if (!searchValue) return bestSellingProductsAll;
+
+    return bestSellingProductsAll.filter((product) =>
+      `${product.name} ${product.price} ${product.rating}`.toLowerCase().includes(searchValue),
+    );
+  }, [query]);
+
+  const confirmPurchase = (payload) => {
+    if (loginOnPurchase) {
+      setPurchaseItem(null);
+      navigate("/login", { state: { from: `${basePath}/dashboard` } });
+      return;
+    }
+
+    setCompletedPurchase(createPurchaseReceipt(payload, purchaseItem?.category));
+    setPurchaseItem(null);
+  };
+
+  return (
+    <div dir="rtl" className="space-y-5">
+      <section className="relative overflow-hidden rounded-[24px] border border-[#8B5CF6]/15 bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(255,255,255,0.96)_38%,rgba(236,72,153,0.12))] p-5 shadow-[0_22px_58px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(124,58,237,0.30),rgba(8,13,30,0.98)_42%,rgba(236,72,153,0.14))] dark:shadow-[0_0_28px_rgba(139,92,246,0.20)] sm:p-6">
+        <div className="absolute left-6 top-6 grid h-16 w-16 place-items-center rounded-[22px] bg-[linear-gradient(135deg,#22D3EE,#7C3AED,#EC4899)] text-white shadow-[0_18px_44px_rgba(124,58,237,0.34)]">
+          <TrendingUp className="h-8 w-8" />
+        </div>
+        <div className="max-w-[720px]">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8B5CF6] dark:text-[#C084FC]">Winnie Fun</p>
+          <h1 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">الأكثر مبيعاً</h1>
+          <p className="mt-2 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">
+            20 تطبيق وخدمة من الأكثر طلباً، اختار المنتج وافتح نافذة الشراء مباشرة.
+          </p>
+        </div>
+      </section>
+
+      <section className="rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_16px_42px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0B1220]/95 dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]">
+        <label className="relative block">
+          <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="ابحث داخل الأكثر مبيعاً..."
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-12 text-sm font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white"
+          />
+        </label>
+      </section>
+
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+        {visibleProducts.map((product, index) => (
+          <BestSellingGridCard
+            key={product.name}
+            product={product}
+            index={index}
+            onSelect={() => setPurchaseItem({ product, category: "الأكثر مبيعاً" })}
+          />
+        ))}
+      </section>
+
+      <AnimatePresence>
+        {purchaseItem && (
+          <ProductPurchaseModal
+            product={purchaseItem.product}
+            category={purchaseItem.category}
+            onClose={() => setPurchaseItem(null)}
+            onConfirm={confirmPurchase}
+            requireAccountId={!loginOnPurchase}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {completedPurchase && (
+          <PurchaseSuccessModal
+            receipt={completedPurchase}
+            onClose={() => setCompletedPurchase(null)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function BestSellingGridCard({ product, index, onSelect }) {
+  const Icon = product.icon;
+
+  return (
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, delay: index * 0.025 }}
+      whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
+      className="group overflow-hidden rounded-[22px] border border-slate-100 bg-white text-right shadow-[0_18px_42px_rgba(15,23,42,0.10)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.18)] dark:focus-visible:ring-offset-[#050816]"
+    >
+      <div className={`relative grid h-36 place-items-center overflow-hidden bg-gradient-to-br ${product.cover} sm:h-44`}>
+        <span className="absolute right-3 top-3 rounded-full bg-[#7C3AED] px-2.5 py-1 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
+          الأكثر مبيعاً
+        </span>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
+        <span className="relative grid h-20 w-20 place-items-center rounded-[26px] border border-white/20 bg-white/14 text-white shadow-[0_22px_42px_rgba(0,0,0,0.32)] backdrop-blur transition group-hover:scale-105 sm:h-24 sm:w-24">
+          <span className="absolute inset-2 rounded-[22px] bg-white/10" />
+          <Icon className="relative h-11 w-11 drop-shadow-[0_0_22px_rgba(255,255,255,0.45)] sm:h-14 sm:w-14" />
+        </span>
+      </div>
+      <div className="p-3 sm:p-4">
+        <h2 dir="ltr" className="truncate text-center text-base font-black tracking-normal text-slate-950 dark:text-white sm:text-lg">
+          {product.name}
+        </h2>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span dir="ltr" className="text-sm font-black text-slate-500 dark:text-[#A78BFA] sm:text-base">{product.price}</span>
+          <span dir="ltr" className="inline-flex items-center gap-1 text-sm font-black text-slate-600 dark:text-slate-300">
+            <Star className="h-4 w-4 fill-[#FBBF24] text-[#FBBF24]" />
+            {product.rating}
+          </span>
+        </div>
+        <span className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.24)]">
+          <ShoppingCart className="h-4 w-4" />
+          اطلب الآن
+        </span>
+      </div>
+    </motion.button>
+  );
+}
