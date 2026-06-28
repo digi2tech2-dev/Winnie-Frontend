@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { isAdminAreaRole } from "../utils/authRoles";
 
 const protectedItems = [
   { id: "home", label: "الرئيسية", icon: Home, path: "/", public: true },
@@ -30,7 +31,7 @@ export default function PublicBottomNav() {
       setLoginTarget(item);
       return;
     }
-    const base = user?.role === "admin" ? "/admin/user" : "/customer";
+    const base = isAdminAreaRole(user?.role) ? "/admin/user" : "/customer";
     navigate(`${base}/${item.id === "profile" ? "profile" : item.id}`);
   };
 

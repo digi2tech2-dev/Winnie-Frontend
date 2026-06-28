@@ -1,16 +1,23 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { PageSkeleton } from "../Skeletons";
 import { useAuth } from "../../context/AuthContext";
+import { canAccessRole, getDefaultRouteForRole } from "../../utils/authRoles";
 
 export default function ProtectedRoute({ role, children }) {
-  const { user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
+  const intendedPath = `${location.pathname}${location.search}${location.hash}`;
 
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (isLoading) {
+    return <PageSkeleton />;
   }
 
-  if (role && user.role !== role) {
-    return <Navigate to={user.role === "admin" ? "/admin/user/dashboard" : "/customer/dashboard"} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: intendedPath }} />;
+  }
+
+  if (role && !canAccessRole(user?.role, role)) {
+    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />;
   }
 
   return children;

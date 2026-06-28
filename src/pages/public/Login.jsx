@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 import GoogleMark from "../../components/GoogleMark";
 import PolicyAgreement, { PoliciesModal } from "../../components/PolicyAgreement";
 import { useToast } from "../../components/ToastProvider";
+import { useAuth } from "../../context/AuthContext";
+import { canUseRedirectPath, getDefaultRouteForRole } from "../../utils/authRoles";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,13 +16,14 @@ export default function Login() {
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { user, login } = useAuth();
+  const { isLoading, login, loginWithGoogle, user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (user?.role === "admin") return <Navigate to="/admin/user/dashboard" replace />;
-  if (user?.role === "customer") return <Navigate to="/customer/dashboard" replace />;
+  if (!isLoading && user) {
+    return <Navigate to={getDefaultRouteForRole(user.role)} replace />;
+  }
 
   const updateField = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -80,24 +82,29 @@ export default function Login() {
     setLoading(false);
 
     if (!result.ok) {
-      const message = "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+      const message = result.message || "تعذر تسجيل الدخول. راجع البيانات وحاول مرة أخرى.";
       setError(message);
       setFieldErrors({
-        email: "تأكد من البريد الإلكتروني.",
-        password: "تأكد من كلمة المرور.",
+        ...(result.fieldErrors || {}),
+        ...(result.code === "AUTHENTICATION_ERROR"
+          ? {
+              email: "تأكد من البريد الإلكتروني.",
+              password: "تأكد من كلمة المرور.",
+            }
+          : {}),
       });
-      showToast({ type: "error", title: "فشل تسجيل الدخول", message });
+      showToast({
+        type: result.requires2FA ? "info" : "error",
+        title: result.requires2FA ? "التحقق الثنائي مطلوب" : "فشل تسجيل الدخول",
+        message,
+      });
       return;
     }
 
-    showToast({ type: "success", title: "تم تسجيل الدخول", message: `مرحباً ${result.user.name}.` });
-    const fallback = result.user.role === "admin" ? "/admin/user/dashboard" : "/customer/dashboard";
+    showToast({ type: "success", title: "تم تسجيل الدخول", message: `مرحبا ${result.user.name}.` });
+    const fallback = result.redirectTo || getDefaultRouteForRole(result.user.role);
     const from = location.state?.from;
-    const nextPath = result.user.role === "admin"
-      ? fallback
-      : from && from.startsWith(`/${result.user.role}`)
-        ? from
-        : fallback;
+    const nextPath = from && canUseRedirectPath(result.user.role, from) ? from : fallback;
 
     navigate(nextPath, { replace: true });
   };
@@ -105,7 +112,8 @@ export default function Login() {
   const continueWithGoogle = () => {
     if (!ensurePolicyAgreement()) return;
 
-    showToast({ type: "info", title: "تسجيل الدخول بجوجل", message: "واجهة Google OAuth جاهزة للربط بالخادم." });
+    const result = loginWithGoogle();
+    showToast({ type: "info", title: "تسجيل الدخول بجوجل", message: result.message });
   };
 
   return (
@@ -122,45 +130,45 @@ export default function Login() {
             <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-300">ادخل إلى لوحة حسابك بأمان.</p>
           </div>
 
-        <form className="mt-8 space-y-5" onSubmit={(event) => event.preventDefault()}>
-          <Field icon={Mail} type="email" placeholder="البريد الإلكتروني" value={form.email} error={fieldErrors.email} onChange={(email) => updateField("email", email)} />
-          <Field icon={Lock} type="password" placeholder="كلمة المرور" value={form.password} error={fieldErrors.password} onChange={(password) => updateField("password", password)} hasEye />
+          <form className="mt-8 space-y-5" onSubmit={(event) => event.preventDefault()}>
+            <Field icon={Mail} type="email" placeholder="البريد الإلكتروني" value={form.email} error={fieldErrors.email} onChange={(email) => updateField("email", email)} />
+            <Field icon={Lock} type="password" placeholder="كلمة المرور" value={form.password} error={fieldErrors.password} onChange={(password) => updateField("password", password)} hasEye />
 
-          {error && (
-            <p className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm font-bold text-rose-500">
-              {error}
-            </p>
-          )}
+            {error && (
+              <p className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm font-bold text-rose-500">
+                {error}
+              </p>
+            )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/[0.58] px-3 py-2.5 text-sm shadow-[0_12px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/10 dark:bg-white/[0.055]">
-            <PolicyAgreement id="login-policy-agreement" checked={acceptedPolicies} onChange={setAcceptedPolicies} onOpenPolicies={() => setPolicyModalOpen(true)} />
-            <Link to="/forgot-password" className="shrink-0 whitespace-nowrap font-black text-royal dark:text-pulse">
-              نسيت كلمة المرور؟
-            </Link>
-          </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/[0.58] px-3 py-2.5 text-sm shadow-[0_12px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/10 dark:bg-white/[0.055]">
+              <PolicyAgreement id="login-policy-agreement" checked={acceptedPolicies} onChange={setAcceptedPolicies} onOpenPolicies={() => setPolicyModalOpen(true)} />
+              <Link to="/forgot-password" className="shrink-0 whitespace-nowrap font-black text-royal dark:text-pulse">
+                نسيت كلمة المرور؟
+              </Link>
+            </div>
 
-          <button
-            type="button"
-            onClick={submit}
-            disabled={loading}
-            className="interactive-ring h-[52px] min-h-[52px] w-full rounded-2xl bg-[linear-gradient(135deg,#2563EB,#7C3AED_45%,#EC4899)] text-sm font-black text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(236,72,153,0.28)] disabled:cursor-wait disabled:opacity-70"
-          >
-            {loading ? "جار التحقق..." : "تسجيل الدخول"}
-          </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={loading || isLoading}
+              className="interactive-ring h-[52px] min-h-[52px] w-full rounded-2xl bg-[linear-gradient(135deg,#2563EB,#7C3AED_45%,#EC4899)] text-sm font-black text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(236,72,153,0.28)] disabled:cursor-wait disabled:opacity-70"
+            >
+              {loading || isLoading ? "جار التحقق..." : "تسجيل الدخول"}
+            </button>
 
-          <button
-            type="button"
-            onClick={continueWithGoogle}
-            className="group block w-full rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#071226]"
-          >
-            <span className="flex h-12 items-center justify-center gap-3 rounded-[15px] bg-white px-4 text-sm font-black text-slate-800 transition group-hover:bg-[#F8FCFF] dark:bg-[#111827] dark:text-white dark:group-hover:bg-[#0D1324]">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
-                <GoogleMark className="h-5 w-5" />
+            <button
+              type="button"
+              onClick={continueWithGoogle}
+              className="group block w-full rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#071226]"
+            >
+              <span className="flex h-12 items-center justify-center gap-3 rounded-[15px] bg-white px-4 text-sm font-black text-slate-800 transition group-hover:bg-[#F8FCFF] dark:bg-[#111827] dark:text-white dark:group-hover:bg-[#0D1324]">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
+                  <GoogleMark className="h-5 w-5" />
+                </span>
+                <span>المتابعة باستخدام Google</span>
               </span>
-              <span>المتابعة باستخدام Google</span>
-            </span>
-          </button>
-        </form>
+            </button>
+          </form>
 
           <p className="mt-7 text-center text-sm font-bold text-slate-500 dark:text-slate-300">
             جديد في Winnie Fun؟{" "}
