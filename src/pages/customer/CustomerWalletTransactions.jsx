@@ -1,42 +1,77 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, CircleDollarSign, Download, ReceiptText, Search } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getWalletTransactions } from "../../api/wallet";
+import { formatCurrency } from "../../api/adapters";
+import { useAuth } from "../../context/AuthContext";
 
-const topUpTransactions = [
-  {
-    id: "TX-5208",
-    title: "Balance top-up",
-    method: "Visa **** 4242",
-    amount: 500,
-    date: "June 15, 2026",
-    time: "12:42 AM",
-    status: "Completed",
-  },
-  {
-    id: "TX-5184",
-    title: "Balance top-up",
-    method: "Apple Pay",
-    amount: 250,
-    date: "June 12, 2026",
-    time: "4:05 PM",
-    status: "Completed",
-  },
-];
-
-const formatMoney = (value) => new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-}).format(value);
+const pageSize = 20;
 
 export default function CustomerWalletTransactions({ basePath = "/customer" }) {
+  const { token } = useAuth();
   const [query, setQuery] = useState("");
-  const total = topUpTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const [page, setPage] = useState(1);
+  const [transactions, setTransactions] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let cancelled = false;
+
+    const loadTransactions = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getWalletTransactions(token, { page, limit: pageSize });
+        if (!cancelled) {
+          setTransactions(result.transactions);
+          setPagination(result.pagination);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.userMessage || "Unable to load wallet transactions.");
+          setTransactions([]);
+          setPagination({ page, limit: pageSize, total: 0, pages: 1 });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadTransactions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, token]);
+
   const filteredTransactions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return topUpTransactions;
-    return topUpTransactions.filter((transaction) => `${transaction.id} ${transaction.method}`.toLowerCase().includes(normalizedQuery));
-  }, [query]);
+    if (!normalizedQuery) return transactions;
+
+    return transactions.filter((transaction) =>
+      [
+        transaction.id,
+        transaction.description,
+        transaction.semanticTypeLabel,
+        transaction.statusLabel,
+        transaction.typeLabel,
+        transaction.sourceType,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [query, transactions]);
+
+  const creditedTotal = transactions
+    .filter((transaction) => transaction.direction === "CREDIT")
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const primaryCurrency = transactions[0]?.currency || "USD";
 
   return (
     <div
@@ -51,8 +86,8 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 <ReceiptText className="h-6 w-6" />
               </span>
               <div className="min-w-0">
-                <h1 className="text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">Balance top-ups</h1>
-                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-white/[0.52]">Your balance addition history in one place.</p>
+                <h1 className="text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">Wallet transactions</h1>
+                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-white/[0.52]">Backend ledger history for your account.</p>
               </div>
             </div>
 
@@ -64,8 +99,8 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
         </header>
 
         <section className="grid grid-cols-2 gap-3">
-          <SummaryCard label="Total added" value={formatMoney(total)} />
-          <SummaryCard label="Top-up operations" value={String(topUpTransactions.length)} />
+          <SummaryCard label="Credited on this page" value={formatCurrency(creditedTotal, primaryCurrency)} />
+          <SummaryCard label="Transactions" value={String(pagination.total || transactions.length)} />
         </section>
 
         <section className="rounded-[18px] border border-slate-200 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#080d1e]/[0.96] dark:shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
@@ -76,25 +111,59 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by transaction ID or method"
+                placeholder="Search loaded transactions"
                 className="h-12 w-full rounded-full border border-slate-200 bg-white px-12 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050918] dark:text-white dark:placeholder:text-white/[0.34]"
               />
             </label>
-            <button type="button" className="interactive-ring grid h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-[#8B5CF6] dark:border-white/10 dark:bg-[#050918] dark:text-[#A855F7]" aria-label="Download top-up history" title="Download">
+            <button type="button" disabled className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-300 dark:border-white/10 dark:bg-[#050918] dark:text-white/25" aria-label="Download transaction history" title="Export will be connected later">
               <Download className="h-5 w-5" />
             </button>
           </div>
 
           <div className="mt-5 space-y-3">
-            {filteredTransactions.length ? filteredTransactions.map((transaction) => (
-              <TransactionRow key={transaction.id} transaction={transaction} />
-            )) : (
+            {loading ? (
+              <div className="rounded-[16px] border border-slate-200 bg-white px-4 py-8 text-center text-sm font-black text-slate-500 dark:border-white/10 dark:bg-[#050918] dark:text-white/50">
+                Loading wallet transactions...
+              </div>
+            ) : error ? (
+              <div className="rounded-[16px] border border-amber-400/30 bg-amber-400/12 px-4 py-8 text-center text-sm font-black text-amber-700 dark:text-amber-300">
+                {error}
+              </div>
+            ) : filteredTransactions.length ? (
+              filteredTransactions.map((transaction) => (
+                <TransactionRow key={transaction.id} transaction={transaction} />
+              ))
+            ) : (
               <div className="rounded-[16px] border border-dashed border-slate-200 px-4 py-10 text-center dark:border-white/10">
                 <ReceiptText className="mx-auto h-8 w-8 text-slate-300 dark:text-white/20" />
-                <p className="mt-3 text-sm font-black text-slate-500 dark:text-white/50">No top-up operations found.</p>
+                <p className="mt-3 text-sm font-black text-slate-500 dark:text-white/50">No wallet transactions found.</p>
               </div>
             )}
           </div>
+
+          {!loading && !error && pagination.pages > 1 && (
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-[#050918] dark:text-white/70"
+              >
+                Previous
+              </button>
+              <span className="text-sm font-black text-slate-500 dark:text-white/50">
+                Page {pagination.page} of {pagination.pages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= pagination.pages}
+                onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
+                className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-[#050918] dark:text-white/70"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </div>
@@ -112,20 +181,23 @@ function SummaryCard({ label, value }) {
 }
 
 function TransactionRow({ transaction }) {
+  const isDebit = transaction.direction === "DEBIT";
+  const amountClass = isDebit ? "text-rose-600 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300";
+
   return (
     <article className="group rounded-[16px] border border-slate-200 bg-white p-4 transition hover:border-[#8B5CF6]/40 hover:bg-[#F5F3FF] dark:border-white/[0.07] dark:bg-[#050918] dark:hover:bg-[#0b1024]">
       <div className="flex flex-wrap items-center gap-4">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/12 text-emerald-600 dark:text-emerald-300"><CircleDollarSign className="h-6 w-6" /></span>
+        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${isDebit ? "bg-rose-500/12 text-rose-600 dark:text-rose-300" : "bg-emerald-500/12 text-emerald-600 dark:text-emerald-300"}`}><CircleDollarSign className="h-6 w-6" /></span>
         <div className="min-w-[180px] flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-black text-slate-950 dark:text-white sm:text-lg">{transaction.title}</h2>
-            <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-600 dark:text-emerald-300">{transaction.status}</span>
+            <h2 className="text-base font-black text-slate-950 dark:text-white sm:text-lg">{transaction.semanticTypeLabel}</h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/70">{transaction.statusLabel}</span>
           </div>
-          <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-white/[0.45]">{transaction.method} · {transaction.id}</p>
+          <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-white/[0.45]">{transaction.description} - {transaction.id}</p>
         </div>
         <div className="min-w-[150px] sm:text-right">
-          <p className="text-xl font-black text-emerald-600 dark:text-emerald-300">+{formatMoney(transaction.amount)}</p>
-          <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-white/[0.45]"><CalendarDays className="h-4 w-4" />{transaction.date} · {transaction.time}</p>
+          <p className={`text-xl font-black ${amountClass}`}>{transaction.amountLabel}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-white/[0.45]"><CalendarDays className="h-4 w-4" />{transaction.dateLabel}</p>
         </div>
         <CheckCircle2 className="ml-auto hidden h-5 w-5 text-emerald-500 sm:block" />
       </div>

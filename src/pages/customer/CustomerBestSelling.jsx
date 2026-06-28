@@ -1,36 +1,81 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Search, ShoppingCart, Star, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ProductPurchaseModal from "../../components/ProductPurchaseModal";
-import PurchaseSuccessModal from "../../components/PurchaseSuccessModal";
+import { getCustomerProducts } from "../../api/catalog";
+import EmptyState from "../../components/EmptyState";
+import { iconMap } from "../../components/icons";
+import { useToast } from "../../components/ToastProvider";
+import { useAuth } from "../../context/AuthContext";
 import { bestSellingProductsAll } from "../../data/homeContent";
-import { createPurchaseReceipt } from "../../utils/purchaseReceipt";
+
+const pageSize = 100;
 
 export default function CustomerBestSelling({ loginOnPurchase = false, basePath = "/customer" }) {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const { showToast } = useToast();
   const [query, setQuery] = useState("");
-  const [purchaseItem, setPurchaseItem] = useState(null);
-  const [completedPurchase, setCompletedPurchase] = useState(null);
+  const [backendProducts, setBackendProducts] = useState([]);
+  const [loading, setLoading] = useState(!loginOnPurchase);
+  const [error, setError] = useState("");
+  const useBackendProducts = !loginOnPurchase && Boolean(token);
 
+  useEffect(() => {
+    if (!useBackendProducts) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadProducts = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getCustomerProducts(token, { page: 1, limit: pageSize });
+        if (!cancelled) setBackendProducts(result.products);
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.userMessage || "Unable to load products.");
+          setBackendProducts([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, useBackendProducts]);
+
+  const sourceProducts = useBackendProducts ? backendProducts : bestSellingProductsAll;
   const visibleProducts = useMemo(() => {
     const searchValue = query.trim().toLowerCase();
-    if (!searchValue) return bestSellingProductsAll;
+    if (!searchValue) return sourceProducts;
 
-    return bestSellingProductsAll.filter((product) =>
-      `${product.name} ${product.price} ${product.rating}`.toLowerCase().includes(searchValue),
+    return sourceProducts.filter((product) =>
+      `${product.name} ${product.price} ${product.displayPriceLabel || ""} ${product.rating || ""} ${product.categoryTitle || ""}`
+        .toLowerCase()
+        .includes(searchValue),
     );
-  }, [query]);
+  }, [query, sourceProducts]);
 
-  const confirmPurchase = (payload) => {
+  const handleProductSelect = () => {
     if (loginOnPurchase) {
-      setPurchaseItem(null);
       navigate("/login", { state: { from: `${basePath}/dashboard` } });
       return;
     }
 
-    setCompletedPurchase(createPurchaseReceipt(payload, purchaseItem?.category));
-    setPurchaseItem(null);
+    showToast({
+      type: "info",
+      title: "Read-only catalog",
+      message: "Order placement will be connected in the next phase.",
+    });
   };
 
   return (
@@ -41,9 +86,11 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
         </div>
         <div className="max-w-[720px]">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8B5CF6] dark:text-[#C084FC]">Winnie Fun</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">الأكثر مبيعاً</h1>
+          <h1 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{useBackendProducts ? "Customer catalog" : "Best selling"}</h1>
           <p className="mt-2 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">
-            20 تطبيق وخدمة من الأكثر طلباً، اختار المنتج وافتح نافذة الشراء مباشرة.
+            {useBackendProducts
+              ? "Authenticated product prices are loaded from the backend. Orders stay read-only in this phase."
+              : "Browse popular services and log in before placing real orders."}
           </p>
         </div>
       </section>
@@ -55,48 +102,46 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="ابحث داخل الأكثر مبيعاً..."
+            placeholder="Search products..."
             className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-12 text-sm font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white"
           />
         </label>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
-        {visibleProducts.map((product, index) => (
-          <BestSellingGridCard
-            key={product.name}
-            product={product}
-            index={index}
-            onSelect={() => setPurchaseItem({ product, category: "الأكثر مبيعاً" })}
-          />
-        ))}
-      </section>
-
-      <AnimatePresence>
-        {purchaseItem && (
-          <ProductPurchaseModal
-            product={purchaseItem.product}
-            category={purchaseItem.category}
-            onClose={() => setPurchaseItem(null)}
-            onConfirm={confirmPurchase}
-            requireAccountId={!loginOnPurchase}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {completedPurchase && (
-          <PurchaseSuccessModal
-            receipt={completedPurchase}
-            onClose={() => setCompletedPurchase(null)}
-          />
-        )}
-      </AnimatePresence>
+      {loading ? (
+        <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+          Loading products...
+        </div>
+      ) : error ? (
+        <EmptyState title="Unable to load products" description={error} />
+      ) : visibleProducts.length ? (
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+          {visibleProducts.map((product, index) => (
+            <BestSellingGridCard
+              key={product.id || product.name}
+              actionLabel={useBackendProducts ? "Next phase" : "Log in"}
+              product={product}
+              index={index}
+              onSelect={handleProductSelect}
+            />
+          ))}
+        </section>
+      ) : (
+        <EmptyState
+          title="No products found"
+          description={query ? "Clear the search to view all loaded products." : "No active backend products are available yet."}
+          actionLabel={query ? "Clear search" : undefined}
+          onAction={() => setQuery("")}
+        />
+      )}
     </div>
   );
 }
 
-function BestSellingGridCard({ product, index, onSelect }) {
-  const Icon = product.icon;
+function BestSellingGridCard({ actionLabel, product, index, onSelect }) {
+  const Icon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
+  const cover = product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
+  const priceLabel = product.displayPriceLabel || product.price || "";
 
   return (
     <motion.button
@@ -109,9 +154,9 @@ function BestSellingGridCard({ product, index, onSelect }) {
       onClick={onSelect}
       className="group overflow-hidden rounded-[22px] border border-slate-100 bg-white text-right shadow-[0_18px_42px_rgba(15,23,42,0.10)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.18)] dark:focus-visible:ring-offset-[#050816]"
     >
-      <div className={`relative grid h-36 place-items-center overflow-hidden bg-gradient-to-br ${product.cover} sm:h-44`}>
+      <div className={`relative grid h-36 place-items-center overflow-hidden bg-gradient-to-br ${cover} sm:h-44`}>
         <span className="absolute right-3 top-3 rounded-full bg-[#7C3AED] px-2.5 py-1 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
-          الأكثر مبيعاً
+          Catalog
         </span>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
         <span className="relative grid h-20 w-20 place-items-center rounded-[26px] border border-white/20 bg-white/14 text-white shadow-[0_22px_42px_rgba(0,0,0,0.32)] backdrop-blur transition group-hover:scale-105 sm:h-24 sm:w-24">
@@ -124,15 +169,15 @@ function BestSellingGridCard({ product, index, onSelect }) {
           {product.name}
         </h2>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span dir="ltr" className="text-sm font-black text-slate-500 dark:text-[#A78BFA] sm:text-base">{product.price}</span>
+          <span dir="ltr" className="truncate text-sm font-black text-slate-500 dark:text-[#A78BFA] sm:text-base">{priceLabel}</span>
           <span dir="ltr" className="inline-flex items-center gap-1 text-sm font-black text-slate-600 dark:text-slate-300">
             <Star className="h-4 w-4 fill-[#FBBF24] text-[#FBBF24]" />
-            {product.rating}
+            {product.rating || "4.8"}
           </span>
         </div>
-        <span className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.24)]">
+        <span className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-slate-100 text-xs font-black text-slate-500 dark:bg-white/10 dark:text-white/60">
           <ShoppingCart className="h-4 w-4" />
-          اطلب الآن
+          {actionLabel}
         </span>
       </div>
     </motion.button>

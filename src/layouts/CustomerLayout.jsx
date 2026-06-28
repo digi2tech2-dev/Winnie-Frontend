@@ -1,24 +1,17 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BackButton from "../components/BackButton";
 import CustomerBottomNav from "../components/CustomerBottomNav";
 import CustomerHeader from "../components/CustomerHeader";
 import DashboardSidebar from "../components/DashboardSidebar";
 import FloatingScrollProgress from "../components/FloatingScrollProgress";
 import SiteFooter from "../components/SiteFooter";
+import { getCustomerCatalog } from "../api/catalog";
+import { getNotifications } from "../api/notifications";
+import { getWalletSummary } from "../api/wallet";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { customerNav } from "../data/navigation";
-import { notifications, productGroups, walletBalance } from "../data/catalog";
-
-const notificationReadIdsKey = "winnie-notification-read-ids";
-
-function getStoredNotificationReadIds() {
-  try {
-    return JSON.parse(localStorage.getItem(notificationReadIdsKey) || "[]");
-  } catch {
-    return [];
-  }
-}
 
 const customerPages = [
   ["/customer/dashboard", "الرئيسية", "واجهة حسابك", "Home"],
@@ -33,28 +26,67 @@ const customerPages = [
 ];
 
 export default function CustomerLayout() {
+  const { token } = useAuth();
   const { language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [readNotificationIds, setReadNotificationIds] = useState(getStoredNotificationReadIds);
+  const [walletSummary, setWalletSummary] = useState(null);
+  const [notificationItems, setNotificationItems] = useState([]);
+  const [searchProducts, setSearchProducts] = useState([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const isAboutPage = location.pathname === "/customer/about";
   const isWalletTopUpPage = location.pathname.startsWith("/customer/wallet/top-up/");
 
-  const notificationItems = useMemo(() => {
-    const readIds = new Set(readNotificationIds);
+  useEffect(() => {
+    if (!token) {
+      setWalletSummary(null);
+      setNotificationItems([]);
+      setSearchProducts([]);
+      setUnreadNotificationCount(0);
+      setNotificationsLoading(false);
+      setNotificationsError("");
+      return undefined;
+    }
 
-    return notifications.map((item) => ({
-      ...item,
-      unread: Boolean(item.unread && !readIds.has(item.id)),
-    }));
-  }, [readNotificationIds]);
+    let cancelled = false;
 
-  const unreadNotificationCount = useMemo(
-    () => notificationItems.filter((item) => item.unread).length,
-    [notificationItems],
-  );
+    const loadLayoutReads = async () => {
+      setNotificationsLoading(true);
+      const [walletResult, notificationsResult, catalogResult] = await Promise.allSettled([
+        getWalletSummary(token),
+        getNotifications(token, { page: 1, limit: 20 }),
+        getCustomerCatalog(token, { page: 1, limit: 24 }),
+      ]);
+
+      if (cancelled) return;
+
+      if (walletResult.status === "fulfilled") {
+        setWalletSummary(walletResult.value);
+      }
+
+      if (notificationsResult.status === "fulfilled") {
+        setNotificationItems(notificationsResult.value.notifications);
+        setUnreadNotificationCount(notificationsResult.value.unreadCount);
+        setNotificationsError("");
+      } else {
+        setNotificationItems([]);
+        setUnreadNotificationCount(0);
+        setNotificationsError(notificationsResult.reason?.userMessage || "Unable to load notifications.");
+      }
+
+      setSearchProducts(catalogResult.status === "fulfilled" ? catalogResult.value.products : []);
+      setNotificationsLoading(false);
+    };
+
+    void loadLayoutReads();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const customerNavItems = useMemo(
     () =>
@@ -68,35 +100,7 @@ export default function CustomerLayout() {
     [language, unreadNotificationCount],
   );
 
-  const markAllNotificationsAsRead = () => {
-    const allUnreadIds = notifications.filter((item) => item.unread).map((item) => item.id);
-
-    setReadNotificationIds((currentIds) => {
-      const nextIds = Array.from(new Set([...currentIds, ...allUnreadIds]));
-      try {
-        localStorage.setItem(notificationReadIdsKey, JSON.stringify(nextIds));
-      } catch {
-        // Keep the UI updated even if the browser blocks local storage.
-      }
-      return nextIds;
-    });
-  };
-
   const searchResults = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return [];
-
-    const products = Object.entries(productGroups).flatMap(([groupId, group]) =>
-      group.products.map((product) => ({
-        kind: "product",
-        name: product.name,
-        meta: `${group.title} - ${product.price}`,
-        icon: product.icon,
-        tone: product.tone,
-        target: "/customer/dashboard#best-selling",
-      })),
-    );
-
     const pages = customerPages.map(([target, name, meta, icon]) => ({
       kind: "page",
       name,
@@ -106,10 +110,8 @@ export default function CustomerLayout() {
       target,
     }));
 
-    return [...pages, ...products]
-      .filter((item) => `${item.name} ${item.meta}`.toLowerCase().includes(query))
-      .slice(0, 9);
-  }, [searchQuery]);
+    return pages.slice(0, 9);
+  }, []);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
@@ -118,15 +120,14 @@ export default function CustomerLayout() {
           items={customerNavItems}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          walletBalance={walletBalance}
+          walletBalance={walletSummary?.balanceLabel || "$0.00"}
           variant="customer"
         />
         <div className="min-w-0 flex-1">
           <CustomerHeader
             onOpenSidebar={() => setSidebarOpen(true)}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
             searchResults={searchResults}
+            searchProducts={searchProducts}
             unreadNotificationCount={unreadNotificationCount}
           />
           <main
@@ -143,9 +144,10 @@ export default function CustomerLayout() {
             />
             <Outlet
               context={{
-                markAllNotificationsAsRead,
                 navigate,
                 notifications: notificationItems,
+                notificationsError,
+                notificationsLoading,
                 unreadNotificationCount,
               }}
             />

@@ -1,45 +1,104 @@
-import { useMemo, useRef, useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { filterProductsByCategory, getCustomerCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import { iconMap } from "../../components/icons";
-import ProductPurchaseModal from "../../components/ProductPurchaseModal";
-import PurchaseSuccessModal from "../../components/PurchaseSuccessModal";
-import { categories, productGroups } from "../../data/catalog";
-import { createPurchaseReceipt } from "../../utils/purchaseReceipt";
+import { useToast } from "../../components/ToastProvider";
+import { useAuth } from "../../context/AuthContext";
 
 export default function CustomerCategoryProducts({ basePath = "/customer" }) {
   const { categoryId } = useParams();
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
+  const { token } = useAuth();
+  const { showToast } = useToast();
   const [query, setQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [completedPurchase, setCompletedPurchase] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const category = categories.find((item) => item.id === categoryId);
-  const group = category ? productGroups[category.id] : null;
+  useEffect(() => {
+    if (!token) return undefined;
 
-  const products = useMemo(() => {
+    let cancelled = false;
+
+    const loadCatalog = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const catalog = await getCustomerCatalog(token);
+        if (!cancelled) {
+          setCategories(catalog.categories);
+          setProducts(catalog.products);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.userMessage || "Unable to load products.");
+          setCategories([]);
+          setProducts([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const category = useMemo(
+    () =>
+      categories.find((item) =>
+        [item.id, item._id, item.slug, item.name, item.title]
+          .map((value) => String(value || ""))
+          .includes(String(categoryId || "")),
+      ),
+    [categories, categoryId],
+  );
+
+  const categoryProducts = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    const groupProducts = group?.products || [];
+    const matches = filterProductsByCategory(products, category);
 
-    if (!cleanQuery) return groupProducts;
+    if (!cleanQuery) return matches;
 
-    return groupProducts.filter((product) => product.name.toLowerCase().includes(cleanQuery));
-  }, [group, query]);
+    return matches.filter((product) =>
+      `${product.name} ${product.categoryTitle} ${product.displayPriceLabel}`.toLowerCase().includes(cleanQuery),
+    );
+  }, [category, products, query]);
 
-  const confirmPurchase = (payload) => {
-    setCompletedPurchase(createPurchaseReceipt(payload, category));
-    setSelectedProduct(null);
+  const showReadOnlyNotice = () => {
+    showToast({
+      type: "info",
+      title: "Read-only catalog",
+      message: "Order placement will be connected in the next phase.",
+    });
   };
 
-  if (!category || !group) {
+  if (loading) {
+    return (
+      <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+        Loading category products...
+      </div>
+    );
+  }
+
+  if (error) {
+    return <EmptyState title="Unable to load products" description={error} />;
+  }
+
+  if (!category) {
     return (
       <EmptyState
-        title="القسم غير موجود"
-        description="القسم المطلوب غير متاح حالياً."
-        actionLabel="العودة للأقسام"
+        title="Category not found"
+        description="This backend category is not available right now."
+        actionLabel="Back to categories"
         onAction={() => navigate(`${basePath}/categories`)}
       />
     );
@@ -55,7 +114,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
             className="mb-2 inline-flex items-center gap-1.5 text-xs font-black text-slate-500 transition hover:text-[#7C3AED] dark:text-[#AAB6CC] dark:hover:text-[#C084FC]"
           >
             <ArrowRight className="h-4 w-4" />
-            الأقسام
+            Categories
           </button>
           <h1 className="relative pr-3 text-2xl font-black tracking-normal text-slate-950 dark:text-white sm:text-3xl">
             <span className="absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#38BDF8,#7C3AED)]" />
@@ -67,8 +126,8 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
           type="button"
           onClick={() => searchInputRef.current?.focus()}
           className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-sky-100 bg-white text-[#7C3AED] shadow-[0_12px_26px_rgba(14,165,233,0.10)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:bg-[#F5F3FF] dark:border-[#2B3650] dark:bg-[#111827] dark:text-[#C084FC] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#172033]"
-          aria-label="بحث داخل القسم"
-          title="بحث"
+          aria-label="Search category"
+          title="Search"
         >
           <Search className="h-5 w-5" />
         </button>
@@ -84,49 +143,30 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-11 min-w-0 flex-1 bg-transparent px-1 text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]"
-          placeholder={`ابحث داخل ${category.title}`}
+          placeholder={`Search ${category.title}`}
         />
         <button
           type="submit"
           className="h-11 rounded-2xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-4 text-sm font-black text-white shadow-[0_12px_24px_rgba(124,58,237,0.20)] transition hover:-translate-y-0.5"
         >
-          بحث
+          Search
         </button>
       </form>
 
-      {products.length ? (
+      {categoryProducts.length ? (
         <section className="grid grid-cols-3 gap-x-2 gap-y-6 px-1 sm:gap-x-5 sm:gap-y-8">
-          {products.map((product, index) => (
-            <ProductTile key={product.name} product={product} index={index} onSelect={() => setSelectedProduct(product)} />
+          {categoryProducts.map((product, index) => (
+            <ProductTile key={product.id} product={product} index={index} onSelect={showReadOnlyNotice} />
           ))}
         </section>
       ) : (
         <EmptyState
-          title="لا توجد نتائج"
-          description="جرّب كتابة اسم منتج آخر داخل هذا القسم."
-          actionLabel="مسح البحث"
+          title="No products found"
+          description="This backend category does not have active products yet."
+          actionLabel={query ? "Clear search" : undefined}
           onAction={() => setQuery("")}
         />
       )}
-
-      <AnimatePresence>
-        {selectedProduct && (
-          <ProductPurchaseModal
-            product={selectedProduct}
-            category={category}
-            onClose={() => setSelectedProduct(null)}
-            onConfirm={confirmPurchase}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {completedPurchase && (
-          <PurchaseSuccessModal
-            receipt={completedPurchase}
-            onClose={() => setCompletedPurchase(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -152,6 +192,9 @@ function ProductTile({ product, index, onSelect }) {
       </span>
       <span className="mt-2 block min-h-[40px] max-w-[7.5rem] text-[12px] font-black leading-5 text-slate-950 transition group-hover:text-[#7C3AED] dark:text-white dark:group-hover:text-[#C084FC] sm:mt-3 sm:max-w-[10rem] sm:text-base sm:leading-7">
         {product.name}
+      </span>
+      <span dir="ltr" className="mt-1 block max-w-[8rem] truncate text-[11px] font-black text-[#8B5CF6] dark:text-[#C084FC] sm:max-w-[10rem] sm:text-sm">
+        {product.displayPriceLabel}
       </span>
     </button>
   );

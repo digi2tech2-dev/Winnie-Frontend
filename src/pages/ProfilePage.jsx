@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Phone, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getProfile } from "../api/profile";
 import BackButton from "../components/BackButton";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ToastProvider";
-import { profile } from "../data/catalog";
 
-const inviteCode = "WINNIE-333";
-const profileAvatarChangedEvent = "winnie-profile-avatar-change";
 const profileCountries = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
 const countryDialCodes = {
   "الولايات المتحدة": "+1",
@@ -30,22 +28,65 @@ export default function ProfilePage({ basePath = "/customer" }) {
   const [editing, setEditing] = useState(true);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [pendingMenuAction, setPendingMenuAction] = useState(null);
-  const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem("winnie-profile-avatar") || "/hero-winnie-fun.png");
+  const [profileData, setProfileData] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState("");
   const avatarInputRef = useRef(null);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { token, user, logout } = useAuth();
   const { showToast } = useToast();
-  const displayName = user?.name || profile.name;
-  const email = user?.email || profile.email;
+  const activeProfile = profileData || user || {};
+  const displayName = activeProfile.name || "Winnie user";
+  const email = activeProfile.email || "";
+  const avatarUrl = activeProfile.avatar || "/hero-winnie-fun.png";
+  const tier = activeProfile.group?.name || activeProfile.tier || "Member";
+  const country = activeProfile.country || "";
+  const phone = activeProfile.phone || "";
   const handle = `@${email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || "winnie"}`;
 
-  const shareInvite = useCallback(async () => {
-    try {
-      await navigator.clipboard?.writeText(inviteCode);
-      showToast({ type: "success", title: "تم نسخ رمز الدعوة", message: inviteCode });
-    } catch {
-      showToast({ type: "info", title: "رمز الدعوة", message: inviteCode });
-    }
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      setProfileLoading(true);
+      setProfileError("");
+
+      try {
+        const result = await getProfile(token);
+        if (!cancelled) setProfileData(result);
+      } catch (requestError) {
+        if (!cancelled) {
+          setProfileError(requestError.userMessage || "Unable to load profile.");
+          setProfileData(null);
+        }
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    };
+
+    void loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const shareInvite = useCallback(() => {
+    showToast({
+      type: "info",
+      title: "Read-only profile",
+      message: "Referral actions will be connected in a later phase.",
+    });
+  }, [showToast]);
+
+  const showProfileWriteNotice = useCallback(() => {
+    showToast({
+      type: "info",
+      title: "Read-only profile",
+      message: "Profile updates will be connected in a later phase.",
+    });
   }, [showToast]);
 
   const handleLogout = useCallback(() => {
@@ -60,12 +101,12 @@ export default function ProfilePage({ basePath = "/customer" }) {
     setPendingMenuAction(null);
 
     if (action === "shareInvite") {
-      void shareInvite();
+      shareInvite();
       return;
     }
 
     if (action === "changePassword") {
-      setPasswordOpen(true);
+      showProfileWriteNotice();
       return;
     }
 
@@ -77,7 +118,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     if (action === "logout") {
       handleLogout();
     }
-  }, [basePath, handleLogout, menuOpen, navigate, pendingMenuAction, shareInvite]);
+  }, [basePath, handleLogout, menuOpen, navigate, pendingMenuAction, shareInvite, showProfileWriteNotice]);
 
   const closeMenu = () => {
     setPendingMenuAction(null);
@@ -90,31 +131,11 @@ export default function ProfilePage({ basePath = "/customer" }) {
   };
 
   const openAvatarPicker = () => {
-    avatarInputRef.current?.click();
+    showProfileWriteNotice();
   };
 
   const changeAvatar = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      showToast({ type: "error", title: "ملف غير صالح", message: "اختار صورة فقط لتغيير الصورة الشخصية." });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const nextAvatar = String(reader.result);
-      setAvatarUrl(nextAvatar);
-      try {
-        localStorage.setItem("winnie-profile-avatar", nextAvatar);
-        window.dispatchEvent(new CustomEvent(profileAvatarChangedEvent));
-      } catch {
-        // Ignore storage limits; the preview still updates for this session.
-      }
-      showToast({ type: "success", title: "تم تحديث الصورة", message: "تم تغيير الصورة الشخصية بنجاح." });
-    };
-    reader.readAsDataURL(file);
+    showProfileWriteNotice();
     event.target.value = "";
   };
 
@@ -192,16 +213,25 @@ export default function ProfilePage({ basePath = "/customer" }) {
           </div>
           <p dir="ltr" className="mt-4 text-2xl font-black text-slate-950 drop-shadow-[0_2px_14px_rgba(255,255,255,0.55)] dark:text-white dark:drop-shadow-[0_4px_18px_rgba(139,92,246,0.24)] sm:mt-6 sm:text-3xl">{handle}</p>
           <span className="mt-2 inline-flex rounded-full border border-[#C4B5FD]/55 bg-white/78 px-4 py-1.5 text-xs font-black text-[#7C3AED] shadow-[0_12px_28px_rgba(14,165,233,0.12)] backdrop-blur-xl dark:border-[#8B5CF6]/32 dark:bg-[#111827]/78 dark:text-[#E9D5FF] sm:mt-4 sm:py-2 sm:text-sm">
-            {profile.tier}
+            {tier}
           </span>
         </div>
       </section>
 
+      {(profileLoading || profileError) && (
+        <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 text-sm font-bold text-slate-600 shadow-[0_12px_28px_rgba(14,165,233,0.10)] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4]">
+          {profileLoading ? "Loading backend profile..." : profileError}
+        </section>
+      )}
+
       {editing && (
         <EditProfilePanel
+          key={`${displayName}-${email}-${country}-${phone}`}
+          countryValue={country}
           displayName={displayName}
           email={email}
-          onChangePassword={() => setPasswordOpen(true)}
+          onChangePassword={showProfileWriteNotice}
+          phoneValue={phone}
         />
       )}
 
@@ -222,9 +252,10 @@ export default function ProfilePage({ basePath = "/customer" }) {
   );
 }
 
-function EditProfilePanel({ displayName, email, onChangePassword }) {
-  const [country, setCountry] = useState(profile.country);
-  const [phone, setPhone] = useState(() => getNationalPhone(profile.phone, profile.country));
+function EditProfilePanel({ countryValue, displayName, email, onChangePassword, phoneValue }) {
+  const initialCountry = countryValue || profileCountries[0];
+  const [country, setCountry] = useState(initialCountry);
+  const [phone, setPhone] = useState(() => getNationalPhone(phoneValue || "", initialCountry));
   const selectedDialCode = countryDialCodes[country] || "";
 
   return (
@@ -240,18 +271,19 @@ function EditProfilePanel({ displayName, email, onChangePassword }) {
       </div>
 
       <form className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Field label="الاسم" defaultValue={displayName} />
+        <Field label="الاسم" defaultValue={displayName} readOnly helper="Profile editing is read-only in this phase." />
         <Field
           label="البريد الإلكتروني"
           defaultValue={email}
           readOnly
           helper="لا يمكن تغيير البريد الإلكتروني المرتبط بالحساب."
         />
-        <CountrySelectField label="الدولة" value={country} options={profileCountries} onChange={setCountry} />
-        <ProfilePhoneField label="الهاتف" countryCode={selectedDialCode} value={phone} onChange={setPhone} />
+        <CountrySelectField disabled label="الدولة" value={country} options={profileCountries} onChange={setCountry} />
+        <ProfilePhoneField label="الهاتف" countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
         <button
           type="button"
-          className="interactive-ring mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_14px_34px_rgba(139,92,246,0.30)] dark:from-[#8B5CF6] dark:to-[#A855F7] dark:shadow-[0_0_22px_rgba(139,92,246,0.28)] sm:col-span-2"
+          disabled
+          className="mt-2 inline-flex h-12 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-200 text-sm font-black text-slate-500 dark:bg-white/10 dark:text-white/40 sm:col-span-2"
         >
           <Save className="h-5 w-5" />
           حفظ التعديلات
@@ -366,7 +398,7 @@ function PasswordModal({ onClose, showToast }) {
 
   const confirmSave = () => {
     setConfirming(false);
-    showToast({ type: "success", title: "تم تغيير كلمة السر", message: "تم حفظ كلمة السر الجديدة بنجاح." });
+    showToast({ type: "info", title: "Read-only profile", message: "Password changes will be connected in a later phase." });
     onClose();
   };
 
@@ -505,7 +537,7 @@ function Field({ label, defaultValue, readOnly = false, helper }) {
   );
 }
 
-function CountrySelectField({ label, value, options, onChange }) {
+function CountrySelectField({ disabled = false, label, value, options, onChange }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-black text-slate-700 dark:text-[#C4C9D4]">{label}</span>
@@ -513,8 +545,9 @@ function CountrySelectField({ label, value, options, onChange }) {
         <Globe2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
         <select
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pr-12 text-right font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none"
+          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pr-12 text-right font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F5F3FF] disabled:text-[#6D28D9] focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:disabled:bg-[#1A2335] dark:disabled:text-[#E9D5FF]"
         >
           {options.map((option) => (
             <option key={option} value={option}>
@@ -527,7 +560,7 @@ function CountrySelectField({ label, value, options, onChange }) {
   );
 }
 
-function ProfilePhoneField({ label, countryCode, value, onChange }) {
+function ProfilePhoneField({ label, countryCode, readOnly = false, value, onChange }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-black text-slate-700 dark:text-[#C4C9D4]">{label}</span>
@@ -537,9 +570,11 @@ function ProfilePhoneField({ label, countryCode, value, onChange }) {
           dir="ltr"
           type="tel"
           inputMode="numeric"
+          readOnly={readOnly}
+          aria-readonly={readOnly}
           value={value}
           onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))}
-          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pl-20 pr-12 text-left font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:placeholder:text-[#8A94A7]"
+          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pl-20 pr-12 text-left font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition read-only:cursor-default read-only:bg-[#F5F3FF] read-only:text-[#6D28D9] placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:read-only:bg-[#1A2335] dark:read-only:text-[#E9D5FF] dark:placeholder:text-[#8A94A7]"
         />
         <span
           dir="ltr"

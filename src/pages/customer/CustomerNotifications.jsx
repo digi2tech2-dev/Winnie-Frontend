@@ -6,8 +6,10 @@ export default function CustomerNotifications() {
 
   return (
     <NotificationsPage
+      error={context.notificationsError}
       items={context.notifications}
-      onMarkAllAsRead={context.markAllNotificationsAsRead}
+      loading={context.notificationsLoading}
+      readOnly
       unreadCount={context.unreadNotificationCount}
     />
   );

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Star } from "lucide-react";
-import { categories } from "../../data/catalog";
+import { categories as defaultCategories } from "../../data/catalog";
 import { bestSellingProducts } from "../../data/homeContent";
 import { iconMap } from "../icons";
 
@@ -13,18 +13,24 @@ const categoryAccentIcons = {
   subscriptions: ["Play", "Music"],
 };
 
-export default function HomeShowcase({ onViewAll, onCategorySelect, onProductSelect }) {
+export default function HomeShowcase({
+  categories = defaultCategories,
+  products = bestSellingProducts,
+  onViewAll,
+  onCategorySelect,
+  onProductSelect,
+}) {
   return (
     <div dir="rtl" className="space-y-6 text-right lg:space-y-8">
       <section id="home-categories">
         <ShowcaseHeading title="الأقسام" />
-        <CategoriesGrid onCategorySelect={onCategorySelect} />
+        <CategoriesGrid categories={categories} onCategorySelect={onCategorySelect} />
       </section>
 
       <section id="best-selling">
         <ShowcaseHeading title="الأكثر مبيعاً" onAction={onViewAll} />
         <div dir="rtl" className="no-scrollbar flex gap-4 overflow-x-auto overflow-y-hidden pb-2 sm:gap-5">
-          {bestSellingProducts.map((product, index) => (
+          {products.map((product, index) => (
             <BestSellerCard
               key={product.name}
               product={product}
@@ -38,7 +44,7 @@ export default function HomeShowcase({ onViewAll, onCategorySelect, onProductSel
   );
 }
 
-export function CategoriesGrid({ onCategorySelect, layout = "three" }) {
+export function CategoriesGrid({ categories = defaultCategories, onCategorySelect, layout = "three" }) {
   const gridClassName =
     layout === "two"
       ? "grid grid-cols-2 gap-x-4 gap-y-6 py-2 sm:gap-x-8 sm:gap-y-8"
@@ -177,8 +183,6 @@ function CategoryImageItem({ category, index, onSelect, size = "default" }) {
 }
 
 function BestSellerCard({ product, index, onSelect }) {
-  const Icon = product.icon;
-
   return (
     <motion.button
       type="button"
@@ -194,7 +198,7 @@ function BestSellerCard({ product, index, onSelect }) {
       <span className="absolute right-3 top-3 z-20 rounded-full bg-[#7C3AED] px-2.5 py-1 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
         الأكثر مبيعاً
       </span>
-      <div className={`relative grid h-40 place-items-center overflow-hidden bg-gradient-to-br ${product.cover} sm:h-48`}>
+      <div className={`relative grid h-40 place-items-center overflow-hidden bg-gradient-to-br ${product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]"} sm:h-48`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
         <ProductVisual product={product} />
       </div>
@@ -215,7 +219,7 @@ function BestSellerCard({ product, index, onSelect }) {
 }
 
 function ProductVisual({ product }) {
-  const Icon = product.icon;
+  const Icon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
 
   if (product.visual === "youtube") {
     return (

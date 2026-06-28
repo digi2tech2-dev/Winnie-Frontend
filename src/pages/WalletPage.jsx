@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronLeft, CreditCard, Plus, ReceiptText, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getWalletSummary } from "../api/wallet";
+import { useAuth } from "../context/AuthContext";
 import { getPaymentMethods } from "../data/paymentMethods";
-
-const walletAmount = "1,250.00";
 
 export default function WalletPage({ basePath = "/customer" }) {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [globalGroupOpen, setGlobalGroupOpen] = useState(true);
+  const [wallet, setWallet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const paymentMethods = getPaymentMethods();
   const groupSubtitle =
     paymentMethods.length > 0
@@ -22,13 +26,42 @@ export default function WalletPage({ basePath = "/customer" }) {
     navigate(`${basePath}/wallet/top-up/${method.id}`);
   };
 
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let cancelled = false;
+
+    const loadWallet = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const summary = await getWalletSummary(token);
+        if (!cancelled) setWallet(summary);
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.userMessage || "Unable to load wallet balance.");
+          setWallet(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadWallet();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   return (
     <div
       dir="rtl"
       className="-mx-4 -mt-6 min-h-[calc(100vh-124px)] overflow-hidden bg-[#F8FCFF] px-4 pb-10 pt-5 text-slate-950 dark:bg-[#020615] dark:text-white sm:-mx-6 sm:px-6 lg:-mx-8"
     >
       <div className="mx-auto w-full max-w-[760px] space-y-5">
-        <BalancePanel onShowTransactions={showTransactions} />
+        <BalancePanel error={error} loading={loading} onShowTransactions={showTransactions} wallet={wallet} />
 
         <section className="space-y-4">
           <div className="space-y-2 text-right">
@@ -91,7 +124,10 @@ export default function WalletPage({ basePath = "/customer" }) {
   );
 }
 
-function BalancePanel({ onShowTransactions }) {
+function BalancePanel({ error, loading, onShowTransactions, wallet }) {
+  const balanceLabel = wallet?.balanceLabel || "$0.00";
+  const currency = wallet?.currency || "";
+
   return (
     <section className="relative overflow-hidden rounded-[18px] border border-[#8B5CF6]/[0.16] bg-white/90 p-3 shadow-soft backdrop-blur-xl dark:border-[#8B5CF6]/[0.24] dark:bg-[#080b1d] dark:shadow-[0_14px_42px_rgba(0,0,0,0.34)] sm:p-4">
       <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.28),rgba(4,8,24,0)_42%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
@@ -99,9 +135,14 @@ function BalancePanel({ onShowTransactions }) {
         <div className="min-w-0 flex-1 text-right">
           <p className="text-sm font-bold text-slate-500 dark:text-white/[0.68] sm:text-base">الرصيد الحالي</p>
           <div className="mt-2">
-            <p dir="ltr" className="text-[clamp(2rem,8vw,3.25rem)] font-black leading-none text-slate-950 dark:text-white">{walletAmount}</p>
-            <p className="mt-1.5 text-base font-bold text-slate-500 dark:text-white/70 sm:text-lg">$</p>
+            <p dir="ltr" className="text-[clamp(2rem,8vw,3.25rem)] font-black leading-none text-slate-950 dark:text-white">{loading ? "..." : balanceLabel}</p>
+            <p className="mt-1.5 text-base font-bold text-slate-500 dark:text-white/70 sm:text-lg">{currency}</p>
           </div>
+          {error && (
+            <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/12 px-3 py-2 text-xs font-bold leading-5 text-amber-700 dark:text-amber-300">
+              {error}
+            </p>
+          )}
           <button
             type="button"
             onClick={onShowTransactions}

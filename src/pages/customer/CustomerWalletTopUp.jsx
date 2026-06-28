@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Copy, CreditCard, Hash, ReceiptText } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { useFeedback } from "../../components/FeedbackProvider";
+import { Link, useParams } from "react-router-dom";
 import { useToast } from "../../components/ToastProvider";
 import { getPaymentMethod } from "../../data/paymentMethods";
 
@@ -14,9 +13,7 @@ const methodAccent = {
 
 export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const { methodId } = useParams();
-  const navigate = useNavigate();
   const { showToast } = useToast();
-  const { showFeedback } = useFeedback();
   const method = getPaymentMethod(methodId);
   const [amount, setAmount] = useState("");
   const visualType = method ? getPaymentVisualType(method) : "generic";
@@ -65,17 +62,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
     }
 
     showToast({
-      type: "success",
-      title: "تم تجهيز الشحن",
-      message: method.title,
-    });
-    showFeedback({
-      type: "success",
-      title: "تم تجهيز عملية الشحن",
-      message: `${method.title} بقيمة $${formatMoney(amountValue)} ورسوم ${feeRate}%.`,
-      confirmLabel: "سجل المعاملات",
-      cancelLabel: "إغلاق",
-      onConfirm: () => navigate(`${basePath}/wallet/transactions`),
+      type: "info",
+      title: "الشحن غير متصل بعد",
+      message: "Deposit submission will be connected in the next phase. No wallet credit was created.",
     });
   };
 

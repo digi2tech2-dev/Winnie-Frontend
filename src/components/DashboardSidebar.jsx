@@ -74,7 +74,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
   const adminPinRevealTimeoutRef = useRef(null);
   const [adminGateError, setAdminGateError] = useState("");
   const [adminExitConfirmOpen, setAdminExitConfirmOpen] = useState(false);
-  const sidebarAvatarUrl = profileAvatarUrl || (isImageAvatar(user?.avatar) ? user.avatar : "");
+  const sidebarAvatarUrl = (isImageAvatar(user?.avatar) ? user.avatar : "") || profileAvatarUrl;
   const sidebarAvatarInitial = String(user?.avatar || user?.name || "W").slice(0, 1).toUpperCase();
   const visibleItems = variant === "admin" ? [] : items;
   const adminUserItems = variant === "admin" ? items : [];

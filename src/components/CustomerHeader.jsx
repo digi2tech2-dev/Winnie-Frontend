@@ -1,12 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import { Bell, Menu, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import HeaderSearchOverlay from "./HeaderSearchOverlay";
-import ProductPurchaseModal from "./ProductPurchaseModal";
-import PurchaseSuccessModal from "./PurchaseSuccessModal";
-import { createPurchaseReceipt } from "../utils/purchaseReceipt";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
@@ -23,14 +19,12 @@ function isImageAvatar(avatar) {
   return typeof avatar === "string" && /^(https?:|data:image|\/)/.test(avatar);
 }
 
-export default function CustomerHeader({ onOpenSidebar, unreadNotificationCount = 0 }) {
+export default function CustomerHeader({ onOpenSidebar, searchProducts = [], unreadNotificationCount = 0 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [purchaseItem, setPurchaseItem] = useState(null);
-  const [completedPurchase, setCompletedPurchase] = useState(null);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(getStoredProfileAvatar);
-  const headerAvatarUrl = profileAvatarUrl || (isImageAvatar(user?.avatar) ? user.avatar : "") || "/hero-winnie-fun.png";
+  const headerAvatarUrl = (isImageAvatar(user?.avatar) ? user.avatar : "") || profileAvatarUrl || "/hero-winnie-fun.png";
 
   useEffect(() => {
     const refreshAvatar = () => setProfileAvatarUrl(getStoredProfileAvatar());
@@ -43,11 +37,6 @@ export default function CustomerHeader({ onOpenSidebar, unreadNotificationCount 
       window.removeEventListener(profileAvatarChangedEvent, refreshAvatar);
     };
   }, []);
-
-  const confirmPurchase = (payload) => {
-    setCompletedPurchase(createPurchaseReceipt(payload, purchaseItem?.category));
-    setPurchaseItem(null);
-  };
 
   return (
     <>
@@ -123,27 +112,9 @@ export default function CustomerHeader({ onOpenSidebar, unreadNotificationCount 
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onNavigate={navigate}
-        onProductSelect={(product) => setPurchaseItem({ product, category: product.groupTitle })}
         mode="customer"
+        products={searchProducts}
       />
-      <AnimatePresence>
-        {purchaseItem && (
-          <ProductPurchaseModal
-            product={purchaseItem.product}
-            category={purchaseItem.category}
-            onClose={() => setPurchaseItem(null)}
-            onConfirm={confirmPurchase}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {completedPurchase && (
-          <PurchaseSuccessModal
-            receipt={completedPurchase}
-            onClose={() => setCompletedPurchase(null)}
-          />
-        )}
-      </AnimatePresence>
     </>
   );
 }

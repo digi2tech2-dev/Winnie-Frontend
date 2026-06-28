@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Copy, Link2, Send, Share2, UserPlus, WalletCards } from "lucide-react";
 import { useToast } from "../../components/ToastProvider";
-import { useAuth } from "../../context/AuthContext";
-import { subAgentRequestStorageKey } from "../../data/adminExtended";
 
 const inviteCode = "WINNIE-333";
 const subAgentSlide = "/اسلايد وكيل.jpg";
@@ -39,11 +37,7 @@ const formatProfit = (value) =>
 
 export default function CustomerSubAgent() {
   const { showToast } = useToast();
-  const { user } = useAuth();
   const [requestMessage, setRequestMessage] = useState("");
-  const [submittedRequest, setSubmittedRequest] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(subAgentRequestStorageKey) || "null"); } catch { return null; }
-  });
   const referralLink = `https://winniefun.com/?ref=${encodeURIComponent(inviteCode)}`;
   const totalProfit = activeAgents.reduce((sum, agent) => sum + agent.profit, 0);
 
@@ -66,9 +60,9 @@ export default function CustomerSubAgent() {
     }
 
     showToast({
-      type: "success",
-      title: "تم طلب السحب إلى المحفظة",
-      message: `${formatProfit(totalProfit)} سيتم تحويلها إلى محفظتك.`,
+      type: "info",
+      title: "سحب الإحالات غير متصل بعد",
+      message: "Referral payouts will be connected in a later phase. No wallet transaction was created.",
     });
   };
 
@@ -77,11 +71,11 @@ export default function CustomerSubAgent() {
       showToast({ type: "warning", title: "اكتب رسالتك أولًا", message: "عرّفنا بنشاطك ولماذا تريد أن تصبح وكيلًا فرعيًا." });
       return;
     }
-    const request = { id: `SAR-${Date.now().toString().slice(-6)}`, userId: user?.id || "USR-CURRENT", name: user?.name || "مستخدم Winnie", email: user?.email || "user@winniefun.com", message: requestMessage.trim(), currentGroup: user?.tier || "Retail", currentRate: 7, invitedBy: "وكيل الدعوة الحالي", status: "pending", date: new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(new Date()) };
-    try { localStorage.setItem(subAgentRequestStorageKey, JSON.stringify(request)); } catch { /* Keep the submitted state in memory. */ }
-    setSubmittedRequest(request);
-    setRequestMessage("");
-    showToast({ type: "success", title: "تم إرسال طلب الوكيل الفرعي", message: "سيتم إشعارك بعد مراجعة الأدمن للمجموعة والنسبة." });
+    showToast({
+      type: "info",
+      title: "طلب الوكيل غير متصل بعد",
+      message: "Sub-agent requests will be connected in a later phase. No request was submitted.",
+    });
   };
 
   return (
@@ -102,7 +96,6 @@ export default function CustomerSubAgent() {
               <h2 className="text-lg font-black text-slate-950 dark:text-white">طلب الانضمام كوكيل فرعي</h2>
               <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-[#8A94A7]">اكتب رسالتك ونشاطك، وسيحدد الأدمن المجموعة ونسبة الأسعار المناسبة بعد المراجعة.</p>
             </div>
-            {submittedRequest && <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${submittedRequest.status === "approved" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : submittedRequest.status === "rejected" ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-orange-500/10 text-orange-700 dark:text-orange-300"}`}>{submittedRequest.status === "approved" ? "تم القبول" : submittedRequest.status === "rejected" ? "مرفوض" : "قيد المراجعة"}</span>}
           </div>
           <textarea value={requestMessage} onChange={(event) => setRequestMessage(event.target.value)} placeholder="مثال: أنا وكيل وأبيع خدمات رقمية وكنت حابب أكون وكيل فرعي عندكم..." className="mt-4 min-h-[100px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-950 outline-none focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 dark:border-white/10 dark:bg-[#0D1324] dark:text-white" />
           <button type="button" onClick={submitSubAgentRequest} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-xs font-black text-white"><Send className="h-4 w-4" />إرسال طلب وكيل فرعي</button>

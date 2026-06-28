@@ -5,22 +5,42 @@ import { createPortal } from "react-dom";
 import { iconMap } from "./icons";
 import { productGroups } from "../data/catalog";
 
-export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public" }) {
+export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
 
-  const products = useMemo(
-    () =>
-      Object.entries(productGroups).flatMap(([groupId, group]) =>
+  const products = useMemo(() => {
+    const backendProducts = Array.isArray(providedProducts) ? providedProducts : [];
+
+    if (backendProducts.length) {
+      return backendProducts.map((product, index) => {
+        const id = product.id || product._id || `product-${index}`;
+        const name = product.name || product.title || "Untitled product";
+        const groupTitle = product.categoryTitle || product.categoryName || "Catalog";
+        const price = product.displayPriceLabel || product.price || "";
+
+        return {
+          ...product,
+          id,
+          name,
+          groupId: product.categoryId || product.categorySlug || product.category || product.groupId || "",
+          groupTitle,
+          price,
+          searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
+        };
+      });
+    }
+
+    return Object.entries(productGroups).flatMap(([groupId, group]) =>
         group.products.map((product) => ({
           ...product,
+          id: `${groupId}-${product.name}`,
           groupId,
           groupTitle: group.title,
           searchText: `${product.name} ${product.price} ${group.title}`.toLowerCase(),
         })),
-      ),
-    [],
-  );
+      );
+  }, [providedProducts]);
 
   const shownProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -65,7 +85,12 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       return;
     }
 
-    const target = mode === "customer" ? "/customer/dashboard#best-selling" : `/categories/${product.groupId}`;
+    const categoryTarget = product.groupId || product.categorySlug || product.categoryId;
+    const target = mode === "customer" && categoryTarget
+      ? `/customer/categories/${categoryTarget}`
+      : mode === "customer"
+        ? "/customer/dashboard#best-selling"
+        : `/categories/${product.groupId}`;
     onNavigate(target);
     onClose();
   };
@@ -131,7 +156,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                   {shownProducts.map((product) => (
                     <SearchProductCard
-                      key={`${product.groupId}-${product.name}`}
+                      key={product.id || `${product.groupId}-${product.name}`}
                       product={product}
                       onClick={() => handleProductClick(product)}
                     />

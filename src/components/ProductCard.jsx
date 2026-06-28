@@ -1,12 +1,10 @@
 import { ShoppingCart } from "lucide-react";
 import { iconMap } from "./icons";
-import { useFeedback } from "./FeedbackProvider";
 import { useToast } from "./ToastProvider";
 
 export default function ProductCard({ product, onAction }) {
   const Icon = iconMap[product.icon] || iconMap.Gift;
   const { showToast } = useToast();
-  const { showFeedback } = useFeedback();
 
   const handleTopUp = () => {
     if (onAction) {
@@ -15,17 +13,10 @@ export default function ProductCard({ product, onAction }) {
     }
 
     showToast({
-      type: "success",
-      title: "تم اختيار المنتج",
-      message: `${product.name} جاهز للدفع.`,
+      type: "info",
+      title: "الطلب غير متصل بعد",
+      message: "Order placement will be connected in the next phase. No order was created.",
     });
-    showFeedback({
-      type: "success",
-      title: "بدأت عملية الشحن",
-      message: `تم إنشاء مسودة دفع آمنة لـ ${product.name}. البيانات الحالية تجريبية.`,
-      confirmLabel: "متابعة",
-    });
-    onAction?.(product);
   };
 
   return (

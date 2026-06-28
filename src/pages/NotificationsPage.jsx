@@ -13,11 +13,11 @@ const filterLabels = {
   account: "الحساب",
 };
 
-export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount }) {
+export default function NotificationsPage({ error = "", items, loading = false, onMarkAllAsRead, readOnly = false, unreadCount }) {
   const [filter, setFilter] = useState("all");
   const [localItems, setLocalItems] = useState(defaultNotifications);
   const { showToast } = useToast();
-  const notificationItems = items || localItems;
+  const notificationItems = items ?? localItems;
   const unreadTotal = unreadCount ?? notificationItems.filter((item) => item.unread).length;
 
   const visible = useMemo(
@@ -26,6 +26,15 @@ export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount 
   );
 
   const markAllAsRead = () => {
+    if (readOnly) {
+      showToast({
+        type: "info",
+        title: "Read-only notifications",
+        message: "Mark-read actions will be connected in a later phase.",
+      });
+      return;
+    }
+
     if (!unreadTotal) {
       showToast({
         type: "info",
@@ -84,7 +93,13 @@ export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount 
         ))}
       </div>
 
-      {visible.length ? (
+      {loading ? (
+        <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+          Loading notifications...
+        </div>
+      ) : error ? (
+        <EmptyState title="Unable to load notifications" description={error} />
+      ) : visible.length ? (
         <section className="grid gap-3">
           {visible.map((item) => {
             const Icon = iconMap[item.level === "success" ? "CheckCircle2" : item.level === "warning" ? "AlertTriangle" : "Bell"];
