@@ -1,38 +1,88 @@
 import { motion } from "framer-motion";
-import { Hash, Minus, Plus, ShoppingCart, X } from "lucide-react";
+import { Hash, Loader2, Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { useState } from "react";
 import { iconMap } from "./icons";
 
-export default function ProductPurchaseModal({ product, category, onClose, onConfirm, requireAccountId = true }) {
+export default function ProductPurchaseModal({
+  product,
+  category,
+  onClose,
+  onConfirm,
+  requireAccountId = true,
+  submitError = "",
+  submitting = false,
+}) {
   const ProductIcon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
   const packages = Array.isArray(product.packages) ? product.packages : [];
-  const [quantity, setQuantity] = useState(1);
+  const minQty = Math.max(1, Number(product.minQty) || 1);
+  const maxQty = Math.max(minQty, Number(product.maxQty) || 999);
+  const activeFields = getProductOrderFields(product);
+  const hasBackendFields = activeFields.length > 0;
+  const [quantity, setQuantity] = useState(minQty);
   const [accountId, setAccountId] = useState("");
   const [error, setError] = useState("");
+  const [fieldValues, setFieldValues] = useState(() => getInitialFieldValues(activeFields));
   const [selectedPackageIndex, setSelectedPackageIndex] = useState(0);
   const selectedPackage = packages[selectedPackageIndex] || null;
-  const displayPrice = selectedPackage?.price || product.newPrice || product.price || "حسب الباقة";
+  const displayPrice = selectedPackage?.price || product.displayPriceLabel || product.newPrice || product.price || "Priced by backend";
   const priceInfo = extractPriceInfo(displayPrice);
-  const totalLabel = priceInfo ? formatTotalPrice(priceInfo, quantity) : `${quantity} × ${displayPrice}`;
+  const totalLabel = priceInfo ? formatTotalPrice(priceInfo, quantity) : `${quantity} x ${displayPrice}`;
   const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
-  const categoryLabel = typeof category === "string" ? category : category?.title || "طلب جديد";
+  const categoryLabel = typeof category === "string" ? category : category?.title || category?.name || "New order";
+  const displayError = error || submitError;
 
   const updateQuantity = (nextQuantity) => {
     const safeQuantity = Number.parseInt(nextQuantity, 10);
-    setQuantity(Number.isFinite(safeQuantity) ? Math.min(999, Math.max(1, safeQuantity)) : 1);
+    setQuantity(Number.isFinite(safeQuantity) ? Math.min(maxQty, Math.max(minQty, safeQuantity)) : minQty);
+  };
+
+  const updateFieldValue = (fieldKey, value) => {
+    setFieldValues((current) => ({
+      ...current,
+      [fieldKey]: value,
+    }));
+    setError("");
+  };
+
+  const validateBackendFields = () => {
+    const missingField = activeFields.find((field) => {
+      if (field.required === false) return false;
+      const value = fieldValues[field.key];
+      return value === undefined || value === null || String(value).trim() === "";
+    });
+
+    if (missingField) {
+      return `${missingField.label} is required.`;
+    }
+
+    return "";
   };
 
   const submitPurchase = (event) => {
     event.preventDefault();
+    if (submitting) return;
+
+    const fieldError = hasBackendFields ? validateBackendFields() : "";
+    if (fieldError) {
+      setError(fieldError);
+      return;
+    }
 
     const safeAccountId = accountId.trim();
-    if (requireAccountId && !safeAccountId) {
-      setError("من فضلك اكتب الأيدي أو رقم الحساب قبل تأكيد الطلب.");
+    if (!hasBackendFields && requireAccountId && !safeAccountId) {
+      setError("Enter the account or player id before confirming the order.");
       return;
     }
 
     setError("");
-    onConfirm({ product, quantity, accountId: safeAccountId, selectedPackage, totalLabel });
+    onConfirm({
+      product,
+      quantity,
+      accountId: safeAccountId,
+      orderFieldsValues: hasBackendFields ? fieldValues : {},
+      selectedPackage,
+      totalLabel,
+    });
   };
 
   return (
@@ -43,7 +93,7 @@ export default function ProductPurchaseModal({ product, category, onClose, onCon
       exit={{ opacity: 0 }}
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      onClick={submitting ? undefined : onClose}
     >
       <motion.form
         onSubmit={submitPurchase}
@@ -69,9 +119,10 @@ export default function ProductPurchaseModal({ product, category, onClose, onCon
             <button
               type="button"
               onClick={onClose}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/25 bg-white/16 text-white backdrop-blur transition hover:bg-white/24"
-              aria-label="إغلاق نافذة الشراء"
-              title="إغلاق"
+              disabled={submitting}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/25 bg-white/16 text-white backdrop-blur transition hover:bg-white/24 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Close purchase modal"
+              title="Close"
             >
               <X className="h-5 w-5" />
             </button>
@@ -80,13 +131,13 @@ export default function ProductPurchaseModal({ product, category, onClose, onCon
 
         <div className="p-4 sm:p-5">
           <div className="grid grid-cols-2 gap-2">
-            <InfoBox label="سعر الوحدة" value={displayPrice} />
-            <InfoBox label="الإجمالي" value={totalLabel} strong />
+            <InfoBox label="Unit price" value={displayPrice} />
+            <InfoBox label="Total" value={totalLabel} strong />
           </div>
 
           {packages.length > 0 && (
             <div className="mt-4">
-              <span className="mb-2 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">اختار الباقة</span>
+              <span className="mb-2 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">Package</span>
               <div className="grid gap-2 sm:grid-cols-2">
                 {packages.map((item, index) => {
                   const selected = index === selectedPackageIndex;
@@ -123,38 +174,52 @@ export default function ProductPurchaseModal({ product, category, onClose, onCon
             </div>
           )}
 
-          <label className="mt-4 block">
-            <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">الأيدي / رقم الحساب</span>
-            <div className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 transition focus-within:border-[#A855F7]/70 focus-within:ring-4 focus-within:ring-[#EDE9FE] dark:border-[#2B3650] dark:bg-[#0B1220] dark:focus-within:border-[#A855F7]/80 dark:focus-within:ring-[#8B5CF6]/20">
-              <Hash className="h-5 w-5 shrink-0 text-[#8B5CF6] dark:text-[#C084FC]" />
-              <input
-                value={accountId}
-                onChange={(event) => {
-                  setAccountId(event.target.value);
-                  setError("");
-                }}
-                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]"
-                placeholder="اكتب ID اللاعب أو الحساب"
-              />
+          {hasBackendFields ? (
+            <div className="mt-4 grid gap-3">
+              {activeFields.map((field) => (
+                <OrderFieldInput
+                  key={field.key}
+                  field={field}
+                  value={fieldValues[field.key] ?? ""}
+                  onChange={(value) => updateFieldValue(field.key, value)}
+                />
+              ))}
             </div>
-          </label>
+          ) : requireAccountId ? (
+            <label className="mt-4 block">
+              <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">Account / player id</span>
+              <div className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 transition focus-within:border-[#A855F7]/70 focus-within:ring-4 focus-within:ring-[#EDE9FE] dark:border-[#2B3650] dark:bg-[#0B1220] dark:focus-within:border-[#A855F7]/80 dark:focus-within:ring-[#8B5CF6]/20">
+                <Hash className="h-5 w-5 shrink-0 text-[#8B5CF6] dark:text-[#C084FC]" />
+                <input
+                  value={accountId}
+                  onChange={(event) => {
+                    setAccountId(event.target.value);
+                    setError("");
+                  }}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]"
+                  placeholder="Account or player id"
+                />
+              </div>
+            </label>
+          ) : null}
 
           <div className="mt-4">
-            <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">الكمية</span>
+            <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">Quantity</span>
             <div dir="ltr" className="flex h-12 items-center overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-[#2B3650] dark:bg-[#0B1220]">
               <button
                 type="button"
                 onClick={() => updateQuantity(quantity - 1)}
-                className="grid h-full w-12 place-items-center text-slate-500 transition hover:bg-slate-50 hover:text-[#7C3AED] dark:text-[#AAB6CC] dark:hover:bg-[#172033] dark:hover:text-[#C084FC]"
-                aria-label="تقليل الكمية"
-                title="تقليل"
+                disabled={submitting || quantity <= minQty}
+                className="grid h-full w-12 place-items-center text-slate-500 transition hover:bg-slate-50 hover:text-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#AAB6CC] dark:hover:bg-[#172033] dark:hover:text-[#C084FC]"
+                aria-label="Decrease quantity"
+                title="Decrease"
               >
                 <Minus className="h-4 w-4" />
               </button>
               <input
                 type="number"
-                min="1"
-                max="999"
+                min={minQty}
+                max={maxQty}
                 value={quantity}
                 onChange={(event) => updateQuantity(event.target.value)}
                 className="h-full min-w-0 flex-1 border-x border-slate-200 bg-transparent text-center text-lg font-black text-slate-950 outline-none dark:border-[#2B3650] dark:text-white"
@@ -162,18 +227,19 @@ export default function ProductPurchaseModal({ product, category, onClose, onCon
               <button
                 type="button"
                 onClick={() => updateQuantity(quantity + 1)}
-                className="grid h-full w-12 place-items-center text-slate-500 transition hover:bg-slate-50 hover:text-[#7C3AED] dark:text-[#AAB6CC] dark:hover:bg-[#172033] dark:hover:text-[#C084FC]"
-                aria-label="زيادة الكمية"
-                title="زيادة"
+                disabled={submitting || quantity >= maxQty}
+                className="grid h-full w-12 place-items-center text-slate-500 transition hover:bg-slate-50 hover:text-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#AAB6CC] dark:hover:bg-[#172033] dark:hover:text-[#C084FC]"
+                aria-label="Increase quantity"
+                title="Increase"
               >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          {error && (
+          {displayError && (
             <p className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-500/12 px-3 py-2 text-xs font-bold leading-5 text-amber-800 dark:text-amber-300">
-              {error}
+              {displayError}
             </p>
           )}
 
@@ -181,16 +247,18 @@ export default function ProductPurchaseModal({ product, category, onClose, onCon
             <button
               type="button"
               onClick={onClose}
-              className="h-12 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-[#2B3650] dark:bg-[#0B1220] dark:text-[#C4C9D4] dark:hover:bg-[#172033]"
+              disabled={submitting}
+              className="h-12 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#2B3650] dark:bg-[#0B1220] dark:text-[#C4C9D4] dark:hover:bg-[#172033]"
             >
-              إلغاء
+              Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-sm font-black text-white shadow-[0_14px_30px_rgba(124,58,237,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(124,58,237,0.32)]"
+              disabled={submitting}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-sm font-black text-white shadow-[0_14px_30px_rgba(124,58,237,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(124,58,237,0.32)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              <ShoppingCart className="h-4 w-4" />
-              شراء الآن
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
+              {submitting ? "Creating order..." : "Buy now"}
             </button>
           </div>
         </div>
@@ -210,6 +278,107 @@ function InfoBox({ label, value, strong = false }) {
   );
 }
 
+function getProductOrderFields(product = {}) {
+  const dynamicFields = Array.isArray(product.dynamicFields)
+    ? product.dynamicFields.map((field) => ({
+        key: String(field.name || "").trim(),
+        label: field.label || field.name || "Order field",
+        max: field.max,
+        min: field.min,
+        options: Array.isArray(field.options) ? field.options : [],
+        placeholder: field.placeholder || "",
+        required: field.required !== false,
+        type: field.type || "text",
+        isActive: field.isActive !== false,
+      }))
+    : [];
+
+  const orderFields = Array.isArray(product.orderFields)
+    ? product.orderFields.map((field) => ({
+        key: String(field.key || "").trim(),
+        label: field.label || field.key || "Order field",
+        max: field.max,
+        min: field.min,
+        options: Array.isArray(field.options) ? field.options : [],
+        placeholder: field.placeholder || "",
+        required: field.required !== false,
+        type: field.type || "text",
+        isActive: field.isActive !== false,
+      }))
+    : [];
+
+  const source = dynamicFields.some((field) => field.isActive && field.key) ? dynamicFields : orderFields;
+  return source.filter((field) => field.isActive && field.key);
+}
+
+function getInitialFieldValues(fields) {
+  return fields.reduce((acc, field) => {
+    acc[field.key] = "";
+    return acc;
+  }, {});
+}
+
+function OrderFieldInput({ field, onChange, value }) {
+  const inputClassName = "min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]";
+  const label = `${field.label}${field.required ? " *" : ""}`;
+
+  if (field.type === "select") {
+    return (
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">{label}</span>
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-[#A855F7]/70 focus:ring-4 focus:ring-[#EDE9FE] dark:border-[#2B3650] dark:bg-[#0B1220] dark:text-white dark:focus:border-[#A855F7]/80 dark:focus:ring-[#8B5CF6]/20"
+        >
+          <option value="">Select...</option>
+          {field.options.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.type === "textarea") {
+    return (
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">{label}</span>
+        <textarea
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          rows={3}
+          className="min-h-[92px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#A855F7]/70 focus:ring-4 focus:ring-[#EDE9FE] dark:border-[#2B3650] dark:bg-[#0B1220] dark:text-white dark:placeholder:text-[#7F8AA0] dark:focus:border-[#A855F7]/80 dark:focus:ring-[#8B5CF6]/20"
+          placeholder={field.placeholder}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-[#D7DEEA]">{label}</span>
+      <div className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 transition focus-within:border-[#A855F7]/70 focus-within:ring-4 focus-within:ring-[#EDE9FE] dark:border-[#2B3650] dark:bg-[#0B1220] dark:focus-within:border-[#A855F7]/80 dark:focus-within:ring-[#8B5CF6]/20">
+        <Hash className="h-5 w-5 shrink-0 text-[#8B5CF6] dark:text-[#C084FC]" />
+        <input
+          type={getInputType(field.type)}
+          min={field.min ?? undefined}
+          max={field.max ?? undefined}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={inputClassName}
+          placeholder={field.placeholder}
+        />
+      </div>
+    </label>
+  );
+}
+
+function getInputType(type) {
+  if (["email", "number", "tel", "url", "date"].includes(type)) return type;
+  return "text";
+}
+
 function extractPriceInfo(price) {
   const value = String(price);
   const dollarMatch = value.match(/(?:\$\s*([\d.]+)|([\d.]+)\s*\$)/);
@@ -218,14 +387,9 @@ function extractPriceInfo(price) {
     return { amount: Number.parseFloat(dollarMatch[1] || dollarMatch[2]), prefix: "$", suffix: "" };
   }
 
-  const riyalMatch = value.match(/(?:ر\.?س\.?\s*([\d.]+)|([\d.]+)\s*ر\.?س\.?)/i);
-
-  if (riyalMatch) {
-    return {
-      amount: Number.parseFloat(riyalMatch[1] || riyalMatch[2]),
-      prefix: "$",
-      suffix: "",
-    };
+  const numberMatch = value.match(/([\d.]+)/);
+  if (numberMatch) {
+    return { amount: Number.parseFloat(numberMatch[1]), prefix: "", suffix: "" };
   }
 
   return null;

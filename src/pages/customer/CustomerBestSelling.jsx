@@ -5,21 +5,21 @@ import { useNavigate } from "react-router-dom";
 import { getCustomerProducts } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import { iconMap } from "../../components/icons";
-import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { bestSellingProductsAll } from "../../data/homeContent";
+import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 
 const pageSize = 100;
 
 export default function CustomerBestSelling({ loginOnPurchase = false, basePath = "/customer" }) {
   const navigate = useNavigate();
   const { token } = useAuth();
-  const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const [backendProducts, setBackendProducts] = useState([]);
   const [loading, setLoading] = useState(!loginOnPurchase);
   const [error, setError] = useState("");
   const useBackendProducts = !loginOnPurchase && Boolean(token);
+  const { openPurchase, purchaseModals } = useCustomerPurchase({ basePath, token });
 
   useEffect(() => {
     if (!useBackendProducts) {
@@ -65,17 +65,13 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
     );
   }, [query, sourceProducts]);
 
-  const handleProductSelect = () => {
+  const handleProductSelect = (product) => {
     if (loginOnPurchase) {
       navigate("/login", { state: { from: `${basePath}/dashboard` } });
       return;
     }
 
-    showToast({
-      type: "info",
-      title: "Read-only catalog",
-      message: "Order placement will be connected in the next phase.",
-    });
+    openPurchase(product, product.categoryTitle || "Customer catalog");
   };
 
   return (
@@ -119,10 +115,10 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
           {visibleProducts.map((product, index) => (
             <BestSellingGridCard
               key={product.id || product.name}
-              actionLabel={useBackendProducts ? "Next phase" : "Log in"}
+              actionLabel={useBackendProducts ? "Buy now" : "Log in"}
               product={product}
               index={index}
-              onSelect={handleProductSelect}
+              onSelect={() => handleProductSelect(product)}
             />
           ))}
         </section>
@@ -134,6 +130,7 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
           onAction={() => setQuery("")}
         />
       )}
+      {purchaseModals}
     </div>
   );
 }

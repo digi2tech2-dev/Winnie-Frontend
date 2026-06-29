@@ -55,6 +55,49 @@ export function normalizeOrder(order = {}) {
   };
 }
 
+export function normalizeCreatedOrder(order = {}) {
+  return normalizeOrder(order);
+}
+
+export function buildCustomerOrderPayload({ product, quantity, orderFieldsValues } = {}) {
+  const productId = product?._id || product?.id || product?.productId;
+  const safeQuantity = Math.max(1, Number.parseInt(quantity, 10) || 1);
+  const fieldValues = orderFieldsValues && typeof orderFieldsValues === "object"
+    ? Object.entries(orderFieldsValues).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          acc[key] = value;
+        }
+        return acc;
+      }, {})
+    : {};
+
+  return {
+    productId,
+    quantity: safeQuantity,
+    ...(Object.keys(fieldValues).length ? { orderFieldsValues: fieldValues } : {}),
+  };
+}
+
+export async function createCustomerOrder(token, payload, options = {}) {
+  const headers = {};
+  if (options.idempotencyKey) {
+    headers["Idempotency-Key"] = options.idempotencyKey;
+  }
+
+  const response = await apiRequest("/orders", {
+    method: "POST",
+    token,
+    headers,
+    body: payload,
+  });
+
+  return {
+    order: normalizeCreatedOrder(response.data || {}),
+    message: response.message,
+    raw: response.data,
+  };
+}
+
 export async function getCustomerOrders(token, query = {}) {
   const response = await apiRequest("/me/orders", {
     token,

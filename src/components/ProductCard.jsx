@@ -14,8 +14,8 @@ export default function ProductCard({ product, onAction }) {
 
     showToast({
       type: "info",
-      title: "الطلب غير متصل بعد",
-      message: "Order placement will be connected in the next phase. No order was created.",
+      title: "Customer catalog required",
+      message: "Open a backend customer catalog product to create an order.",
     });
   };
 
@@ -33,8 +33,8 @@ export default function ProductCard({ product, onAction }) {
             type="button"
             onClick={handleTopUp}
             className="grid h-9 w-9 place-items-center rounded-lg bg-slate-100 text-royal transition hover:bg-royal hover:text-white dark:bg-[linear-gradient(135deg,#7C3AED,#A855F7)] dark:text-white dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] dark:hover:bg-[linear-gradient(135deg,#8B5CF6,#A855F7)] dark:hover:text-white"
-            aria-label={`شحن ${product.name}`}
-            title="شحن"
+            aria-label={`Top up ${product.name}`}
+            title="Top up"
           >
             <ShoppingCart className="h-4 w-4" />
           </button>

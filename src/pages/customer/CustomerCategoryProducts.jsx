@@ -4,20 +4,20 @@ import { useNavigate, useParams } from "react-router-dom";
 import { filterProductsByCategory, getCustomerCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import { iconMap } from "../../components/icons";
-import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 
 export default function CustomerCategoryProducts({ basePath = "/customer" }) {
   const { categoryId } = useParams();
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
   const { token } = useAuth();
-  const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { openPurchase, purchaseModals } = useCustomerPurchase({ basePath, token });
 
   useEffect(() => {
     if (!token) return undefined;
@@ -72,14 +72,6 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
       `${product.name} ${product.categoryTitle} ${product.displayPriceLabel}`.toLowerCase().includes(cleanQuery),
     );
   }, [category, products, query]);
-
-  const showReadOnlyNotice = () => {
-    showToast({
-      type: "info",
-      title: "Read-only catalog",
-      message: "Order placement will be connected in the next phase.",
-    });
-  };
 
   if (loading) {
     return (
@@ -156,7 +148,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
       {categoryProducts.length ? (
         <section className="grid grid-cols-3 gap-x-2 gap-y-6 px-1 sm:gap-x-5 sm:gap-y-8">
           {categoryProducts.map((product, index) => (
-            <ProductTile key={product.id} product={product} index={index} onSelect={showReadOnlyNotice} />
+            <ProductTile key={product.id} product={product} index={index} onSelect={() => openPurchase(product, category)} />
           ))}
         </section>
       ) : (
@@ -167,6 +159,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
           onAction={() => setQuery("")}
         />
       )}
+      {purchaseModals}
     </div>
   );
 }

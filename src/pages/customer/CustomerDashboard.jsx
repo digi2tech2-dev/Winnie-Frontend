@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CircleDollarSign, PackageCheck, ReceiptText, ShoppingBag } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getCustomerCatalog } from "../../api/catalog";
@@ -12,6 +12,7 @@ import OffersSection from "../../components/home/OffersSection";
 import PubgPromoBanner from "../../components/home/PubgPromoBanner";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 import { useAuth } from "../../context/AuthContext";
+import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 
 const initialDashboardData = {
   categories: [],
@@ -29,6 +30,29 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   const [dashboardData, setDashboardData] = useState(initialDashboardData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const refreshAfterPurchase = useCallback(async () => {
+    if (!token) return;
+
+    const [walletResult, transactionsResult, ordersResult] = await Promise.allSettled([
+      getWalletSummary(token),
+      getWalletTransactions(token, { page: 1, limit: 5 }),
+      getCustomerOrders(token, { page: 1, limit: 5 }),
+    ]);
+
+    setDashboardData((current) => ({
+      ...current,
+      wallet: walletResult.status === "fulfilled" ? walletResult.value : current.wallet,
+      transactions: transactionsResult.status === "fulfilled" ? transactionsResult.value.transactions : current.transactions,
+      orders: ordersResult.status === "fulfilled" ? ordersResult.value.orders : current.orders,
+    }));
+  }, [token]);
+
+  const { openPurchase, purchaseModals } = useCustomerPurchase({
+    basePath,
+    onSuccess: refreshAfterPurchase,
+    token,
+  });
 
   useEffect(() => {
     if (!location.hash) return undefined;
@@ -88,8 +112,8 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   const showReadOnlyNotice = () => {
     showToast({
       type: "info",
-      title: "Read-only catalog",
-      message: "Order placement will be connected in the next phase.",
+      title: "Static promotion",
+      message: "Choose a backend catalog product to create an order.",
     });
   };
 
@@ -112,12 +136,13 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
         products={dashboardData.products.slice(0, 8)}
         onViewAll={goGames}
         onCategorySelect={goCategory}
-        onProductSelect={showReadOnlyNotice}
+        onProductSelect={(product) => openPurchase(product, product.categoryTitle || "Customer catalog")}
       />
       <OffersSection onOrder={showReadOnlyNotice} />
       <PubgPromoBanner gamesPath={`${basePath}/categories/games`} />
       <RecentAdditionsSection onSelect={showReadOnlyNotice} />
       <CustomerReviews reviewerName={user?.name || ""} />
+      {purchaseModals}
     </div>
   );
 }
