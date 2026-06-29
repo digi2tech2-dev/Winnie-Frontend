@@ -135,7 +135,7 @@ export default function App() {
               <Route path="notifications" element={<Animated><CustomerNotifications /></Animated>} />
               <Route path="profile" element={<Animated><CustomerProfile basePath="/admin/user" /></Animated>} />
               <Route path="settings" element={<Animated><CustomerSettings /></Animated>} />
-              <Route path="sub-agent" element={<Animated><CustomerSubAgent /></Animated>} />
+              <Route path="sub-agent" element={<Animated><CustomerSubAgent basePath="/admin/user" /></Animated>} />
               <Route path="about" element={<Animated><About /></Animated>} />
               {importantLinks.map((article) => (
                 <Route

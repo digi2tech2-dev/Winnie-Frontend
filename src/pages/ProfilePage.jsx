@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Phone, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getProfile } from "../api/profile";
+import { getMyReferrals } from "../api/referrals";
 import BackButton from "../components/BackButton";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ToastProvider";
@@ -73,13 +74,44 @@ export default function ProfilePage({ basePath = "/customer" }) {
     };
   }, [token]);
 
-  const shareInvite = useCallback(() => {
-    showToast({
-      type: "info",
-      title: "Read-only profile",
-      message: "Referral actions will be connected in a later phase.",
-    });
-  }, [showToast]);
+  const shareInvite = useCallback(async () => {
+    if (basePath !== "/customer") {
+      showToast({
+        type: "info",
+        title: "Customer action only",
+        message: "Referral invite links are available from the customer workspace only.",
+      });
+      return;
+    }
+
+    if (!token) {
+      showToast({ type: "error", title: "Login required", message: "Please sign in before copying your invite link." });
+      return;
+    }
+
+    try {
+      const result = await getMyReferrals(token);
+      const inviteText = result.summary?.referralLink || result.summary?.inviteLink || result.summary?.referralCode || "";
+
+      if (!inviteText) {
+        showToast({ type: "warning", title: "Invite unavailable", message: "Referral data is not available yet." });
+        return;
+      }
+
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard is not available");
+      }
+
+      await navigator.clipboard.writeText(inviteText);
+      showToast({ type: "success", title: "Invite link copied", message: inviteText });
+    } catch (requestError) {
+      showToast({
+        type: "error",
+        title: "Unable to copy invite",
+        message: requestError.userMessage || requestError.message || "Please try again.",
+      });
+    }
+  }, [basePath, showToast, token]);
 
   const showProfileWriteNotice = useCallback(() => {
     showToast({
@@ -101,7 +133,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     setPendingMenuAction(null);
 
     if (action === "shareInvite") {
-      shareInvite();
+      void shareInvite();
       return;
     }
 
