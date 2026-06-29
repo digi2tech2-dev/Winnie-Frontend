@@ -13,6 +13,15 @@ export function asArray(value) {
   return [];
 }
 
+export function compactObject(payload = {}) {
+  return Object.entries(payload).reduce((acc, [key, value]) => {
+    if (value === undefined || value === null) return acc;
+    if (typeof value === "string" && value.trim() === "") return acc;
+    acc[key] = typeof value === "string" ? value.trim() : value;
+    return acc;
+  }, {});
+}
+
 export function normalizePagination(pagination, fallback = {}) {
   const source = pagination || {};
   const page = toNumber(source.page ?? fallback.page, 1);
