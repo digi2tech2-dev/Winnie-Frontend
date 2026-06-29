@@ -6,6 +6,7 @@ import {
   getItemId,
   humanizeToken,
   normalizePagination,
+  resolveBackendAssetUrl,
   toNumber,
 } from "./adapters";
 
@@ -57,7 +58,7 @@ export function normalizeCategory(category = {}, index = 0) {
     nameAr: category.nameAr || "",
     slug: category.slug || id,
     subtitle: category.description || category.subtitle || "",
-    image: category.image || "",
+    image: resolveBackendAssetUrl(category.image),
     parentCategory: parentId,
     sortOrder: toNumber(category.sortOrder, index),
     isActive: category.isActive !== false,
@@ -90,7 +91,7 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     displayPrice: numericPrice,
     displayPriceLabel: formatCurrency(numericPrice, displayCurrency),
     icon: product.icon || pickIcon(`${name} ${categoryTitle}`),
-    image: product.image || "",
+    image: resolveBackendAssetUrl(product.image),
     isActive: product.isActive !== false,
     maxQty: toNumber(product.maxQty, 999),
     minQty: toNumber(product.minQty, 1),

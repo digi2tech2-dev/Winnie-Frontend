@@ -1,4 +1,4 @@
-import { Layers3, Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Layers3, Pencil, Trash2 } from "lucide-react";
 
 export default function SubCategoryCard({ category, parentName, onEdit, onDelete }) {
   return (
@@ -10,7 +10,13 @@ export default function SubCategoryCard({ category, parentName, onEdit, onDelete
           <Layers3 className="h-3 w-3 shrink-0 text-sky-500" />
           {parentName || "قسم غير محدد"}
         </p>
-        <p className="mt-1 text-[9px] font-black text-slate-400">ترتيب {category.displayOrder.toLocaleString("ar-EG")}</p>
+        <p className="mt-1 flex items-center gap-2 text-[9px] font-black text-slate-400">
+          <span>ترتيب {category.displayOrder.toLocaleString("ar-EG")}</span>
+          <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 ${category.isActive !== false ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-400"}`}>
+            {category.isActive !== false ? <Eye className="h-2.5 w-2.5" /> : <EyeOff className="h-2.5 w-2.5" />}
+            {category.isActive !== false ? "ظاهر" : "مخفي"}
+          </span>
+        </p>
       </div>
       <div className="grid gap-1.5">
         <button type="button" onClick={() => onEdit(category)} className="grid h-8 w-8 place-items-center rounded-xl bg-sky-500/10 text-sky-700 transition hover:bg-sky-500/15 dark:text-sky-300" aria-label={`تعديل ${category.name}`}><Pencil className="h-3.5 w-3.5" /></button>

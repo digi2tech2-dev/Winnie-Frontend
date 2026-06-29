@@ -7,6 +7,7 @@ export default function BasicProductInfo({ value, onChange, mainCategories, subC
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => onChange("image", String(reader.result));
+    onChange("imageFile", file);
     reader.readAsDataURL(file);
   };
 

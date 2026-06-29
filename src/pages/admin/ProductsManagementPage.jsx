@@ -1,5 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Boxes, PackagePlus, Search, Sparkles } from "lucide-react";
+import {
+  createAdminCategory,
+  deleteAdminCategory,
+  getAdminCategories,
+  updateAdminCategory,
+} from "../../api/adminCategories";
+import {
+  buildAdminCategoryLookup,
+  createAdminProduct,
+  deleteAdminProduct,
+  getAdminProducts,
+  toggleAdminProduct,
+  updateAdminProduct,
+} from "../../api/adminProducts";
 import CategoriesCatalog from "../../components/admin/products/CategoriesCatalog";
 import CategoryFormModal from "../../components/admin/products/CategoryFormModal";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
@@ -9,40 +23,74 @@ import ProductFormModal from "../../components/admin/products/ProductFormModal";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
-import {
-  adminProductsSeed,
-  mainCategoriesSeed,
-  providers,
-  subCategoriesSeed,
-  supplierProducts,
-} from "../../data/adminProducts";
+import { useAuth } from "../../context/AuthContext";
 
 const initialFilters = { query: "", mainCategoryId: "all", subCategoryId: "all", status: "all", linkType: "all", sort: "newest" };
+const productPageSize = 200;
 
 export default function ProductsManagementPage() {
-  const [mainCategories, setMainCategories] = useState(mainCategoriesSeed);
-  const [subCategories, setSubCategories] = useState(subCategoriesSeed);
-  const [products, setProducts] = useState(adminProductsSeed);
+  const { token } = useAuth();
+  const { showToast } = useToast();
+  const [mainCategories, setMainCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [initialLoading, setInitialLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState("");
+  const [actionId, setActionId] = useState("");
+  const [pagination, setPagination] = useState(null);
   const [categoryModal, setCategoryModal] = useState({ open: false, type: "main", category: null });
   const [productModal, setProductModal] = useState({ open: false, product: null });
   const [confirm, setConfirm] = useState({ open: false, kind: "", item: null });
-  const loadingTimerRef = useRef(null);
-  const { showToast } = useToast();
 
-  useEffect(() => {
-    loadingTimerRef.current = window.setTimeout(() => setInitialLoading(false), 650);
-    return () => window.clearTimeout(loadingTimerRef.current);
-  }, []);
-
+  const categoryLookup = useMemo(
+    () => buildAdminCategoryLookup([...mainCategories, ...subCategories]),
+    [mainCategories, subCategories],
+  );
   const mainById = useMemo(() => Object.fromEntries(mainCategories.map((item) => [item.id, item])), [mainCategories]);
   const subById = useMemo(() => Object.fromEntries(subCategories.map((item) => [item.id, item])), [subCategories]);
-  const providerById = useMemo(() => Object.fromEntries(providers.map((item) => [item.id, item])), []);
   const filteredProducts = useMemo(() => filterProducts(products, appliedFilters), [appliedFilters, products]);
   const activeFiltersCount = countActiveFilters(appliedFilters);
+
+  const loadCatalog = useCallback(async ({ silent = false } = {}) => {
+    if (!token) {
+      setInitialLoading(false);
+      return;
+    }
+
+    if (!silent) setInitialLoading(true);
+    setProductsLoading(true);
+    setLoadError("");
+
+    try {
+      const categoryResult = await getAdminCategories(token);
+      const nextMainCategories = categoryResult.tree.mainCategories;
+      const nextSubCategories = categoryResult.tree.subCategories;
+      const nextLookup = buildAdminCategoryLookup([...nextMainCategories, ...nextSubCategories]);
+      const productResult = await getAdminProducts(token, { page: 1, limit: productPageSize }, nextLookup);
+
+      setMainCategories(nextMainCategories);
+      setSubCategories(nextSubCategories);
+      setProducts(productResult.products);
+      setPagination(productResult.pagination);
+    } catch (error) {
+      setLoadError(error.userMessage || "Unable to load admin catalog.");
+      setMainCategories([]);
+      setSubCategories([]);
+      setProducts([]);
+      setPagination(null);
+    } finally {
+      setInitialLoading(false);
+      setProductsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
 
   const updateFilter = (key, value) => {
     setDraftFilters((current) => ({ ...current, [key]: value, ...(key === "mainCategoryId" ? { subCategoryId: "all" } : {}) }));
@@ -51,65 +99,138 @@ export default function ProductsManagementPage() {
   const applyFilters = (event) => {
     event.preventDefault();
     setAppliedFilters({ ...draftFilters });
-    setProductsLoading(true);
-    window.clearTimeout(loadingTimerRef.current);
-    loadingTimerRef.current = window.setTimeout(() => setProductsLoading(false), 280);
   };
 
   const resetFilters = () => {
-    window.clearTimeout(loadingTimerRef.current);
     setDraftFilters({ ...initialFilters });
     setAppliedFilters({ ...initialFilters });
-    setProductsLoading(false);
   };
 
   const openCategoryForm = (type, category = null) => setCategoryModal({ open: true, type, category });
+  const closeCategoryForm = () => setCategoryModal({ open: false, type: "main", category: null });
+  const closeProductForm = () => setProductModal({ open: false, product: null });
 
-  const saveCategory = (values) => {
+  const saveCategory = async (values) => {
+    if (!token || saving) return;
+
     const editing = Boolean(categoryModal.category);
-    const nextCategory = editing ? { ...categoryModal.category, ...values } : { ...values, id: `${categoryModal.type === "main" ? "cat" : "sub"}-${Date.now()}` };
-    if (categoryModal.type === "main") {
-      setMainCategories((current) => editing ? current.map((item) => item.id === nextCategory.id ? nextCategory : item) : [...current, nextCategory]);
-    } else {
-      setSubCategories((current) => editing ? current.map((item) => item.id === nextCategory.id ? nextCategory : item) : [...current, nextCategory]);
+    const payload = {
+      ...values,
+      isActive: values.visible !== false,
+      parentCategory: categoryModal.type === "sub" ? values.parentId : null,
+    };
+
+    setSaving("category");
+    try {
+      const result = editing
+        ? await updateAdminCategory(token, categoryModal.category.id, payload)
+        : await createAdminCategory(token, payload);
+
+      closeCategoryForm();
+      showToast({
+        type: "success",
+        title: editing ? "Category updated" : "Category created",
+        message: result.message || result.category.name,
+      });
+      await loadCatalog({ silent: true });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Category save failed",
+        message: error.userMessage || "The category could not be saved.",
+      });
+    } finally {
+      setSaving("");
     }
-    setCategoryModal({ open: false, type: "main", category: null });
-    showToast({ type: "success", title: editing ? "تم تحديث القسم" : "تمت إضافة القسم", message: `تم حفظ “${nextCategory.name}” بنجاح.` });
   };
 
-  const saveProduct = (values) => {
+  const saveProduct = async (values) => {
+    if (!token || saving) return;
+
     const editing = Boolean(productModal.product);
-    const nextProduct = editing
-      ? { ...productModal.product, ...values }
-      : { ...values, id: `PRD-${Date.now().toString().slice(-6)}`, createdAt: new Date().toISOString() };
-    setProducts((current) => editing ? current.map((item) => item.id === nextProduct.id ? nextProduct : item) : [nextProduct, ...current]);
-    setProductModal({ open: false, product: null });
-    showToast({ type: "success", title: editing ? "تم تحديث المنتج" : "تمت إضافة المنتج", message: `تم حفظ “${nextProduct.nameAr}” بنجاح.` });
+    setSaving("product");
+    try {
+      const result = editing
+        ? await updateAdminProduct(token, productModal.product.id, values, categoryLookup)
+        : await createAdminProduct(token, values, categoryLookup);
+
+      closeProductForm();
+      showToast({
+        type: "success",
+        title: editing ? "Product updated" : "Product created",
+        message: result.message || result.product.name,
+      });
+      await loadCatalog({ silent: true });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Product save failed",
+        message: error.userMessage || "The product could not be saved.",
+      });
+    } finally {
+      setSaving("");
+    }
   };
 
   const requestDelete = (kind, item) => setConfirm({ open: true, kind, item });
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const { kind, item } = confirm;
-    if (kind === "main") {
-      const relatedSubIds = new Set(subCategories.filter((sub) => sub.parentId === item.id).map((sub) => sub.id));
-      setMainCategories((current) => current.filter((category) => category.id !== item.id));
-      setSubCategories((current) => current.filter((category) => category.parentId !== item.id));
-      setProducts((current) => current.filter((product) => product.mainCategoryId !== item.id && !relatedSubIds.has(product.subCategoryId)));
-    } else if (kind === "sub") {
-      setSubCategories((current) => current.filter((category) => category.id !== item.id));
-      setProducts((current) => current.map((product) => product.subCategoryId === item.id ? { ...product, subCategoryId: "" } : product));
-    } else if (kind === "product") {
-      setProducts((current) => current.filter((product) => product.id !== item.id));
+    if (!token || !item || actionId) return;
+
+    setActionId(`${kind}:${item.id}`);
+    try {
+      if (kind === "product") {
+        await deleteAdminProduct(token, item.id, categoryLookup);
+      } else if (kind === "main") {
+        const children = subCategories.filter((category) => category.parentId === item.id);
+        for (const child of children) {
+          await deleteAdminCategory(token, child.id);
+        }
+        await deleteAdminCategory(token, item.id);
+      } else {
+        await deleteAdminCategory(token, item.id);
+      }
+
+      setConfirm({ open: false, kind: "", item: null });
+      showToast({
+        type: "success",
+        title: "Deleted",
+        message: `${item.name || item.nameAr} was deleted from the backend catalog.`,
+      });
+      await loadCatalog({ silent: true });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Delete failed",
+        message: error.userMessage || "The item could not be deleted.",
+      });
+    } finally {
+      setActionId("");
     }
-    setConfirm({ open: false, kind: "", item: null });
-    showToast({ type: "success", title: "تم الحذف بنجاح", message: `تم حذف “${item.name || item.nameAr}” من الكتالوج.` });
   };
 
-  const togglePause = (product) => {
-    const nextPaused = !product.paused;
-    setProducts((current) => current.map((item) => item.id === product.id ? { ...item, paused: nextPaused } : item));
-    showToast({ type: nextPaused ? "warning" : "success", title: nextPaused ? "تم إيقاف البيع مؤقتًا" : "تم استئناف البيع", message: product.nameAr });
+  const togglePause = async (product) => {
+    if (!token || actionId) return;
+
+    setActionId(`product:${product.id}`);
+    try {
+      const result = await toggleAdminProduct(token, product.id, categoryLookup);
+      showToast({
+        type: result.product.isActive ? "success" : "warning",
+        title: result.product.isActive ? "Product activated" : "Product deactivated",
+        message: result.message || result.product.name,
+      });
+      await loadCatalog({ silent: true });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Status update failed",
+        message: error.userMessage || "The product status could not be updated.",
+      });
+    } finally {
+      setActionId("");
+    }
   };
 
   return (
@@ -126,7 +247,9 @@ export default function ProductsManagementPage() {
         </div>
       </section>
 
-      {initialLoading ? <ManagementLoadingState /> : (
+      {initialLoading ? <ManagementLoadingState /> : loadError ? (
+        <EmptyState title="Unable to load catalog" description={loadError} actionLabel="Try again" onAction={() => loadCatalog()} />
+      ) : (
         <>
           <CategoriesCatalog
             mainCategories={mainCategories}
@@ -143,7 +266,7 @@ export default function ProductsManagementPage() {
             <div className="flex items-center gap-3 px-1">
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><PackagePlus className="h-5 w-5" /></span>
               <div className="min-w-0 flex-1"><h2 className="text-base font-black text-slate-950 dark:text-white">المنتجات</h2><p className="mt-0.5 text-[9px] font-bold text-slate-400">{products.length.toLocaleString("ar-EG")} منتجات داخل الكتالوج</p></div>
-              <button type="button" onClick={() => setProductModal({ open: true, product: null })} className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-gradient-to-l from-[#7C3AED] to-[#3B82F6] px-3.5 text-[10px] font-black text-white shadow-[0_10px_24px_rgba(124,58,237,0.22)]"><PackagePlus className="h-4 w-4" />إضافة منتج</button>
+              <button type="button" onClick={() => setProductModal({ open: true, product: null })} disabled={saving === "product"} className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-gradient-to-l from-[#7C3AED] to-[#3B82F6] px-3.5 text-[10px] font-black text-white shadow-[0_10px_24px_rgba(124,58,237,0.22)] disabled:cursor-not-allowed disabled:opacity-60"><PackagePlus className="h-4 w-4" />إضافة منتج</button>
             </div>
 
             <ProductFilters filters={draftFilters} onChange={updateFilter} onSearch={applyFilters} onReset={resetFilters} mainCategories={mainCategories} subCategories={subCategories} activeCount={activeFiltersCount} />
@@ -152,18 +275,36 @@ export default function ProductsManagementPage() {
 
             {productsLoading ? <ProductCardsSkeleton /> : filteredProducts.length ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredProducts.map((product) => <ProductCard key={product.id} product={product} mainCategory={mainById[product.mainCategoryId]} subCategory={subById[product.subCategoryId]} provider={providerById[product.providerId]} onEdit={(item) => setProductModal({ open: true, product: item })} onDelete={(item) => requestDelete("product", item)} onTogglePause={togglePause} />)}
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    mainCategory={mainById[product.mainCategoryId]}
+                    subCategory={subById[product.subCategoryId]}
+                    provider={{ name: product.providerName || (product.isProviderLinked ? "Provider linked" : "Manual backend") }}
+                    onEdit={(item) => setProductModal({ open: true, product: item })}
+                    onDelete={(item) => requestDelete("product", item)}
+                    onTogglePause={togglePause}
+                    actionBusy={Boolean(actionId)}
+                  />
+                ))}
               </div>
             ) : (
-              <EmptyState icon={Search} title="لا توجد منتجات مطابقة" description="غيّر خيارات البحث أو أعد تعيين الفلاتر لعرض كل المنتجات." actionLabel="إعادة تعيين الفلاتر" onAction={resetFilters} />
+              <EmptyState icon={Search} title="لا توجد منتجات مطابقة" description="غيّر خيارات البحث أو أعد تعيين الفلاتر لعرض كل المنتجات المحملة." actionLabel="إعادة تعيين الفلاتر" onAction={resetFilters} />
             )}
           </section>
+
+          {pagination?.total > productPageSize && (
+            <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-800 dark:border-amber-400/15 dark:bg-amber-500/10 dark:text-amber-300">
+              Showing the first {productPageSize} backend products. Narrow filters are applied within the loaded page.
+            </p>
+          )}
         </>
       )}
 
-      <CategoryFormModal open={categoryModal.open} type={categoryModal.type} category={categoryModal.category} mainCategories={mainCategories} onClose={() => setCategoryModal({ open: false, type: "main", category: null })} onSave={saveCategory} />
-      <ProductFormModal open={productModal.open} product={productModal.product} mainCategories={mainCategories} subCategories={subCategories} providers={providers} supplierProducts={supplierProducts} onClose={() => setProductModal({ open: false, product: null })} onSave={saveProduct} />
-      <ConfirmDialog open={confirm.open} title={getConfirmTitle(confirm.kind)} message={getConfirmMessage(confirm.kind, confirm.item)} confirmLabel="تأكيد الحذف" onCancel={() => setConfirm({ open: false, kind: "", item: null })} onConfirm={confirmDelete} />
+      <CategoryFormModal open={categoryModal.open} type={categoryModal.type} category={categoryModal.category} mainCategories={mainCategories} onClose={closeCategoryForm} onSave={saveCategory} saving={saving === "category"} />
+      <ProductFormModal open={productModal.open} product={productModal.product} mainCategories={mainCategories} subCategories={subCategories} onClose={closeProductForm} onSave={saveProduct} saving={saving === "product"} />
+      <ConfirmDialog open={confirm.open} title={getConfirmTitle(confirm.kind)} message={getConfirmMessage(confirm.kind, confirm.item)} confirmLabel="تأكيد الحذف" onCancel={() => !actionId && setConfirm({ open: false, kind: "", item: null })} onConfirm={confirmDelete} busy={Boolean(actionId)} />
     </div>
   );
 }
@@ -178,11 +319,11 @@ function filterProducts(products, filters) {
       (filters.status === "all" || status === filters.status) &&
       (filters.linkType === "all" || product.linkType === filters.linkType);
   }).sort((first, second) => {
-    if (filters.sort === "oldest") return new Date(first.createdAt) - new Date(second.createdAt);
+    if (filters.sort === "oldest") return new Date(first.createdAt || 0) - new Date(second.createdAt || 0);
     if (filters.sort === "priceHigh") return second.finalPrice - first.finalPrice;
     if (filters.sort === "priceLow") return first.finalPrice - second.finalPrice;
     if (filters.sort === "displayOrder") return first.displayOrder - second.displayOrder;
-    return new Date(second.createdAt) - new Date(first.createdAt);
+    return new Date(second.createdAt || 0) - new Date(first.createdAt || 0);
   });
 }
 
@@ -196,9 +337,9 @@ function getConfirmTitle(kind) {
 
 function getConfirmMessage(kind, item) {
   if (!item) return "";
-  if (kind === "main") return `سيتم حذف “${item.name}” والأقسام الفرعية والمنتجات التابعة له. لا يمكن التراجع عن هذا الإجراء.`;
-  if (kind === "sub") return `سيتم حذف “${item.name}”، وستعود المنتجات التابعة له إلى القسم الرئيسي بدون قسم فرعي.`;
-  return `سيتم حذف “${item.nameAr}” نهائيًا من كتالوج المنتجات.`;
+  if (kind === "main") return `سيتم حذف "${item.name}" من backend catalog. المنتجات المرتبطة به ستفقد هذا التصنيف حسب قواعد الخادم.`;
+  if (kind === "sub") return `سيتم حذف "${item.name}" من backend catalog. المنتجات المرتبطة به ستفقد هذا التصنيف حسب قواعد الخادم.`;
+  return `سيتم حذف "${item.nameAr}" من كتالوج المنتجات في الخادم.`;
 }
 
 function ManagementLoadingState() {

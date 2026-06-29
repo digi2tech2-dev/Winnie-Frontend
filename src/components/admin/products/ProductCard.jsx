@@ -3,7 +3,7 @@ import StatusBadge from "./StatusBadge";
 
 const currency = new Intl.NumberFormat("ar-EG", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
-export default function ProductCard({ product, mainCategory, subCategory, provider, onEdit, onDelete, onTogglePause }) {
+export default function ProductCard({ product, mainCategory, subCategory, provider, onEdit, onDelete, onTogglePause, actionBusy = false }) {
   const displayStatus = product.paused ? "paused" : product.status;
   const unavailable = product.status === "unavailable";
 
@@ -36,9 +36,9 @@ export default function ProductCard({ product, mainCategory, subCategory, provid
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <button type="button" onClick={() => onEdit(product)} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-sky-500/10 text-[9px] font-black text-sky-700 transition hover:bg-sky-500/15 dark:text-sky-300"><Pencil className="h-3.5 w-3.5" />تعديل</button>
-          <button type="button" onClick={() => onDelete(product)} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-rose-500/10 text-[9px] font-black text-rose-700 transition hover:bg-rose-500/15 dark:text-rose-300"><Trash2 className="h-3.5 w-3.5" />حذف</button>
-          <button type="button" onClick={() => onTogglePause(product)} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-orange-500/10 px-1 text-[8px] font-black text-orange-700 transition hover:bg-orange-500/15 dark:text-orange-300">
+          <button type="button" onClick={() => onEdit(product)} disabled={actionBusy} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-sky-500/10 text-[9px] font-black text-sky-700 transition hover:bg-sky-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:text-sky-300"><Pencil className="h-3.5 w-3.5" />تعديل</button>
+          <button type="button" onClick={() => onDelete(product)} disabled={actionBusy} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-rose-500/10 text-[9px] font-black text-rose-700 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-300"><Trash2 className="h-3.5 w-3.5" />حذف</button>
+          <button type="button" onClick={() => onTogglePause(product)} disabled={actionBusy} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-orange-500/10 px-1 text-[8px] font-black text-orange-700 transition hover:bg-orange-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:text-orange-300">
             {product.paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}{product.paused ? "استئناف" : "إيقاف مؤقت"}
           </button>
         </div>

@@ -1,4 +1,5 @@
 export const DEFAULT_CURRENCY = "USD";
+const DEFAULT_API_BASE_URL = "http://localhost:5000/api";
 
 export function asArray(value) {
   if (Array.isArray(value)) return value;
@@ -79,6 +80,18 @@ export function formatCurrency(value, currency = DEFAULT_CURRENCY, locale = "en-
   } catch {
     return `${amount.toFixed(2)} ${safeCurrency}`;
   }
+}
+
+export function resolveBackendAssetUrl(path) {
+  const value = String(path || "").trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value) || /^data:/i.test(value)) return value;
+  if (!/^\/?uploads\//i.test(value)) return value;
+
+  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+  const apiUrl = new URL(apiBaseUrl);
+  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  return `${apiUrl.origin}${normalizedPath}`;
 }
 
 export function humanizeToken(value, fallback = "Unknown") {
