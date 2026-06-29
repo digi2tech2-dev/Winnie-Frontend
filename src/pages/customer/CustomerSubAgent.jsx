@@ -17,7 +17,9 @@ import { useToast } from "../../components/ToastProvider";
 import { formatCurrency } from "../../api/adapters";
 import {
   cancelGroupRequest,
+  createGroupRequest,
   createSubAgentRequest,
+  getGroupChangeOptions,
   getMyGroupRequests,
   GROUP_REQUEST_STATUS,
   GROUP_REQUEST_TYPES,
@@ -36,12 +38,16 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
   const [summary, setSummary] = useState(null);
   const [commissions, setCommissions] = useState([]);
   const [commissionPagination, setCommissionPagination] = useState(null);
+  const [groupOptions, setGroupOptions] = useState({ currentGroup: null, groups: [] });
   const [requests, setRequests] = useState([]);
   const [requestPagination, setRequestPagination] = useState(null);
+  const [groupChangeReason, setGroupChangeReason] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
   const [requestReason, setRequestReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMoreCommissions, setLoadingMoreCommissions] = useState(false);
   const [loadingMoreRequests, setLoadingMoreRequests] = useState(false);
+  const [submittingGroupChange, setSubmittingGroupChange] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cancelingId, setCancelingId] = useState("");
   const [error, setError] = useState("");
@@ -55,10 +61,11 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     setLoading(true);
     setError("");
 
-    const [summaryResult, commissionsResult, requestsResult] = await Promise.allSettled([
+    const [summaryResult, commissionsResult, requestsResult, groupOptionsResult] = await Promise.allSettled([
       getMyReferrals(token),
       getMyReferralCommissions(token, { page: 1, limit: COMMISSION_PAGE_SIZE }),
       getMyGroupRequests(token, { page: 1, limit: REQUEST_PAGE_SIZE }),
+      getGroupChangeOptions(token),
     ]);
 
     if (summaryResult.status === "fulfilled") {
@@ -83,7 +90,18 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       setRequestPagination(null);
     }
 
-    const failed = [summaryResult, commissionsResult, requestsResult].find((result) => result.status === "rejected");
+    if (groupOptionsResult.status === "fulfilled") {
+      setGroupOptions(groupOptionsResult.value.options);
+      setSelectedGroupId((current) => {
+        const selectedStillAvailable = groupOptionsResult.value.options.groups.some((group) => group.id === current && !group.isCurrent);
+        return selectedStillAvailable ? current : "";
+      });
+    } else {
+      setGroupOptions({ currentGroup: null, groups: [] });
+      setSelectedGroupId("");
+    }
+
+    const failed = [summaryResult, commissionsResult, requestsResult, groupOptionsResult].find((result) => result.status === "rejected");
     setError(failed?.reason?.userMessage || "");
     setLoading(false);
   }, [connectedCustomerPage, token]);
@@ -107,7 +125,12 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     [requests],
   );
 
-  const currentGroup = user?.group?.name || latestSubAgentRequest?.currentGroup?.name || requests.find((request) => request.currentGroup)?.currentGroup?.name || "Current group";
+  const selectableGroups = useMemo(
+    () => groupOptions.groups.filter((group) => !group.isCurrent),
+    [groupOptions.groups],
+  );
+
+  const currentGroup = groupOptions.currentGroup?.name || user?.group?.name || latestSubAgentRequest?.currentGroup?.name || requests.find((request) => request.currentGroup)?.currentGroup?.name || "Current group";
   const referralCode = summary?.referralCode || "";
   const referralLink = summary?.referralLink || summary?.inviteLink || "";
   const invitedUsersCount = summary?.invitedUsersCount ?? 0;
@@ -182,6 +205,75 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       showToast({ type: "error", title: "Request failed", message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const submitGroupChangeRequest = async () => {
+    if (!connectedCustomerPage) {
+      showToast({
+        type: "info",
+        title: "Customer action only",
+        message: "Group-change requests are available from the customer workspace only.",
+      });
+      return;
+    }
+
+    if (!token) {
+      showToast({ type: "error", title: "Login required", message: "Please sign in before submitting a request." });
+      return;
+    }
+
+    if (pendingGroupChangeRequest) {
+      showToast({
+        type: "info",
+        title: "Request already pending",
+        message: "Your pending group-change request is waiting for admin review.",
+      });
+      return;
+    }
+
+    const selectedGroup = selectableGroups.find((group) => group.id === selectedGroupId);
+    if (!selectedGroup) {
+      showToast({
+        type: "warning",
+        title: "Select a group",
+        message: "Choose an available target group before submitting.",
+      });
+      return;
+    }
+
+    if (!groupChangeReason.trim()) {
+      showToast({
+        type: "warning",
+        title: "Reason required",
+        message: "Tell the team why you want to change groups.",
+      });
+      return;
+    }
+
+    setSubmittingGroupChange(true);
+    setError("");
+
+    try {
+      const result = await createGroupRequest(token, {
+        requestType: GROUP_REQUEST_TYPES.GROUP_CHANGE,
+        requestedGroupId: selectedGroup.id,
+        reason: groupChangeReason,
+      });
+      showToast({
+        type: "success",
+        title: "Request submitted",
+        message: result.message || "Your group-change request is pending admin review.",
+      });
+      setGroupChangeReason("");
+      setSelectedGroupId("");
+      await Promise.allSettled([loadPageData(), refreshCurrentUser?.()]);
+    } catch (requestError) {
+      const message = requestError.userMessage || "Unable to submit the group-change request.";
+      setError(message);
+      showToast({ type: "error", title: "Request failed", message });
+    } finally {
+      setSubmittingGroupChange(false);
     }
   };
 
@@ -348,7 +440,14 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
             />
             <GroupChangeCard
               currentGroup={currentGroup}
+              groupOptions={selectableGroups}
+              onReasonChange={setGroupChangeReason}
+              onSelectGroup={setSelectedGroupId}
+              onSubmit={submitGroupChangeRequest}
               pendingRequest={pendingGroupChangeRequest}
+              reason={groupChangeReason}
+              selectedGroupId={selectedGroupId}
+              submitting={submittingGroupChange}
             />
           </section>
 
@@ -468,7 +567,20 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
   );
 }
 
-function GroupChangeCard({ currentGroup, pendingRequest }) {
+function GroupChangeCard({
+  currentGroup,
+  groupOptions,
+  onReasonChange,
+  onSelectGroup,
+  onSubmit,
+  pendingRequest,
+  reason,
+  selectedGroupId,
+  submitting,
+}) {
+  const hasOptions = groupOptions.length > 0;
+  const disabled = submitting || Boolean(pendingRequest) || !hasOptions;
+
   return (
     <article className="glass-panel rounded-lg p-5">
       <span className="grid h-11 w-11 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
@@ -480,18 +592,49 @@ function GroupChangeCard({ currentGroup, pendingRequest }) {
         <p className="mt-3 rounded-xl bg-sky-50 p-3 text-xs font-bold leading-5 text-sky-700 dark:bg-sky-400/10 dark:text-sky-200">
           Your group-change request is pending admin review.
         </p>
+      ) : hasOptions ? (
+        <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-600 dark:bg-[#0D1324] dark:text-slate-300">
+          Select a new active group and submit it for admin review. Your current group will not change until approval.
+        </p>
       ) : (
         <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-600 dark:bg-[#0D1324] dark:text-slate-300">
-          Group-change creation needs a customer-safe active groups route. This page does not use admin-only group APIs or local group IDs.
+          No other active groups are available for request right now.
         </p>
       )}
+
+      <label className="mt-4 block">
+        <span className="text-xs font-black text-slate-500 dark:text-slate-400">Target group</span>
+        <select
+          value={selectedGroupId}
+          onChange={(event) => onSelectGroup(event.target.value)}
+          disabled={disabled}
+          className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-950 outline-none focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-[#0D1324] dark:text-white"
+        >
+          <option value="">{hasOptions ? "Choose a group" : "No groups available"}</option>
+          {groupOptions.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <textarea
+        value={reason}
+        onChange={(event) => onReasonChange(event.target.value.slice(0, 1000))}
+        placeholder="Why do you want to change groups?"
+        disabled={disabled}
+        className="mt-3 min-h-[88px] w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-950 outline-none focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-[#0D1324] dark:text-white"
+      />
+
       <button
         type="button"
-        disabled
-        className="mt-4 inline-flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-200 px-4 text-xs font-black text-slate-500 dark:bg-white/10 dark:text-white/40"
+        onClick={onSubmit}
+        disabled={disabled}
+        className="interactive-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] px-4 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-65"
       >
-        <XCircle className="h-4 w-4" />
-        Group selection unavailable
+        <RotateCcw className="h-4 w-4" />
+        {submitting ? "Submitting..." : pendingRequest ? "Waiting for admin review" : "Submit group-change request"}
       </button>
     </article>
   );

@@ -43,6 +43,28 @@ export function normalizeGroupForRequest(group = null) {
   };
 }
 
+export function normalizeGroupChangeOption(group = null) {
+  if (!group) return null;
+  const id = getItemId(group);
+
+  return {
+    id,
+    name: group.name || "Group",
+    isCurrent: group.isCurrent === true,
+  };
+}
+
+export function normalizeGroupChangeOptions(payload = {}) {
+  const currentGroup = normalizeGroupChangeOption(payload.currentGroup);
+
+  return {
+    currentGroup,
+    groups: asArray(payload.groups)
+      .map(normalizeGroupChangeOption)
+      .filter(Boolean),
+  };
+}
+
 export function normalizeGroupRequest(request = {}) {
   const id = getItemId(request);
   const status = String(request.status || GROUP_REQUEST_STATUS.PENDING).toUpperCase();
@@ -93,6 +115,15 @@ export async function getMyGroupRequests(token, query = {}) {
 export async function getMyGroupRequest(token, requestId) {
   const response = await apiRequest(`/me/group-change-requests/${requestId}`, { token });
   return normalizeGroupRequest(response.data?.request || response.data || {});
+}
+
+export async function getGroupChangeOptions(token) {
+  const response = await apiRequest("/me/group-change-requests/options", { token });
+
+  return {
+    message: response.message,
+    options: normalizeGroupChangeOptions(response.data || {}),
+  };
 }
 
 export async function createGroupRequest(token, payload = {}) {
