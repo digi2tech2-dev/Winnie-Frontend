@@ -10,7 +10,11 @@ import {
   buildAdminCategoryLookup,
   createAdminProduct,
   deleteAdminProduct,
+  getAdminProductProviderOptions,
+  getAdminProductProviderProductOptions,
   getAdminProducts,
+  linkAdminProductProvider,
+  syncAdminProductProvider,
   toggleAdminProduct,
   updateAdminProduct,
 } from "../../api/adminProducts";
@@ -20,6 +24,7 @@ import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import ProductCard from "../../components/admin/products/ProductCard";
 import ProductFilters from "../../components/admin/products/ProductFilters";
 import ProductFormModal from "../../components/admin/products/ProductFormModal";
+import ProductProviderLinkModal from "../../components/admin/products/ProductProviderLinkModal";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -27,6 +32,19 @@ import { useAuth } from "../../context/AuthContext";
 
 const initialFilters = { query: "", mainCategoryId: "all", subCategoryId: "all", status: "all", linkType: "all", sort: "newest" };
 const productPageSize = 200;
+const emptyProviderLinkState = {
+  error: "",
+  loadingProducts: false,
+  loadingProviders: false,
+  open: false,
+  pagination: null,
+  product: null,
+  providerId: "",
+  providerProductId: "",
+  providerProducts: [],
+  providers: [],
+  search: "",
+};
 
 export default function ProductsManagementPage() {
   const { token } = useAuth();
@@ -44,6 +62,7 @@ export default function ProductsManagementPage() {
   const [pagination, setPagination] = useState(null);
   const [categoryModal, setCategoryModal] = useState({ open: false, type: "main", category: null });
   const [productModal, setProductModal] = useState({ open: false, product: null });
+  const [providerLink, setProviderLink] = useState(emptyProviderLinkState);
   const [confirm, setConfirm] = useState({ open: false, kind: "", item: null });
 
   const categoryLookup = useMemo(
@@ -182,6 +201,13 @@ export default function ProductsManagementPage() {
     try {
       if (kind === "product") {
         await deleteAdminProduct(token, item.id, categoryLookup);
+      } else if (kind === "provider-sync") {
+        const result = await syncAdminProductProvider(token, item.id, categoryLookup);
+        showToast({
+          type: "success",
+          title: "Provider price synced",
+          message: result.message || result.product.name,
+        });
       } else if (kind === "main") {
         const children = subCategories.filter((category) => category.parentId === item.id);
         for (const child of children) {
@@ -193,11 +219,13 @@ export default function ProductsManagementPage() {
       }
 
       setConfirm({ open: false, kind: "", item: null });
-      showToast({
-        type: "success",
-        title: "Deleted",
-        message: `${item.name || item.nameAr} was deleted from the backend catalog.`,
-      });
+      if (kind !== "provider-sync") {
+        showToast({
+          type: "success",
+          title: "Deleted",
+          message: `${item.name || item.nameAr} was deleted from the backend catalog.`,
+        });
+      }
       await loadCatalog({ silent: true });
     } catch (error) {
       showToast({
@@ -232,6 +260,115 @@ export default function ProductsManagementPage() {
       setActionId("");
     }
   };
+
+  const loadProviderProductOptions = useCallback(async (providerId, search = "", selectedProductId = "") => {
+    if (!token || !providerId) return;
+
+    setProviderLink((current) => ({
+      ...current,
+      error: "",
+      loadingProducts: true,
+      providerId,
+      search,
+    }));
+
+    try {
+      const result = await getAdminProductProviderProductOptions(token, providerId, {
+        limit: 100,
+        page: 1,
+        search,
+      });
+      setProviderLink((current) => ({
+        ...current,
+        error: "",
+        loadingProducts: false,
+        pagination: result.pagination,
+        providerProductId: selectedProductId || current.providerProductId || result.products[0]?.id || "",
+        providerProducts: result.products,
+        search,
+      }));
+    } catch (error) {
+      setProviderLink((current) => ({
+        ...current,
+        error: error.userMessage || "Unable to load provider product options.",
+        loadingProducts: false,
+        providerProductId: "",
+        providerProducts: [],
+      }));
+    }
+  }, [token]);
+
+  const openProviderLink = async (product) => {
+    if (!token || actionId) return;
+
+    setProviderLink({
+      ...emptyProviderLinkState,
+      loadingProviders: true,
+      open: true,
+      product,
+      providerId: product.providerId || "",
+      providerProductId: product.providerProductId || "",
+    });
+
+    try {
+      const result = await getAdminProductProviderOptions(token);
+      const providerId = product.providerId || result.providers[0]?.id || "";
+      setProviderLink((current) => ({
+        ...current,
+        error: "",
+        loadingProviders: false,
+        providerId,
+        providers: result.providers,
+      }));
+      if (providerId) {
+        await loadProviderProductOptions(providerId, "", product.providerProductId || "");
+      }
+    } catch (error) {
+      setProviderLink((current) => ({
+        ...current,
+        error: error.userMessage || "Unable to load provider options.",
+        loadingProviders: false,
+      }));
+    }
+  };
+
+  const changeProviderLinkProvider = async (providerId) => {
+    setProviderLink((current) => ({
+      ...current,
+      providerId,
+      providerProductId: "",
+      providerProducts: [],
+    }));
+    if (providerId) await loadProviderProductOptions(providerId);
+  };
+
+  const saveProviderLink = async () => {
+    if (!token || saving || !providerLink.product || !providerLink.providerId || !providerLink.providerProductId) return;
+
+    setSaving("provider-link");
+    try {
+      const result = await linkAdminProductProvider(token, providerLink.product.id, {
+        providerId: providerLink.providerId,
+        providerProductId: providerLink.providerProductId,
+      }, categoryLookup);
+      setProviderLink(emptyProviderLinkState);
+      showToast({
+        type: "success",
+        title: "Product linked",
+        message: result.message || "Product provider link was updated by the backend.",
+      });
+      await loadCatalog({ silent: true });
+    } catch (error) {
+      setProviderLink((current) => ({
+        ...current,
+        error: error.userMessage || "Product provider link failed.",
+      }));
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const requestProviderSync = (product) => setConfirm({ open: true, kind: "provider-sync", item: product });
 
   return (
     <div dir="rtl" className="space-y-4 sm:space-y-5">
@@ -284,6 +421,8 @@ export default function ProductsManagementPage() {
                     provider={{ name: product.providerName || (product.isProviderLinked ? "Provider linked" : "Manual backend") }}
                     onEdit={(item) => setProductModal({ open: true, product: item })}
                     onDelete={(item) => requestDelete("product", item)}
+                    onProviderLink={openProviderLink}
+                    onProviderSync={requestProviderSync}
                     onTogglePause={togglePause}
                     actionBusy={Boolean(actionId)}
                   />
@@ -304,7 +443,28 @@ export default function ProductsManagementPage() {
 
       <CategoryFormModal open={categoryModal.open} type={categoryModal.type} category={categoryModal.category} mainCategories={mainCategories} onClose={closeCategoryForm} onSave={saveCategory} saving={saving === "category"} />
       <ProductFormModal open={productModal.open} product={productModal.product} mainCategories={mainCategories} subCategories={subCategories} onClose={closeProductForm} onSave={saveProduct} saving={saving === "product"} />
-      <ConfirmDialog open={confirm.open} title={getConfirmTitle(confirm.kind)} message={getConfirmMessage(confirm.kind, confirm.item)} confirmLabel="تأكيد الحذف" onCancel={() => !actionId && setConfirm({ open: false, kind: "", item: null })} onConfirm={confirmDelete} busy={Boolean(actionId)} />
+      <ProductProviderLinkModal
+        error={providerLink.error}
+        linkState={providerLink}
+        loadingProducts={providerLink.loadingProducts}
+        loadingProviders={providerLink.loadingProviders}
+        onClose={() => !saving && setProviderLink(emptyProviderLinkState)}
+        onProviderChange={changeProviderLinkProvider}
+        onSearchProducts={(search) => loadProviderProductOptions(providerLink.providerId, search, providerLink.providerProductId)}
+        onSubmit={saveProviderLink}
+        onUpdate={(values) => setProviderLink((current) => ({ ...current, ...values }))}
+        saving={saving === "provider-link"}
+      />
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.kind === "provider-sync" ? "Sync provider price?" : getConfirmTitle(confirm.kind)}
+        message={confirm.kind === "provider-sync" ? getProviderSyncConfirmMessage(confirm.item) : getConfirmMessage(confirm.kind, confirm.item)}
+        confirmLabel={getConfirmLabel(confirm.kind)}
+        onCancel={() => !actionId && setConfirm({ open: false, kind: "", item: null })}
+        onConfirm={confirmDelete}
+        busy={Boolean(actionId)}
+        tone={confirm.kind === "provider-sync" ? "warning" : "danger"}
+      />
     </div>
   );
 }
@@ -333,6 +493,15 @@ function countActiveFilters(filters) {
 
 function getConfirmTitle(kind) {
   return kind === "product" ? "حذف المنتج؟" : kind === "sub" ? "حذف القسم الفرعي؟" : "حذف القسم الرئيسي؟";
+}
+
+function getConfirmLabel(kind) {
+  return kind === "provider-sync" ? "Sync provider price" : "Confirm delete";
+}
+
+function getProviderSyncConfirmMessage(item) {
+  if (!item) return "";
+  return `Ask the backend to sync provider price metadata for "${item.nameAr || item.name}". The frontend will refetch after confirmation.`;
 }
 
 function getConfirmMessage(kind, item) {

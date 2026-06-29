@@ -141,7 +141,7 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
   const priceValue = toNumber(product.finalPrice ?? product.basePrice ?? product.price, 0);
   const provider = product.provider && typeof product.provider === "object" ? product.provider : null;
   const providerProduct = product.providerProduct && typeof product.providerProduct === "object" ? product.providerProduct : null;
-  const isProviderLinked = Boolean(product.provider || product.providerProduct);
+  const isProviderLinked = Boolean(product.provider || product.providerProduct || product.isLinked || product.currentProviderName || product.currentProviderProductName);
 
   return {
     ...product,
@@ -169,9 +169,16 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     originalPrice: toNumber(product.providerPrice ?? product.basePrice ?? product.price, priceValue),
     paused: !isActive,
     providerId: toId(product.provider),
-    providerName: provider?.name || "",
+    providerName: provider?.name || product.currentProviderName || "",
+    providerProductActive: providerProduct?.isActive === undefined ? null : providerProduct.isActive !== false,
+    providerProductExternalId: providerProduct?.externalProductId || "",
     providerProductId: toId(product.providerProduct),
-    providerProductName: providerProduct?.translatedName || providerProduct?.rawName || "",
+    providerProductLastSyncedAt: providerProduct?.lastSyncedAt || null,
+    providerProductMaxQty: providerProduct?.maxQty ?? null,
+    providerProductMinQty: providerProduct?.minQty ?? null,
+    providerProductName: providerProduct?.translatedName || providerProduct?.rawName || product.currentProviderProductName || "",
+    syncPriceWithProvider: product.syncPriceWithProvider !== false,
+    pricingMode: product.pricingMode || (isProviderLinked ? "sync" : "manual"),
     status: "available",
     subCategoryId: hasSubCategory ? categoryId : "",
     supplierPrice: toNumber(product.providerPrice, 0),
@@ -329,6 +336,90 @@ export async function toggleAdminProduct(token, id, categoryLookup = new Map()) 
 export async function deleteAdminProduct(token, id, categoryLookup = new Map()) {
   const response = await apiRequest(`/admin/products/${id}`, {
     method: "DELETE",
+    token,
+  });
+
+  return {
+    message: response.message,
+    product: normalizeAdminProduct(getProductFromResponse(response), 0, categoryLookup),
+  };
+}
+
+export function normalizeProductProviderOption(provider = {}) {
+  const id = getItemId(provider);
+  return {
+    id,
+    _id: provider._id ?? id,
+    isActive: provider.isActive !== false,
+    name: provider.name || "Provider",
+  };
+}
+
+export function normalizeProductProviderProductOption(product = {}) {
+  const id = getItemId(product);
+  return {
+    id,
+    _id: product._id ?? id,
+    categoryLabel: product.categoryLabel || "",
+    isActive: product.isActive !== false,
+    maxQty: product.maxQty ?? null,
+    minQty: product.minQty ?? null,
+    name: product.name || "Provider product",
+    providerName: product.providerName || "",
+  };
+}
+
+export async function getAdminProductProviderOptions(token) {
+  const response = await apiRequest("/admin/product-provider-options", { token });
+  const providers = asArray(response.data?.providers ?? response.data).map(normalizeProductProviderOption);
+
+  return {
+    message: response.message,
+    providers,
+  };
+}
+
+export async function getAdminProductProviderProductOptions(token, providerId, query = {}) {
+  const response = await apiRequest(`/admin/product-provider-options/${providerId}/products`, {
+    query: compactObject({
+      page: query.page || 1,
+      limit: query.limit || 600,
+      search: query.search,
+    }),
+    token,
+  });
+  const products = asArray(response.data).map(normalizeProductProviderProductOption);
+
+  return {
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page || 1,
+      limit: query.limit || 600,
+      total: products.length,
+    }),
+    products,
+  };
+}
+
+export async function linkAdminProductProvider(token, productId, payload = {}, categoryLookup = new Map()) {
+  const response = await apiRequest(`/admin/products/${productId}/provider-link`, {
+    body: compactObject({
+      providerId: payload.providerId,
+      providerProductId: payload.providerProductId,
+    }),
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    product: normalizeAdminProduct(getProductFromResponse(response), 0, categoryLookup),
+  };
+}
+
+export async function syncAdminProductProvider(token, productId, categoryLookup = new Map()) {
+  const response = await apiRequest(`/admin/products/${productId}/provider-sync`, {
+    method: "POST",
     token,
   });
 
