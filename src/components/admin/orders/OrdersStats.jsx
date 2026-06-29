@@ -35,9 +35,9 @@ const statConfig = [
   },
 ];
 
-export default function OrdersStats({ orders }) {
+export default function OrdersStats({ orders, total }) {
   const values = {
-    total: orders.length,
+    total: total ?? orders.length,
     processing: orders.filter((order) => order.status === "processing").length,
     manual: orders.filter((order) => order.status === "manual_review").length,
     completed: orders.filter((order) => order.status === "completed").length,
