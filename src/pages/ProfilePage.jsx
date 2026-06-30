@@ -313,7 +313,7 @@ function EditProfilePanel({ countryValue, currencyValue, displayName, email, onC
           helper="لا يمكن تغيير البريد الإلكتروني المرتبط بالحساب."
         />
         <CountrySelectField disabled label="الدولة" value={country} options={profileCountries} onChange={setCountry} />
-        <Field label="Currency" defaultValue={currencyValue} readOnly helper="Currency changes require a backend profile currency update route." />
+        <Field label="Currency" defaultValue={currencyValue} readOnly helper="Change your active currency from Settings." />
         <ProfilePhoneField label="الهاتف" countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
         <button
           type="button"

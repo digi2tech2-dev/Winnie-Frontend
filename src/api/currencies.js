@@ -1,7 +1,7 @@
 import { apiRequest } from "./client";
 import { asArray, formatDateTime, getItemId, toNumber } from "./adapters";
 
-export const USER_CURRENCY_UPDATE_SUPPORTED = false;
+export const USER_CURRENCY_UPDATE_SUPPORTED = true;
 
 export function normalizeCurrency(currency = {}) {
   const code = String(currency.code || currency.currency || "").trim().toUpperCase();
@@ -36,6 +36,23 @@ export async function getPublicCurrencies() {
 
   return {
     currencies,
+    message: response.message,
+  };
+}
+
+export async function updateMyCurrency(currency, token) {
+  const code = String(currency || "").trim().toUpperCase();
+  const response = await apiRequest("/me/currency", {
+    method: "PATCH",
+    token,
+    body: { currency: code },
+  });
+  const data = response.data || {};
+  const updatedCurrency = String(data.currency || data.user?.currency || code).trim().toUpperCase();
+
+  return {
+    currency: updatedCurrency,
+    user: data.user || null,
     message: response.message,
   };
 }

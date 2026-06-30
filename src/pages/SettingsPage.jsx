@@ -90,6 +90,8 @@ export default function SettingsPage({
   currencyDisabled = false,
   currencyNote = "",
   currencyOptions = defaultCurrencyOptions,
+  isSaving = false,
+  saveDisabled = false,
   onThemeChange,
   onLanguageChange,
   onCurrencyChange,
@@ -97,6 +99,7 @@ export default function SettingsPage({
 }) {
   const { showToast } = useToast();
   const t = settingsCopy[language] || settingsCopy.ar;
+  const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState(() => {
     try {
       return { ...defaultPreferences, ...JSON.parse(localStorage.getItem("winnie-user-preferences") || "{}") };
@@ -107,10 +110,28 @@ export default function SettingsPage({
 
   const toggle = (key) => setPreferences((current) => ({ ...current, [key]: !current[key] }));
 
-  const save = () => {
-    localStorage.setItem("winnie-user-preferences", JSON.stringify(preferences));
-    onSave?.({ language, currency, theme, preferences });
-    showToast({ type: "success", title: t.savedTitle, message: t.savedMessage });
+  const saveInFlight = saving || isSaving;
+
+  const save = async () => {
+    setSaving(true);
+
+    try {
+      localStorage.setItem("winnie-user-preferences", JSON.stringify(preferences));
+      const result = await onSave?.({ language, currency, theme, preferences });
+      showToast({
+        type: "success",
+        title: result?.title || t.savedTitle,
+        message: result?.message || t.savedMessage,
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Unable to save settings",
+        message: error.userMessage || error.message || "Please try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
@@ -181,8 +202,25 @@ export default function SettingsPage({
       </section>
 
       <div className="sticky bottom-24 z-20 grid grid-cols-[1fr_auto] gap-2 rounded-[20px] border border-slate-200 bg-white/90 p-2.5 shadow-[0_16px_45px_rgba(15,23,42,0.14)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1220]/92 xl:bottom-4">
-        <button type="button" onClick={save} className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(124,58,237,0.24)]"><Save className="h-4 w-4" />{t.save}</button>
-        <button type="button" onClick={reset} className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300"><RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">{t.reset}</span></button>
+        <button
+          type="button"
+          disabled={saveDisabled || saveInFlight}
+          aria-busy={saveInFlight}
+          onClick={save}
+          className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 text-sm font-black text-white shadow-[0_14px_30px_rgba(124,58,237,0.24)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Save className="h-4 w-4" />
+          {saveInFlight ? "Saving..." : t.save}
+        </button>
+        <button
+          type="button"
+          disabled={saveInFlight}
+          onClick={reset}
+          className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span className="hidden sm:inline">{t.reset}</span>
+        </button>
       </div>
     </div>
   );
