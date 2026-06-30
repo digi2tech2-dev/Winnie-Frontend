@@ -7,7 +7,7 @@ const languageOptions = [
   { value: "en", label: "English", note: { ar: "لغة الواجهة الإنجليزية", en: "English interface" } },
 ];
 
-const currencyOptions = ["USD", "EUR", "AED", "EGP"];
+const defaultCurrencyOptions = ["USD", "EUR", "AED", "EGP"];
 
 const defaultPreferences = {
   orderUpdates: true,
@@ -83,7 +83,18 @@ const settingsCopy = {
   },
 };
 
-export default function SettingsPage({ theme, language, currency, onThemeChange, onLanguageChange, onCurrencyChange, onSave }) {
+export default function SettingsPage({
+  theme,
+  language,
+  currency,
+  currencyDisabled = false,
+  currencyNote = "",
+  currencyOptions = defaultCurrencyOptions,
+  onThemeChange,
+  onLanguageChange,
+  onCurrencyChange,
+  onSave,
+}) {
   const { showToast } = useToast();
   const t = settingsCopy[language] || settingsCopy.ar;
   const [preferences, setPreferences] = useState(() => {
@@ -133,8 +144,18 @@ export default function SettingsPage({ theme, language, currency, onThemeChange,
 
         <SettingsPanel icon={WalletCards} title={t.currencyTitle} description={t.currencyDescription}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {currencyOptions.map((option) => <ChoiceCard key={option} active={currency === option} title={option} onClick={() => onCurrencyChange(option)} compact />)}
+            {currencyOptions.map((option) => (
+              <ChoiceCard
+                key={option}
+                active={currency === option}
+                disabled={currencyDisabled}
+                title={option}
+                onClick={() => onCurrencyChange(option)}
+                compact
+              />
+            ))}
           </div>
+          {currencyNote && <p className="text-[10px] font-bold leading-5 text-slate-500 dark:text-slate-400">{currencyNote}</p>}
         </SettingsPanel>
 
         <SettingsPanel icon={Moon} title={t.appearanceTitle} description={t.appearanceDescription}>
@@ -179,9 +200,9 @@ function SettingsPanel({ icon: Icon, title, description, className = "", childre
   );
 }
 
-function ChoiceCard({ active, title, note, onClick, compact = false }) {
+function ChoiceCard({ active, disabled = false, title, note, onClick, compact = false }) {
   return (
-    <button type="button" onClick={onClick} className={`relative min-w-0 rounded-2xl border text-right transition ${compact ? "h-14 px-3" : "min-h-[72px] p-3"} ${active ? "border-violet-500 bg-violet-50 text-violet-800 shadow-[0_10px_24px_rgba(124,58,237,0.10)] dark:bg-violet-500/12 dark:text-violet-200" : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300"}`}>
+    <button type="button" disabled={disabled} onClick={onClick} className={`relative min-w-0 rounded-2xl border text-right transition disabled:cursor-not-allowed disabled:opacity-65 ${compact ? "h-14 px-3" : "min-h-[72px] p-3"} ${active ? "border-violet-500 bg-violet-50 text-violet-800 shadow-[0_10px_24px_rgba(124,58,237,0.10)] dark:bg-violet-500/12 dark:text-violet-200" : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300"}`}>
       {active && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-violet-600 text-white"><Check className="h-3 w-3" /></span>}
       <strong className="block truncate text-sm font-black">{title}</strong>
       {note && <span className="mt-1 block pr-5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{note}</span>}

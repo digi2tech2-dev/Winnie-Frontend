@@ -42,6 +42,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
   const avatarUrl = activeProfile.avatar || "/hero-winnie-fun.png";
   const tier = activeProfile.group?.name || activeProfile.tier || "Member";
   const country = activeProfile.country || "";
+  const currency = activeProfile.currency || "USD";
   const phone = activeProfile.phone || "";
   const handle = `@${email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || "winnie"}`;
 
@@ -260,6 +261,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
         <EditProfilePanel
           key={`${displayName}-${email}-${country}-${phone}`}
           countryValue={country}
+          currencyValue={currency}
           displayName={displayName}
           email={email}
           onChangePassword={showProfileWriteNotice}
@@ -284,7 +286,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
   );
 }
 
-function EditProfilePanel({ countryValue, displayName, email, onChangePassword, phoneValue }) {
+function EditProfilePanel({ countryValue, currencyValue, displayName, email, onChangePassword, phoneValue }) {
   const initialCountry = countryValue || profileCountries[0];
   const [country, setCountry] = useState(initialCountry);
   const [phone, setPhone] = useState(() => getNationalPhone(phoneValue || "", initialCountry));
@@ -311,6 +313,7 @@ function EditProfilePanel({ countryValue, displayName, email, onChangePassword, 
           helper="لا يمكن تغيير البريد الإلكتروني المرتبط بالحساب."
         />
         <CountrySelectField disabled label="الدولة" value={country} options={profileCountries} onChange={setCountry} />
+        <Field label="Currency" defaultValue={currencyValue} readOnly helper="Currency changes require a backend profile currency update route." />
         <ProfilePhoneField label="الهاتف" countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
         <button
           type="button"

@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Copy, CreditCard, ExternalLink, Hash, Loader2, ReceiptText, Upload } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { createDepositRequest } from "../../api/deposits";
+import { getCustomerPaymentMethod } from "../../api/paymentMethods";
 import { createPaymentIntent } from "../../api/payments";
 import { getWalletSummary, getWalletTransactions } from "../../api/wallet";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
-import { getPaymentMethod } from "../../data/paymentMethods";
 
 const methodAccent = {
   visa: "from-blue-500 to-indigo-700",
@@ -26,7 +26,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const { methodId } = useParams();
   const { refreshCurrentUser, token, user } = useAuth();
   const { showToast } = useToast();
-  const method = getPaymentMethod(methodId);
+  const [method, setMethod] = useState(null);
+  const [methodLoading, setMethodLoading] = useState(true);
+  const [methodError, setMethodError] = useState("");
   const [amount, setAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentIntent, setPaymentIntent] = useState(null);
@@ -35,16 +37,48 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMethod = async () => {
+      setMethodLoading(true);
+      setMethodError("");
+
+      try {
+        const result = await getCustomerPaymentMethod(methodId);
+        if (!cancelled) setMethod(result.method);
+      } catch (requestError) {
+        if (!cancelled) {
+          setMethod(null);
+          setMethodError(requestError.userMessage || "Unable to load this payment method.");
+        }
+      } finally {
+        if (!cancelled) setMethodLoading(false);
+      }
+    };
+
+    void loadMethod();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [methodId]);
+
+  if (methodLoading) {
+    return <TopUpLoading basePath={basePath} />;
+  }
+
   if (!method) {
-    return <NoPaymentMethods basePath={basePath} />;
+    return <NoPaymentMethods basePath={basePath} message={methodError} />;
   }
 
   const visualType = getPaymentVisualType(method);
   const topUpFlow = getTopUpFlow(method);
   const amountValue = Math.max(0, Number(amount) || 0);
-  const currency = String(user?.currency || "USD").toUpperCase();
   const isManual = topUpFlow === "manual";
   const isOnline = topUpFlow === "online";
+  const walletCurrency = String(user?.currency || "USD").toUpperCase();
+  const currency = isOnline ? walletCurrency : String(method.currency || method.groupCurrency || walletCurrency).toUpperCase();
 
   const updateAmount = (nextValue) => {
     const cleanedValue = nextValue
@@ -98,6 +132,16 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       return;
     }
 
+    if (method.minAmount && amountValue < method.minAmount) {
+      setErrorMessage(`Minimum amount is ${formatMoney(method.minAmount)} ${currency}.`);
+      return;
+    }
+
+    if (method.maxAmount && amountValue > method.maxAmount) {
+      setErrorMessage(`Maximum amount is ${formatMoney(method.maxAmount)} ${currency}.`);
+      return;
+    }
+
     if (basePath !== "/customer") {
       setErrorMessage("Customer top-up actions are connected only in the customer area.");
       return;
@@ -143,6 +187,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       const result = await createPaymentIntent(token, {
         amount: amountValue,
         currency,
+        gateway: method.gateway || undefined,
         returnUrl,
         cancelUrl,
       }, {
@@ -258,7 +303,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                 <input
                   key={receiptInputKey}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf"
                   className="sr-only"
                   onChange={(event) => {
                     setReceiptFile(event.target.files?.[0] || null);
@@ -322,7 +367,28 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   );
 }
 
-function NoPaymentMethods({ basePath }) {
+function TopUpLoading({ basePath }) {
+  return (
+    <div
+      dir="rtl"
+      className="-mx-4 -mt-6 grid min-h-[calc(100vh-124px)] place-items-center bg-[#F8FCFF] px-4 py-10 text-slate-950 dark:bg-[#020615] dark:text-white sm:-mx-6 sm:px-6 lg:-mx-8"
+    >
+      <section className="w-full max-w-[440px] rounded-[20px] border border-slate-200 bg-white/90 p-6 text-center shadow-soft dark:border-white/10 dark:bg-[#080d1e]">
+        <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#8B5CF6]" />
+        <h1 className="mt-4 text-xl font-black">Loading payment method</h1>
+        <Link
+          to={`${basePath}/wallet`}
+          className="interactive-ring mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#8B5CF6] px-4 text-sm font-black text-white"
+        >
+          <ArrowRight className="h-4 w-4" />
+          Back to wallet
+        </Link>
+      </section>
+    </div>
+  );
+}
+
+function NoPaymentMethods({ basePath, message }) {
   return (
     <div
       dir="rtl"
@@ -331,7 +397,7 @@ function NoPaymentMethods({ basePath }) {
       <section className="w-full max-w-[440px] rounded-[20px] border border-dashed border-slate-200 bg-white/90 p-6 text-center shadow-soft dark:border-white/10 dark:bg-[#080d1e]">
         <CreditCard className="mx-auto h-10 w-10 text-[#8B5CF6]" />
         <h1 className="mt-4 text-xl font-black">No payment methods available</h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-white/50">Return to the wallet and choose another method.</p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-white/50">{message || "Return to the wallet and choose another method."}</p>
         <Link
           to={`${basePath}/wallet`}
           className="interactive-ring mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#8B5CF6] px-4 text-sm font-black text-white"
@@ -349,9 +415,12 @@ function PaymentDetails({ method, onCopyAccount }) {
     ["Account", method.account],
     ["Bank", method.bank],
     ["Owner", method.owner],
+    ["Fee", method.fee ? `${method.fee}%` : ""],
+    ["Min", method.minAmount ? `${formatMoney(method.minAmount)} ${method.currency}` : ""],
+    ["Max", method.maxAmount ? `${formatMoney(method.maxAmount)} ${method.currency}` : ""],
   ].filter(([, value]) => Boolean(value));
 
-  if (!details.length) return null;
+  if (!details.length && !method.instructions) return null;
 
   return (
     <section className="mt-3 rounded-[16px] border border-slate-200 bg-white/90 p-3 shadow-[0_16px_36px_rgba(139,92,246,0.08)] dark:border-white/[0.08] dark:bg-[#080d1e]/[0.96]">
@@ -378,6 +447,11 @@ function PaymentDetails({ method, onCopyAccount }) {
           </div>
         ))}
       </div>
+      {method.instructions && (
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-600 dark:bg-[#050918] dark:text-white/60">
+          {method.instructions}
+        </p>
+      )}
     </section>
   );
 }
@@ -431,7 +505,7 @@ function SelectedPaymentCard({ method }) {
       <span className="absolute -left-8 -bottom-8 h-24 w-24 rounded-full bg-white/12" />
       <div className="relative flex items-start justify-between gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/15">
-          {method.image ? <img src={method.image} alt="" className="h-full w-full object-contain p-1.5" /> : <CreditCard className="h-5 w-5" />}
+          {method.imageUrl || method.image ? <img src={method.imageUrl || method.image} alt="" className="h-full w-full object-contain p-1.5" /> : <CreditCard className="h-5 w-5" />}
         </span>
         <p className="min-w-0 truncate text-right text-lg font-black">{method.title}</p>
       </div>
@@ -454,7 +528,9 @@ function getPaymentVisualType(method) {
 
 function getTopUpFlow(method) {
   const visualType = getPaymentVisualType(method);
-  if (["apple", "mastercard", "visa"].includes(visualType)) return "online";
+  const configuredType = String(method.type || "").toUpperCase();
+  if (method.gateway || ["ONLINE", "CARD"].includes(configuredType) || ["apple", "mastercard", "visa"].includes(visualType)) return "online";
+  if (["MANUAL", "BANK_TRANSFER", "WALLET", "CRYPTO"].includes(configuredType)) return "manual";
   if (method.account || method.bank) return "manual";
   return "unsupported";
 }

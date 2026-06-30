@@ -43,6 +43,7 @@ const AdminBalanceRequestsPage = lazy(() => import("./pages/admin/AdminBalanceRe
 const AdminCurrenciesPage = lazy(() => import("./pages/admin/AdminCurrenciesPage"));
 const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
+const AdminSettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const AdminToolsPage = lazy(() => import("./pages/admin/AdminToolsPage"));
 
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
@@ -158,6 +159,7 @@ export default function App() {
               <Route path="supervisors" element={<Animated><AdminSupervisorsPage /></Animated>} />
               <Route path="balance-requests" element={<Animated><AdminBalanceRequestsPage /></Animated>} />
               <Route path="currencies" element={<Animated><AdminCurrenciesPage /></Animated>} />
+              <Route path="settings" element={<Animated><AdminSettingsPage /></Animated>} />
               <Route path="sub-agents" element={<Animated><AdminSubAgentsPage /></Animated>} />
               <Route path="notifications" element={<Animated><AdminToolsPage /></Animated>} />
             </Route>

@@ -1,5 +1,17 @@
-import { useEffect, useState } from "react";
-import { CreditCard, Layers3, Plus, WalletCards } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CreditCard, Layers3, Loader2, Plus, WalletCards } from "lucide-react";
+import {
+  createAdminPaymentGroup,
+  createAdminPaymentMethod,
+  deleteAdminPaymentGroup,
+  deleteAdminPaymentMethod,
+  getAdminPaymentMethods,
+  setAdminPaymentGroupActive,
+  setAdminPaymentMethodActive,
+  updateAdminPaymentGroup,
+  updateAdminPaymentMethod,
+} from "../../api/adminPaymentMethods";
+import { getPublicCurrencies } from "../../api/currencies";
 import PaymentGroupCard from "../../components/admin/payments/PaymentGroupCard";
 import PaymentGroupFormModal from "../../components/admin/payments/PaymentGroupFormModal";
 import PaymentMethodFormModal from "../../components/admin/payments/PaymentMethodFormModal";
@@ -7,107 +19,119 @@ import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
-import { currencies } from "../../data/catalog";
-import { paymentGroupsSeed, paymentMethodsSeed } from "../../data/adminManagement";
-import {
-  PAYMENT_GROUPS_STORAGE_KEY,
-  PAYMENT_METHODS_STORAGE_KEY,
-  WALLET_PAYMENT_GROUP_ID,
-} from "../../data/paymentMethods";
-
-function loadStoredList(key, fallback) {
-  try {
-    const stored = window.localStorage.getItem(key);
-    if (!stored) return fallback;
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
-}
+import { useAuth } from "../../context/AuthContext";
 
 export default function PaymentMethodsPage() {
-  const [groups, setGroups] = useState(() => loadStoredList(PAYMENT_GROUPS_STORAGE_KEY, paymentGroupsSeed));
-  const [methods, setMethods] = useState(() => loadStoredList(PAYMENT_METHODS_STORAGE_KEY, paymentMethodsSeed));
+  const { token } = useAuth();
+  const { showToast } = useToast();
+  const [groups, setGroups] = useState([]);
+  const [currencyOptions, setCurrencyOptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [groupForm, setGroupForm] = useState(undefined);
   const [methodForm, setMethodForm] = useState(undefined);
   const [defaultGroup, setDefaultGroup] = useState("");
   const [action, setAction] = useState(null);
-  const { showToast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const methods = useMemo(() => groups.flatMap((group) => group.methods || []), [groups]);
+
+  const toast = useCallback((title, message, type = "success") => {
+    showToast({ type, title, message });
+  }, [showToast]);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const [paymentResult, currencyResult] = await Promise.all([
+        getAdminPaymentMethods(token),
+        getPublicCurrencies().catch(() => ({ currencies: [] })),
+      ]);
+      setGroups(paymentResult.groups);
+      setCurrencyOptions(currencyResult.currencies.map((currency) => currency.code).filter(Boolean));
+    } catch (requestError) {
+      setGroups([]);
+      setError(requestError.userMessage || "Unable to load backend payment methods.");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 420);
-    return () => clearTimeout(timer);
-  }, []);
+    void load();
+  }, [load]);
 
-  useEffect(() => {
-    window.localStorage.setItem(PAYMENT_GROUPS_STORAGE_KEY, JSON.stringify(groups));
-  }, [groups]);
+  const saveAndReload = async (request, successTitle, successMessage) => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
 
-  useEffect(() => {
-    window.localStorage.setItem(PAYMENT_METHODS_STORAGE_KEY, JSON.stringify(methods));
-  }, [methods]);
-
-  const toast = (title, message, type = "success") => showToast({ type, title, message });
+    try {
+      await request();
+      await load();
+      toast(successTitle, successMessage);
+    } catch (requestError) {
+      const message = requestError.userMessage || requestError.message || "Payment setting could not be saved.";
+      setError(message);
+      toast("تعذر الحفظ", message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const saveGroup = (data) => {
-    if (groupForm?.id) {
-      setGroups((current) => current.map((group) => (group.id === groupForm.id ? { ...group, ...data } : group)));
-    } else {
-      setGroups((current) => [...current, { ...data, id: `pay-${Date.now()}` }]);
-    }
-    toast("تم حفظ مجموعة الدفع", data.name);
+    if (busy) return;
+    const request = groupForm?.id
+      ? () => updateAdminPaymentGroup(token, groups, groupForm.id, data)
+      : () => createAdminPaymentGroup(token, groups, data);
+
+    void saveAndReload(request, "تم حفظ مجموعة الدفع", data.name);
     setGroupForm(undefined);
   };
 
   const saveMethod = (data) => {
-    const normalizedData = {
-      ...data,
-      walletMethod: data.groupId === WALLET_PAYMENT_GROUP_ID,
-    };
+    if (busy) return;
+    const request = methodForm?.id
+      ? () => updateAdminPaymentMethod(token, groups, methodForm.id, data)
+      : () => createAdminPaymentMethod(token, groups, data);
 
-    if (methodForm?.id) {
-      setMethods((current) => current.map((method) => (method.id === methodForm.id ? { ...method, ...normalizedData } : method)));
-    } else {
-      setMethods((current) => [
-        ...current,
-        {
-          ...normalizedData,
-          id: `pm-${Date.now()}`,
-        },
-      ]);
-    }
-    toast("تم حفظ طريقة الدفع", data.name);
+    void saveAndReload(request, "تم حفظ طريقة الدفع", data.name);
     setMethodForm(undefined);
     setDefaultGroup("");
   };
 
   const deleteGroup = (group) => {
     if (methods.some((method) => method.groupId === group.id)) {
-      toast("تعذر حذف المجموعة", "لا يمكن حذف مجموعة دفع بها طرق دفع. احذف أو انقل طرق الدفع أولًا.", "warning");
+      toast("تعذر حذف المجموعة", "احذف طرق الدفع داخل المجموعة أولا.", "warning");
       return;
     }
     setAction({ kind: "deleteGroup", item: group });
   };
 
   const requestToggle = (kind, item) => {
-    const setter = kind === "toggleGroup" ? setGroups : setMethods;
-    if (item.active) {
-      setAction({ kind, item });
-      return;
-    }
-    setter((current) => current.map((entry) => (entry.id === item.id ? { ...entry, active: true } : entry)));
-    toast("تم التفعيل بنجاح", item.name);
+    setAction({ kind, item });
   };
 
-  const runAction = () => {
+  const runAction = async () => {
+    if (!action || busy) return;
     const { kind, item } = action;
-    if (kind === "deleteGroup") setGroups((current) => current.filter((group) => group.id !== item.id));
-    if (kind === "deleteMethod") setMethods((current) => current.filter((method) => method.id !== item.id));
-    if (kind === "toggleGroup") setGroups((current) => current.map((group) => (group.id === item.id ? { ...group, active: false } : group)));
-    if (kind === "toggleMethod") setMethods((current) => current.map((method) => (method.id === item.id ? { ...method, active: false } : method)));
-    toast(kind.startsWith("delete") ? "تم الحذف بنجاح" : "تم التعطيل بنجاح", item.name, kind.startsWith("toggle") ? "warning" : "success");
+    const isToggle = kind.startsWith("toggle");
+    const nextActive = isToggle ? !item.active : undefined;
+
+    await saveAndReload(
+      () => {
+        if (kind === "deleteGroup") return deleteAdminPaymentGroup(token, groups, item.id);
+        if (kind === "deleteMethod") return deleteAdminPaymentMethod(token, groups, item.id);
+        if (kind === "toggleGroup") return setAdminPaymentGroupActive(token, groups, item.id, nextActive);
+        if (kind === "toggleMethod") return setAdminPaymentMethodActive(token, groups, item.id, nextActive);
+        return Promise.resolve();
+      },
+      kind.startsWith("delete") ? "تم الحذف بنجاح" : "تم تحديث الحالة",
+      item.name,
+    );
     setAction(null);
   };
 
@@ -117,20 +141,41 @@ export default function PaymentMethodsPage() {
     { label: "إجمالي طرق الدفع", value: methods.length, icon: CreditCard },
     { label: "طرق الدفع النشطة", value: methods.filter((method) => method.active).length, icon: CreditCard },
   ];
+  const formCurrencies = currencyOptions.length
+    ? currencyOptions
+    : [...new Set(groups.map((group) => group.currency).filter(Boolean))];
 
   return (
     <div dir="rtl" className="space-y-4">
       <section className="flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
-        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><WalletCards className="h-5 w-5" /></span>
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white">
+          <WalletCards className="h-5 w-5" />
+        </span>
         <div className="flex-1">
           <h1 className="text-2xl font-black dark:text-white">إدارة طرق الدفع</h1>
-          <p className="text-[9px] font-bold text-slate-400">التعديلات على مجموعة «عالمي» تظهر مباشرة في محفظة العميل</p>
+          <p className="text-[9px] font-bold text-slate-400">البيانات محفوظة في إعدادات الدفع الخلفية وتظهر للعميل من route آمن.</p>
         </div>
-        <button type="button" onClick={() => setGroupForm(null)} className="inline-flex h-10 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[8px] font-black text-white"><Plus className="h-4 w-4" />إضافة مجموعة جديدة</button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setGroupForm(null)}
+          className="inline-flex h-10 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[8px] font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          إضافة مجموعة جديدة
+        </button>
       </section>
 
+      {error && (
+        <p className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+          {error}
+        </p>
+      )}
+
       {loading ? (
-        <div className="grid grid-cols-2 gap-3">{Array.from({ length: 6 }).map((_, index) => <SkeletonBlock key={index} className="h-44 rounded-[22px]" />)}</div>
+        <div className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 6 }).map((_, index) => <SkeletonBlock key={index} className="h-44 rounded-[22px]" />)}
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -150,32 +195,52 @@ export default function PaymentMethodsPage() {
                   key={group.id}
                   group={group}
                   methods={methods.filter((method) => method.groupId === group.id)}
-                  onAddMethod={(selectedGroup) => { setDefaultGroup(selectedGroup.id); setMethodForm(null); }}
-                  onEdit={setGroupForm}
+                  onAddMethod={(selectedGroup) => {
+                    setDefaultGroup(selectedGroup.id);
+                    setMethodForm(null);
+                  }}
                   onDelete={deleteGroup}
-                  onRefresh={(item) => toast("تم تحديث المجموعة", item.name)}
-                  onToggle={(item) => requestToggle("toggleGroup", item)}
-                  onEditMethod={setMethodForm}
                   onDeleteMethod={(item) => setAction({ kind: "deleteMethod", item })}
-                  onRefreshMethod={(item) => toast("تم تحديث طريقة الدفع", item.name)}
+                  onEdit={setGroupForm}
+                  onEditMethod={setMethodForm}
+                  onRefresh={() => void load()}
+                  onRefreshMethod={() => void load()}
+                  onToggle={(item) => requestToggle("toggleGroup", item)}
                   onToggleMethod={(item) => requestToggle("toggleMethod", item)}
                 />
               ))}
             </div>
           ) : (
-            <EmptyState title="لا توجد مجموعات دفع" actionLabel="إضافة مجموعة" onAction={() => setGroupForm(null)} />
+            <EmptyState title="لا توجد مجموعات دفع من الخلفية" actionLabel="إضافة مجموعة" onAction={() => setGroupForm(null)} />
           )}
         </>
       )}
 
-      <PaymentGroupFormModal open={groupForm !== undefined} group={groupForm} currencies={currencies} onClose={() => setGroupForm(undefined)} onSave={saveGroup} />
-      <PaymentMethodFormModal open={methodForm !== undefined} method={methodForm} defaultGroupId={defaultGroup} groups={groups} onClose={() => { setMethodForm(undefined); setDefaultGroup(""); }} onSave={saveMethod} />
+      <PaymentGroupFormModal
+        open={groupForm !== undefined}
+        group={groupForm}
+        currencies={formCurrencies}
+        onClose={() => setGroupForm(undefined)}
+        onSave={saveGroup}
+      />
+      <PaymentMethodFormModal
+        open={methodForm !== undefined}
+        method={methodForm}
+        defaultGroupId={defaultGroup}
+        groups={groups}
+        onClose={() => {
+          setMethodForm(undefined);
+          setDefaultGroup("");
+        }}
+        onSave={saveMethod}
+      />
       <ConfirmDialog
         open={Boolean(action)}
+        busy={busy}
         tone={action?.kind?.startsWith("toggle") ? "warning" : "danger"}
-        title={action?.kind?.startsWith("toggle") ? "تأكيد التعطيل" : "تأكيد الحذف"}
-        message={action?.kind === "toggleGroup" ? "عند تعطيل المجموعة لن تظهر طرق الدفع التابعة لها للعملاء." : action?.kind === "toggleMethod" ? "لن تظهر طريقة الدفع للعميل بعد تعطيلها." : "لا يمكن التراجع عن هذا الإجراء."}
-        confirmLabel={action?.kind?.startsWith("toggle") ? "تعطيل" : "حذف"}
+        title={action?.kind?.startsWith("toggle") ? "تأكيد تغيير الحالة" : "تأكيد الحذف"}
+        message={action?.kind?.startsWith("toggle") ? "سيتم حفظ حالة طريقة الدفع أو المجموعة في إعدادات الخلفية." : "لا يمكن التراجع عن هذا الإجراء من الواجهة."}
+        confirmLabel={action?.kind?.startsWith("toggle") ? (action?.item?.active ? "تعطيل" : "تفعيل") : "حذف"}
         onCancel={() => setAction(null)}
         onConfirm={runAction}
       />

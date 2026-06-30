@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronLeft, CreditCard, Plus, ReceiptText, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getCustomerPaymentMethods } from "../api/paymentMethods";
 import { getWalletSummary } from "../api/wallet";
 import { useAuth } from "../context/AuthContext";
-import { getPaymentMethods } from "../data/paymentMethods";
 
 export default function WalletPage({ basePath = "/customer" }) {
   const navigate = useNavigate();
@@ -12,7 +12,9 @@ export default function WalletPage({ basePath = "/customer" }) {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const paymentMethods = getPaymentMethods();
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
+  const [paymentMethodsError, setPaymentMethodsError] = useState("");
   const groupSubtitle =
     paymentMethods.length > 0
       ? paymentMethods.slice(0, 3).map((method) => method.title).join("، ")
@@ -54,6 +56,33 @@ export default function WalletPage({ basePath = "/customer" }) {
       cancelled = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPaymentMethods = async () => {
+      setPaymentMethodsLoading(true);
+      setPaymentMethodsError("");
+
+      try {
+        const result = await getCustomerPaymentMethods();
+        if (!cancelled) setPaymentMethods(result.methods);
+      } catch (requestError) {
+        if (!cancelled) {
+          setPaymentMethods([]);
+          setPaymentMethodsError(requestError.userMessage || "Unable to load payment methods.");
+        }
+      } finally {
+        if (!cancelled) setPaymentMethodsLoading(false);
+      }
+    };
+
+    void loadPaymentMethods();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div
@@ -102,7 +131,11 @@ export default function WalletPage({ basePath = "/customer" }) {
 
             {globalGroupOpen && (
               <div className="space-y-3 border-t border-slate-200 p-3 dark:border-white/10">
-                {paymentMethods.length > 0 ? (
+                {paymentMethodsLoading ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-7 text-center dark:border-white/10 dark:bg-white/[0.03]">
+                    <p className="text-sm font-black text-slate-600 dark:text-white/70">Loading payment methods...</p>
+                  </div>
+                ) : paymentMethods.length > 0 ? (
                   paymentMethods.map((method) => (
                     <PaymentMethodRow key={method.id} method={method} onAdd={() => addPaymentMethod(method)} />
                   ))
@@ -110,7 +143,9 @@ export default function WalletPage({ basePath = "/customer" }) {
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-7 text-center dark:border-white/10 dark:bg-white/[0.03]">
                     <CreditCard className="mx-auto h-8 w-8 text-slate-300 dark:text-white/25" />
                     <p className="mt-3 text-sm font-black text-slate-600 dark:text-white/70">لا توجد طرق دفع نشطة حاليا</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-white/40">يمكن تفعيل طريقة دفع من لوحة الإدارة.</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-white/40">
+                      {paymentMethodsError || "يمكن تفعيل طريقة دفع من لوحة الإدارة."}
+                    </p>
                   </div>
                 )}
               </div>
@@ -264,7 +299,7 @@ function PaymentCardVisual({ method }) {
       <div className="flex h-full flex-col justify-between">
         <div className="flex items-start justify-between gap-2">
           <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-white/15 text-white sm:h-10 sm:w-10">
-            {method.image ? <img src={method.image} alt="" className="h-full w-full object-contain p-1" /> : <CreditCard className="h-4 w-4" />}
+            {method.imageUrl || method.image ? <img src={method.imageUrl || method.image} alt="" className="h-full w-full object-contain p-1" /> : <CreditCard className="h-4 w-4" />}
           </span>
           <span className="min-w-0 truncate text-right text-[11px] font-black leading-4 text-white sm:text-sm">{method.title}</span>
         </div>
