@@ -9,6 +9,12 @@ import {
   toNumber,
 } from "./adapters";
 
+export const PAYMENT_RISK_LIMIT_REACHED_CODE = "PAYMENT_RISK_LIMIT_REACHED";
+
+export function isPaymentRiskLimitError(error) {
+  return String(error?.code || "").toUpperCase() === PAYMENT_RISK_LIMIT_REACHED_CODE;
+}
+
 export function normalizePaymentIntent(payload = {}) {
   const payment = payload.payment || payload;
   const id = getItemId(payment);

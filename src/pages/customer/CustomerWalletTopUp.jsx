@@ -3,7 +3,7 @@ import { ArrowRight, CheckCircle2, Copy, CreditCard, ExternalLink, Hash, Loader2
 import { Link, useParams } from "react-router-dom";
 import { createDepositRequest } from "../../api/deposits";
 import { getCustomerPaymentMethod } from "../../api/paymentMethods";
-import { createPaymentIntent } from "../../api/payments";
+import { createPaymentIntent, isPaymentRiskLimitError } from "../../api/payments";
 import { getWalletSummary, getWalletTransactions } from "../../api/wallet";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
@@ -32,6 +32,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const [amount, setAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentIntent, setPaymentIntent] = useState(null);
+  const [riskBlockedMessage, setRiskBlockedMessage] = useState("");
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptInputKey, setReceiptInputKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +87,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       .replace(/(\..*)\./g, "$1");
     setAmount(cleanedValue);
     setErrorMessage("");
+    setRiskBlockedMessage("");
     setSuccessMessage("");
     setPaymentIntent(null);
   };
@@ -125,6 +127,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
 
     setErrorMessage("");
     setPaymentIntent(null);
+    setRiskBlockedMessage("");
     setSuccessMessage("");
 
     if (amountValue <= 0) {
@@ -172,6 +175,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         setAmount("");
         setReceiptFile(null);
         setReceiptInputKey((current) => current + 1);
+        setRiskBlockedMessage("");
         setSuccessMessage(`${result.deposit.amountLabel} submitted for admin review. Wallet balance changes only after approval.`);
         await refreshWalletReads();
         showToast({
@@ -205,7 +209,18 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         message: result.payment.statusLabel,
       });
     } catch (requestError) {
-      setErrorMessage(requestError.userMessage || "Top-up request could not be created.");
+      if (isPaymentRiskLimitError(requestError)) {
+        const message = requestError.userMessage || "Online top-up is temporarily limited for your account. Please use manual deposit or contact support.";
+        setRiskBlockedMessage(message);
+        setErrorMessage(message);
+        showToast({
+          type: "warning",
+          title: "Online top-up limited",
+          message,
+        });
+      } else {
+        setErrorMessage(requestError.userMessage || "Top-up request could not be created.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -329,9 +344,18 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
             </div>
 
             {errorMessage && (
-              <p className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-500/12 px-3 py-2 text-xs font-bold leading-5 text-amber-800 dark:text-amber-300">
-                {errorMessage}
-              </p>
+              <div className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-500/12 px-3 py-2 text-xs font-bold leading-5 text-amber-800 dark:text-amber-300">
+                <p>{errorMessage}</p>
+                {riskBlockedMessage && (
+                  <Link
+                    to={`${basePath}/wallet`}
+                    className="interactive-ring mt-2 inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-white/70 px-3 text-[11px] font-black text-amber-800 dark:bg-[#050918]/70 dark:text-amber-200"
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    Choose manual deposit
+                  </Link>
+                )}
+              </div>
             )}
 
             {successMessage && (

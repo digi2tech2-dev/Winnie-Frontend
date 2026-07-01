@@ -50,6 +50,10 @@ export function getFriendlyAuthMessage({ status, code, message, errors } = {}) {
     return getFirstValidationMessage(errors) || "Please check the highlighted fields and try again.";
   }
 
+  if (normalizedCode === "PAYMENT_RISK_LIMIT_REACHED") {
+    return safeMessage || "Online top-up is temporarily limited for your account. Please use manual deposit or contact support.";
+  }
+
   if (normalizedCode === "INVALID_REFERRAL_CODE" || textIncludes(safeMessage, ["invalid referral code"])) {
     return "Invalid referral code. Please check the code and try again.";
   }
@@ -97,6 +101,7 @@ export function createApiError({ response, payload }) {
   const status = response?.status || 0;
   const code = payload?.code || (status ? `HTTP_${status}` : "API_ERROR");
   const errors = payload?.errors;
+  const details = payload?.details || errors || null;
   const message = payload?.message || response?.statusText || DEFAULT_ERROR_MESSAGE;
   const fieldErrors = normalizeFieldErrors(errors);
   const userMessage = getFriendlyAuthMessage({ status, code, message, errors });
@@ -104,7 +109,7 @@ export function createApiError({ response, payload }) {
   return new ApiError(userMessage, {
     status,
     code,
-    details: errors || null,
+    details,
     fieldErrors,
     payload,
     userMessage,

@@ -3,6 +3,8 @@ import { Loader2, RefreshCw, Save, Settings } from "lucide-react";
 import {
   ADMIN_SETTING_KEYS,
   getAdminSettings,
+  normalizePaymentRiskLimits,
+  updatePaymentRiskLimits,
   updateManagedAdminSetting,
 } from "../../api/adminSettings";
 import { useToast } from "../../components/ToastProvider";
@@ -22,6 +24,7 @@ function settingsToForm(settingsByKey = {}) {
     maxWalletAdjustment: settingsByKey.maxWalletAdjustment?.value ?? 10000,
     orderTimeoutMinutes: settingsByKey.orderTimeoutMinutes?.value ?? 30,
     paymentInstructions: settingsByKey.paymentInstructions?.value || "",
+    paymentRiskLimits: normalizePaymentRiskLimits(settingsByKey.paymentRiskLimits?.value),
     providerRetryLimit: settingsByKey.providerRetryLimit?.value ?? 5,
     whatsappNumber: settingsByKey.whatsappNumber?.value || "",
   };
@@ -58,6 +61,13 @@ export default function AdminSettingsPage() {
   }, [load]);
 
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const setRisk = (key, value) => setForm((current) => ({
+    ...current,
+    paymentRiskLimits: {
+      ...normalizePaymentRiskLimits(current.paymentRiskLimits),
+      [key]: value,
+    },
+  }));
 
   const save = async () => {
     if (busy) return;
@@ -79,6 +89,7 @@ export default function AdminSettingsPage() {
       for (const [key, value] of updates) {
         await updateManagedAdminSetting(token, key, value);
       }
+      await updatePaymentRiskLimits(token, form.paymentRiskLimits);
 
       await load();
       showToast({ type: "success", title: "Settings saved", message: "Backend settings were updated." });
@@ -137,6 +148,20 @@ export default function AdminSettingsPage() {
             <ReadOnlyInfo label="Payment groups" value={`${Array.isArray(settingsByKey.paymentGroups?.value) ? settingsByKey.paymentGroups.value.length : 0} configured`} />
             <ReadOnlyInfo label="Country accounts" value={`${Array.isArray(settingsByKey.paymentCountryAccounts?.value) ? settingsByKey.paymentCountryAccounts.value.length : 0} configured`} />
           </Panel>
+
+          <Panel title="Payment Risk Limits">
+            <SwitchField label="Enable online payment risk limits" checked={form.paymentRiskLimits.enabled} onChange={(value) => setRisk("enabled", value)} />
+            <ReadOnlyInfo label="Amount basis" value="USD equivalent, evaluated by backend before gateway intent creation" />
+            <NumberField label="Max single online top-up amount" value={form.paymentRiskLimits.maxSingleAmount} onChange={(value) => setRisk("maxSingleAmount", value)} />
+            <NumberField label="Hourly amount limit" value={form.paymentRiskLimits.hourlyAmountLimit} onChange={(value) => setRisk("hourlyAmountLimit", value)} />
+            <NumberField label="Daily amount limit" value={form.paymentRiskLimits.dailyAmountLimit} onChange={(value) => setRisk("dailyAmountLimit", value)} />
+            <NumberField label="Hourly attempt limit" step="1" value={form.paymentRiskLimits.hourlyAttemptLimit} onChange={(value) => setRisk("hourlyAttemptLimit", value)} />
+            <NumberField label="Daily attempt limit" step="1" value={form.paymentRiskLimits.dailyAttemptLimit} onChange={(value) => setRisk("dailyAttemptLimit", value)} />
+            <NumberField label="New account age window in hours" value={form.paymentRiskLimits.newAccountHours} onChange={(value) => setRisk("newAccountHours", value)} />
+            <NumberField label="New account max single amount" value={form.paymentRiskLimits.newAccountSingleAmount} onChange={(value) => setRisk("newAccountSingleAmount", value)} />
+            <NumberField label="New account daily amount" value={form.paymentRiskLimits.newAccountDailyAmount} onChange={(value) => setRisk("newAccountDailyAmount", value)} />
+            <TextAreaField label="Customer blocked message" value={form.paymentRiskLimits.customerMessage} onChange={(value) => setRisk("customerMessage", value)} />
+          </Panel>
         </section>
       )}
 
@@ -164,19 +189,19 @@ function Panel({ children, title }) {
   );
 }
 
-function NumberField({ label, value, onChange }) {
-  return <InputField label={label} type="number" value={value} onChange={onChange} />;
+function NumberField({ label, value, onChange, step = "any" }) {
+  return <InputField label={label} min="0" step={step} type="number" value={value} onChange={onChange} />;
 }
 
 function TextField({ label, value, onChange }) {
   return <InputField label={label} value={value} onChange={onChange} />;
 }
 
-function InputField({ label, type = "text", value, onChange }) {
+function InputField({ label, type = "text", value, onChange, min, step }) {
   return (
     <label className="block">
       <span className="mb-1 block text-[9px] font-black text-slate-500">{label}</span>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className={input} />
+      <input min={min} step={step} type={type} value={value} onChange={(event) => onChange(event.target.value)} className={input} />
     </label>
   );
 }
