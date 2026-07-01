@@ -3,7 +3,7 @@ import { apiRequest } from "./client";
 
 export const PROFILE_UPDATE_SUPPORTED = true;
 export const AVATAR_UPLOAD_SUPPORTED = true;
-export const PASSWORD_CHANGE_SUPPORTED = false;
+export const PASSWORD_CHANGE_SUPPORTED = true;
 
 export async function getProfile(token) {
   const response = await apiRequest("/me", { token });
@@ -40,5 +40,20 @@ export async function uploadMyAvatar(token, file) {
   return {
     message: response.message,
     user: normalizeUserProfile(response.data || {}),
+  };
+}
+
+export async function changeMyPassword(token, payload = {}) {
+  const response = await apiRequest("/me/password", {
+    method: "PATCH",
+    token,
+    body: {
+      currentPassword: payload.currentPassword,
+      newPassword: payload.newPassword,
+    },
+  });
+
+  return {
+    message: response.message,
   };
 }

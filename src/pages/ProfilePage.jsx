@@ -3,7 +3,7 @@ import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHoriz
 import { useNavigate } from "react-router-dom";
 import { resolveBackendAssetUrl } from "../api/adapters";
 import { normalizeApiError } from "../api/errors";
-import { getProfile, updateMyProfile, uploadMyAvatar } from "../api/profile";
+import { changeMyPassword, getProfile, updateMyProfile, uploadMyAvatar } from "../api/profile";
 import { getMyReferrals } from "../api/referrals";
 import BackButton from "../components/BackButton";
 import { useAuth } from "../context/AuthContext";
@@ -111,14 +111,6 @@ export default function ProfilePage({ basePath = "/customer" }) {
     }
   }, [basePath, showToast, token]);
 
-  const showPasswordUnsupportedNotice = useCallback(() => {
-    showToast({
-      type: "info",
-      title: "Password change unavailable",
-      message: "The backend does not expose a safe current-password change route yet.",
-    });
-  }, [showToast]);
-
   const refreshProfileSnapshot = useCallback(async () => {
     if (!token) return null;
 
@@ -169,6 +161,34 @@ export default function ProfilePage({ basePath = "/customer" }) {
     [refreshSessionAndProfile, showToast, token],
   );
 
+  const handlePasswordChange = useCallback(
+    async ({ currentPassword, newPassword }) => {
+      if (!token) {
+        showToast({ type: "error", title: "Login required", message: "Please sign in before changing your password." });
+        return false;
+      }
+
+      try {
+        const result = await changeMyPassword(token, { currentPassword, newPassword });
+        showToast({
+          type: "success",
+          title: "Password updated",
+          message: result.message || "Your password was updated successfully.",
+        });
+        return true;
+      } catch (requestError) {
+        const normalized = normalizeApiError(requestError, "Unable to update password.");
+        showToast({
+          type: "error",
+          title: "Password update failed",
+          message: normalized.userMessage,
+        });
+        return false;
+      }
+    },
+    [showToast, token],
+  );
+
   const handleLogout = useCallback(() => {
     logout();
     navigate("/");
@@ -186,7 +206,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     }
 
     if (action === "changePassword") {
-      showPasswordUnsupportedNotice();
+      setPasswordOpen(true);
       return;
     }
 
@@ -198,7 +218,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     if (action === "logout") {
       handleLogout();
     }
-  }, [basePath, handleLogout, menuOpen, navigate, pendingMenuAction, shareInvite, showPasswordUnsupportedNotice]);
+  }, [basePath, handleLogout, menuOpen, navigate, pendingMenuAction, shareInvite]);
 
   const closeMenu = () => {
     setPendingMenuAction(null);
@@ -341,7 +361,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
           currencyValue={currency}
           displayName={displayName}
           email={email}
-          onChangePassword={showPasswordUnsupportedNotice}
+          onChangePassword={() => setPasswordOpen(true)}
           onSave={handleProfileSave}
           phoneValue={phone}
           saving={profileSaving}
@@ -361,7 +381,13 @@ export default function ProfilePage({ basePath = "/customer" }) {
         />
       )}
 
-      {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} showToast={showToast} />}
+      {passwordOpen && (
+        <PasswordModal
+          onClose={() => setPasswordOpen(false)}
+          onSubmit={handlePasswordChange}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }
@@ -451,11 +477,10 @@ function EditProfilePanel({
         <button
           type="button"
           onClick={onChangePassword}
-          disabled
-          className="inline-flex h-12 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#C4B5FD]/35 bg-slate-100 text-sm font-black text-slate-500 dark:border-white/10 dark:bg-white/10 dark:text-white/40 sm:col-span-2"
+          className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#C4B5FD]/55 bg-white text-sm font-black text-[#7C3AED] shadow-[0_12px_28px_rgba(14,165,233,0.12)] dark:border-[#8B5CF6]/32 dark:bg-[#0D1324] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.18)] sm:col-span-2"
         >
           <LockKeyhole className="h-5 w-5" />
-          Change password unavailable
+          Change password
         </button>
       </form>
 
@@ -557,9 +582,10 @@ function MenuButton({ icon: Icon, label, onClick, danger = false }) {
   );
 }
 
-function PasswordModal({ onClose, showToast }) {
+function PasswordModal({ onClose, onSubmit, showToast }) {
   const [form, setForm] = useState({ current: "", next: "", repeat: "" });
   const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const updateField = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -573,8 +599,18 @@ function PasswordModal({ onClose, showToast }) {
       return;
     }
 
-    if (form.next.length < 6) {
+    if (form.next.length < 8 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.next)) {
+      showToast({ type: "error", title: "Weak password", message: "Use at least 8 characters with uppercase, lowercase, and a number." });
+      return;
+    }
+
+    if (form.next.length < 0) {
       showToast({ type: "error", title: "كلمة السر قصيرة", message: "كلمة السر الجديدة لازم تكون 6 أحرف على الأقل." });
+      return;
+    }
+
+    if (form.next === form.current) {
+      showToast({ type: "error", title: "Password unchanged", message: "Choose a new password that is different from your current password." });
       return;
     }
 
@@ -586,9 +622,23 @@ function PasswordModal({ onClose, showToast }) {
     setConfirming(true);
   };
 
-  const confirmSave = () => {
+  const confirmSave = async () => {
+    if (saving) return;
+
+    setSaving(true);
+    const saved = await onSubmit({
+      currentPassword: form.current,
+      newPassword: form.next,
+    });
+    setSaving(false);
+
+    if (!saved) {
+      setConfirming(false);
+      return;
+    }
+
+    setForm({ current: "", next: "", repeat: "" });
     setConfirming(false);
-    showToast({ type: "info", title: "Read-only profile", message: "Password changes will be connected in a later phase." });
     onClose();
   };
 
@@ -632,14 +682,17 @@ function PasswordModal({ onClose, showToast }) {
                 <button
                   type="button"
                   onClick={confirmSave}
-                  className="interactive-ring h-11 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.28)]"
+                  disabled={saving}
+                  aria-busy={saving}
+                  className="interactive-ring h-11 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.28)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   موافق
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirming(false)}
-                  className="interactive-ring h-11 rounded-xl border border-sky-100 bg-white text-sm font-black text-slate-700 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]"
+                  disabled={saving}
+                  className="interactive-ring h-11 rounded-xl border border-sky-100 bg-white text-sm font-black text-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]"
                 >
                   إلغاء
                 </button>
