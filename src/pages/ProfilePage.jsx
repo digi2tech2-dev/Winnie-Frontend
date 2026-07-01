@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Phone, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getProfile } from "../api/profile";
+import { resolveBackendAssetUrl } from "../api/adapters";
+import { normalizeApiError } from "../api/errors";
+import { getProfile, updateMyProfile, uploadMyAvatar } from "../api/profile";
 import { getMyReferrals } from "../api/referrals";
 import BackButton from "../components/BackButton";
 import { useAuth } from "../context/AuthContext";
@@ -17,13 +19,6 @@ const countryDialCodes = {
   "قطر": "+974",
 };
 
-function getNationalPhone(phone, country) {
-  const dialCode = countryDialCodes[country] || "";
-  const withoutDialCode = phone.trim().startsWith(dialCode) ? phone.trim().slice(dialCode.length) : phone;
-
-  return withoutDialCode.replace(/\D/g, "");
-}
-
 export default function ProfilePage({ basePath = "/customer" }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(true);
@@ -32,14 +27,16 @@ export default function ProfilePage({ basePath = "/customer" }) {
   const [profileData, setProfileData] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef(null);
   const navigate = useNavigate();
-  const { token, user, logout } = useAuth();
+  const { token, user, logout, refreshCurrentUser } = useAuth();
   const { showToast } = useToast();
   const activeProfile = profileData || user || {};
   const displayName = activeProfile.name || "Winnie user";
   const email = activeProfile.email || "";
-  const avatarUrl = activeProfile.avatar || "/hero-winnie-fun.png";
+  const avatarUrl = resolveBackendAssetUrl(activeProfile.avatar) || "/hero-winnie-fun.png";
   const tier = activeProfile.group?.name || activeProfile.tier || "Member";
   const country = activeProfile.country || "";
   const currency = activeProfile.currency || "USD";
@@ -114,13 +111,63 @@ export default function ProfilePage({ basePath = "/customer" }) {
     }
   }, [basePath, showToast, token]);
 
-  const showProfileWriteNotice = useCallback(() => {
+  const showPasswordUnsupportedNotice = useCallback(() => {
     showToast({
       type: "info",
-      title: "Read-only profile",
-      message: "Profile updates will be connected in a later phase.",
+      title: "Password change unavailable",
+      message: "The backend does not expose a safe current-password change route yet.",
     });
   }, [showToast]);
+
+  const refreshProfileSnapshot = useCallback(async () => {
+    if (!token) return null;
+
+    const result = await getProfile(token);
+    setProfileData(result);
+    return result;
+  }, [token]);
+
+  const refreshSessionAndProfile = useCallback(async () => {
+    if (!token) throw new Error("Please sign in before updating your profile.");
+
+    const refreshed = await refreshCurrentUser(token);
+    if (!refreshed.ok) {
+      throw new Error(refreshed.message || "Unable to refresh your account after saving.");
+    }
+
+    await refreshProfileSnapshot();
+  }, [refreshCurrentUser, refreshProfileSnapshot, token]);
+
+  const handleProfileSave = useCallback(
+    async (payload) => {
+      if (!token) {
+        showToast({ type: "error", title: "Login required", message: "Please sign in before updating your profile." });
+        return;
+      }
+
+      setProfileSaving(true);
+
+      try {
+        const result = await updateMyProfile(token, payload);
+        await refreshSessionAndProfile();
+        showToast({
+          type: "success",
+          title: "Profile updated",
+          message: result.message || "Your profile was saved by the backend.",
+        });
+      } catch (requestError) {
+        const normalized = normalizeApiError(requestError, "Unable to update profile.");
+        showToast({
+          type: "error",
+          title: "Profile update failed",
+          message: normalized.userMessage,
+        });
+      } finally {
+        setProfileSaving(false);
+      }
+    },
+    [refreshSessionAndProfile, showToast, token],
+  );
 
   const handleLogout = useCallback(() => {
     logout();
@@ -139,7 +186,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     }
 
     if (action === "changePassword") {
-      showProfileWriteNotice();
+      showPasswordUnsupportedNotice();
       return;
     }
 
@@ -151,7 +198,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     if (action === "logout") {
       handleLogout();
     }
-  }, [basePath, handleLogout, menuOpen, navigate, pendingMenuAction, shareInvite, showProfileWriteNotice]);
+  }, [basePath, handleLogout, menuOpen, navigate, pendingMenuAction, shareInvite, showPasswordUnsupportedNotice]);
 
   const closeMenu = () => {
     setPendingMenuAction(null);
@@ -164,12 +211,40 @@ export default function ProfilePage({ basePath = "/customer" }) {
   };
 
   const openAvatarPicker = () => {
-    showProfileWriteNotice();
+    if (avatarUploading) return;
+    avatarInputRef.current?.click();
   };
 
-  const changeAvatar = (event) => {
-    showProfileWriteNotice();
+  const changeAvatar = async (event) => {
+    const file = event.target.files?.[0];
     event.target.value = "";
+
+    if (!file) return;
+    if (!token) {
+      showToast({ type: "error", title: "Login required", message: "Please sign in before uploading an avatar." });
+      return;
+    }
+
+    setAvatarUploading(true);
+
+    try {
+      const result = await uploadMyAvatar(token, file);
+      await refreshSessionAndProfile();
+      showToast({
+        type: "success",
+        title: "Avatar updated",
+        message: result.message || "Your avatar was saved by the backend.",
+      });
+    } catch (requestError) {
+      const normalized = normalizeApiError(requestError, "Unable to upload avatar.");
+      showToast({
+        type: "error",
+        title: "Avatar upload failed",
+        message: normalized.userMessage,
+      });
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   return (
@@ -237,7 +312,9 @@ export default function ProfilePage({ basePath = "/customer" }) {
             <button
               type="button"
               onClick={openAvatarPicker}
-              className="interactive-ring absolute bottom-1 right-1 grid h-11 w-11 place-items-center rounded-full border border-white/80 bg-white text-[#7C3AED] shadow-[0_12px_26px_rgba(139,92,246,0.20)] dark:border-[#8B5CF6]/34 dark:bg-[#111827] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.24)]"
+              disabled={avatarUploading}
+              aria-busy={avatarUploading}
+              className="interactive-ring absolute bottom-1 right-1 grid h-11 w-11 place-items-center rounded-full border border-white/80 bg-white text-[#7C3AED] shadow-[0_12px_26px_rgba(139,92,246,0.20)] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#8B5CF6]/34 dark:bg-[#111827] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.24)]"
               aria-label="تعديل صورة الحساب"
               title="تعديل صورة الحساب"
             >
@@ -264,8 +341,11 @@ export default function ProfilePage({ basePath = "/customer" }) {
           currencyValue={currency}
           displayName={displayName}
           email={email}
-          onChangePassword={showProfileWriteNotice}
+          onChangePassword={showPasswordUnsupportedNotice}
+          onSave={handleProfileSave}
           phoneValue={phone}
+          saving={profileSaving}
+          usernameValue={activeProfile.username || ""}
         />
       )}
 
@@ -286,11 +366,45 @@ export default function ProfilePage({ basePath = "/customer" }) {
   );
 }
 
-function EditProfilePanel({ countryValue, currencyValue, displayName, email, onChangePassword, phoneValue }) {
+function EditProfilePanel({
+  countryValue,
+  currencyValue,
+  displayName,
+  email,
+  onChangePassword,
+  onSave,
+  phoneValue,
+  saving = false,
+  usernameValue = "",
+}) {
   const initialCountry = countryValue || profileCountries[0];
   const [country, setCountry] = useState(initialCountry);
-  const [phone, setPhone] = useState(() => getNationalPhone(phoneValue || "", initialCountry));
+  const [form, setForm] = useState({
+    name: displayName || "",
+    phone: phoneValue || "",
+    username: usernameValue || "",
+  });
   const selectedDialCode = countryDialCodes[country] || "";
+  const dirty =
+    form.name.trim() !== (displayName || "").trim() ||
+    form.phone.trim() !== (phoneValue || "").trim() ||
+    form.username.trim() !== (usernameValue || "").trim();
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+  const phone = form.phone;
+  const setPhone = (value) => updateField("phone", value);
+
+  const submitProfile = async (event) => {
+    event.preventDefault();
+    if (!dirty || saving) return;
+    await onSave({
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      username: form.username.trim(),
+    });
+  };
 
   return (
     <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] rounded-[24px] border border-[#C4B5FD]/45 bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] p-4 shadow-[0_22px_58px_rgba(14,165,233,0.16)] backdrop-blur-xl dark:border-[#8B5CF6]/24 dark:bg-[linear-gradient(180deg,#111827_0%,#0D1324_100%)] dark:shadow-[0_0_28px_rgba(139,92,246,0.20)] sm:p-5">
@@ -304,7 +418,48 @@ function EditProfilePanel({ countryValue, currencyValue, displayName, email, onC
         </div>
       </div>
 
-      <form className="mt-5 grid gap-3 sm:grid-cols-2">
+      <form className="mt-5 grid gap-3 sm:grid-cols-2" onSubmit={submitProfile}>
+        <Field
+          label="Name"
+          value={form.name}
+          onChange={(value) => updateField("name", value)}
+          helper="Saved through the backend profile route."
+        />
+        <Field
+          label="Username"
+          value={form.username}
+          onChange={(value) => updateField("username", value)}
+          helper="Optional account username saved by the backend."
+        />
+        <Field label="Email" defaultValue={email} readOnly helper="Email is not updated from this profile form." />
+        <CountrySelectField disabled label="Country" value={country} options={profileCountries} onChange={setCountry} />
+        <Field label="Currency" defaultValue={currencyValue} readOnly helper="Change your active currency from Settings." />
+        <ProfilePhoneField
+          label="Phone"
+          countryCode={selectedDialCode}
+          value={form.phone}
+          onChange={(value) => updateField("phone", value)}
+        />
+        <button
+          type="submit"
+          disabled={saving || !dirty}
+          className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.22)] transition disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none dark:disabled:bg-white/10 dark:disabled:text-white/40 sm:col-span-2"
+        >
+          <Save className="h-5 w-5" />
+          {saving ? "Saving..." : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onChangePassword}
+          disabled
+          className="inline-flex h-12 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#C4B5FD]/35 bg-slate-100 text-sm font-black text-slate-500 dark:border-white/10 dark:bg-white/10 dark:text-white/40 sm:col-span-2"
+        >
+          <LockKeyhole className="h-5 w-5" />
+          Change password unavailable
+        </button>
+      </form>
+
+      <form className="hidden">
         <Field label="الاسم" defaultValue={displayName} readOnly helper="Profile editing is read-only in this phase." />
         <Field
           label="البريد الإلكتروني"
@@ -541,14 +696,18 @@ function PasswordInput({ label, value, onChange }) {
   );
 }
 
-function Field({ label, defaultValue, readOnly = false, helper }) {
+function Field({ label, defaultValue, value, onChange, readOnly = false, helper }) {
+  const inputProps = value === undefined
+    ? { defaultValue: defaultValue || "" }
+    : { value, onChange: (event) => onChange?.(event.target.value) };
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-black text-slate-700 dark:text-[#C4C9D4]">{label}</span>
       <span className="relative block">
         <input
           type="text"
-          defaultValue={defaultValue}
+          {...inputProps}
           readOnly={readOnly}
           aria-readonly={readOnly}
           className={`h-12 w-full rounded-xl border px-4 text-right font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition placeholder:text-slate-400 dark:border-white/10 dark:shadow-none dark:placeholder:text-[#8A94A7] ${
@@ -604,11 +763,11 @@ function ProfilePhoneField({ label, countryCode, readOnly = false, value, onChan
         <input
           dir="ltr"
           type="tel"
-          inputMode="numeric"
+          inputMode="tel"
           readOnly={readOnly}
           aria-readonly={readOnly}
           value={value}
-          onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))}
+          onChange={(event) => onChange(event.target.value)}
           className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pl-20 pr-12 text-left font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition read-only:cursor-default read-only:bg-[#F5F3FF] read-only:text-[#6D28D9] placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:read-only:bg-[#1A2335] dark:read-only:text-[#E9D5FF] dark:placeholder:text-[#8A94A7]"
         />
         <span

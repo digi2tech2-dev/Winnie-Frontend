@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import BackButton from "../components/BackButton";
 import CustomerBottomNav from "../components/CustomerBottomNav";
 import CustomerHeader from "../components/CustomerHeader";
@@ -7,7 +7,13 @@ import DashboardSidebar from "../components/DashboardSidebar";
 import FloatingScrollProgress from "../components/FloatingScrollProgress";
 import SiteFooter from "../components/SiteFooter";
 import { getCustomerCatalog } from "../api/catalog";
-import { getNotifications } from "../api/notifications";
+import {
+  deleteNotification,
+  getNotifications,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "../api/notifications";
 import { getWalletSummary } from "../api/wallet";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -35,10 +41,49 @@ export default function CustomerLayout() {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [notificationsError, setNotificationsError] = useState("");
+  const [notificationAction, setNotificationAction] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const isAboutPage = location.pathname === "/customer/about";
   const isWalletTopUpPage = location.pathname.startsWith("/customer/wallet/top-up/");
+
+  const refreshNotifications = useCallback(async ({ showLoading = true } = {}) => {
+    if (!token) {
+      setNotificationItems([]);
+      setUnreadNotificationCount(0);
+      setNotificationsError("");
+      setNotificationsLoading(false);
+      return null;
+    }
+
+    if (showLoading) setNotificationsLoading(true);
+
+    const [notificationsResult, unreadResult] = await Promise.allSettled([
+      getNotifications(token, { page: 1, limit: 20 }),
+      getUnreadNotificationCount(token),
+    ]);
+
+    if (notificationsResult.status === "fulfilled") {
+      setNotificationItems(notificationsResult.value.notifications);
+      setUnreadNotificationCount(
+        unreadResult.status === "fulfilled"
+          ? unreadResult.value
+          : notificationsResult.value.unreadCount,
+      );
+      setNotificationsError("");
+    } else {
+      setNotificationItems([]);
+      if (unreadResult.status === "fulfilled") {
+        setUnreadNotificationCount(unreadResult.value);
+      } else {
+        setUnreadNotificationCount(0);
+      }
+      setNotificationsError(notificationsResult.reason?.userMessage || "Unable to load notifications.");
+    }
+
+    setNotificationsLoading(false);
+    return notificationsResult.status === "fulfilled" ? notificationsResult.value : null;
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
@@ -55,9 +100,10 @@ export default function CustomerLayout() {
 
     const loadLayoutReads = async () => {
       setNotificationsLoading(true);
-      const [walletResult, notificationsResult, catalogResult] = await Promise.allSettled([
+      const [walletResult, notificationsResult, unreadResult, catalogResult] = await Promise.allSettled([
         getWalletSummary(token),
         getNotifications(token, { page: 1, limit: 20 }),
+        getUnreadNotificationCount(token),
         getCustomerCatalog(token, { page: 1, limit: 24 }),
       ]);
 
@@ -69,11 +115,15 @@ export default function CustomerLayout() {
 
       if (notificationsResult.status === "fulfilled") {
         setNotificationItems(notificationsResult.value.notifications);
-        setUnreadNotificationCount(notificationsResult.value.unreadCount);
+        setUnreadNotificationCount(
+          unreadResult.status === "fulfilled"
+            ? unreadResult.value
+            : notificationsResult.value.unreadCount,
+        );
         setNotificationsError("");
       } else {
         setNotificationItems([]);
-        setUnreadNotificationCount(0);
+        setUnreadNotificationCount(unreadResult.status === "fulfilled" ? unreadResult.value : 0);
         setNotificationsError(notificationsResult.reason?.userMessage || "Unable to load notifications.");
       }
 
@@ -87,6 +137,33 @@ export default function CustomerLayout() {
       cancelled = true;
     };
   }, [token]);
+
+  const runNotificationAction = useCallback(async (actionKey, action) => {
+    if (!token) {
+      throw new Error("Please sign in before updating notifications.");
+    }
+
+    setNotificationAction(actionKey);
+    try {
+      const result = await action();
+      await refreshNotifications({ showLoading: false });
+      return result;
+    } finally {
+      setNotificationAction("");
+    }
+  }, [refreshNotifications, token]);
+
+  const handleMarkNotificationRead = useCallback((id) => (
+    runNotificationAction(`read:${id}`, () => markNotificationRead(token, id))
+  ), [runNotificationAction, token]);
+
+  const handleMarkAllNotificationsRead = useCallback(() => (
+    runNotificationAction("read-all", () => markAllNotificationsRead(token))
+  ), [runNotificationAction, token]);
+
+  const handleDeleteNotification = useCallback((id) => (
+    runNotificationAction(`delete:${id}`, () => deleteNotification(token, id))
+  ), [runNotificationAction, token]);
 
   const customerNavItems = useMemo(
     () =>
@@ -146,8 +223,14 @@ export default function CustomerLayout() {
               context={{
                 navigate,
                 notifications: notificationItems,
+                notificationAction,
+                notificationActionsSupported: true,
                 notificationsError,
                 notificationsLoading,
+                onDeleteNotification: handleDeleteNotification,
+                onMarkAllNotificationsRead: handleMarkAllNotificationsRead,
+                onMarkNotificationRead: handleMarkNotificationRead,
+                refreshNotifications,
                 unreadNotificationCount,
               }}
             />

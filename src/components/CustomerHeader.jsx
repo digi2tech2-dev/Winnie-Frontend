@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Bell, Menu, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { resolveBackendAssetUrl } from "../api/adapters";
 import { useAuth } from "../context/AuthContext";
 import HeaderSearchOverlay from "./HeaderSearchOverlay";
 
@@ -24,7 +25,8 @@ export default function CustomerHeader({ onOpenSidebar, searchProducts = [], unr
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(getStoredProfileAvatar);
-  const headerAvatarUrl = (isImageAvatar(user?.avatar) ? user.avatar : "") || profileAvatarUrl || "/hero-winnie-fun.png";
+  const backendAvatarUrl = resolveBackendAssetUrl(user?.avatar);
+  const headerAvatarUrl = (isImageAvatar(backendAvatarUrl) ? backendAvatarUrl : "") || profileAvatarUrl || "/hero-winnie-fun.png";
 
   useEffect(() => {
     const refreshAvatar = () => setProfileAvatarUrl(getStoredProfileAvatar());

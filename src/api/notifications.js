@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import {
   asArray,
+  compactObject,
   formatDateTime,
   getItemId,
   humanizeToken,
@@ -45,7 +46,7 @@ export function normalizeNotification(notification = {}) {
 export async function getNotifications(token, query = {}) {
   const response = await apiRequest("/me/notifications", {
     token,
-    query,
+    query: compactObject(query),
   });
   const payload = response.data || {};
   const notifications = asArray(payload.notifications || payload).map(normalizeNotification);
@@ -63,7 +64,58 @@ export async function getNotifications(token, query = {}) {
   };
 }
 
+export async function getMyNotifications(token, query = {}) {
+  return getNotifications(token, query);
+}
+
 export async function getUnreadNotificationCount(token) {
   const response = await apiRequest("/me/notifications/unread-count", { token });
   return toNumber(response.data?.unreadCount, 0);
+}
+
+export async function markNotificationRead(token, id) {
+  const response = await apiRequest(`/me/notifications/${id}/read`, {
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    notification: normalizeNotification(response.data || {}),
+  };
+}
+
+export async function markAllNotificationsRead(token) {
+  const response = await apiRequest("/me/notifications/read-all", {
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    modifiedCount: toNumber(response.data?.modifiedCount, 0),
+  };
+}
+
+export async function deleteNotification(token, id) {
+  const response = await apiRequest(`/me/notifications/${id}`, {
+    method: "DELETE",
+    token,
+  });
+
+  return {
+    message: response.message,
+  };
+}
+
+export async function clearReadNotifications(token) {
+  const response = await apiRequest("/me/notifications/read", {
+    method: "DELETE",
+    token,
+  });
+
+  return {
+    deletedCount: toNumber(response.data?.deletedCount, 0),
+    message: response.message,
+  };
 }
