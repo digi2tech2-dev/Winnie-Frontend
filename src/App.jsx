@@ -17,6 +17,7 @@ const Login = lazy(() => import("./pages/public/Login"));
 const Register = lazy(() => import("./pages/public/Register"));
 const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword"));
 const ImportantArticlePage = lazy(() => import("./pages/public/ImportantArticlePage"));
+const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 
 const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
 const CustomerBestSelling = lazy(() => import("./pages/customer/CustomerBestSelling"));
@@ -70,6 +71,9 @@ export default function App() {
             <Route path="login" element={<Animated><Login /></Animated>} />
             <Route path="register" element={<Animated><Register /></Animated>} />
             <Route path="forgot-password" element={<Animated><ForgotPassword /></Animated>} />
+            <Route path="payment/success" element={<Animated><PaymentReturnPage variant="success" /></Animated>} />
+            <Route path="payment/cancel" element={<Animated><PaymentReturnPage variant="cancel" /></Animated>} />
+            <Route path="payment/pending" element={<Animated><PaymentReturnPage variant="pending" /></Animated>} />
             {importantLinks.map((article) => (
               <Route
                 key={article.slug}

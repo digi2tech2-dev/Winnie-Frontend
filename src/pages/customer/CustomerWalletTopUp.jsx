@@ -3,7 +3,7 @@ import { ArrowRight, CheckCircle2, Copy, CreditCard, ExternalLink, Hash, Loader2
 import { Link, useParams } from "react-router-dom";
 import { createDepositRequest } from "../../api/deposits";
 import { getCustomerPaymentMethod } from "../../api/paymentMethods";
-import { createPaymentIntent, isPaymentRiskLimitError } from "../../api/payments";
+import { createPaymentIntent, isPaymentCurrencyConversionError, isPaymentRiskLimitError } from "../../api/payments";
 import { getWalletSummary, getWalletTransactions } from "../../api/wallet";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
@@ -32,9 +32,11 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const [amount, setAmount] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentIntent, setPaymentIntent] = useState(null);
+  const [pendingMessage, setPendingMessage] = useState("");
   const [riskBlockedMessage, setRiskBlockedMessage] = useState("");
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptInputKey, setReceiptInputKey] = useState(0);
+  const [redirecting, setRedirecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -87,9 +89,11 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       .replace(/(\..*)\./g, "$1");
     setAmount(cleanedValue);
     setErrorMessage("");
+    setPendingMessage("");
     setRiskBlockedMessage("");
     setSuccessMessage("");
     setPaymentIntent(null);
+    setRedirecting(false);
   };
 
   const copyPaymentAccount = async () => {
@@ -124,9 +128,12 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const submitTopUp = async (event) => {
     event.preventDefault();
     if (submitting) return;
+    let shouldRedirect = false;
 
     setErrorMessage("");
+    setPendingMessage("");
     setPaymentIntent(null);
+    setRedirecting(false);
     setRiskBlockedMessage("");
     setSuccessMessage("");
 
@@ -199,9 +206,25 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       });
 
       setPaymentIntent(result.payment);
-      setSuccessMessage(result.payment.checkoutUrl
-        ? "Payment intent created. Continue to checkout to complete the gateway step."
-        : `Payment intent created with status ${result.payment.statusLabel}.`);
+      if (result.payment.checkoutUrl) {
+        shouldRedirect = true;
+        const gatewayChargeText = formatGatewayChargeText(result.payment);
+        setRedirecting(true);
+        setPendingMessage(gatewayChargeText
+          ? `${gatewayChargeText}. Redirecting to secure checkout. Wallet balance updates only after provider verification.`
+          : "Redirecting to secure checkout. Wallet balance updates only after provider verification.");
+        showToast({
+          type: "success",
+          title: "Redirecting to checkout",
+          message: gatewayChargeText || "Complete the card payment on the secure hosted page.",
+        });
+        window.setTimeout(() => {
+          window.location.assign(result.payment.checkoutUrl);
+        }, gatewayChargeText ? 1200 : 0);
+        return;
+      }
+
+      setPendingMessage(`Payment intent created with status ${result.payment.statusLabel}.`);
       await refreshWalletReads();
       showToast({
         type: "success",
@@ -209,20 +232,20 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         message: result.payment.statusLabel,
       });
     } catch (requestError) {
-      if (isPaymentRiskLimitError(requestError)) {
-        const message = requestError.userMessage || "Online top-up is temporarily limited for your account. Please use manual deposit or contact support.";
+      if (isPaymentRiskLimitError(requestError) || isPaymentCurrencyConversionError(requestError)) {
+        const message = requestError.userMessage || "Online top-up is temporarily unavailable for this currency. Please use manual deposit or contact support.";
         setRiskBlockedMessage(message);
         setErrorMessage(message);
         showToast({
           type: "warning",
-          title: "Online top-up limited",
+          title: isPaymentRiskLimitError(requestError) ? "Online top-up limited" : "Online top-up unavailable",
           message,
         });
       } else {
         setErrorMessage(requestError.userMessage || "Top-up request could not be created.");
       }
     } finally {
-      setSubmitting(false);
+      if (!shouldRedirect) setSubmitting(false);
     }
   };
 
@@ -364,25 +387,42 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
               </p>
             )}
 
+            {paymentIntent?.hasGatewayCharge && (
+              <div className="mt-3 grid gap-2 rounded-2xl border border-sky-500/25 bg-sky-500/10 p-3 text-right dark:border-sky-400/20 dark:bg-sky-400/10">
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">Requested amount</span>
+                  <span dir="ltr" className="text-sm font-black text-slate-900 dark:text-white">{paymentIntent.requestedAmountLabel}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">Secure checkout charge</span>
+                  <span dir="ltr" className="text-sm font-black text-sky-700 dark:text-sky-300">{paymentIntent.gatewayAmountLabel}</span>
+                </div>
+              </div>
+            )}
+
+            {pendingMessage && (
+              <p className="mt-3 rounded-2xl border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs font-bold leading-5 text-sky-700 dark:text-sky-300">
+                {pendingMessage}
+              </p>
+            )}
+
             {paymentIntent?.checkoutUrl && (
               <a
                 href={paymentIntent.checkoutUrl}
-                target="_blank"
-                rel="noreferrer"
                 className="interactive-ring mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-sky-500/20 bg-sky-500/10 px-4 text-xs font-black text-sky-700 dark:text-sky-300"
               >
                 <ExternalLink className="h-4 w-4" />
-                Open checkout
+                Secure checkout
               </a>
             )}
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || redirecting}
               className="interactive-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#A855F7] px-4 text-sm font-black text-white shadow-[0_12px_30px_rgba(139,92,246,0.30)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <CheckCircle2 className="h-[18px] w-[18px]" />}
-              {submitting ? "Submitting..." : isManual ? "Submit deposit request" : isOnline ? "Create payment intent" : "Not connected"}
+              {submitting || redirecting ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <CheckCircle2 className="h-[18px] w-[18px]" />}
+              {redirecting ? "Redirecting..." : submitting ? "Submitting..." : isManual ? "Submit deposit request" : isOnline ? "Continue to secure checkout" : "Not connected"}
             </button>
           </section>
         </form>
@@ -564,4 +604,9 @@ function formatMoney(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatGatewayChargeText(payment) {
+  if (!payment?.hasGatewayCharge || !payment.gatewayAmountLabel || !payment.requestedAmountLabel) return "";
+  return `Requested ${payment.requestedAmountLabel}; secure checkout will charge ${payment.gatewayAmountLabel}`;
 }

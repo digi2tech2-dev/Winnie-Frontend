@@ -54,6 +54,10 @@ export function getFriendlyAuthMessage({ status, code, message, errors } = {}) {
     return safeMessage || "Online top-up is temporarily limited for your account. Please use manual deposit or contact support.";
   }
 
+  if (normalizedCode === "PAYMENT_CURRENCY_CONVERSION_UNAVAILABLE") {
+    return safeMessage || "Online card payment is temporarily unavailable for this currency. Please try another currency or use manual deposit.";
+  }
+
   if (normalizedCode === "INVALID_REFERRAL_CODE" || textIncludes(safeMessage, ["invalid referral code"])) {
     return "Invalid referral code. Please check the code and try again.";
   }
