@@ -24,7 +24,7 @@ export default function ProductPurchaseModal({
   const [fieldValues, setFieldValues] = useState(() => getInitialFieldValues(activeFields));
   const [selectedPackageIndex, setSelectedPackageIndex] = useState(0);
   const selectedPackage = packages[selectedPackageIndex] || null;
-  const displayPrice = selectedPackage?.price || product.displayPriceLabel || product.newPrice || product.price || "Priced by backend";
+  const displayPrice = selectedPackage?.price || product.displayPriceLabel || product.price || "Priced by backend";
   const priceInfo = extractPriceInfo(displayPrice);
   const totalLabel = priceInfo ? formatTotalPrice(priceInfo, quantity) : `${quantity} x ${displayPrice}`;
   const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";

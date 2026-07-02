@@ -163,12 +163,6 @@ const copy = {
 const serviceIcons = [MessageCircle, Trophy, CreditCard, Smartphone, Sparkles, Globe2];
 const whyIcons = [Zap, Headphones, Globe2, BadgeCheck, ShieldCheck, Clock3, WalletCards];
 const securityIcons = [ShieldCheck, LockKeyhole, BadgeCheck, Headphones];
-const statValues = [
-  { value: 125000, prefix: "+" },
-  { value: 580000, prefix: "+" },
-  { value: 52, prefix: "+" },
-  { value: 97, suffix: "%" },
-];
 const paymentMethods = ["VISA", "Mastercard", "Apple Pay", "Google Pay", "Wallets", "Bank Transfer", "Local Pay"];
 
 const fadeUp = {
@@ -384,17 +378,6 @@ export default function About() {
           </div>
         </section>
 
-        <section className="about-lux-band px-4 py-12 text-white sm:px-6 lg:px-8">
-          <div className="relative mx-auto max-w-[1180px]">
-            <SectionTitle title={t.statsTitle} inverted />
-            <Reveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {statValues.map((item, index) => (
-                <StatCard key={t.stats[index]} value={item.value} label={t.stats[index]} prefix={item.prefix} suffix={item.suffix} />
-              ))}
-            </Reveal>
-          </div>
-        </section>
-
         <section className="px-4 py-12 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-[1180px] space-y-14">
             <Reveal className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
@@ -563,22 +546,6 @@ function PaymentCard({ method, index, label }) {
   );
 }
 
-function StatCard({ value, label, prefix = "", suffix = "" }) {
-  const count = useCountUp(value);
-  const display = new Intl.NumberFormat("en-US").format(count);
-
-  return (
-    <motion.div variants={fadeUp} transition={{ duration: 0.55, ease: "easeOut" }} className="rounded-lg border border-white/[0.12] bg-white/[0.07] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-      <p className="text-4xl font-black text-white">
-        {prefix}
-        {display}
-        {suffix}
-      </p>
-      <p className="mt-2 text-sm font-black text-white/[0.68]">{label}</p>
-    </motion.div>
-  );
-}
-
 function InfoRow({ icon: Icon, label, value }) {
   return (
     <div className="grid gap-3 py-4 sm:grid-cols-[170px_1fr] sm:items-center">
@@ -602,30 +569,4 @@ function TrustBadge({ icon: Icon, title }) {
       <h3 className="text-sm font-black text-[#111715] dark:text-[#F8F4E8]">{title}</h3>
     </motion.article>
   );
-}
-
-function useCountUp(target) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    let frame;
-    const duration = 1300;
-    const start = performance.now();
-
-    setValue(0);
-
-    const tick = (now) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(target * eased));
-      if (progress < 1) {
-        frame = requestAnimationFrame(tick);
-      }
-    };
-
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target]);
-
-  return value;
 }

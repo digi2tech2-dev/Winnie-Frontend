@@ -4,12 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getCustomerCatalog } from "../../api/catalog";
 import { getCustomerOrders } from "../../api/orders";
 import { getWalletSummary, getWalletTransactions } from "../../api/wallet";
-import { useToast } from "../../components/ToastProvider";
-import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeShowcase from "../../components/home/HomeShowcase";
 import HomeSlide from "../../components/home/HomeSlide";
-import OffersSection from "../../components/home/OffersSection";
-import PubgPromoBanner from "../../components/home/PubgPromoBanner";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
@@ -26,7 +22,6 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { token, user } = useAuth();
-  const { showToast } = useToast();
   const [dashboardData, setDashboardData] = useState(initialDashboardData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -109,13 +104,6 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   const goCategory = (category) => {
     navigate(`${basePath}/categories/${category.slug || category.id}`);
   };
-  const showReadOnlyNotice = () => {
-    showToast({
-      type: "info",
-      title: "Static promotion",
-      message: "Choose a backend catalog product to create an order.",
-    });
-  };
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -138,10 +126,10 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
         onCategorySelect={goCategory}
         onProductSelect={(product) => openPurchase(product, product.categoryTitle || "Customer catalog")}
       />
-      <OffersSection onOrder={showReadOnlyNotice} />
-      <PubgPromoBanner gamesPath={`${basePath}/categories/games`} />
-      <RecentAdditionsSection onSelect={showReadOnlyNotice} />
-      <CustomerReviews reviewerName={user?.name || ""} />
+      <RecentAdditionsSection
+        items={dashboardData.products}
+        onSelect={(product) => openPurchase(product, product.categoryTitle || "Customer catalog")}
+      />
       {purchaseModals}
     </div>
   );

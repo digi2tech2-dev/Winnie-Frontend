@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Star } from "lucide-react";
-import { categories as defaultCategories } from "../../data/catalog";
-import { bestSellingProducts } from "../../data/homeContent";
 import { iconMap } from "../icons";
 
 const categoryAccentIcons = {
@@ -14,8 +12,8 @@ const categoryAccentIcons = {
 };
 
 export default function HomeShowcase({
-  categories = defaultCategories,
-  products = bestSellingProducts,
+  categories = [],
+  products = [],
   onViewAll,
   onCategorySelect,
   onProductSelect,
@@ -23,28 +21,36 @@ export default function HomeShowcase({
   return (
     <div dir="rtl" className="space-y-6 text-right lg:space-y-8">
       <section id="home-categories">
-        <ShowcaseHeading title="الأقسام" />
-        <CategoriesGrid categories={categories} onCategorySelect={onCategorySelect} />
+        <ShowcaseHeading title="Categories" />
+        {categories.length ? (
+          <CategoriesGrid categories={categories} onCategorySelect={onCategorySelect} />
+        ) : (
+          <CleanEmptyState title="No categories available yet." />
+        )}
       </section>
 
-      <section id="best-selling">
-        <ShowcaseHeading title="الأكثر مبيعاً" onAction={onViewAll} />
-        <div dir="rtl" className="no-scrollbar flex gap-4 overflow-x-auto overflow-y-hidden pb-2 sm:gap-5">
-          {products.map((product, index) => (
-            <BestSellerCard
-              key={product.name}
-              product={product}
-              index={index}
-              onSelect={() => onProductSelect?.(product)}
-            />
-          ))}
-        </div>
+      <section id="catalog-products">
+        <ShowcaseHeading title="Products" onAction={products.length ? onViewAll : undefined} />
+        {products.length ? (
+          <div dir="rtl" className="no-scrollbar flex gap-4 overflow-x-auto overflow-y-hidden pb-2 sm:gap-5">
+            {products.map((product, index) => (
+              <ProductCatalogCard
+                key={product.id || product.name}
+                product={product}
+                index={index}
+                onSelect={() => onProductSelect?.(product)}
+              />
+            ))}
+          </div>
+        ) : (
+          <CleanEmptyState title="No products available yet." />
+        )}
       </section>
     </div>
   );
 }
 
-export function CategoriesGrid({ categories = defaultCategories, onCategorySelect, layout = "three" }) {
+export function CategoriesGrid({ categories = [], onCategorySelect, layout = "three" }) {
   const gridClassName =
     layout === "two"
       ? "grid grid-cols-2 gap-x-4 gap-y-6 py-2 sm:gap-x-8 sm:gap-y-8"
@@ -54,7 +60,7 @@ export function CategoriesGrid({ categories = defaultCategories, onCategorySelec
     <div dir="rtl" className={gridClassName}>
       {categories.map((category, index) => (
         <CategoryImageItem
-          key={category.id}
+          key={category.id || category.slug || category.name}
           category={category}
           index={index}
           size={layout === "two" ? "large" : "default"}
@@ -65,7 +71,7 @@ export function CategoriesGrid({ categories = defaultCategories, onCategorySelec
   );
 }
 
-function ShowcaseHeading({ title, action = "عرض الكل", onAction }) {
+function ShowcaseHeading({ title, action = "View all", onAction }) {
   return (
     <div dir="rtl" className="mb-4 flex items-center justify-between gap-4 text-right">
       <h2 className="relative pr-3 text-xl font-black tracking-normal text-slate-950 dark:text-white sm:text-2xl">
@@ -156,20 +162,8 @@ function CategoryImageItem({ category, index, onSelect, size = "default" }) {
           }`}
         >
           <span className={`absolute inset-1 bg-white/14 ${isLarge ? "rounded-[26px] sm:rounded-[36px]" : "rounded-[22px] sm:rounded-[28px]"}`} />
-          <span className={`absolute left-2 top-2 rotate-[-20deg] rounded-full bg-white/24 blur-[1px] ${isLarge ? "h-6 w-10 sm:h-8 sm:w-14" : "h-5 w-8 sm:h-6 sm:w-10"}`} />
           <Icon className={`relative drop-shadow-[0_10px_18px_rgba(15,23,42,0.30)] ${isLarge ? "h-12 w-12 sm:h-[72px] sm:w-[72px] lg:h-20 lg:w-20" : "h-10 w-10 sm:h-14 sm:w-14"}`} />
         </span>
-
-        <span
-          className={`absolute rounded-full bg-white/75 shadow-[0_0_16px_rgba(255,255,255,0.75)] ${
-            isLarge ? "bottom-12 right-5 h-3 w-3 sm:bottom-16 sm:right-8 sm:h-3.5 sm:w-3.5" : "bottom-10 right-4 h-2.5 w-2.5 sm:bottom-12 sm:right-6 sm:h-3 sm:w-3"
-          }`}
-        />
-        <span
-          className={`absolute rounded-full bg-white/60 shadow-[0_0_12px_rgba(255,255,255,0.55)] ${
-            isLarge ? "bottom-10 left-6 h-2 w-7 sm:bottom-14 sm:left-10 sm:w-9" : "bottom-8 left-5 h-1.5 w-5 sm:bottom-10 sm:left-8 sm:w-7"
-          }`}
-        />
       </span>
       <span
         className={`block font-black text-slate-950 transition group-hover:text-[#7C3AED] dark:text-white dark:group-hover:text-[#C084FC] ${
@@ -182,7 +176,9 @@ function CategoryImageItem({ category, index, onSelect, size = "default" }) {
   );
 }
 
-function BestSellerCard({ product, index, onSelect }) {
+function ProductCatalogCard({ product, index, onSelect }) {
+  const priceLabel = product.displayPriceLabel || product.price || "";
+
   return (
     <motion.button
       type="button"
@@ -196,7 +192,7 @@ function BestSellerCard({ product, index, onSelect }) {
       className="group relative min-w-[170px] overflow-hidden rounded-[22px] border border-slate-100 bg-white text-right shadow-[0_18px_42px_rgba(15,23,42,0.10)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.18)] dark:focus-visible:ring-offset-[#050816] sm:min-w-[190px] lg:min-w-[205px]"
     >
       <span className="absolute right-3 top-3 z-20 rounded-full bg-[#7C3AED] px-2.5 py-1 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
-        الأكثر مبيعاً
+        Catalog
       </span>
       <div className={`relative grid h-40 place-items-center overflow-hidden bg-gradient-to-br ${product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]"} sm:h-48`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
@@ -207,11 +203,19 @@ function BestSellerCard({ product, index, onSelect }) {
           {product.name}
         </h3>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span dir="ltr" className="text-base font-black text-slate-500 dark:text-[#A78BFA]">{product.price}</span>
-          <span dir="ltr" className="inline-flex items-center gap-1 text-sm font-black text-slate-600 dark:text-slate-300">
-            <Star className="h-4 w-4 fill-[#FBBF24] text-[#FBBF24]" />
-            {product.rating}
-          </span>
+          {priceLabel ? (
+            <span dir="ltr" className="truncate text-base font-black text-slate-500 dark:text-[#A78BFA]">
+              {priceLabel}
+            </span>
+          ) : (
+            <span className="text-sm font-bold text-slate-400 dark:text-slate-500">Price unavailable</span>
+          )}
+          {product.rating ? (
+            <span dir="ltr" className="inline-flex items-center gap-1 text-sm font-black text-slate-600 dark:text-slate-300">
+              <Star className="h-4 w-4 fill-[#FBBF24] text-[#FBBF24]" />
+              {product.rating}
+            </span>
+          ) : null}
         </div>
       </div>
     </motion.button>
@@ -221,26 +225,18 @@ function BestSellerCard({ product, index, onSelect }) {
 function ProductVisual({ product }) {
   const Icon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
 
-  if (product.visual === "youtube") {
-    return (
-      <span className="relative grid h-20 w-28 place-items-center rounded-[24px] bg-[#EF1D1D] text-white shadow-[0_22px_42px_rgba(0,0,0,0.38)] transition group-hover:scale-105 sm:h-24 sm:w-32">
-        <Icon className="h-12 w-12 fill-white text-white sm:h-14 sm:w-14" />
-      </span>
-    );
-  }
-
-  if (product.visual === "spotify") {
-    return (
-      <span className="relative grid h-24 w-24 place-items-center rounded-full bg-[#1ED760] text-[#0B1210] shadow-[0_22px_42px_rgba(0,0,0,0.38)] transition group-hover:scale-105 sm:h-28 sm:w-28">
-        <Icon className="h-14 w-14 stroke-[3] sm:h-16 sm:w-16" />
-      </span>
-    );
-  }
-
   return (
     <div className="relative grid h-24 w-24 place-items-center rounded-full border border-white/20 bg-white/12 text-white shadow-[0_22px_42px_rgba(0,0,0,0.32)] backdrop-blur transition group-hover:scale-105 sm:h-28 sm:w-28">
       <div className="absolute inset-2 rounded-full bg-white/10" />
       <Icon className="relative h-14 w-14 drop-shadow-[0_0_22px_rgba(255,255,255,0.45)] sm:h-16 sm:w-16" />
+    </div>
+  );
+}
+
+function CleanEmptyState({ title }) {
+  return (
+    <div className="rounded-[22px] border border-slate-200 bg-white/80 p-6 text-center text-sm font-black text-slate-500 shadow-[0_14px_34px_rgba(14,165,233,0.08)] dark:border-white/10 dark:bg-[#111827]/80 dark:text-slate-400">
+      {title}
     </div>
   );
 }

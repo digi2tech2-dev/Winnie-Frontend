@@ -4,7 +4,6 @@ import BackButton from "../components/BackButton";
 import CustomerBottomNav from "../components/CustomerBottomNav";
 import CustomerHeader from "../components/CustomerHeader";
 import DashboardSidebar from "../components/DashboardSidebar";
-import FloatingScrollProgress from "../components/FloatingScrollProgress";
 import SiteFooter from "../components/SiteFooter";
 import { getCustomerCatalog } from "../api/catalog";
 import {
@@ -236,7 +235,6 @@ export default function CustomerLayout() {
             />
           </main>
           <SiteFooter simple={isWalletTopUpPage} className="pb-28 xl:pb-8" />
-          <FloatingScrollProgress />
           <CustomerBottomNav />
         </div>
       </div>

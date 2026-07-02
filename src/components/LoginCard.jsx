@@ -16,7 +16,7 @@ export default function LoginCard({ onNavigate }) {
     showFeedback({
       type: "success",
       title: "Login complete",
-      message: "Your mock session is active. You can now view dashboard, wallet and orders.",
+      message: "You can now view dashboard, wallet and orders.",
       confirmLabel: "Open Dashboard",
       onConfirm: () => onNavigate?.("dashboard"),
     });

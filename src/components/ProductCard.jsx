@@ -5,6 +5,7 @@ import { useToast } from "./ToastProvider";
 export default function ProductCard({ product, onAction }) {
   const Icon = iconMap[product.icon] || iconMap.Gift;
   const { showToast } = useToast();
+  const priceLabel = product.displayPriceLabel || product.price || "";
 
   const handleTopUp = () => {
     if (onAction) {
@@ -28,7 +29,9 @@ export default function ProductCard({ product, onAction }) {
       <div className="p-4">
         <h3 className="line-clamp-1 text-base font-black">{product.name}</h3>
         <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-slate-500 dark:text-[#A78BFA]">{product.price}</p>
+          {priceLabel ? (
+            <p className="text-sm font-bold text-slate-500 dark:text-[#A78BFA]">{priceLabel}</p>
+          ) : null}
           <button
             type="button"
             onClick={handleTopUp}

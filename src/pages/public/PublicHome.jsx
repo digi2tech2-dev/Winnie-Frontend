@@ -1,27 +1,56 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { getPublicCatalog } from "../../api/catalog";
+import EmptyState from "../../components/EmptyState";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
-import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeShowcase from "../../components/home/HomeShowcase";
 import HomeSlide from "../../components/home/HomeSlide";
-import OffersSection from "../../components/home/OffersSection";
-import PubgPromoBanner from "../../components/home/PubgPromoBanner";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
-import { categories } from "../../data/catalog";
 
 export default function PublicHome() {
   const navigate = useNavigate();
+  const [catalog, setCatalog] = useState({ categories: [], products: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [purchaseItem, setPurchaseItem] = useState(null);
 
-  const openCategory = (category) => navigate(`/categories/${category.id}`);
-  const openBestSelling = () => navigate("/best-selling");
-  const openPurchase = (product, categoryTitle = "الأكثر مبيعاً") => {
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCatalog = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getPublicCatalog({ page: 1, limit: 12 });
+        if (!cancelled) {
+          setCatalog({
+            categories: result.categories,
+            products: result.products,
+          });
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setCatalog({ categories: [], products: [] });
+          setError(requestError.userMessage || "Unable to load the public catalog.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const openCategory = (category) => navigate(`/categories/${category.slug || category.id}`);
+  const openProducts = () => navigate("/best-selling");
+  const openPurchase = (product, categoryTitle = "Catalog") => {
     setPurchaseItem({ product, category: categoryTitle });
-  };
-  const openOfferPurchase = (offer) => {
-    const offerCategory = categories.find((item) => item.id === offer.categoryId);
-    setPurchaseItem({ product: offer, category: offerCategory || "العروض" });
   };
   const confirmPurchase = () => {
     setPurchaseItem(null);
@@ -36,11 +65,25 @@ export default function PublicHome() {
       className="mx-auto max-w-[1120px] space-y-6 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:space-y-8 lg:px-8 lg:pb-16"
     >
       <HomeSlide categoriesPath="/categories" />
-      <HomeShowcase onViewAll={openBestSelling} onCategorySelect={openCategory} onProductSelect={(product) => openPurchase(product)} />
-      <OffersSection onOrder={openOfferPurchase} />
-      <PubgPromoBanner gamesPath="/categories/games" />
-      <RecentAdditionsSection onSelect={(product) => openPurchase(product, "المضافة حديثاً")} />
-      <CustomerReviews />
+      {loading ? (
+        <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+          Loading catalog...
+        </div>
+      ) : error ? (
+        <EmptyState title="Unable to load catalog" description={error} />
+      ) : (
+        <HomeShowcase
+          categories={catalog.categories}
+          products={catalog.products.slice(0, 8)}
+          onViewAll={openProducts}
+          onCategorySelect={openCategory}
+          onProductSelect={(product) => openPurchase(product, product.categoryTitle || "Catalog")}
+        />
+      )}
+      <RecentAdditionsSection
+        items={catalog.products}
+        onSelect={(product) => openPurchase(product, product.categoryTitle || "Catalog")}
+      />
       <AnimatePresence>
         {purchaseItem && (
           <ProductPurchaseModal

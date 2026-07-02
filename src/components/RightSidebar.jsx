@@ -1,17 +1,17 @@
 import { X } from "lucide-react";
 import Brand from "./Brand";
 import { iconMap } from "./icons";
-import { navItems } from "../data/catalog";
 
 export default function RightSidebar({
   activePage,
+  items = [],
   onNavigate,
   open,
   onClose,
   walletBalance,
 }) {
-  const primary = navItems.filter((item) => !item.group);
-  const account = navItems.filter((item) => item.group === "account");
+  const primary = items.filter((item) => !item.group);
+  const account = items.filter((item) => item.group === "account");
   const LogOutIcon = iconMap.LogOut;
 
   const handleLogout = () => {

@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { CheckCheck, Trash2 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { iconMap } from "../components/icons";
-import { notifications as defaultNotifications } from "../data/catalog";
 import { useToast } from "../components/ToastProvider";
 
 const filters = ["all", "orders", "wallet", "offers", "account"];
@@ -26,7 +25,7 @@ export default function NotificationsPage({
   unreadCount,
 }) {
   const [filter, setFilter] = useState("all");
-  const [localItems, setLocalItems] = useState(defaultNotifications);
+  const [localItems, setLocalItems] = useState([]);
   const { showToast } = useToast();
   const notificationItems = items ?? localItems;
   const unreadTotal = unreadCount ?? notificationItems.filter((item) => item.unread).length;

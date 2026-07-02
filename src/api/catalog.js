@@ -72,8 +72,9 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
   const categoryValue = product.category?._id || product.category || "";
   const category = categoryLookup.get(String(categoryValue)) || categoryLookup.get(String(product.categorySlug || ""));
   const displayCurrency = String(product.displayCurrency || product.currency || DEFAULT_CURRENCY).toUpperCase();
-  const displayPrice = product.displayPrice ?? product.finalPrice ?? product.sellingPrice ?? product.price ?? product.basePrice ?? 0;
-  const numericPrice = toNumber(displayPrice, 0);
+  const displayPrice = product.displayPrice ?? product.finalPrice ?? product.sellingPrice ?? product.price ?? product.basePrice;
+  const hasDisplayPrice = displayPrice !== undefined && displayPrice !== null && displayPrice !== "";
+  const numericPrice = hasDisplayPrice ? toNumber(displayPrice, 0) : null;
   const name = product.name || product.title || "Untitled product";
   const categoryTitle = category?.title || product.categoryName || humanizeToken(categoryValue, "Catalog");
 
@@ -89,16 +90,15 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     description: product.description || "",
     displayCurrency,
     displayPrice: numericPrice,
-    displayPriceLabel: formatCurrency(numericPrice, displayCurrency),
+    displayPriceLabel: hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : "",
     icon: product.icon || pickIcon(`${name} ${categoryTitle}`),
     image: resolveBackendAssetUrl(product.image),
     isActive: product.isActive !== false,
     maxQty: toNumber(product.maxQty, 999),
     minQty: toNumber(product.minQty, 1),
     name,
-    price: formatCurrency(numericPrice, displayCurrency),
+    price: hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : "",
     priceValue: numericPrice,
-    rating: product.rating || "4.8",
     tone: product.tone || pickTone(`${name}${categoryTitle}`),
   };
 }
@@ -160,6 +160,30 @@ export async function getCustomerCatalog(token, query = {}) {
     categories,
     products,
     pagination: productResult.pagination,
+  };
+}
+
+export async function getPublicCatalog(query = {}) {
+  const response = await apiRequest("/public/catalog", {
+    query: {
+      limit: 100,
+      ...query,
+    },
+  });
+  const categories = asArray(response.data?.categories || response.categories).map(normalizeCategory);
+  const lookup = buildCategoryLookup(categories);
+  const products = asArray(response.data?.products || response.products).map((product, index) =>
+    normalizeProduct(product, index, lookup),
+  );
+
+  return {
+    categories,
+    products,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page,
+      limit: query.limit || 100,
+      total: products.length,
+    }),
   };
 }
 

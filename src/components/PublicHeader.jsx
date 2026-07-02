@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Building2, CircleUserRound, Home, Languages, LayoutGrid, LogIn, Menu, Search, UserPlus, X } from "lucide-react";
+import { getPublicCatalog } from "../api/catalog";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import GoogleMark from "./GoogleMark";
@@ -90,6 +91,7 @@ const publicText = {
 export default function PublicHeader() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchProducts, setSearchProducts] = useState([]);
   const [purchaseItem, setPurchaseItem] = useState(null);
   const { language, setLanguage } = useLanguage();
   const location = useLocation();
@@ -98,6 +100,25 @@ export default function PublicHeader() {
   const t = publicText[language];
   const nextLanguage = language === "ar" ? "en" : "ar";
   const isLoginPage = location.pathname === "/login";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSearchProducts = async () => {
+      try {
+        const result = await getPublicCatalog({ page: 1, limit: 24 });
+        if (!cancelled) setSearchProducts(result.products);
+      } catch {
+        if (!cancelled) setSearchProducts([]);
+      }
+    };
+
+    void loadSearchProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const confirmPurchase = () => {
     setPurchaseItem(null);
@@ -194,6 +215,7 @@ export default function PublicHeader() {
         onNavigate={navigate}
         onProductSelect={(product) => setPurchaseItem({ product, category: product.groupTitle })}
         mode="public"
+        products={searchProducts}
       />
       <AnimatePresence>
         {purchaseItem && (

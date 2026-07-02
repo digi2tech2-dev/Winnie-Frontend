@@ -3,7 +3,6 @@ import { Search, ShoppingBag, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { iconMap } from "./icons";
-import { productGroups } from "../data/catalog";
 
 export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
@@ -12,34 +11,22 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
   const products = useMemo(() => {
     const backendProducts = Array.isArray(providedProducts) ? providedProducts : [];
 
-    if (backendProducts.length) {
-      return backendProducts.map((product, index) => {
-        const id = product.id || product._id || `product-${index}`;
-        const name = product.name || product.title || "Untitled product";
-        const groupTitle = product.categoryTitle || product.categoryName || "Catalog";
-        const price = product.displayPriceLabel || product.price || "";
+    return backendProducts.map((product, index) => {
+      const id = product.id || product._id || `product-${index}`;
+      const name = product.name || product.title || "Untitled product";
+      const groupTitle = product.categoryTitle || product.categoryName || "Catalog";
+      const price = product.displayPriceLabel || product.price || "";
 
-        return {
-          ...product,
-          id,
-          name,
-          groupId: product.categoryId || product.categorySlug || product.category || product.groupId || "",
-          groupTitle,
-          price,
-          searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
-        };
-      });
-    }
-
-    return Object.entries(productGroups).flatMap(([groupId, group]) =>
-        group.products.map((product) => ({
-          ...product,
-          id: `${groupId}-${product.name}`,
-          groupId,
-          groupTitle: group.title,
-          searchText: `${product.name} ${product.price} ${group.title}`.toLowerCase(),
-        })),
-      );
+      return {
+        ...product,
+        id,
+        name,
+        groupId: product.categorySlug || product.categoryId || product.category || product.groupId || "",
+        groupTitle,
+        price,
+        searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
+      };
+    });
   }, [providedProducts]);
 
   const shownProducts = useMemo(() => {
@@ -90,7 +77,9 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       ? `/customer/categories/${categoryTarget}`
       : mode === "customer"
         ? "/customer/dashboard#best-selling"
-        : `/categories/${product.groupId}`;
+        : categoryTarget
+          ? `/categories/${categoryTarget}`
+          : "/categories";
     onNavigate(target);
     onClose();
   };
@@ -186,6 +175,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
 
 function SearchProductCard({ product, onClick }) {
   const Icon = iconMap[product.icon] || iconMap.ShoppingBag;
+  const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
 
   return (
     <button
@@ -193,14 +183,16 @@ function SearchProductCard({ product, onClick }) {
       onClick={onClick}
       className="group min-w-0 overflow-hidden rounded-2xl border border-sky-100 bg-white text-right shadow-[0_14px_34px_rgba(14,165,233,0.10)] transition hover:-translate-y-1 hover:border-[#C4B5FD] hover:shadow-[0_18px_44px_rgba(124,58,237,0.16)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.14)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
     >
-      <span className={`relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br ${product.tone}`}>
+      <span className={`relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br ${tone}`}>
         <span className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.38),transparent_32%),linear-gradient(180deg,transparent,rgba(2,6,23,0.34))]" />
         <Icon className="relative h-10 w-10 text-white drop-shadow-xl transition group-hover:scale-110 sm:h-12 sm:w-12" />
       </span>
       <span className="block p-3">
         <span className="block truncate text-sm font-black text-slate-950 dark:text-white">{product.name}</span>
         <span className="mt-1 block truncate text-xs font-bold text-slate-500 dark:text-[#8A94A7]">{product.groupTitle}</span>
-        <span dir="ltr" className="mt-2 block text-sm font-black text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
+        {product.price ? (
+          <span dir="ltr" className="mt-2 block text-sm font-black text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
+        ) : null}
       </span>
     </button>
   );

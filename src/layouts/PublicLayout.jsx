@@ -1,6 +1,5 @@
 import { Outlet } from "react-router-dom";
 import BackButton from "../components/BackButton";
-import FloatingScrollProgress from "../components/FloatingScrollProgress";
 import PublicHeader from "../components/PublicHeader";
 import PublicBottomNav from "../components/PublicBottomNav";
 import SiteFooter from "../components/SiteFooter";
@@ -13,7 +12,6 @@ export default function PublicLayout() {
         <BackButton className="page-frame pt-4" fallbackPath="/" />
         <Outlet />
       </main>
-      <FloatingScrollProgress />
       <SiteFooter className="pb-28 lg:pb-8" />
       <PublicBottomNav />
     </div>
