@@ -102,6 +102,20 @@ export async function syncPaymentStatus(token, paymentId) {
   };
 }
 
+export async function adminSyncPaymentStatus(token, paymentId) {
+  const response = await apiRequest(`/admin/payments/${paymentId}/sync-status`, {
+    method: "POST",
+    token,
+  });
+
+  return {
+    payment: normalizePaymentIntent(response.data || {}),
+    alreadyProcessed: Boolean(response.data?.alreadyProcessed),
+    providerStatus: response.data?.providerStatus || "",
+    message: response.message,
+  };
+}
+
 export async function getCustomerPayments(token, query = {}) {
   const response = await apiRequest("/payments", {
     token,

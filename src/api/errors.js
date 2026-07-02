@@ -58,6 +58,10 @@ export function getFriendlyAuthMessage({ status, code, message, errors } = {}) {
     return safeMessage || "Online card payment is temporarily unavailable for this currency. Please try another currency or use manual deposit.";
   }
 
+  if (normalizedCode === "NETWORK_PAYMENT_STATUS_FAILED" || normalizedCode === "PAYMENT_RECONCILIATION_FAILED") {
+    return "Could not verify payment status yet. Please try again later or contact support.";
+  }
+
   if (normalizedCode === "INVALID_REFERRAL_CODE" || textIncludes(safeMessage, ["invalid referral code"])) {
     return "Invalid referral code. Please check the code and try again.";
   }
