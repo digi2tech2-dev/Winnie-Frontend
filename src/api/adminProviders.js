@@ -76,8 +76,14 @@ export function normalizeAdminProvider(provider = {}) {
     connection: "unknown",
     createdAt: provider.createdAt || null,
     createdAtLabel: provider.createdAt ? formatDateTime(provider.createdAt, "ar-EG-u-nu-latn") : "-",
+    credentialConfigured: Boolean(provider.credentialConfigured || provider.credentialsConfigured),
+    credentialsConfigured: Boolean(provider.credentialConfigured || provider.credentialsConfigured),
     deletedAt: provider.deletedAt || null,
     displayName: provider.name || "Provider",
+    hasApiKey: Boolean(provider.hasApiKey),
+    hasApiToken: Boolean(provider.hasApiToken),
+    hasPassword: Boolean(provider.hasPassword),
+    hasUsername: Boolean(provider.hasUsername),
     integrationType: String(provider.integrationType || provider.providerType || "API").toUpperCase(),
     isActive: status === "active",
     lastSync: provider.updatedAt ? formatDateTime(provider.updatedAt, "ar-EG-u-nu-latn") : "No backend timestamp",
@@ -190,15 +196,30 @@ export function normalizeProviderSyncResult(data = {}) {
 function buildProviderPayload(values = {}, { includeBlankToken = false } = {}) {
   const features = normalizeFeatureList(values.supportedFeaturesText ?? values.supportedFeatures);
   const apiToken = String(values.apiToken ?? values.credential ?? "").trim();
+  const apiKey = String(values.apiKey ?? "").trim();
+  const bearerToken = String(values.bearerToken ?? "").trim();
+  const username = String(values.username ?? "").trim();
+  const password = String(values.password ?? "").trim();
+  const authType = String(values.authType || "NONE").toUpperCase();
+  const credentials = {};
+
+  if (authType === "API_KEY") {
+    credentials.apiKey = apiKey || (includeBlankToken ? "" : undefined);
+  } else if (authType === "BEARER_TOKEN") {
+    credentials.apiToken = bearerToken || apiToken || (includeBlankToken ? "" : undefined);
+  } else if (authType === "USERNAME_PASSWORD") {
+    credentials.username = username || (includeBlankToken ? "" : undefined);
+    credentials.password = password || (includeBlankToken ? "" : undefined);
+  }
 
   return compactObject({
-    authType: values.authType,
+    authType,
     name: values.name,
     slug: values.slug || values.code,
     baseUrl: values.baseUrl || values.apiUrl,
     integrationType: values.integrationType || values.providerType,
     providerType: values.providerType,
-    apiToken: apiToken || (includeBlankToken ? "" : undefined),
+    ...credentials,
     isActive: values.isActive ?? values.active,
     syncInterval: values.syncInterval,
     supportedFeatures: features,

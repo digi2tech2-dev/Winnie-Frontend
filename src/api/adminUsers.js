@@ -84,6 +84,15 @@ export async function getAdminUsers(token, query = {}) {
   };
 }
 
+export async function getAdminUser(token, id) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}`, { token });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
 export async function approveUser(token, id) {
   const response = await apiRequest(`/admin/users/${id}/approve`, {
     method: "PATCH",
@@ -98,6 +107,19 @@ export async function approveUser(token, id) {
 
 export async function rejectUser(token, id) {
   const response = await apiRequest(`/admin/users/${id}/reject`, {
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
+export async function updateAdminUserGroup(token, id, { groupId, reason } = {}) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/group`, {
+    body: compactObject({ groupId, reason }),
     method: "PATCH",
     token,
   });

@@ -32,21 +32,38 @@ export default function SupplierFormModal({ error = "", open, supplier, onClose,
 function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }) {
   const editing = Boolean(supplier);
   const [form, setForm] = useState({
+    apiKey: "",
     apiToken: "",
     authType: supplier?.authType || "NONE",
     baseUrl: supplier?.baseUrl || "",
+    bearerToken: "",
     integrationType: supplier?.integrationType || "API",
     isActive: supplier?.active ?? true,
     name: supplier?.name || "",
+    password: "",
     slug: supplier?.slug || "",
     supportedFeaturesText: (supplier?.supportedFeatures || []).join("\n"),
     syncInterval: supplier?.syncInterval ?? 60,
+    username: "",
   });
   const [error, setError] = useState("");
 
   const update = (key, value) => {
     setError("");
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateAuthType = (value) => {
+    setError("");
+    setForm((current) => ({
+      ...current,
+      apiKey: "",
+      apiToken: "",
+      authType: value,
+      bearerToken: "",
+      password: "",
+      username: "",
+    }));
   };
 
   const submit = (event) => {
@@ -93,7 +110,7 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
             </select>
           </Field>
           <Field label="Auth type">
-            <select value={form.authType} onChange={(event) => update("authType", event.target.value)} className={inputClassName}>
+            <select value={form.authType} onChange={(event) => updateAuthType(event.target.value)} className={inputClassName}>
               {authTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
@@ -103,18 +120,9 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
             <span>Active provider</span>
             <input type="checkbox" checked={form.isActive} onChange={(event) => update("isActive", event.target.checked)} className="h-4 w-4 accent-violet-600" />
           </label>
+          <CredentialFields authType={form.authType} editing={editing} form={form} update={update} />
           {editing && (
             <>
-              <Field label="API token">
-                <input
-                  dir="ltr"
-                  type="password"
-                  value={form.apiToken}
-                  onChange={(event) => update("apiToken", event.target.value)}
-                  placeholder="Leave blank to keep backend credential"
-                  className={inputClassName}
-                />
-              </Field>
               <Field label="Sync interval">
                 <input dir="ltr" type="number" min="0" value={form.syncInterval} onChange={(event) => update("syncInterval", event.target.value)} className={inputClassName} />
               </Field>
@@ -143,6 +151,71 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
         </footer>
       </section>
     </div>
+  );
+}
+
+function CredentialFields({ authType, editing, form, update }) {
+  const keepPlaceholder = editing ? "Leave blank to keep saved credential" : "";
+
+  if (authType === "NONE") return null;
+
+  return (
+    <>
+      <p className="rounded-2xl border border-violet-100 bg-violet-50 px-3 py-2 text-[10px] font-black leading-5 text-violet-700 sm:col-span-2 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+        سيتم حفظ بيانات التوثيق مشفرة ولن تظهر مرة أخرى بعد الحفظ.
+      </p>
+      {authType === "API_KEY" && (
+        <Field label="API Key / مفتاح API" wide>
+          <input
+            dir="ltr"
+            type="password"
+            value={form.apiKey}
+            onChange={(event) => update("apiKey", event.target.value)}
+            placeholder={keepPlaceholder || "api-token"}
+            autoComplete="off"
+            className={inputClassName}
+          />
+        </Field>
+      )}
+      {authType === "BEARER_TOKEN" && (
+        <Field label="Bearer Token / توكن Bearer" wide>
+          <input
+            dir="ltr"
+            type="password"
+            value={form.bearerToken}
+            onChange={(event) => update("bearerToken", event.target.value)}
+            placeholder={keepPlaceholder || "Bearer token"}
+            autoComplete="off"
+            className={inputClassName}
+          />
+        </Field>
+      )}
+      {authType === "USERNAME_PASSWORD" && (
+        <>
+          <Field label="Username / اسم المستخدم">
+            <input
+              dir="ltr"
+              value={form.username}
+              onChange={(event) => update("username", event.target.value)}
+              placeholder={keepPlaceholder || "username"}
+              autoComplete="off"
+              className={inputClassName}
+            />
+          </Field>
+          <Field label="Password / كلمة المرور">
+            <input
+              dir="ltr"
+              type="password"
+              value={form.password}
+              onChange={(event) => update("password", event.target.value)}
+              placeholder={keepPlaceholder || "password"}
+              autoComplete="new-password"
+              className={inputClassName}
+            />
+          </Field>
+        </>
+      )}
+    </>
   );
 }
 

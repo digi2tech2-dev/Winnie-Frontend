@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
                       )}
                       <button type="button" className="admin-user-details-button" onClick={() => openUserWallet(user.id)}>
                         <WalletCards className="h-4 w-4" />
-                        <span>Wallet</span>
+                        <span>Wallet & Controls</span>
                       </button>
                       <button type="button" className="admin-user-details-button" onClick={() => setSelectedUserId(user.id)}>
                         <Eye className="h-4 w-4" />
@@ -493,7 +493,7 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
             </div>
             <button type="button" onClick={onOpenWallet} className="admin-user-details-button mt-3 w-full">
               <WalletCards className="h-4 w-4" />
-              <span>Wallet & Transactions</span>
+              <span>Wallet & Controls</span>
             </button>
           </DrawerSection>
         </div>
