@@ -35,6 +35,7 @@ const CustomerSubAgent = lazy(() => import("./pages/customer/CustomerSubAgent"))
 
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminOrdersPage = lazy(() => import("./pages/admin/AdminOrdersPage"));
+const AdminPaymentsPage = lazy(() => import("./pages/admin/AdminPaymentsPage"));
 const ProductsManagementPage = lazy(() => import("./pages/admin/ProductsManagementPage"));
 const GroupsManagementPage = lazy(() => import("./pages/admin/GroupsManagementPage"));
 const SuppliersManagementPage = lazy(() => import("./pages/admin/SuppliersManagementPage"));
@@ -158,6 +159,7 @@ export default function App() {
               <Route path="users" element={<Animated><AdminUsersPage /></Animated>} />
               <Route path="users/:id/wallet" element={<Animated><AdminUserWalletPage /></Animated>} />
               <Route path="orders" element={<Animated><AdminOrdersPage /></Animated>} />
+              <Route path="payments" element={<Animated><AdminPaymentsPage /></Animated>} />
               <Route path="products" element={<Animated><ProductsManagementPage /></Animated>} />
               <Route path="groups" element={<Animated><GroupsManagementPage /></Animated>} />
               <Route path="suppliers" element={<Animated><SuppliersManagementPage /></Animated>} />
@@ -175,6 +177,7 @@ export default function App() {
             <Route path="categories" element={<LegacyAdminRedirect from="/admin/categories" to="/admin/user/categories" />} />
             <Route path="categories/:categoryId" element={<LegacyAdminRedirect from="/admin/categories" to="/admin/user/categories" />} />
             <Route path="orders" element={<LegacyAdminRedirect from="/admin/orders" to="/admin/user/orders" />} />
+            <Route path="payments" element={<LegacyAdminRedirect from="/admin/payments" to="/admin/tools/payments" />} />
             <Route path="order/:id" element={<LegacyAdminRedirect from="/admin/order" to="/admin/user/order" />} />
             <Route path="wallet" element={<LegacyAdminRedirect from="/admin/wallet" to="/admin/user/wallet" />} />
             <Route path="wallet/top-up/:methodId" element={<LegacyAdminRedirect from="/admin/wallet" to="/admin/user/wallet" />} />

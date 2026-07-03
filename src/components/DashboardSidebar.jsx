@@ -16,6 +16,7 @@ const adminToolItems = [
   { label: "إدارة المستخدمين", path: "/admin/tools/users", icon: "Users" },
   { label: "إدارة المشرفين", path: "/admin/tools/supervisors", icon: "UserCog" },
   { label: "إدارة الطلبات", path: "/admin/tools/orders", icon: "ClipboardList" },
+  { label: "المدفوعات", path: "/admin/tools/payments", icon: "ReceiptText" },
   { label: "طلبات إضافة الرصيد", path: "/admin/tools/balance-requests", icon: "WalletCards" },
   { label: "إدارة المنتجات", path: "/admin/tools/products", icon: "ShoppingBag" },
   { label: "إدارة المجموعات", path: "/admin/tools/groups", icon: "UsersRound" },
