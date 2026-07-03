@@ -16,6 +16,7 @@ import {
   linkAdminProductProvider,
   syncAdminProductProvider,
   toggleAdminProduct,
+  unlinkAdminProductProvider,
   updateAdminProduct,
 } from "../../api/adminProducts";
 import CategoriesCatalog from "../../components/admin/products/CategoriesCatalog";
@@ -168,24 +169,56 @@ export default function ProductsManagementPage() {
 
     const editing = Boolean(productModal.product);
     setSaving("product");
+    let result;
+
     try {
-      const result = editing
+      result = editing
         ? await updateAdminProduct(token, productModal.product.id, values, categoryLookup)
         : await createAdminProduct(token, values, categoryLookup);
-
-      closeProductForm();
-      showToast({
-        type: "success",
-        title: editing ? "Product updated" : "Product created",
-        message: result.message || result.product.name,
-      });
-      await loadCatalog({ silent: true });
     } catch (error) {
       showToast({
         type: "error",
         title: "Product save failed",
         message: error.userMessage || "The product could not be saved.",
       });
+      setSaving("");
+      return;
+    }
+
+    const savedProduct = result.product;
+
+    try {
+      if (values.linkType === "automatic") {
+        await linkAdminProductProvider(token, savedProduct.id, {
+          fulfillmentMode: "AUTO",
+          mode: "automatic",
+          providerId: values.providerId,
+          providerProductId: values.providerProductId,
+          syncLimits: values.syncLimits,
+          syncName: values.syncName,
+          syncPrice: values.syncPrice,
+        }, categoryLookup);
+      } else if (editing && values.clearProviderLink) {
+        await unlinkAdminProductProvider(token, savedProduct.id, categoryLookup);
+      }
+
+      closeProductForm();
+      showToast({
+        type: "success",
+        title: values.linkType === "automatic" ? "Product linked" : editing ? "Product updated" : "Product created",
+        message: result.message || savedProduct.name,
+      });
+      await loadCatalog({ silent: true });
+    } catch {
+      closeProductForm();
+      showToast({
+        type: "warning",
+        title: "Provider link failed",
+        message: values.linkType === "automatic"
+          ? "Product was saved, but provider link failed. Open edit and try linking again."
+          : "Product was saved, but provider unlink failed. Open edit and try again.",
+      });
+      await loadCatalog({ silent: true });
     } finally {
       setSaving("");
     }

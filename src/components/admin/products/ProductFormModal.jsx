@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Braces, CircleDollarSign, Info, Save, Settings2, X } from "lucide-react";
+import { getAdminProductProviderOptions, getAdminProductProviderProductOptions } from "../../../api/adminProducts";
 import BasicProductInfo from "./BasicProductInfo";
 import ExtraFieldsBuilder from "./ExtraFieldsBuilder";
 import ProductPricing from "./ProductPricing";
 import ProductSettings from "./ProductSettings";
+import { useAuth } from "../../../context/AuthContext";
 
 const emptyProduct = {
   nameAr: "",
@@ -16,6 +18,13 @@ const emptyProduct = {
   image: "",
   imageFile: null,
   linkType: "manual",
+  providerId: "",
+  providerProductId: "",
+  providerProductSearch: "",
+  syncLimitsFromProvider: true,
+  syncNameFromProvider: false,
+  syncPriceFromProvider: false,
+  clearProviderLink: false,
   min: 1,
   max: 1,
   originalPrice: 0,
@@ -34,6 +43,15 @@ const tabs = [
   { id: "fields", label: "الحقول الإضافية", shortLabel: "الحقول", icon: Braces },
 ];
 
+const emptyProviderLinkState = {
+  error: "",
+  loadingProducts: false,
+  loadingProviders: false,
+  pagination: null,
+  providerProducts: [],
+  providers: [],
+};
+
 export default function ProductFormModal({ open, product, mainCategories, subCategories, onClose, onSave, saving = false }) {
   if (!open) return null;
   return createPortal(
@@ -51,9 +69,13 @@ export default function ProductFormModal({ open, product, mainCategories, subCat
 }
 
 function ProductFormContent({ product, mainCategories, subCategories, onClose, onSave, saving }) {
-  const [form, setForm] = useState(() => ({ ...emptyProduct, ...product, extraFields: (product?.extraFields || []).map(cloneExtraField) }));
+  const { token } = useAuth();
+  const existingProviderLink = hasProviderLink(product);
+  const [form, setForm] = useState(() => buildInitialProductForm(product));
   const [activeTab, setActiveTab] = useState("basic");
   const [error, setError] = useState("");
+  const [providerLink, setProviderLink] = useState(emptyProviderLinkState);
+  const providerOptionsLoaded = useRef(false);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -66,6 +88,102 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     };
   }, [onClose]);
 
+  const loadProviderProducts = useCallback(async (providerId, search = "", selectedProductId = "") => {
+    if (!token || !providerId) {
+      setProviderLink((current) => ({
+        ...current,
+        loadingProducts: false,
+        pagination: null,
+        providerProducts: [],
+      }));
+      return;
+    }
+
+    setProviderLink((current) => ({
+      ...current,
+      error: "",
+      loadingProducts: true,
+    }));
+
+    try {
+      const result = await getAdminProductProviderProductOptions(token, providerId, {
+        limit: 100,
+        page: 1,
+        search,
+      });
+      setProviderLink((current) => ({
+        ...current,
+        error: "",
+        loadingProducts: false,
+        pagination: result.pagination,
+        providerProducts: mergeSelectedProductOption(result.products, selectedProductId, product),
+      }));
+    } catch (loadError) {
+      setProviderLink((current) => ({
+        ...current,
+        error: loadError.userMessage || "تعذر تحميل منتجات المورد.",
+        loadingProducts: false,
+        pagination: null,
+        providerProducts: [],
+      }));
+    }
+  }, [product, token]);
+
+  const loadProviders = useCallback(async (preferredProviderId = "") => {
+    if (!token) return "";
+
+    setProviderLink((current) => ({
+      ...current,
+      error: "",
+      loadingProviders: true,
+    }));
+
+    try {
+      const result = await getAdminProductProviderOptions(token);
+      const providers = result.providers.filter((provider) => provider.isActive !== false);
+      const selectedProviderId = providers.some((provider) => provider.id === preferredProviderId)
+        ? preferredProviderId
+        : providers[0]?.id || "";
+
+      setProviderLink((current) => ({
+        ...current,
+        error: "",
+        loadingProviders: false,
+        providers,
+      }));
+
+      return selectedProviderId;
+    } catch (loadError) {
+      setProviderLink((current) => ({
+        ...current,
+        error: loadError.userMessage || "تعذر تحميل الموردين.",
+        loadingProviders: false,
+        providers: [],
+      }));
+      return "";
+    }
+  }, [token]);
+
+  const initializeAutomaticOptions = useCallback(async (preferredProviderId = "", selectedProductId = "") => {
+    const providerId = await loadProviders(preferredProviderId);
+    if (!providerId) return;
+    const selectedProviderProductId = providerId === preferredProviderId ? selectedProductId : "";
+
+    setForm((current) => ({
+      ...current,
+      providerId,
+      providerProductId: selectedProviderProductId,
+    }));
+    await loadProviderProducts(providerId, "", selectedProviderProductId);
+  }, [loadProviderProducts, loadProviders]);
+
+  useEffect(() => {
+    if (form.linkType !== "automatic" || providerOptionsLoaded.current) return;
+
+    providerOptionsLoaded.current = true;
+    void initializeAutomaticOptions(form.providerId, form.providerProductId);
+  }, [form.linkType, form.providerId, form.providerProductId, initializeAutomaticOptions]);
+
   const update = (key, value) => {
     setError("");
     setForm((current) => ({ ...current, [key]: value }));
@@ -73,6 +191,73 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
   const patch = (values) => {
     setError("");
     setForm((current) => ({ ...current, ...values }));
+  };
+
+  const changeLinkMode = (mode) => {
+    setError("");
+    if (mode === "manual") {
+      if (form.linkType === "automatic" && existingProviderLink && !window.confirm("سيتم إزالة ربط المورد الحالي وتحويل المنتج إلى تنفيذ يدوي. هل تريد المتابعة؟")) {
+        return;
+      }
+
+      setForm((current) => ({
+        ...current,
+        clearProviderLink: existingProviderLink,
+        linkType: "manual",
+        providerId: "",
+        providerProductId: "",
+        providerProductSearch: "",
+      }));
+      setProviderLink((current) => ({
+        ...current,
+        error: "",
+        loadingProducts: false,
+        providerProducts: [],
+      }));
+      return;
+    }
+
+    providerOptionsLoaded.current = false;
+    setForm((current) => ({
+      ...current,
+      clearProviderLink: false,
+      linkType: "automatic",
+      providerId: current.providerId || product?.providerId || "",
+      providerProductId: current.providerProductId || product?.providerProductId || "",
+    }));
+  };
+
+  const changeProvider = (providerId) => {
+    setForm((current) => ({
+      ...current,
+      providerId,
+      providerProductId: "",
+      providerProductSearch: "",
+    }));
+    setProviderLink((current) => ({
+      ...current,
+      error: "",
+      pagination: null,
+      providerProducts: [],
+    }));
+    if (providerId) void loadProviderProducts(providerId);
+  };
+
+  const searchProviderProducts = (search) => {
+    setForm((current) => ({ ...current, providerProductSearch: search }));
+    if (form.providerId) void loadProviderProducts(form.providerId, search, form.providerProductId);
+  };
+
+  const selectProviderProduct = (providerProduct) => {
+    setError("");
+    setForm((current) => ({
+      ...current,
+      providerProductId: providerProduct.id,
+      providerProductExternalId: providerProduct.externalProductId || "",
+      providerProductMaxQty: providerProduct.maxQty ?? null,
+      providerProductMinQty: providerProduct.minQty ?? null,
+      providerProductName: providerProduct.name,
+    }));
   };
 
   const submit = (event) => {
@@ -96,6 +281,16 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     if (Number(form.min) < 1 || Number(form.max) < Number(form.min)) {
       setActiveTab("pricing");
       setError("تأكد أن حدود الطلب صحيحة وأن الحد الأقصى لا يقل عن الحد الأدنى.");
+      return;
+    }
+    if (form.linkType === "automatic" && !form.providerId) {
+      setActiveTab("pricing");
+      setError("اختر المورد قبل حفظ الربط الآلي.");
+      return;
+    }
+    if (form.linkType === "automatic" && !form.providerProductId) {
+      setActiveTab("pricing");
+      setError("اختر منتج المورد قبل حفظ الربط الآلي.");
       return;
     }
 
@@ -147,7 +342,13 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       originalPrice: numericOriginalPrice,
       finalPrice: numericFinalPrice,
       profitMargin: numericOriginalPrice > 0 ? Number((((numericFinalPrice - numericOriginalPrice) / numericOriginalPrice) * 100).toFixed(2)) : Number(form.profitMargin) || 0,
+      clearProviderLink: Boolean(form.clearProviderLink),
       extraFields: normalizedFields,
+      providerId: form.providerId,
+      providerProductId: form.providerProductId,
+      syncLimits: Boolean(form.syncLimitsFromProvider),
+      syncName: Boolean(form.syncNameFromProvider),
+      syncPrice: Boolean(form.syncPriceFromProvider),
     });
   };
 
@@ -176,7 +377,18 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
         <form id="product-management-form" onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3.5 sm:p-5">
           {activeTab === "basic" && <BasicProductInfo value={form} onChange={update} mainCategories={mainCategories} subCategories={subCategories} />}
-          {activeTab === "pricing" && <ProductPricing value={form} onChange={update} onPatch={patch} />}
+          {activeTab === "pricing" && (
+            <ProductPricing
+              value={form}
+              onChange={update}
+              onLinkModeChange={changeLinkMode}
+              onPatch={patch}
+              onProductSearch={searchProviderProducts}
+              onProviderChange={changeProvider}
+              onProviderProductSelect={selectProviderProduct}
+              providerLink={providerLink}
+            />
+          )}
           {activeTab === "settings" && <ProductSettings value={form} onChange={update} />}
           {activeTab === "fields" && <ExtraFieldsBuilder fields={form.extraFields} onChange={(fields) => update("extraFields", fields)} />}
           {error && <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[10px] font-black text-rose-700 dark:border-rose-400/15 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>}
@@ -189,6 +401,50 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       </section>
     </div>
   );
+}
+
+function hasProviderLink(product) {
+  return Boolean(product?.isProviderLinked || product?.providerId || product?.providerProductId);
+}
+
+function buildInitialProductForm(product) {
+  const providerLinked = hasProviderLink(product);
+
+  return {
+    ...emptyProduct,
+    ...product,
+    clearProviderLink: false,
+    extraFields: (product?.extraFields || []).map(cloneExtraField),
+    linkType: providerLinked ? "automatic" : product?.linkType || "manual",
+    providerId: product?.providerId || "",
+    providerProductId: product?.providerProductId || "",
+    providerProductSearch: "",
+    syncLimitsFromProvider: !providerLinked,
+    syncNameFromProvider: false,
+    syncPriceFromProvider: providerLinked ? product?.syncPriceWithProvider !== false : false,
+  };
+}
+
+function mergeSelectedProductOption(products = [], selectedProductId = "", product) {
+  if (!selectedProductId || products.some((item) => item.id === selectedProductId)) {
+    return products;
+  }
+
+  const selectedName = product?.providerProductName || "";
+  if (!selectedName) return products;
+
+  return [
+    {
+      id: selectedProductId,
+      externalProductId: product?.providerProductExternalId || "",
+      maxQty: product?.providerProductMaxQty ?? null,
+      minQty: product?.providerProductMinQty ?? null,
+      name: selectedName,
+      priceLabel: "",
+      providerName: product?.providerName || "",
+    },
+    ...products,
+  ];
 }
 
 function makeFieldKey(label, index) {

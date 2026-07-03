@@ -1,5 +1,6 @@
 import { apiRequest } from "./client";
 import {
+  DEFAULT_CURRENCY,
   asArray,
   compactObject,
   formatCurrency,
@@ -224,7 +225,6 @@ async function buildProductPayload(token, values = {}) {
       required: field.required,
       type: field.type,
     })),
-    executionType: values.executionType || (values.linkType === "automatic" ? "automatic" : "manual"),
     image: /^data:/i.test(image) ? undefined : image,
     isActive,
     maxQty,
@@ -347,24 +347,47 @@ export async function deleteAdminProduct(token, id, categoryLookup = new Map()) 
 
 export function normalizeProductProviderOption(provider = {}) {
   const id = getItemId(provider);
+  const supportedFeatures = Array.isArray(provider.supportedFeatures)
+    ? provider.supportedFeatures.map((feature) => String(feature || "").trim()).filter(Boolean)
+    : [];
+  const credentialConfigured = Boolean(provider.credentialConfigured || provider.credentialsConfigured || provider.hasCredential);
+
   return {
     id,
     _id: provider._id ?? id,
+    authType: String(provider.authType || "NONE").toUpperCase(),
+    code: provider.code || provider.slug || id,
+    credentialConfigured,
+    credentialsConfigured: credentialConfigured,
+    hasCredential: credentialConfigured,
     isActive: provider.isActive !== false,
     name: provider.name || "Provider",
+    slug: provider.slug || "",
+    supportedFeatures,
   };
 }
 
 export function normalizeProductProviderProductOption(product = {}) {
   const id = getItemId(product);
+  const currency = String(product.currency || DEFAULT_CURRENCY).toUpperCase();
+  const rawPrice = product.price ?? product.providerPrice ?? null;
+  const externalProductId = product.externalProductId || product.externalId || "";
+
   return {
     id,
     _id: product._id ?? id,
-    categoryLabel: product.categoryLabel || "",
+    category: product.category || product.categoryLabel || "",
+    categoryLabel: product.categoryLabel || product.category || "",
+    currency,
+    externalId: externalProductId,
+    externalProductId,
     isActive: product.isActive !== false,
     maxQty: product.maxQty ?? null,
     minQty: product.minQty ?? null,
     name: product.name || "Provider product",
+    price: rawPrice === null ? null : toNumber(rawPrice, 0),
+    priceLabel: rawPrice === null ? "" : formatCurrency(rawPrice, currency, "ar-EG-u-nu-latn"),
+    providerProductId: product.providerProductId || id,
     providerName: product.providerName || "",
   };
 }
@@ -384,6 +407,7 @@ export async function getAdminProductProviderProductOptions(token, providerId, q
     query: compactObject({
       page: query.page || 1,
       limit: query.limit || 600,
+      includeInactive: query.includeInactive,
       search: query.search,
     }),
     token,
@@ -402,11 +426,30 @@ export async function getAdminProductProviderProductOptions(token, providerId, q
 }
 
 export async function linkAdminProductProvider(token, productId, payload = {}, categoryLookup = new Map()) {
+  const requestedMode = String(payload.mode || "").toLowerCase();
   const response = await apiRequest(`/admin/products/${productId}/provider-link`, {
     body: compactObject({
+      fulfillmentMode: requestedMode === "manual" ? "MANUAL" : payload.fulfillmentMode || "AUTO",
+      mode: payload.mode || "automatic",
       providerId: payload.providerId,
       providerProductId: payload.providerProductId,
+      syncLimits: payload.syncLimits,
+      syncName: payload.syncName,
+      syncPrice: payload.syncPrice,
     }),
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    product: normalizeAdminProduct(getProductFromResponse(response), 0, categoryLookup),
+  };
+}
+
+export async function unlinkAdminProductProvider(token, productId, categoryLookup = new Map()) {
+  const response = await apiRequest(`/admin/products/${productId}/provider-link`, {
+    body: { fulfillmentMode: "MANUAL" },
     method: "PATCH",
     token,
   });
@@ -428,3 +471,9 @@ export async function syncAdminProductProvider(token, productId, categoryLookup 
     product: normalizeAdminProduct(getProductFromResponse(response), 0, categoryLookup),
   };
 }
+
+export const getProviderLinkOptions = getAdminProductProviderOptions;
+export const getProviderProducts = getAdminProductProviderProductOptions;
+export const linkProductToProvider = linkAdminProductProvider;
+export const unlinkProductProvider = unlinkAdminProductProvider;
+export const syncProductWithProvider = syncAdminProductProvider;
