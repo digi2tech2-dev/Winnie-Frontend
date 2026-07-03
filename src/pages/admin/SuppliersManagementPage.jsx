@@ -42,6 +42,7 @@ export default function SuppliersManagementPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState(undefined);
+  const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionKey, setActionKey] = useState("");
   const [confirm, setConfirm] = useState({ kind: "", supplier: null });
@@ -101,6 +102,7 @@ export default function SuppliersManagementPage() {
     const editing = Boolean(form?.id);
 
     setSaving(true);
+    setFormError("");
     try {
       const result = editing
         ? await updateAdminProvider(token, form.id, values)
@@ -114,6 +116,7 @@ export default function SuppliersManagementPage() {
       });
       await loadSuppliers({ silent: true });
     } catch (error) {
+      setFormError(error.userMessage || "The provider could not be saved.");
       showToast({
         type: "error",
         title: "Provider save failed",
@@ -255,7 +258,7 @@ export default function SuppliersManagementPage() {
 
   return (
     <div dir="rtl" className="space-y-4">
-      <Header onAdd={() => setForm(null)} onRefresh={() => loadSuppliers()} refreshing={initialLoading} />
+      <Header onAdd={() => { setFormError(""); setForm(null); }} onRefresh={() => loadSuppliers()} refreshing={initialLoading} />
 
       {initialLoading ? (
         <SuppliersLoadingState />
@@ -290,7 +293,7 @@ export default function SuppliersManagementPage() {
                   actionKey={actionKey}
                   connectionResult={connectionResults[supplier.id]}
                   onArchive={requestArchive}
-                  onEdit={setForm}
+                  onEdit={(item) => { setFormError(""); setForm(item); }}
                   onProducts={(item) => loadProviderProducts(item)}
                   onSync={requestSync}
                   onTest={testConnection}
@@ -307,7 +310,7 @@ export default function SuppliersManagementPage() {
         </>
       )}
 
-      <SupplierFormModal open={form !== undefined} supplier={form} onClose={() => !saving && setForm(undefined)} onSave={saveSupplier} saving={saving} />
+      <SupplierFormModal error={formError} open={form !== undefined} supplier={form} onClose={() => !saving && setForm(undefined)} onSave={saveSupplier} saving={saving} />
       <SupplierProductsModal
         actionKey={actionKey}
         error={productsState.error}

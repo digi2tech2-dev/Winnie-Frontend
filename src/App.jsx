@@ -44,6 +44,7 @@ const AdminBalanceRequestsPage = lazy(() => import("./pages/admin/AdminBalanceRe
 const AdminCurrenciesPage = lazy(() => import("./pages/admin/AdminCurrenciesPage"));
 const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
+const AdminUserWalletPage = lazy(() => import("./pages/admin/AdminUserWalletPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const AdminToolsPage = lazy(() => import("./pages/admin/AdminToolsPage"));
 
@@ -155,6 +156,7 @@ export default function App() {
               <Route index element={<Navigate to="/admin/tools/dashboard" replace />} />
               <Route path="dashboard" element={<Animated><AdminDashboardPage /></Animated>} />
               <Route path="users" element={<Animated><AdminUsersPage /></Animated>} />
+              <Route path="users/:id/wallet" element={<Animated><AdminUserWalletPage /></Animated>} />
               <Route path="orders" element={<Animated><AdminOrdersPage /></Animated>} />
               <Route path="products" element={<Animated><ProductsManagementPage /></Animated>} />
               <Route path="groups" element={<Animated><GroupsManagementPage /></Animated>} />

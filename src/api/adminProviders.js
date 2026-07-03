@@ -70,6 +70,7 @@ export function normalizeAdminProvider(provider = {}) {
     _id: provider._id ?? id,
     active: status === "active",
     apiUrl: provider.baseUrl || "",
+    authType: String(provider.authType || "NONE").toUpperCase(),
     baseUrl: provider.baseUrl || "",
     code: provider.slug || id,
     connection: "unknown",
@@ -77,6 +78,7 @@ export function normalizeAdminProvider(provider = {}) {
     createdAtLabel: provider.createdAt ? formatDateTime(provider.createdAt, "ar-EG-u-nu-latn") : "-",
     deletedAt: provider.deletedAt || null,
     displayName: provider.name || "Provider",
+    integrationType: String(provider.integrationType || provider.providerType || "API").toUpperCase(),
     isActive: status === "active",
     lastSync: provider.updatedAt ? formatDateTime(provider.updatedAt, "ar-EG-u-nu-latn") : "No backend timestamp",
     name: provider.name || "Provider",
@@ -190,9 +192,12 @@ function buildProviderPayload(values = {}, { includeBlankToken = false } = {}) {
   const apiToken = String(values.apiToken ?? values.credential ?? "").trim();
 
   return compactObject({
+    authType: values.authType,
     name: values.name,
     slug: values.slug || values.code,
     baseUrl: values.baseUrl || values.apiUrl,
+    integrationType: values.integrationType || values.providerType,
+    providerType: values.providerType,
     apiToken: apiToken || (includeBlankToken ? "" : undefined),
     isActive: values.isActive ?? values.active,
     syncInterval: values.syncInterval,

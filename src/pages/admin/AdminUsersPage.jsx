@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { approveUser, getAdminUsers, rejectUser } from "../../api/adminUsers";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
@@ -95,6 +96,7 @@ function getErrorMessage(error, fallback) {
 export default function AdminUsersPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
@@ -108,6 +110,9 @@ export default function AdminUsersPage() {
   const [actionKey, setActionKey] = useState("");
 
   const selectedUser = users.find((user) => user.id === selectedUserId) || null;
+  const openUserWallet = useCallback((userId) => {
+    navigate(`/admin/tools/users/${userId}/wallet`);
+  }, [navigate]);
 
   const loadUsers = useCallback(async () => {
     if (!token) {
@@ -337,6 +342,10 @@ export default function AdminUsersPage() {
                           </button>
                         </>
                       )}
+                      <button type="button" className="admin-user-details-button" onClick={() => openUserWallet(user.id)}>
+                        <WalletCards className="h-4 w-4" />
+                        <span>Wallet</span>
+                      </button>
                       <button type="button" className="admin-user-details-button" onClick={() => setSelectedUserId(user.id)}>
                         <Eye className="h-4 w-4" />
                         <span>Details</span>
@@ -361,6 +370,7 @@ export default function AdminUsersPage() {
             onApprove={() => requestUserReview(selectedUser, "approve")}
             onClose={() => setSelectedUserId(null)}
             onCopy={copyUserId}
+            onOpenWallet={() => openUserWallet(selectedUser.id)}
             onReject={() => requestUserReview(selectedUser, "reject")}
           />
         )}
@@ -420,7 +430,7 @@ function StatusBadge({ status, label }) {
   );
 }
 
-function UserDrawer({ user, busy, onApprove, onClose, onCopy, onReject }) {
+function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onReject }) {
   const canReview = user.status === "PENDING";
   return (
     <div className="admin-user-drawer-layer">
@@ -481,6 +491,10 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onReject }) {
               <WalletItem label="Credit limit" value={`${user.creditLimit.toFixed(2)} ${user.currency}`} />
               <WalletItem label="Credit used" value={`${user.creditUsed.toFixed(2)} ${user.currency}`} />
             </div>
+            <button type="button" onClick={onOpenWallet} className="admin-user-details-button mt-3 w-full">
+              <WalletCards className="h-4 w-4" />
+              <span>Wallet & Transactions</span>
+            </button>
           </DrawerSection>
         </div>
 

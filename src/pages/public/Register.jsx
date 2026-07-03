@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Coins, Eye, EyeOff, Globe2, Lock, Mail, MailCheck, Phone, UserRound } from "lucide-react";
 import GoogleMark from "../../components/GoogleMark";
 import PolicyAgreement, { PoliciesModal } from "../../components/PolicyAgreement";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import { getPublicCurrencies } from "../../api/currencies";
 
 const countries = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
-const currencies = ["USD", "EGP", "SAR", "AED", "KWD", "QAR"];
 const countryDialCodes = {
   "الولايات المتحدة": "+1",
   مصر: "+20",
@@ -31,7 +31,10 @@ export default function Register() {
   const inviteCodeFromUrl = new URLSearchParams(location.search).get("inviteCode") || new URLSearchParams(location.search).get("referralCode") || "";
   const [step, setStep] = useState("account");
   const [account, setAccount] = useState({ name: "", email: "", password: "", confirmPassword: "" });
-  const [details, setDetails] = useState({ country: countries[0], currency: currencies[0], phone: "", inviteCode: inviteCodeFromUrl });
+  const [details, setDetails] = useState({ country: countries[0], currency: "", phone: "", inviteCode: inviteCodeFromUrl });
+  const [currencyOptions, setCurrencyOptions] = useState([]);
+  const [currenciesLoading, setCurrenciesLoading] = useState(true);
+  const [currenciesError, setCurrenciesError] = useState("");
   const [acceptedPolicies, setAcceptedPolicies] = useState(true);
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -41,6 +44,55 @@ export default function Register() {
   const { loginWithGoogle, register } = useAuth();
   const navigate = useNavigate();
   const selectedDialCode = countryDialCodes[details.country] || "";
+  const currencies = currencyOptions.map((currency) => currency.code);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCurrencies = async () => {
+      setCurrenciesLoading(true);
+      setCurrenciesError("");
+
+      try {
+        const result = await getPublicCurrencies();
+        if (cancelled) return;
+
+        const activeCurrencies = result.currencies.filter((currency) => currency.code && currency.isActive !== false);
+        setCurrencyOptions(activeCurrencies);
+        setDetails((current) => {
+          if (activeCurrencies.some((currency) => currency.code === current.currency)) return current;
+          return { ...current, currency: activeCurrencies[0]?.code || "" };
+        });
+        if (!activeCurrencies.length) {
+          const message = "No active registration currencies are available.";
+          setCurrenciesError(message);
+          setFieldErrors((current) => ({ ...current, currency: message }));
+        } else {
+          setFieldErrors((current) => {
+            if (!current.currency) return current;
+            const next = { ...current };
+            delete next.currency;
+            return next;
+          });
+        }
+      } catch (requestError) {
+        if (cancelled) return;
+        const message = requestError.userMessage || "Unable to load registration currencies.";
+        setCurrencyOptions([]);
+        setDetails((current) => ({ ...current, currency: "" }));
+        setCurrenciesError(message);
+        setFieldErrors((current) => ({ ...current, currency: message }));
+      } finally {
+        if (!cancelled) setCurrenciesLoading(false);
+      }
+    };
+
+    void loadCurrencies();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const updateAccount = (key, value) => {
     setAccount((current) => ({ ...current, [key]: value }));
@@ -132,6 +184,13 @@ export default function Register() {
   };
 
   const completeDetails = async () => {
+    if (currenciesLoading || currenciesError || !currencyOptions.length) {
+      const message = currenciesError || "Registration currencies are still loading.";
+      setFieldErrors({ currency: message });
+      showToast({ type: "error", title: "Currency unavailable", message });
+      return;
+    }
+
     if (!details.country || !details.currency) {
       setFieldErrors({
         country: !details.country ? "اختر الدولة." : "",
@@ -268,7 +327,7 @@ export default function Register() {
               <button
                 type="button"
                 onClick={completeDetails}
-                disabled={loading}
+                disabled={loading || currenciesLoading || Boolean(currenciesError) || !currencyOptions.length}
                 className="interactive-ring h-[52px] min-h-[52px] w-full rounded-2xl bg-[linear-gradient(135deg,#2563EB,#7C3AED_45%,#EC4899)] text-sm font-black text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(236,72,153,0.28)] disabled:cursor-wait disabled:opacity-70"
               >
                 {loading ? "جار إنشاء الحساب..." : "إرسال رابط تأكيد الحساب"}
@@ -422,12 +481,14 @@ function SelectField({ icon: Icon, label, value, options, onChange, error }) {
           value={value}
           onChange={(event) => onChange(event.target.value)}
           aria-invalid={hasError}
+          disabled={!options.length}
           className={`h-[54px] w-full rounded-2xl border bg-white/[0.82] px-4 pr-12 text-right font-bold text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.06)] outline-none transition focus:ring-4 dark:bg-white/[0.075] dark:text-white ${
             hasError
               ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/15 dark:border-rose-400/60"
               : "border-white/80 focus:border-pulse focus:bg-white focus:ring-pulse/15 dark:border-white/10 dark:focus:bg-white/[0.105]"
           }`}
         >
+          {!options.length && <option value="">-</option>}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
