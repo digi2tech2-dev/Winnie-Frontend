@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Coins, Loader2, LockKeyhole, Pencil, Plus, Power, Search, Trash2, X } from "lucide-react";
 import {
   createAdminCurrency,
+  deleteAdminCurrency,
   getAdminCurrencies,
   toggleAdminCurrency,
   updateAdminCurrency,
@@ -18,6 +19,7 @@ export default function AdminCurrenciesPage() {
   const [currencies, setCurrencies] = useState([]);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(undefined);
+  const [deleteAction, setDeleteAction] = useState(null);
   const [statusAction, setStatusAction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -44,7 +46,7 @@ export default function AdminCurrenciesPage() {
       setCurrencies(result.currencies);
     } catch (requestError) {
       setCurrencies([]);
-      setError(requestError.userMessage || "Unable to load currencies.");
+      setError(requestError.userMessage || "تعذر تحميل العملات.");
     } finally {
       setLoading(false);
     }
@@ -70,7 +72,7 @@ export default function AdminCurrenciesPage() {
       toast(values.exists ? "تم تعديل سعر الصرف" : "تمت إضافة العملة", values.code);
       setEditing(undefined);
     } catch (requestError) {
-      const message = requestError.userMessage || requestError.message || "Currency could not be saved.";
+      const message = requestError.userMessage || requestError.message || "تعذر حفظ العملة.";
       setError(message);
       toast("تعذر حفظ العملة", message, "error");
     } finally {
@@ -90,7 +92,7 @@ export default function AdminCurrenciesPage() {
       toast("تم تحديث حالة العملة", statusAction.currency.code, "success");
       setStatusAction(null);
     } catch (requestError) {
-      const message = requestError.userMessage || requestError.message || "Currency status could not be updated.";
+      const message = requestError.userMessage || requestError.message || "تعذر تحديث حالة العملة.";
       setError(message);
       toast("تعذر تحديث الحالة", message, "error");
     } finally {
@@ -98,8 +100,24 @@ export default function AdminCurrenciesPage() {
     }
   };
 
-  const deleteUnsupported = (currency) => {
-    toast("الحذف غير متاح", `لا يوجد route خلفي لحذف ${currency.code}. استخدم التعطيل بدلا من ذلك.`, "info");
+  const runDeleteAction = async () => {
+    if (!deleteAction || busy) return;
+
+    setBusy(true);
+    setError("");
+
+    try {
+      await deleteAdminCurrency(token, deleteAction.currency.code);
+      await load();
+      toast("تم حذف العملة", deleteAction.currency.code, "success");
+      setDeleteAction(null);
+    } catch (requestError) {
+      const message = requestError.userMessage || requestError.message || "تعذر حذف العملة.";
+      setError(message);
+      toast("تعذر حذف العملة", message, "error");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -136,7 +154,7 @@ export default function AdminCurrenciesPage() {
               <CurrencyCard
                 key={currency.code}
                 currency={currency}
-                onDelete={() => deleteUnsupported(currency)}
+                onDelete={() => setDeleteAction({ currency })}
                 onEdit={() => setEditing(currency)}
                 onToggle={() => setStatusAction({ currency })}
               />
@@ -160,10 +178,21 @@ export default function AdminCurrenciesPage() {
         busy={busy}
         tone="warning"
         title="تأكيد تغيير حالة العملة"
-        message={`سيتم ${statusAction?.currency?.isActive ? "تعطيل" : "تفعيل"} ${statusAction?.currency?.code || ""} من خلال route الخلفية.`}
+        message={`سيتم ${statusAction?.currency?.isActive ? "تعطيل" : "تفعيل"} ${statusAction?.currency?.code || ""} من خلال مسار الخادم.`}
         confirmLabel={statusAction?.currency?.isActive ? "تعطيل" : "تفعيل"}
         onCancel={() => setStatusAction(null)}
         onConfirm={runStatusAction}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteAction)}
+        busy={busy}
+        tone="danger"
+        title="تأكيد حذف العملة"
+        message={`سيتم حذف ${deleteAction?.currency?.code || ""} من الخادم. لا يمكن حذف USD أو عملة مسندة لمستخدمين.`}
+        confirmLabel="حذف"
+        onCancel={() => setDeleteAction(null)}
+        onConfirm={runDeleteAction}
       />
     </div>
   );
@@ -275,8 +304,8 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
       ...form,
       code: String(form.code).toUpperCase(),
       exists,
-      marketRate: form.marketRate === "" ? undefined : Number(form.marketRate),
-      markupPercentage: Number(form.markupPercentage) || 0,
+      marketRate: form.marketRate === "" ? null : Number(form.marketRate),
+      markupPercentage: form.markupPercentage === "" ? 0 : Number(form.markupPercentage),
       platformRate: Number(form.platformRate),
     });
   };
@@ -288,27 +317,25 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
           <Coins className="h-5 w-5 text-violet-500" />
           <div className="flex-1">
             <h2 className="text-sm font-black dark:text-white">{exists ? "تعديل سعر الصرف" : "إضافة العملة"}</h2>
-            <p className="text-[8px] text-slate-400">{form.code || "NEW"} · backend currency route</p>
+            <p className="text-[8px] text-slate-400">{form.code || "جديدة"} · مسار عملة الخادم</p>
           </div>
           <button type="button" onClick={onClose} disabled={busy}><X className="h-4 w-4" /></button>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Field disabled={exists} label="الرمز" value={form.code} onChange={(value) => set("code", value.toUpperCase().slice(0, 3))} />
-          <Field disabled={exists} label="الاسم" value={form.name} onChange={(value) => set("name", value)} />
-          <Field disabled={exists} label="الرمز المختصر" value={form.symbol} onChange={(value) => set("symbol", value)} />
+          <Field label="الاسم" value={form.name} onChange={(value) => set("name", value)} />
+          <Field label="الرمز المختصر" value={form.symbol} onChange={(value) => set("symbol", value)} />
           <Field label="سعر المنصة" type="number" value={form.platformRate} onChange={(value) => set("platformRate", value)} />
-          {!exists && <Field label="سعر السوق" type="number" value={form.marketRate} onChange={(value) => set("marketRate", value)} />}
+          <Field label="سعر السوق" type="number" value={form.marketRate} onChange={(value) => set("marketRate", value)} />
           <Field label="نسبة الهامش %" type="number" value={form.markupPercentage} onChange={(value) => set("markupPercentage", value)} />
-          {!exists && (
-            <label>
+          <label>
               <span className="mb-1 block text-[9px] font-black text-slate-500">الحالة</span>
               <select value={form.isActive ? "yes" : "no"} onChange={(event) => set("isActive", event.target.value === "yes")} className={input}>
                 <option value="yes">نشطة</option>
                 <option value="no">غير نشطة</option>
               </select>
-            </label>
-          )}
+          </label>
           {exists && (
             <label className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[9px] font-black text-slate-600 dark:border-white/10 dark:bg-[#0B1220] dark:text-white">
               <span>تعديل أرصدة الديون</span>
@@ -323,7 +350,7 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
           onClick={save}
           className="mt-4 h-11 w-full rounded-2xl bg-violet-600 text-[10px] font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy ? "Working..." : exists ? "حفظ التعديل" : "إضافة العملة"}
+          {busy ? "جارٍ التنفيذ..." : exists ? "حفظ التعديل" : "إضافة العملة"}
         </button>
       </section>
     </div>

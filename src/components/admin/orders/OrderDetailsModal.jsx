@@ -110,9 +110,9 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
               <ShoppingBag className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black text-slate-400 dark:text-[#8A94A7]">Backend order details</p>
+              <p className="text-[10px] font-black text-slate-400 dark:text-[#8A94A7]">تفاصيل الطلب من الخادم</p>
               <h2 id="order-details-title" dir="ltr" className="mt-0.5 truncate text-right text-xl font-black text-slate-950 dark:text-white">
-                {order?.displayId || "Loading order..."}
+                {order?.displayId || "جارٍ تحميل الطلب..."}
               </h2>
               {order && (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -130,7 +130,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
               onClick={onClose}
               disabled={busy}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
-              aria-label="Close order details"
+              aria-label="إغلاق تفاصيل الطلب"
             >
               <X className="h-5 w-5" />
             </button>
@@ -140,7 +140,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
         <div className="overflow-y-auto overscroll-contain p-3.5 sm:p-6">
           {isLoading && (
             <div className="mb-3 rounded-2xl border border-sky-200 bg-sky-50 p-3 text-xs font-black text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200">
-              Loading the latest backend detail...
+              جارٍ تحميل أحدث تفاصيل الطلب...
             </div>
           )}
 
@@ -153,45 +153,45 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
 
           {order && (
             <>
-              <DetailSection title="Product" icon={Package}>
+              <DetailSection title="المنتج" icon={Package}>
                 <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-2.5 dark:border-white/[0.07] dark:bg-[#0B1220]">
                   <img src={order.productImage} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-sm sm:h-24 sm:w-28" />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-black leading-5 text-slate-950 sm:text-base dark:text-white">{order.product}</h3>
                     <p dir="ltr" className="mt-1 text-right text-xl font-black text-[#7C3AED] dark:text-[#C084FC]">{order.priceLabel}</p>
                     <p className="mt-1 text-[10px] font-black text-slate-500 dark:text-slate-400">
-                      Quantity {order.quantity.toLocaleString("ar-EG")} - Unit {order.unitPriceLabel}
+                      الكمية {order.quantity.toLocaleString("ar-EG-u-nu-latn")} - سعر الوحدة {order.unitPriceLabel}
                     </p>
                   </div>
                 </div>
               </DetailSection>
 
-              <DetailSection title="Order summary" icon={CloudCog}>
+              <DetailSection title="ملخص الطلب" icon={CloudCog}>
                 <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <InfoItem label="Order id" value={order.id} icon={Hash} dir="ltr" />
-                  <InfoItem label="Order number" value={order.orderNumber || "-"} icon={Hash} dir="ltr" />
-                  <InfoItem label="Created" value={order.createdAtLabel} icon={CalendarClock} />
-                  <InfoItem label="Updated" value={order.updatedAtLabel} icon={CalendarClock} />
-                  <InfoItem label="Backend status" value={order.backendStatus} icon={ShieldAlert} dir="ltr" />
-                  <InfoItem label="Execution" value={order.executionType} icon={order.executionType === "automatic" ? Bot : UserRound} />
+                  <InfoItem label="معرّف الطلب" value={order.id} icon={Hash} dir="ltr" />
+                  <InfoItem label="رقم الطلب" value={order.orderNumber || "-"} icon={Hash} dir="ltr" />
+                  <InfoItem label="تاريخ الإنشاء" value={order.createdAtLabel} icon={CalendarClock} />
+                  <InfoItem label="آخر تحديث" value={order.updatedAtLabel} icon={CalendarClock} />
+                  <InfoItem label="حالة الخادم" value={order.backendStatus} icon={ShieldAlert} dir="ltr" />
+                  <InfoItem label="نوع التنفيذ" value={executionTypeLabels[order.executionType] || order.executionType} icon={order.executionType === "automatic" ? Bot : UserRound} />
                 </dl>
               </DetailSection>
 
-              <DetailSection title="Customer" icon={CircleUserRound}>
+              <DetailSection title="العميل" icon={CircleUserRound}>
                 <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <InfoItem label="Name" value={order.username} icon={UserRound} />
-                  <InfoItem label="Email" value={order.userEmail || "-"} icon={Mail} dir="ltr" wide />
-                  <InfoItem label="User id" value={order.userId || "-"} icon={AtSign} dir="ltr" />
+                  <InfoItem label="الاسم" value={order.username} icon={UserRound} />
+                  <InfoItem label="البريد الإلكتروني" value={order.userEmail || "-"} icon={Mail} dir="ltr" wide />
+                  <InfoItem label="معرّف المستخدم" value={order.userId || "-"} icon={AtSign} dir="ltr" />
                   <InfoItem
-                    label="Wallet balance"
-                    value={order.user?.walletBalance === null || order.user?.walletBalance === undefined ? "Not returned" : String(order.user.walletBalance)}
+                    label="رصيد المحفظة"
+                    value={order.user?.walletBalance === null || order.user?.walletBalance === undefined ? "غير متاح" : String(order.user.walletBalance)}
                     icon={CircleDollarSign}
                     dir="ltr"
                   />
                 </dl>
               </DetailSection>
 
-              <DetailSection title="Submitted fields" icon={CircleUserRound}>
+              <DetailSection title="البيانات المُدخلة" icon={CircleUserRound}>
                 {order.submittedFields.length ? (
                   <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {order.submittedFields.map((field) => (
@@ -200,36 +200,36 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
                   </dl>
                 ) : (
                   <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500 dark:bg-[#0B1220] dark:text-slate-300">
-                    No submitted dynamic fields were returned for this order.
+                    لم تُرجع أي حقول إضافية لهذا الطلب.
                   </p>
                 )}
               </DetailSection>
 
-              <DetailSection title="Wallet and refund" icon={CircleDollarSign}>
+              <DetailSection title="المحفظة والاسترداد" icon={CircleDollarSign}>
                 <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <InfoItem label="Charged amount" value={order.amountLabel} icon={CircleDollarSign} dir="ltr" />
-                  <InfoItem label="Wallet deducted" value={order.walletDeductedLabel} icon={CircleDollarSign} dir="ltr" />
-                  <InfoItem label="Credit used" value={`${order.creditUsedAmount} ${order.currency}`} icon={CircleDollarSign} dir="ltr" />
-                  <InfoItem label="USD amount" value={order.usdAmount || "-"} icon={CircleDollarSign} dir="ltr" />
-                  <InfoItem label="Refunded" value={order.refunded ? "Yes" : "No"} icon={RotateCcw} />
-                  <InfoItem label="Refunded at" value={order.refundedAtLabel} icon={CalendarClock} />
-                  <InfoItem label="Failure/refund reason" value={order.rejectionReason || "-"} icon={XCircle} wide />
+                  <InfoItem label="المبلغ المحصّل" value={order.amountLabel} icon={CircleDollarSign} dir="ltr" />
+                  <InfoItem label="المخصوم من المحفظة" value={order.walletDeductedLabel} icon={CircleDollarSign} dir="ltr" />
+                  <InfoItem label="الرصيد المستخدم" value={`${order.creditUsedAmount} ${order.currency}`} icon={CircleDollarSign} dir="ltr" />
+                  <InfoItem label="المبلغ بالدولار" value={order.usdAmount || "-"} icon={CircleDollarSign} dir="ltr" />
+                  <InfoItem label="تم الاسترداد" value={order.refunded ? "نعم" : "لا"} icon={RotateCcw} />
+                  <InfoItem label="تاريخ الاسترداد" value={order.refundedAtLabel} icon={CalendarClock} />
+                  <InfoItem label="سبب الفشل أو الاسترداد" value={order.rejectionReason || "-"} icon={XCircle} wide />
                 </dl>
               </DetailSection>
 
-              <DetailSection title="Provider status" icon={CloudCog}>
+              <DetailSection title="حالة المورد" icon={CloudCog}>
                 <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <InfoItem label="Provider" value={order.provider} icon={CloudCog} />
-                  <InfoItem label="Provider code" value={order.providerCode || "-"} icon={Hash} dir="ltr" />
-                  <InfoItem label="Provider order id" value={order.providerOrderId} icon={Hash} dir="ltr" />
-                  <InfoItem label="Provider status" value={order.providerStatusLabel || "-"} icon={ShieldAlert} />
-                  <InfoItem label="Retry count" value={String(order.retryCount)} icon={RefreshCw} dir="ltr" />
-                  <InfoItem label="Remains" value={String(order.remains)} icon={Package} dir="ltr" />
-                  <InfoItem label="Sync timestamp" value={order.supplierSync} icon={RefreshCw} wide />
+                  <InfoItem label="المورد" value={order.provider} icon={CloudCog} />
+                  <InfoItem label="رمز المورد" value={order.providerCode || "-"} icon={Hash} dir="ltr" />
+                  <InfoItem label="معرّف طلب المورد" value={order.providerOrderId} icon={Hash} dir="ltr" />
+                  <InfoItem label="حالة المورد" value={order.providerStatusLabel || "-"} icon={ShieldAlert} />
+                  <InfoItem label="عدد المحاولات" value={String(order.retryCount)} icon={RefreshCw} dir="ltr" />
+                  <InfoItem label="المتبقي" value={String(order.remains)} icon={Package} dir="ltr" />
+                  <InfoItem label="وقت المزامنة" value={order.supplierSync} icon={RefreshCw} wide />
                 </dl>
               </DetailSection>
 
-              <DetailSection title="Timeline" icon={CalendarClock}>
+              <DetailSection title="الخط الزمني" icon={CalendarClock}>
                 {order.timeline.length ? (
                   <div className="grid gap-2 sm:grid-cols-2">
                     {order.timeline.map((item) => (
@@ -241,19 +241,19 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
                   </div>
                 ) : (
                   <p className="rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-500 dark:bg-[#0B1220] dark:text-slate-300">
-                    No timeline timestamps returned.
+                    لا توجد أوقات مسجلة لهذا الطلب.
                   </p>
                 )}
               </DetailSection>
 
-              <DetailSection title="Backend actions" icon={Check}>
+              <DetailSection title="إجراءات الطلب" icon={Check}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <OrderActionButton
                     action="complete"
                     availability={order.actionAvailability.complete}
                     busy={actionKey === `${order.id}:complete`}
                     icon={Check}
-                    label="Manual complete"
+                    label="إكمال يدوي"
                     onClick={requestAction}
                     tone="success"
                   />
@@ -262,7 +262,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
                     availability={order.actionAvailability.refund}
                     busy={actionKey === `${order.id}:refund`}
                     icon={XCircle}
-                    label="Fail and refund"
+                    label="تسجيل الفشل والاسترداد"
                     onClick={requestAction}
                     tone="danger"
                   />
@@ -271,7 +271,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
                     availability={order.actionAvailability.retry}
                     busy={actionKey === `${order.id}:retry`}
                     icon={RefreshCw}
-                    label="Retry provider"
+                    label="إعادة محاولة المورد"
                     onClick={requestAction}
                     tone="info"
                   />
@@ -280,7 +280,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
                     availability={order.actionAvailability.sync}
                     busy={actionKey === `${order.id}:sync`}
                     icon={CloudCog}
-                    label="Sync provider status"
+                    label="مزامنة حالة المورد"
                     onClick={requestAction}
                     tone="info"
                   />
@@ -308,8 +308,8 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
 function getConfirmation(action, order) {
   const base = {
     action,
-    title: "Confirm backend action",
-    confirmLabel: "Confirm",
+    title: "تأكيد الإجراء",
+    confirmLabel: "تأكيد",
     message: "",
     tone: "info",
   };
@@ -317,8 +317,8 @@ function getConfirmation(action, order) {
   if (action === "complete") {
     return {
       ...base,
-      confirmLabel: "Complete order",
-      message: `Mark ${order.displayId} as completed in the backend. If the order was previously refunded, the backend may re-deduct the original amount.`,
+      confirmLabel: "إكمال الطلب",
+      message: `هل تريد تسجيل الطلب ${order.displayId} كمكتمل؟ إذا كان المبلغ قد استُرد سابقًا فقد يُخصم مرة أخرى.`,
       tone: "success",
     };
   }
@@ -326,8 +326,8 @@ function getConfirmation(action, order) {
   if (action === "refund") {
     return {
       ...base,
-      confirmLabel: "Fail and refund",
-      message: `Fail ${order.displayId} and let the backend issue the refund. The frontend will not calculate or apply wallet credit.`,
+      confirmLabel: "تسجيل الفشل والاسترداد",
+      message: `هل تريد تسجيل فشل الطلب ${order.displayId} وترك الخادم ينفذ الاسترداد؟`,
       tone: "danger",
     };
   }
@@ -335,15 +335,15 @@ function getConfirmation(action, order) {
   if (action === "retry") {
     return {
       ...base,
-      confirmLabel: "Retry order",
-      message: `Ask the backend to retry provider submission for ${order.displayId}.`,
+      confirmLabel: "إعادة المحاولة",
+      message: `هل تريد إعادة إرسال الطلب ${order.displayId} إلى المورد؟`,
     };
   }
 
   return {
     ...base,
-    confirmLabel: "Sync status",
-    message: `Ask the backend to check the provider status for ${order.displayId}.`,
+    confirmLabel: "مزامنة الحالة",
+    message: `هل تريد التحقق من حالة الطلب ${order.displayId} لدى المورد؟`,
   };
 }
 
@@ -392,7 +392,7 @@ function OrderActionButton({ action, availability, busy, icon: Icon, label, onCl
       className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border px-3 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-55 ${toneClass}`}
     >
       {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-      <span>{busy ? "Working..." : label}</span>
+      <span>{busy ? "جارٍ التنفيذ..." : label}</span>
     </button>
   );
 }
@@ -411,20 +411,20 @@ function ConfirmActionDialog({ busy, confirmation, onCancel, onConfirm, reason, 
         <p className="mt-2 text-xs font-bold leading-6 text-slate-500 dark:text-slate-300">{confirmation.message}</p>
         {confirmation.action === "refund" && (
           <label className="mt-3 block text-right">
-            <span className="mb-1 block text-[10px] font-black text-slate-500 dark:text-slate-300">Backend rejection reason (optional)</span>
+            <span className="mb-1 block text-[10px] font-black text-slate-500 dark:text-slate-300">سبب الرفض (اختياري)</span>
             <textarea
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               maxLength={500}
               rows={3}
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs font-bold outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
-              placeholder="Reason saved only through the backend status endpoint"
+              placeholder="سيُحفظ السبب مع حالة الطلب في الخادم"
             />
           </label>
         )}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button type="button" onClick={onCancel} disabled={busy} className="h-11 rounded-xl border border-slate-200 text-[10px] font-black dark:border-white/10 dark:text-white">
-            Cancel
+            إلغاء
           </button>
           <button
             type="button"
@@ -433,7 +433,7 @@ function ConfirmActionDialog({ busy, confirmation, onCancel, onConfirm, reason, 
             className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl text-[10px] font-black text-white disabled:opacity-60 ${danger ? "bg-rose-600" : success ? "bg-emerald-600" : "bg-sky-600"}`}
           >
             {busy && <RefreshCw className="h-4 w-4 animate-spin" />}
-            {busy ? "Working..." : confirmation.confirmLabel}
+            {busy ? "جارٍ التنفيذ..." : confirmation.confirmLabel}
           </button>
         </div>
       </section>

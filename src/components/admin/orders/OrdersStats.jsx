@@ -60,7 +60,7 @@ export default function OrdersStats({ orders, total }) {
               <span className="h-2 w-2 rounded-full bg-current opacity-20" />
             </div>
             <strong dir="ltr" className="mt-2 block text-right text-2xl font-black leading-none text-slate-950 sm:mt-3 sm:text-3xl dark:text-white">
-              {values[item.key].toLocaleString("ar-EG")}
+              {values[item.key].toLocaleString("ar-EG-u-nu-latn")}
             </strong>
             <p className="mt-1.5 text-[11px] font-black text-slate-500 sm:text-xs dark:text-[#9AA7BD]">{item.label}</p>
           </article>

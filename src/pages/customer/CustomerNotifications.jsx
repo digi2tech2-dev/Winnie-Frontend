@@ -13,6 +13,7 @@ export default function CustomerNotifications() {
       onDeleteNotification={context.onDeleteNotification}
       onMarkAllAsRead={context.onMarkAllNotificationsRead}
       onMarkAsRead={context.onMarkNotificationRead}
+      onOpenNotification={context.onOpenNotification}
       readOnly={!context.notificationActionsSupported}
       unreadCount={context.unreadNotificationCount}
     />

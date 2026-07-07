@@ -1,7 +1,7 @@
 import { apiRequest } from "./client";
 import { asArray, getItemId, resolveBackendAssetUrl, toNumber } from "./adapters";
 
-export const PAYMENT_GATEWAYS = Object.freeze(["MOCK", "NETWORK_INTERNATIONAL", "ZIINA", "TAP"]);
+export const PAYMENT_GATEWAYS = Object.freeze(["MOCK", "NETWORK_INTERNATIONAL", "PAYMENTO", "ZIINA", "TAP"]);
 
 function normalizeGateway(value) {
   const gateway = String(value || "").trim().toUpperCase();

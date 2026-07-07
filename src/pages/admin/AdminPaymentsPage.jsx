@@ -43,6 +43,31 @@ const statusStyles = {
   EXPIRED: "bg-orange-500/12 text-orange-700 dark:text-orange-300",
 };
 
+const statusLabels = {
+  INITIATED: "بدأت",
+  PENDING: "قيد الانتظار",
+  REQUIRES_ACTION: "تتطلب إجراءً",
+  SUCCEEDED: "ناجحة",
+  FAILED: "فاشلة",
+  CANCELED: "ملغاة",
+  EXPIRED: "منتهية",
+};
+
+function translatePaymentValue(value) {
+  const key = String(value || "").toUpperCase().replace(/[ -]+/g, "_");
+  return {
+    COMPLETED: "مكتمل",
+    CREDITED: "تمت إضافة الرصيد",
+    FAILED: "فشل",
+    PENDING: "قيد الانتظار",
+    PROCESSED: "تمت المعالجة",
+    PROCESSING: "قيد المعالجة",
+    SUCCEEDED: "ناجح",
+    TOP_UP: "شحن المحفظة",
+    WALLET_TOPUP: "شحن المحفظة",
+  }[key] || value;
+}
+
 function getErrorMessage(error, fallback) {
   return error?.userMessage || error?.message || fallback;
 }
@@ -113,7 +138,7 @@ export default function AdminPaymentsPage() {
   const loadPayments = useCallback(async () => {
     if (!token) {
       setPayments([]);
-      setError("Admin session is required.");
+      setError("يلزم تسجيل الدخول بحساب مدير.");
       setLoading(false);
       return;
     }
@@ -130,11 +155,11 @@ export default function AdminPaymentsPage() {
       setPayments(result.payments);
       setPagination(result.pagination);
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "Unable to load payments.");
+      const message = getErrorMessage(requestError, "تعذر تحميل المدفوعات.");
       setPayments([]);
       setPagination({ page, limit: pageSize, total: 0, pages: 1 });
       setError(message);
-      showToast({ type: "error", title: "Payments not loaded", message });
+      showToast({ type: "error", title: "لم يتم تحميل المدفوعات", message });
     } finally {
       setLoading(false);
     }
@@ -159,7 +184,7 @@ export default function AdminPaymentsPage() {
         if (!cancelled) setSelectedPayment(result.payment);
       } catch (requestError) {
         if (!cancelled) {
-          setDetailsError(getErrorMessage(requestError, "Unable to load payment details."));
+          setDetailsError(getErrorMessage(requestError, "تعذر تحميل تفاصيل الدفعة."));
         }
       } finally {
         if (!cancelled) setDetailsLoading(false);
@@ -218,8 +243,8 @@ export default function AdminPaymentsPage() {
       setSelectedPayment(result.payment);
       showToast({
         type: result.payment?.status === "SUCCEEDED" ? "success" : "info",
-        title: result.message || "Payment reconciled",
-        message: result.providerStatus ? `Provider status: ${result.providerStatus}` : "",
+        title: result.message || "تمت مطابقة الدفعة",
+        message: result.providerStatus ? `حالة مزود الدفع: ${result.providerStatus}` : "",
       });
       await loadPayments();
 
@@ -232,9 +257,9 @@ export default function AdminPaymentsPage() {
     } catch (requestError) {
       const message = getErrorMessage(
         requestError,
-        "Could not verify payment status yet. Please try again later or contact support.",
+        "تعذر التحقق من حالة الدفعة الآن. حاول لاحقًا أو تواصل مع الدعم.",
       );
-      showToast({ type: "error", title: "Reconciliation failed", message });
+      showToast({ type: "error", title: "فشلت المطابقة", message });
     } finally {
       setActionKey("");
     }
@@ -245,10 +270,10 @@ export default function AdminPaymentsPage() {
       <Header onRefresh={loadPayments} refreshing={loading} />
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        <Stat icon={ReceiptText} label="Visible payments" value={stats.total} tone="violet" />
-        <Stat icon={Clock3} label="Pending action" value={stats.pending} tone="amber" />
-        <Stat icon={CheckCircle2} label="Succeeded" value={stats.succeeded} tone="emerald" />
-        <Stat icon={AlertTriangle} label="Failed / canceled" value={stats.failed} tone="rose" />
+        <Stat icon={ReceiptText} label="إجمالي المدفوعات" value={stats.total} tone="violet" />
+        <Stat icon={Clock3} label="تحتاج إلى إجراء" value={stats.pending} tone="amber" />
+        <Stat icon={CheckCircle2} label="المدفوعات الناجحة" value={stats.succeeded} tone="emerald" />
+        <Stat icon={AlertTriangle} label="فاشلة أو ملغاة" value={stats.failed} tone="rose" />
       </div>
 
       <Filters
@@ -262,9 +287,9 @@ export default function AdminPaymentsPage() {
       <section aria-labelledby="payments-list-title">
         <div className="mb-3 flex items-end justify-between gap-3 px-1">
           <div>
-            <h2 id="payments-list-title" className="text-base font-black text-slate-950 dark:text-white">Payments list</h2>
+            <h2 id="payments-list-title" className="text-base font-black text-slate-950 dark:text-white">قائمة المدفوعات</h2>
             <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-[#8A94A7]">
-              {visiblePayments.length.toLocaleString("ar-EG")} loaded / {(pagination.total || payments.length).toLocaleString("ar-EG")}
+              تم تحميل {visiblePayments.length.toLocaleString("ar-EG-u-nu-latn")} من {(pagination.total || payments.length).toLocaleString("ar-EG-u-nu-latn")}
             </p>
           </div>
           <button
@@ -274,7 +299,7 @@ export default function AdminPaymentsPage() {
             className="inline-flex h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            تحديث
           </button>
         </div>
 
@@ -290,14 +315,14 @@ export default function AdminPaymentsPage() {
         ) : visiblePayments.length > 0 ? (
           <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
             <div className="hidden grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr] gap-3 border-b border-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-400 dark:border-white/10 lg:grid">
-              <span>Payment</span>
-              <span>User</span>
-              <span>Gateway</span>
-              <span>Status</span>
-              <span>Requested</span>
-              <span>Gateway charge</span>
-              <span>Credited</span>
-              <span>Actions</span>
+              <span>الدفعة</span>
+              <span>المستخدم</span>
+              <span>بوابة الدفع</span>
+              <span>الحالة</span>
+              <span>المبلغ المطلوب</span>
+              <span>خصم البوابة</span>
+              <span>إضافة الرصيد</span>
+              <span>الإجراءات</span>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-white/10">
               {visiblePayments.map((payment) => (
@@ -314,9 +339,9 @@ export default function AdminPaymentsPage() {
         ) : (
           <EmptyState
             icon={Search}
-            title={error ? "Unable to load payments" : "No payments found"}
-            description={error || "No backend payments matched the current filters."}
-            actionLabel="Reset filters"
+            title={error ? "تعذر تحميل المدفوعات" : "لا توجد مدفوعات"}
+            description={error || "لا توجد مدفوعات مطابقة للفلاتر الحالية."}
+            actionLabel="إعادة ضبط الفلاتر"
             onAction={resetFilters}
           />
         )}
@@ -329,10 +354,10 @@ export default function AdminPaymentsPage() {
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
             >
-              Previous
+              السابق
             </button>
             <span className="text-xs font-black text-slate-500 dark:text-slate-400">
-              Page {pagination.page} of {pagination.pages}
+              صفحة {pagination.page} من {pagination.pages}
             </span>
             <button
               type="button"
@@ -340,7 +365,7 @@ export default function AdminPaymentsPage() {
               onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
               className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
             >
-              Next
+              التالي
             </button>
           </div>
         )}
@@ -367,14 +392,14 @@ function Header({ onRefresh, refreshing }) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">Admin payments</h1>
+            <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">إدارة المدفوعات</h1>
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
               <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Backend connected
+              متصل بالخادم
             </span>
           </div>
           <p className="mt-1 text-xs font-bold text-slate-500 sm:text-sm dark:text-[#9AA7BD]">
-            Online wallet top-up payments and provider reconciliation.
+            متابعة مدفوعات شحن المحافظ ومطابقتها مع مزودي الدفع.
           </p>
         </div>
         <button
@@ -384,7 +409,7 @@ function Header({ onRefresh, refreshing }) {
           className="hidden h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300 sm:inline-flex"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
+          تحديث
         </button>
       </div>
     </section>
@@ -417,10 +442,10 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
     <section className="overflow-hidden rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
       <div className="flex min-h-14 items-center gap-2 border-b border-slate-100 px-4 dark:border-white/10">
         <SlidersHorizontal className="h-4 w-4 text-violet-500" />
-        <b className="flex-1 text-xs dark:text-white">Filters</b>
+        <b className="flex-1 text-xs dark:text-white">الفلاتر</b>
         {activeCount > 0 && (
           <span className="rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-black text-violet-700 dark:text-violet-300">
-            {activeCount} active
+            {activeCount} مفعّلة
           </span>
         )}
       </div>
@@ -430,31 +455,32 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
           <input
             value={filters.search}
             onChange={(event) => onChange("search", event.target.value)}
-            placeholder="Search payment or user"
+            placeholder="ابحث عن دفعة أو مستخدم"
             className="h-11 w-full rounded-2xl bg-slate-50 pe-9 ps-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white"
           />
         </label>
         <select value={filters.status} onChange={(event) => onChange("status", event.target.value)} className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white">
-          <option value="all">All status</option>
-          <option value="INITIATED">Initiated</option>
-          <option value="PENDING">Pending</option>
-          <option value="REQUIRES_ACTION">Requires action</option>
-          <option value="SUCCEEDED">Succeeded</option>
-          <option value="FAILED">Failed</option>
-          <option value="CANCELED">Canceled</option>
-          <option value="EXPIRED">Expired</option>
+          <option value="all">كل الحالات</option>
+          <option value="INITIATED">بدأت</option>
+          <option value="PENDING">قيد الانتظار</option>
+          <option value="REQUIRES_ACTION">تتطلب إجراءً</option>
+          <option value="SUCCEEDED">ناجحة</option>
+          <option value="FAILED">فاشلة</option>
+          <option value="CANCELED">ملغاة</option>
+          <option value="EXPIRED">منتهية</option>
         </select>
         <select value={filters.gateway} onChange={(event) => onChange("gateway", event.target.value)} className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white">
-          <option value="all">All gateways</option>
-          <option value="NETWORK_INTERNATIONAL">Network International</option>
-          <option value="MOCK">Mock</option>
-          <option value="ZIINA">Ziina</option>
-          <option value="TAP">Tap</option>
+          <option value="all">كل بوابات الدفع</option>
+          <option value="NETWORK_INTERNATIONAL">نتورك إنترناشيونال</option>
+          <option value="PAYMENTO">Paymento USDT</option>
+          <option value="MOCK">تجريبية</option>
+          <option value="ZIINA">زينة</option>
+          <option value="TAP">تاب</option>
         </select>
         <select value={filters.credited} onChange={(event) => onChange("credited", event.target.value)} className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white">
-          <option value="all">All credit</option>
-          <option value="true">Credited</option>
-          <option value="false">Not credited</option>
+          <option value="all">كل حالات الرصيد</option>
+          <option value="true">أُضيف الرصيد</option>
+          <option value="false">لم يُضف الرصيد</option>
         </select>
         <input
           type="date"
@@ -469,9 +495,9 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
           className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white"
         />
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-none">
-          <button type="submit" className="h-11 rounded-2xl bg-violet-600 px-5 text-[10px] font-black text-white">Filter</button>
+          <button type="submit" className="h-11 rounded-2xl bg-violet-600 px-5 text-[10px] font-black text-white">تصفية</button>
           <button type="button" onClick={onReset} className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-[10px] font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-            Reset
+            إعادة ضبط
           </button>
         </div>
       </form>
@@ -498,14 +524,14 @@ function PaymentRow({ actionKey, onDetails, onSync, payment }) {
       <StatusBadge status={payment.status} label={payment.statusLabel} />
       <div>
         <p className="text-xs font-black text-slate-950 dark:text-white">{payment.requestedAmountLabel}</p>
-        <p className="text-[10px] font-bold text-slate-400">Requested</p>
+        <p className="text-[10px] font-bold text-slate-400">المبلغ المطلوب</p>
       </div>
       <div>
         <p className="text-xs font-black text-slate-950 dark:text-white">{payment.gatewayAmountLabel}</p>
-        <p className="text-[10px] font-bold text-slate-400">{payment.exchangeRateSource || "Gateway"}</p>
+        <p className="text-[10px] font-bold text-slate-400">{payment.exchangeRateSource || "بوابة الدفع"}</p>
       </div>
       <span className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${payment.credited ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : "bg-slate-500/10 text-slate-500 dark:text-slate-300"}`}>
-        {payment.credited ? "Credited" : "Not credited"}
+        {payment.credited ? "أُضيف الرصيد" : "لم يُضف الرصيد"}
       </span>
       <div className="flex flex-wrap gap-2">
         <button
@@ -514,7 +540,7 @@ function PaymentRow({ actionKey, onDetails, onSync, payment }) {
           className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-black text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
         >
           <Eye className="h-3.5 w-3.5" />
-          Details
+          التفاصيل
         </button>
         {payment.canSync && (
           <button
@@ -524,7 +550,7 @@ function PaymentRow({ actionKey, onDetails, onSync, payment }) {
             className="inline-flex h-9 items-center gap-2 rounded-xl bg-violet-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-            Sync
+            مزامنة
           </button>
         )}
       </div>
@@ -535,7 +561,7 @@ function PaymentRow({ actionKey, onDetails, onSync, payment }) {
 function StatusBadge({ label, status }) {
   return (
     <span className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${statusStyles[status] || statusStyles.PENDING}`}>
-      {label}
+      {statusLabels[status] || label}
     </span>
   );
 }
@@ -563,7 +589,7 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
               className="inline-flex h-10 items-center gap-2 rounded-2xl bg-violet-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-              Reconcile
+              مطابقة
             </button>
           )}
           <button
@@ -571,7 +597,7 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
             onClick={onClose}
             disabled={Boolean(actionKey)}
             className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
-            aria-label="Close payment details"
+            aria-label="إغلاق تفاصيل الدفعة"
           >
             <X className="h-5 w-5" />
           </button>
@@ -590,79 +616,79 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <DetailCard label="Status" value={payment.statusLabel} helper={payment.status} icon={ShieldCheck} />
-            <DetailCard label="Requested" value={payment.requestedAmountLabel} helper={payment.requestedCurrency} icon={ReceiptText} />
-            <DetailCard label="Gateway charge" value={payment.gatewayAmountLabel} helper={payment.gatewayCurrency || payment.gatewayLabel} icon={RefreshCw} />
+            <DetailCard label="الحالة" value={statusLabels[payment.status] || payment.statusLabel} helper={payment.status} icon={ShieldCheck} />
+            <DetailCard label="المبلغ المطلوب" value={payment.requestedAmountLabel} helper={payment.requestedCurrency} icon={ReceiptText} />
+            <DetailCard label="خصم البوابة" value={payment.gatewayAmountLabel} helper={payment.gatewayCurrency || payment.gatewayLabel} icon={RefreshCw} />
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
             <section className="rounded-[22px] border border-slate-200 p-4 dark:border-white/10">
-              <h4 className="text-sm font-black text-slate-950 dark:text-white">Payment summary</h4>
+              <h4 className="text-sm font-black text-slate-950 dark:text-white">ملخص الدفعة</h4>
               <DetailList
                 items={[
-                  ["Gateway", payment.gatewayLabel],
-                  ["Method", payment.method],
-                  ["Purpose", payment.purpose],
-                  ["Total amount", payment.totalAmountLabel],
-                  ["Fee", payment.feeAmountLabel],
-                  ["Exchange rate", payment.exchangeRate || "-"],
-                  ["Exchange source", payment.exchangeRateSource || "-"],
-                  ["Credited", payment.credited ? payment.creditedAtLabel : "Not credited"],
-                  ["Wallet transaction", shortValue(payment.walletTransactionId, 18)],
+                  ["بوابة الدفع", payment.gatewayLabel],
+                  ["طريقة الدفع", translatePaymentValue(payment.method)],
+                  ["الغرض", translatePaymentValue(payment.purpose)],
+                  ["إجمالي المبلغ", payment.totalAmountLabel],
+                  ["الرسوم", payment.feeAmountLabel],
+                  ["سعر الصرف", payment.exchangeRate || "-"],
+                  ["مصدر سعر الصرف", payment.exchangeRateSource || "-"],
+                  ["إضافة الرصيد", payment.credited ? payment.creditedAtLabel : "لم يُضف الرصيد"],
+                  ["معاملة المحفظة", shortValue(payment.walletTransactionId, 18)],
                 ]}
               />
             </section>
 
             <section className="rounded-[22px] border border-slate-200 p-4 dark:border-white/10">
-              <h4 className="text-sm font-black text-slate-950 dark:text-white">Customer</h4>
+              <h4 className="text-sm font-black text-slate-950 dark:text-white">العميل</h4>
               <DetailList
                 items={[
-                  ["Name", payment.userName],
-                  ["Email", payment.userEmail || "-"],
-                  ["Phone", payment.user?.phone || "-"],
-                  ["User ID", shortValue(payment.userId, 22)],
+                  ["الاسم", payment.userName],
+                  ["البريد الإلكتروني", payment.userEmail || "-"],
+                  ["الهاتف", payment.user?.phone || "-"],
+                  ["معرّف المستخدم", shortValue(payment.userId, 22)],
                 ]}
               />
             </section>
           </div>
 
           <section className="mt-4 rounded-[22px] border border-slate-200 p-4 dark:border-white/10">
-            <h4 className="text-sm font-black text-slate-950 dark:text-white">Gateway references</h4>
+            <h4 className="text-sm font-black text-slate-950 dark:text-white">مراجع بوابة الدفع</h4>
             <DetailList
               items={[
-                ["Gateway payment ID", shortValue(payment.gatewayPaymentId, 36)],
-                ["Gateway reference", shortValue(payment.gatewayReference, 36)],
-                ["Created", payment.createdAtLabel],
-                ["Updated", payment.updatedAtLabel],
-                ["Succeeded", payment.succeededAtLabel],
-                ["Failed", payment.failedAtLabel],
-                ["Canceled", payment.canceledAtLabel],
+                ["معرّف الدفعة لدى البوابة", shortValue(payment.gatewayPaymentId, 36)],
+                ["مرجع بوابة الدفع", shortValue(payment.gatewayReference, 36)],
+                ["تاريخ الإنشاء", payment.createdAtLabel],
+                ["آخر تحديث", payment.updatedAtLabel],
+                ["تاريخ النجاح", payment.succeededAtLabel],
+                ["تاريخ الفشل", payment.failedAtLabel],
+                ["تاريخ الإلغاء", payment.canceledAtLabel],
               ]}
             />
           </section>
 
           {payment.risk?.hasRiskSnapshot && (
             <section className="mt-4 rounded-[22px] border border-slate-200 p-4 dark:border-white/10">
-              <h4 className="text-sm font-black text-slate-950 dark:text-white">Risk snapshot</h4>
+              <h4 className="text-sm font-black text-slate-950 dark:text-white">ملخص المخاطر</h4>
               <DetailList
                 items={[
-                  ["Base equivalent", payment.risk.amountBaseCurrencyLabel],
-                  ["Base currency", payment.risk.baseCurrency || "-"],
-                  ["Evaluated", payment.risk.evaluatedAtLabel],
+                  ["القيمة بالعملة الأساسية", payment.risk.amountBaseCurrencyLabel],
+                  ["العملة الأساسية", payment.risk.baseCurrency || "-"],
+                  ["تاريخ التقييم", payment.risk.evaluatedAtLabel],
                 ]}
               />
             </section>
           )}
 
           <section className="mt-4 rounded-[22px] border border-slate-200 p-4 dark:border-white/10">
-            <h4 className="text-sm font-black text-slate-950 dark:text-white">Webhook events</h4>
+            <h4 className="text-sm font-black text-slate-950 dark:text-white">أحداث إشعارات بوابة الدفع</h4>
             {payment.webhookEvents.length > 0 ? (
               <div className="mt-3 space-y-2">
                 {payment.webhookEvents.map((event) => (
                   <div key={event.id || event.dedupeKey} className="rounded-2xl bg-slate-50 p-3 dark:bg-white/[0.04]">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-black text-violet-700 dark:text-violet-300">{event.processingStatusLabel}</span>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{event.providerStatusLabel}</span>
+                      <span className="rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-black text-violet-700 dark:text-violet-300">{translatePaymentValue(event.processingStatusLabel)}</span>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{translatePaymentValue(event.providerStatusLabel)}</span>
                       <span className="text-[10px] font-bold text-slate-400">{event.receivedAtLabel}</span>
                     </div>
                     {event.errorMessage && (
@@ -673,7 +699,7 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
               </div>
             ) : (
               <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs font-bold text-slate-500 dark:bg-white/[0.04] dark:text-slate-400">
-                No webhook events recorded for this payment.
+                لا توجد أحداث مسجلة لهذه الدفعة.
               </p>
             )}
           </section>
@@ -709,7 +735,7 @@ function DetailList({ items }) {
 
 function PaymentsLoadingState() {
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]" aria-label="Loading admin payments" aria-busy="true">
+    <div className="rounded-[24px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]" aria-label="جارٍ تحميل مدفوعات الإدارة" aria-busy="true">
       {Array.from({ length: 8 }).map((_, index) => (
         <div key={index} className="grid gap-3 border-b border-slate-100 py-4 last:border-b-0 dark:border-white/10 lg:grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr]">
           {Array.from({ length: 8 }).map((__, itemIndex) => <SkeletonBlock key={itemIndex} className="h-8 rounded-xl" />)}

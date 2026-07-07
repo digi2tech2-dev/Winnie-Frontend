@@ -1,12 +1,12 @@
 import { CircleCheck, CircleX, LoaderCircle, Wifi } from "lucide-react";
 
 const statusMap = {
-  active: [CircleCheck, "Active", "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"],
-  connected: [CircleCheck, "Connected", "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"],
-  failed: [CircleX, "Failed", "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"],
-  inactive: [CircleX, "Inactive", "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"],
-  testing: [LoaderCircle, "Testing", "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300"],
-  unknown: [Wifi, "Not tested", "border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-300"],
+  active: [CircleCheck, "نشط", "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"],
+  connected: [CircleCheck, "متصل", "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"],
+  failed: [CircleX, "فشل", "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"],
+  inactive: [CircleX, "غير نشط", "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"],
+  testing: [LoaderCircle, "جارٍ الاختبار", "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300"],
+  unknown: [Wifi, "لم يُختبر", "border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-300"],
 };
 
 export default function ConnectionStatusBadge({ status = "unknown" }) {

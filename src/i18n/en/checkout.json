@@ -1,0 +1,24 @@
+{
+  "success": {
+    "title": "Payment is being verified",
+    "body": "Returning from checkout does not credit the wallet by itself. The backend updates the wallet only after provider verification."
+  },
+  "cancel": {
+    "title": "Payment was not completed",
+    "body": "No wallet credit is applied from this return page. You can check your wallet or start another top-up."
+  },
+  "pending": {
+    "title": "Payment verification pending",
+    "body": "The payment status may still be processing. Wallet balance changes only after the provider status is verified."
+  },
+  "refreshError": "Payment status could not be refreshed.",
+  "verified": "Payment verified and wallet credit recorded.",
+  "latestStatus": "Latest status: {{status}}.",
+  "checking": "Checking the latest provider status...",
+  "openHistory": "Open your wallet history to review the final status.",
+  "refreshing": "Refreshing payment status",
+  "signInToRefresh": "Sign in to refresh payment status from this page.",
+  "wallet": "Wallet",
+  "transactions": "Transactions",
+  "refresh": "Refresh status"
+}

@@ -3,6 +3,8 @@ import { AnimatePresence } from "framer-motion";
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageTransition from "./components/PageTransition";
+import GlobalOverlayScrollLock from "./components/GlobalOverlayScrollLock";
+import ScrollProgressIndicator from "./components/ScrollProgressIndicator";
 import { PageSkeleton } from "./components/Skeletons";
 import AdminLayout from "./layouts/AdminLayout";
 import CustomerLayout from "./layouts/CustomerLayout";
@@ -62,6 +64,8 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageSkeleton />}>
+      <GlobalOverlayScrollLock />
+      <ScrollProgressIndicator />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route element={<PublicLayout />}>

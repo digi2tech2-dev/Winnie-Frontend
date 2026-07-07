@@ -15,7 +15,7 @@ export function createPurchaseReceipt({ product, quantity, accountId, selectedPa
     quantity,
     accountId,
     totalLabel,
-    createdAt: new Date().toLocaleString("ar", {
+    createdAt: new Date().toLocaleString("ar-u-nu-latn", {
       dateStyle: "medium",
       timeStyle: "short",
     }),

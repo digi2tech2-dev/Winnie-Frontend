@@ -11,7 +11,7 @@ export default function SupplierCard({
   onTest,
   onToggle,
   onTools,
-  productCountLabel = "Backend catalog",
+  productCountLabel = "كتالوج المورد",
   supplier,
 }) {
   const busy = actionKey.startsWith(`${supplier.id}:`);
@@ -35,14 +35,14 @@ export default function SupplierCard({
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Info label="Connection"><ConnectionStatusBadge status={connectionStatus} /></Info>
-        <Info label="Products" value={productCountLabel} />
-        <Info label="Updated" value={supplier.updatedAtLabel} />
+        <Info label="الاتصال"><ConnectionStatusBadge status={connectionStatus} /></Info>
+        <Info label="المنتجات" value={productCountLabel} />
+        <Info label="آخر تحديث" value={supplier.updatedAtLabel} />
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <Info label="Base URL" value={supplier.baseUrl || "-"} dir="ltr" />
-        <Info label="Sync interval" value={`${supplier.syncInterval} min`} dir="ltr" />
+        <Info label="الرابط الأساسي" value={supplier.baseUrl || "-"} dir="ltr" />
+        <Info label="مدة المزامنة" value={`${supplier.syncInterval} دقيقة`} dir="ltr" />
       </div>
 
       <p className="mt-3 line-clamp-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[9px] font-bold leading-5 text-slate-500 dark:border-white/[0.06] dark:bg-[#0B1220]/70 dark:text-slate-400">
@@ -56,14 +56,14 @@ export default function SupplierCard({
       )}
 
       <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-        <ActionButton busy={actionKey === `${supplier.id}:test`} disabled={busy} icon={Activity} label="Test" onClick={() => onTest(supplier)} />
-        <ActionButton disabled={busy} icon={Boxes} label="Products" onClick={() => onProducts(supplier)} />
-        <ActionButton busy={actionKey === `${supplier.id}:sync`} disabled={busy || !supplier.active} icon={RefreshCw} label="Sync" onClick={() => onSync(supplier)} />
-        <ActionButton disabled={busy} icon={Stethoscope} label="Tools" onClick={() => onTools(supplier)} />
-        <ActionButton disabled={busy} icon={Pencil} label="Edit" onClick={() => onEdit(supplier)} />
-        <ActionButton disabled={busy} icon={CircleDollarSign} label="Balance" onClick={() => onTools(supplier)} />
-        <ActionButton disabled={busy} danger={supplier.active} icon={Ban} label={supplier.active ? "Disable" : "Enable"} onClick={() => onToggle(supplier)} />
-        <ActionButton disabled={busy} danger icon={Archive} label="Archive" onClick={() => onArchive(supplier)} />
+        <ActionButton busy={actionKey === `${supplier.id}:test`} disabled={busy} icon={Activity} label="اختبار" onClick={() => onTest(supplier)} />
+        <ActionButton disabled={busy} icon={Boxes} label="المنتجات" onClick={() => onProducts(supplier)} />
+        <ActionButton busy={actionKey === `${supplier.id}:sync`} disabled={busy || !supplier.active} icon={RefreshCw} label="مزامنة" onClick={() => onSync(supplier)} />
+        <ActionButton disabled={busy} icon={Stethoscope} label="الأدوات" onClick={() => onTools(supplier)} />
+        <ActionButton disabled={busy} icon={Pencil} label="تعديل" onClick={() => onEdit(supplier)} />
+        <ActionButton disabled={busy} icon={CircleDollarSign} label="الرصيد" onClick={() => onTools(supplier)} />
+        <ActionButton disabled={busy} danger={supplier.active} icon={Ban} label={supplier.active ? "تعطيل" : "تفعيل"} onClick={() => onToggle(supplier)} />
+        <ActionButton disabled={busy} danger icon={Archive} label="أرشفة" onClick={() => onArchive(supplier)} />
       </div>
     </article>
   );
@@ -95,7 +95,7 @@ function ActionButton({ busy, danger, disabled, icon: Icon, label, onClick }) {
       }`}
     >
       {busy ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
-      {busy ? "Working" : label}
+      {busy ? "جارٍ التنفيذ" : label}
     </button>
   );
 }

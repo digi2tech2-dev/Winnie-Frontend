@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Coins, Eye, EyeOff, Globe2, Lock, Mail, MailCheck, Phone, UserRound } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import GoogleMark from "../../components/GoogleMark";
 import PolicyAgreement, { PoliciesModal } from "../../components/PolicyAgreement";
 import { useToast } from "../../components/ToastProvider";
@@ -27,6 +28,7 @@ function withReferralAlias(errors = {}) {
 }
 
 export default function Register() {
+  const { t } = useTranslation("auth");
   const location = useLocation();
   const inviteCodeFromUrl = new URLSearchParams(location.search).get("inviteCode") || new URLSearchParams(location.search).get("referralCode") || "";
   const [step, setStep] = useState("account");
@@ -64,7 +66,7 @@ export default function Register() {
           return { ...current, currency: activeCurrencies[0]?.code || "" };
         });
         if (!activeCurrencies.length) {
-          const message = "No active registration currencies are available.";
+          const message = t("register.currenciesUnavailable");
           setCurrenciesError(message);
           setFieldErrors((current) => ({ ...current, currency: message }));
         } else {
@@ -77,7 +79,7 @@ export default function Register() {
         }
       } catch (requestError) {
         if (cancelled) return;
-        const message = requestError.userMessage || "Unable to load registration currencies.";
+        const message = requestError.userMessage || t("register.currenciesLoadError");
         setCurrencyOptions([]);
         setDetails((current) => ({ ...current, currency: "" }));
         setCurrenciesError(message);
@@ -125,8 +127,8 @@ export default function Register() {
 
     showToast({
       type: "error",
-      title: "الموافقة مطلوبة",
-      message: "يجب الموافقة على الشروط والأحكام وسياسات الموقع قبل المتابعة.",
+      title: t("common.agreementRequiredTitle"),
+      message: t("common.agreementRequiredMessage"),
     });
     return false;
   };
@@ -140,27 +142,27 @@ export default function Register() {
     const errors = {};
 
     if (!normalizedAccount.name) {
-      errors.name = "اكتب الاسم الكامل.";
+      errors.name = t("register.nameRequired");
     } else if (normalizedAccount.name.length < 2 || normalizedAccount.name.length > 100) {
-      errors.name = "الاسم يجب أن يكون بين 2 و100 حرف.";
+      errors.name = t("register.nameLength");
     }
 
     if (!normalizedAccount.email) {
-      errors.email = "اكتب البريد الإلكتروني.";
+      errors.email = t("register.emailRequired");
     } else if (!emailPattern.test(normalizedAccount.email)) {
-      errors.email = "اكتب بريدا إلكترونيا صحيحا.";
+      errors.email = t("register.emailInvalid");
     }
 
     if (!normalizedAccount.password) {
-      errors.password = "اكتب كلمة المرور.";
+      errors.password = t("register.passwordRequired");
     } else if (!passwordPolicyPattern.test(normalizedAccount.password)) {
-      errors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف كبير وحرف صغير ورقم.";
+      errors.password = t("register.passwordPolicy");
     }
 
     if (!normalizedAccount.confirmPassword) {
-      errors.confirmPassword = "اكتب تأكيد كلمة المرور.";
+      errors.confirmPassword = t("register.confirmRequired");
     } else if (normalizedAccount.password !== normalizedAccount.confirmPassword) {
-      errors.confirmPassword = "كلمة المرور غير متطابقة.";
+      errors.confirmPassword = t("register.passwordMismatch");
     }
 
     return { errors, normalizedAccount };
@@ -173,7 +175,7 @@ export default function Register() {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       setFormError("");
-      showToast({ type: "error", title: "بيانات ناقصة", message: "راجع الحقول المحددة بالأحمر." });
+      showToast({ type: "error", title: t("register.missingDataTitle"), message: t("register.missingDataMessage") });
       return;
     }
 
@@ -185,18 +187,18 @@ export default function Register() {
 
   const completeDetails = async () => {
     if (currenciesLoading || currenciesError || !currencyOptions.length) {
-      const message = currenciesError || "Registration currencies are still loading.";
+      const message = currenciesError || t("register.currenciesStillLoading");
       setFieldErrors({ currency: message });
-      showToast({ type: "error", title: "Currency unavailable", message });
+      showToast({ type: "error", title: t("register.currencyUnavailableTitle"), message });
       return;
     }
 
     if (!details.country || !details.currency) {
       setFieldErrors({
-        country: !details.country ? "اختر الدولة." : "",
-        currency: !details.currency ? "اختر العملة." : "",
+        country: !details.country ? t("register.countryRequired") : "",
+        currency: !details.currency ? t("register.currencyRequired") : "",
       });
-      showToast({ type: "error", title: "بيانات ناقصة", message: "اختر الدولة والعملة للمتابعة." });
+      showToast({ type: "error", title: t("register.missingDataTitle"), message: t("register.countryCurrencyMessage") });
       return;
     }
 
@@ -217,14 +219,14 @@ export default function Register() {
     setLoading(false);
 
     if (!result.ok) {
-      const message = result.message || "تعذر إنشاء الحساب. راجع البيانات وحاول مرة أخرى.";
+      const message = result.message || t("register.defaultFailure");
       setFormError(message);
       setFieldErrors(withReferralAlias(result.fieldErrors || {}));
-      showToast({ type: "error", title: "فشل إنشاء الحساب", message });
+      showToast({ type: "error", title: t("register.registerFailureTitle"), message });
       return;
     }
 
-    showToast({ type: "success", title: "تم إرسال رابط التأكيد", message: result.message || account.email });
+    showToast({ type: "success", title: t("register.sentTitle"), message: result.message || account.email });
 
     if (result.authenticated) {
       navigate(result.redirectTo || "/customer/dashboard", { replace: true });
@@ -238,7 +240,7 @@ export default function Register() {
     if (!ensurePolicyAgreement()) return;
 
     const result = loginWithGoogle();
-    showToast({ type: "info", title: "متابعة بجوجل", message: result.message });
+    showToast({ type: "info", title: t("common.googleRegisterTitle"), message: result.message });
   };
 
   return (
@@ -255,18 +257,18 @@ export default function Register() {
               {step === "verify" ? <MailCheck className="h-5 w-5" /> : <UserRound className="h-5 w-5" />}
             </span>
             <h1 className="mt-4 text-3xl font-black text-slate-950 dark:text-white">
-              {step === "account" && "إنشاء حساب"}
-              {step === "details" && "أكمل بيانات الحساب"}
-              {step === "verify" && "تأكيد الحساب"}
+              {step === "account" && t("register.stepAccountTitle")}
+              {step === "details" && t("register.stepDetailsTitle")}
+              {step === "verify" && t("register.stepVerifyTitle")}
             </h1>
             <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-300">
-              {step === "account" && "اكتب بيانات الدخول الأساسية للمتابعة."}
+              {step === "account" && t("register.stepAccountSubtitle")}
               {step === "details" && (
                 <>
-                  البريد المسجل: <span dir="ltr" className="font-black text-royal dark:text-pulse">{account.email}</span>
+                  {t("register.registeredEmail")} <span dir="ltr" className="font-black text-royal dark:text-pulse">{account.email}</span>
                 </>
               )}
-              {step === "verify" && "تم إنشاء الحساب. تحقق من بريدك الإلكتروني ثم انتظر موافقة الإدارة قبل تسجيل الدخول."}
+              {step === "verify" && t("register.verifySubtitle")}
             </p>
           </div>
 
@@ -285,10 +287,10 @@ export default function Register() {
                 createAccount();
               }}
             >
-              <Field icon={UserRound} label="الاسم الكامل" value={account.name} error={fieldErrors.name} onChange={(value) => updateAccount("name", value)} autoComplete="name" required />
-              <Field icon={Mail} label="البريد الإلكتروني" type="email" value={account.email} error={fieldErrors.email} onChange={(value) => updateAccount("email", value)} autoComplete="email" required />
-              <PasswordField label="كلمة المرور" value={account.password} error={fieldErrors.password} onChange={(value) => updateAccount("password", value)} autoComplete="new-password" />
-              <PasswordField label="تأكيد كلمة المرور" value={account.confirmPassword} error={fieldErrors.confirmPassword} onChange={(value) => updateAccount("confirmPassword", value)} autoComplete="new-password" />
+              <Field icon={UserRound} label={t("register.fullName")} value={account.name} error={fieldErrors.name} onChange={(value) => updateAccount("name", value)} autoComplete="name" required />
+              <Field icon={Mail} label={t("common.email")} type="email" value={account.email} error={fieldErrors.email} onChange={(value) => updateAccount("email", value)} autoComplete="email" required />
+              <PasswordField label={t("common.password")} value={account.password} error={fieldErrors.password} onChange={(value) => updateAccount("password", value)} autoComplete="new-password" />
+              <PasswordField label={t("register.confirmPassword")} value={account.confirmPassword} error={fieldErrors.confirmPassword} onChange={(value) => updateAccount("confirmPassword", value)} autoComplete="new-password" />
 
               <div className="rounded-2xl border border-white/70 bg-white/[0.58] px-3 py-2.5 shadow-[0_12px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/10 dark:bg-white/[0.055]">
                 <PolicyAgreement checked={acceptedPolicies} onChange={setAcceptedPolicies} onOpenPolicies={() => setPolicyModalOpen(true)} />
@@ -299,7 +301,7 @@ export default function Register() {
                 disabled={loading}
                 className="interactive-ring h-[52px] min-h-[52px] w-full rounded-2xl bg-[linear-gradient(135deg,#2563EB,#7C3AED_45%,#EC4899)] text-sm font-black text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(236,72,153,0.28)] disabled:cursor-wait disabled:opacity-70"
               >
-                إنشاء حساب
+                {t("register.createAccount")}
               </button>
 
               <button
@@ -311,7 +313,7 @@ export default function Register() {
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
                     <GoogleMark className="h-5 w-5" />
                   </span>
-                  <span>المتابعة باستخدام Google</span>
+                  <span>{t("common.continueWithGoogle")}</span>
                 </span>
               </button>
             </form>
@@ -319,10 +321,10 @@ export default function Register() {
 
           {step === "details" && (
             <form className="mt-8 space-y-5" onSubmit={(event) => event.preventDefault()}>
-              <SelectField icon={Globe2} label="الدولة" value={details.country} error={fieldErrors.country} options={countries} onChange={updateCountry} />
-              <SelectField icon={Coins} label="العملة" value={details.currency} error={fieldErrors.currency} options={currencies} onChange={(value) => updateDetails("currency", value)} />
-              <PhoneField label="رقم الهاتف (اختياري)" countryCode={selectedDialCode} value={details.phone} error={fieldErrors.phone} onChange={(value) => updateDetails("phone", value)} autoComplete="tel-national" />
-              <Field icon={MailCheck} label="رمز الدعوة (اختياري)" value={details.inviteCode} error={fieldErrors.inviteCode} onChange={(value) => updateDetails("inviteCode", value)} />
+              <SelectField icon={Globe2} label={t("register.country")} value={details.country} error={fieldErrors.country} options={countries} getOptionLabel={(value) => t(`register.countries.${countryLabelKeys[value] || value}`, { defaultValue: value })} onChange={updateCountry} />
+              <SelectField icon={Coins} label={t("register.currency")} value={details.currency} error={fieldErrors.currency} options={currencies} onChange={(value) => updateDetails("currency", value)} />
+              <PhoneField label={t("register.phone")} countryCode={selectedDialCode} value={details.phone} error={fieldErrors.phone} onChange={(value) => updateDetails("phone", value)} autoComplete="tel-national" />
+              <Field icon={MailCheck} label={t("register.inviteCode")} value={details.inviteCode} error={fieldErrors.inviteCode} onChange={(value) => updateDetails("inviteCode", value)} />
 
               <button
                 type="button"
@@ -330,7 +332,7 @@ export default function Register() {
                 disabled={loading || currenciesLoading || Boolean(currenciesError) || !currencyOptions.length}
                 className="interactive-ring h-[52px] min-h-[52px] w-full rounded-2xl bg-[linear-gradient(135deg,#2563EB,#7C3AED_45%,#EC4899)] text-sm font-black text-white shadow-[0_18px_42px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_52px_rgba(236,72,153,0.28)] disabled:cursor-wait disabled:opacity-70"
               >
-                {loading ? "جار إنشاء الحساب..." : "إرسال رابط تأكيد الحساب"}
+                {loading ? t("register.creating") : t("register.sendVerification")}
               </button>
               <button
                 type="button"
@@ -340,7 +342,7 @@ export default function Register() {
                 }}
                 className="interactive-ring h-[52px] w-full rounded-2xl border border-white/70 bg-white/[0.72] text-sm font-black text-slate-700 shadow-[0_12px_30px_rgba(15,23,42,0.05)] transition hover:bg-white dark:border-white/10 dark:bg-white/[0.075] dark:text-[#F8F9FA] dark:hover:bg-white/[0.105]"
               >
-                رجوع
+                {t("register.back")}
               </button>
             </form>
           )}
@@ -348,9 +350,9 @@ export default function Register() {
           {step === "verify" && (
             <section className="mt-8 rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-center shadow-[0_18px_42px_rgba(16,185,129,0.12)]">
               <MailCheck className="mx-auto h-12 w-12 text-emerald-500 dark:text-emerald-300" />
-              <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-white">تم إرسال رابط تأكيد الحساب</h2>
+              <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-white">{t("register.verificationSentTitle")}</h2>
               <p className="mt-3 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300">
-                تحقق من البريد الإلكتروني لإكمال التفعيل. بعد التفعيل، ستحتاج إلى موافقة الإدارة قبل تسجيل الدخول.
+                {t("register.verificationSentMessage")}
               </p>
               <p dir="ltr" className="mt-2 rounded-2xl bg-white px-3 py-2 text-sm font-black text-royal shadow-[0_10px_24px_rgba(15,23,42,0.06)] dark:bg-[#0D1324] dark:text-pulse">
                 {account.email}
@@ -359,7 +361,7 @@ export default function Register() {
           )}
 
           <p className="mt-7 text-center text-sm font-bold text-slate-500 dark:text-slate-300">
-            لديك حساب بالفعل؟ <Link to="/login" className="font-black text-royal dark:text-pulse">تسجيل الدخول</Link>
+            {t("register.alreadyHaveAccount")} <Link to="/login" className="font-black text-royal dark:text-pulse">{t("register.login")}</Link>
           </p>
         </div>
       </div>
@@ -396,7 +398,17 @@ function Field({ icon: Icon, label, value, onChange, type = "text", autoComplete
   );
 }
 
+const countryLabelKeys = {
+  "الولايات المتحدة": "United States",
+  مصر: "Egypt",
+  السعودية: "Saudi Arabia",
+  الإمارات: "United Arab Emirates",
+  الكويت: "Kuwait",
+  قطر: "Qatar",
+};
+
 function PhoneField({ label, countryCode, value, onChange, autoComplete, error }) {
+  const { t } = useTranslation("auth");
   const hasError = Boolean(error);
 
   return (
@@ -421,7 +433,7 @@ function PhoneField({ label, countryCode, value, onChange, autoComplete, error }
         <span
           dir="ltr"
           className="pointer-events-none absolute left-3 top-1/2 grid h-9 min-w-14 -translate-y-1/2 select-none place-items-center rounded-xl border border-white/80 bg-white px-2 text-sm font-black text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-white/10 dark:text-slate-200"
-          title="رمز الدولة يتغير حسب الدولة المختارة"
+          title={t("register.countryCodeTitle")}
         >
           {countryCode}
         </span>
@@ -433,9 +445,10 @@ function PhoneField({ label, countryCode, value, onChange, autoComplete, error }
 
 function PasswordField({ label, value, onChange, autoComplete, error }) {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation("auth");
   const hasError = Boolean(error);
   const VisibilityIcon = visible ? EyeOff : Eye;
-  const visibilityLabel = visible ? "إخفاء كلمة المرور" : "إظهار كلمة المرور";
+  const visibilityLabel = visible ? t("common.hidePassword") : t("common.showPassword");
 
   return (
     <label className="block">
@@ -469,7 +482,7 @@ function PasswordField({ label, value, onChange, autoComplete, error }) {
   );
 }
 
-function SelectField({ icon: Icon, label, value, options, onChange, error }) {
+function SelectField({ icon: Icon, label, value, options, onChange, error, getOptionLabel }) {
   const hasError = Boolean(error);
 
   return (
@@ -491,7 +504,7 @@ function SelectField({ icon: Icon, label, value, options, onChange, error }) {
           {!options.length && <option value="">-</option>}
           {options.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {getOptionLabel?.(option) || option}
             </option>
           ))}
         </select>

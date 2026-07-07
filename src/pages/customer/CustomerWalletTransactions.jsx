@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, CircleDollarSign, Download, ReceiptText, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { getWalletTransactions } from "../../api/wallet";
 import { formatCurrency } from "../../api/adapters";
@@ -9,6 +10,7 @@ const pageSize = 20;
 
 export default function CustomerWalletTransactions({ basePath = "/customer" }) {
   const { token } = useAuth();
+  const { t } = useTranslation("wallet");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [transactions, setTransactions] = useState([]);
@@ -33,7 +35,7 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
         }
       } catch (requestError) {
         if (!cancelled) {
-          setError(requestError.userMessage || "Unable to load wallet transactions.");
+          setError(requestError.userMessage || t("transactions.loadError"));
           setTransactions([]);
           setPagination({ page, limit: pageSize, total: 0, pages: 1 });
         }
@@ -86,21 +88,21 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 <ReceiptText className="h-6 w-6" />
               </span>
               <div className="min-w-0">
-                <h1 className="text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">Wallet transactions</h1>
-                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-white/[0.52]">Backend ledger history for your account.</p>
+                <h1 className="text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">{t("transactions.title")}</h1>
+                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-white/[0.52]">{t("transactions.description")}</p>
               </div>
             </div>
 
             <Link to={`${basePath}/wallet`} className="interactive-ring inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 text-sm font-black text-slate-600 dark:border-white/10 dark:bg-[#060a18]/[0.82] dark:text-white/70">
               <ArrowLeft className="h-4 w-4" />
-              Wallet
+              {t("transactions.wallet")}
             </Link>
           </div>
         </header>
 
         <section className="grid grid-cols-2 gap-3">
-          <SummaryCard label="Credited on this page" value={formatCurrency(creditedTotal, primaryCurrency)} />
-          <SummaryCard label="Transactions" value={String(pagination.total || transactions.length)} />
+          <SummaryCard label={t("transactions.creditedOnPage")} value={formatCurrency(creditedTotal, primaryCurrency)} />
+          <SummaryCard label={t("transactions.transactions")} value={String(pagination.total || transactions.length)} />
         </section>
 
         <section className="rounded-[18px] border border-slate-200 bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#080d1e]/[0.96] dark:shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
@@ -111,11 +113,11 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search loaded transactions"
+                placeholder={t("transactions.searchPlaceholder")}
                 className="h-12 w-full rounded-full border border-slate-200 bg-white px-12 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050918] dark:text-white dark:placeholder:text-white/[0.34]"
               />
             </label>
-            <button type="button" disabled className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-300 dark:border-white/10 dark:bg-[#050918] dark:text-white/25" aria-label="Download transaction history" title="Export will be connected later">
+            <button type="button" disabled className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-300 dark:border-white/10 dark:bg-[#050918] dark:text-white/25" aria-label={t("transactions.downloadAria")} title={t("transactions.downloadTitle")}>
               <Download className="h-5 w-5" />
             </button>
           </div>
@@ -123,7 +125,7 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
           <div className="mt-5 space-y-3">
             {loading ? (
               <div className="rounded-[16px] border border-slate-200 bg-white px-4 py-8 text-center text-sm font-black text-slate-500 dark:border-white/10 dark:bg-[#050918] dark:text-white/50">
-                Loading wallet transactions...
+                {t("transactions.loading")}
               </div>
             ) : error ? (
               <div className="rounded-[16px] border border-amber-400/30 bg-amber-400/12 px-4 py-8 text-center text-sm font-black text-amber-700 dark:text-amber-300">
@@ -136,7 +138,7 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
             ) : (
               <div className="rounded-[16px] border border-dashed border-slate-200 px-4 py-10 text-center dark:border-white/10">
                 <ReceiptText className="mx-auto h-8 w-8 text-slate-300 dark:text-white/20" />
-                <p className="mt-3 text-sm font-black text-slate-500 dark:text-white/50">No wallet transactions found.</p>
+                <p className="mt-3 text-sm font-black text-slate-500 dark:text-white/50">{t("transactions.empty")}</p>
               </div>
             )}
           </div>
@@ -149,10 +151,10 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-[#050918] dark:text-white/70"
               >
-                Previous
+                {t("common:actions.previous")}
               </button>
               <span className="text-sm font-black text-slate-500 dark:text-white/50">
-                Page {pagination.page} of {pagination.pages}
+                {t("common:pagination.pageOf", { page: pagination.page, pages: pagination.pages })}
               </span>
               <button
                 type="button"
@@ -160,7 +162,7 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
                 className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-[#050918] dark:text-white/70"
               >
-                Next
+                {t("common:actions.next")}
               </button>
             </div>
           )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Copy, CreditCard, ExternalLink, Hash, Loader2, ReceiptText, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { createDepositRequest } from "../../api/deposits";
 import { getCustomerPaymentMethod } from "../../api/paymentMethods";
@@ -26,6 +27,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const { methodId } = useParams();
   const { refreshCurrentUser, token, user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation("wallet");
   const [method, setMethod] = useState(null);
   const [methodLoading, setMethodLoading] = useState(true);
   const [methodError, setMethodError] = useState("");
@@ -53,7 +55,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       } catch (requestError) {
         if (!cancelled) {
           setMethod(null);
-          setMethodError(requestError.userMessage || "Unable to load this payment method.");
+          setMethodError(requestError.userMessage || t("topUp.methodLoadError"));
         }
       } finally {
         if (!cancelled) setMethodLoading(false);
@@ -65,7 +67,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
     return () => {
       cancelled = true;
     };
-  }, [methodId]);
+  }, [methodId, t]);
 
   if (methodLoading) {
     return <TopUpLoading basePath={basePath} />;
@@ -80,6 +82,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const amountValue = Math.max(0, Number(amount) || 0);
   const isManual = topUpFlow === "manual";
   const isOnline = topUpFlow === "online";
+  const isPaymento = String(method.gateway || "").toUpperCase() === "PAYMENTO";
   const walletCurrency = String(user?.currency || "USD").toUpperCase();
   const currency = isOnline ? walletCurrency : String(method.currency || method.groupCurrency || walletCurrency).toUpperCase();
 
@@ -103,14 +106,14 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       await navigator.clipboard.writeText(method.account);
       showToast({
         type: "success",
-        title: "Payment account copied",
+        title: t("topUp.copyAccountSuccess"),
         message: method.account,
       });
     } catch {
       showToast({
         type: "error",
-        title: "Copy failed",
-        message: "Copy the payment account manually.",
+        title: t("topUp.copyFailedTitle"),
+        message: t("topUp.copyFailedMessage"),
       });
     }
   };
@@ -138,32 +141,32 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
     setSuccessMessage("");
 
     if (amountValue <= 0) {
-      setErrorMessage("Enter an amount greater than zero.");
+      setErrorMessage(t("topUp.amountGreaterZero"));
       return;
     }
 
     if (method.minAmount && amountValue < method.minAmount) {
-      setErrorMessage(`Minimum amount is ${formatMoney(method.minAmount)} ${currency}.`);
+      setErrorMessage(t("topUp.minimumAmount", { amount: formatMoney(method.minAmount), currency }));
       return;
     }
 
     if (method.maxAmount && amountValue > method.maxAmount) {
-      setErrorMessage(`Maximum amount is ${formatMoney(method.maxAmount)} ${currency}.`);
+      setErrorMessage(t("topUp.maximumAmount", { amount: formatMoney(method.maxAmount), currency }));
       return;
     }
 
-    if (basePath !== "/customer") {
-      setErrorMessage("Customer top-up actions are connected only in the customer area.");
+    if (!["/customer", "/admin/user"].includes(basePath)) {
+      setErrorMessage(t("topUp.customerOnly"));
       return;
     }
 
     if (topUpFlow === "unsupported") {
-      setErrorMessage("This payment method is not connected for customer top-up yet.");
+      setErrorMessage(t("topUp.unsupportedMethod"));
       return;
     }
 
     if (isManual && !receiptFile) {
-      setErrorMessage("Upload the transfer receipt before submitting the deposit request.");
+      setErrorMessage(t("topUp.receiptRequired"));
       return;
     }
 
@@ -176,18 +179,18 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         formData.append("currency", currency);
         formData.append("paymentMethodId", method.id);
         formData.append("receipt", receiptFile);
-        formData.append("notes", `Manual top-up via ${method.title}`);
+        formData.append("notes", t("topUp.manualNotes", { method: method.title }));
 
         const result = await createDepositRequest(token, formData);
         setAmount("");
         setReceiptFile(null);
         setReceiptInputKey((current) => current + 1);
         setRiskBlockedMessage("");
-        setSuccessMessage(`${result.deposit.amountLabel} submitted for admin review. Wallet balance changes only after approval.`);
+        setSuccessMessage(t("topUp.depositSubmitted", { amount: result.deposit.amountLabel }));
         await refreshWalletReads();
         showToast({
           type: "success",
-          title: "Deposit request submitted",
+          title: t("topUp.depositSubmittedTitle"),
           message: result.deposit.statusLabel,
         });
         return;
@@ -208,41 +211,43 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       setPaymentIntent(result.payment);
       if (result.payment.checkoutUrl) {
         shouldRedirect = true;
-        const gatewayChargeText = formatGatewayChargeText(result.payment);
+        const gatewayChargeText = formatGatewayChargeText(result.payment, t);
+        const hostedCheckoutText = isPaymento ? "Paymento / USDT secure checkout" : "";
+        const redirectSummary = [hostedCheckoutText, gatewayChargeText].filter(Boolean).join(". ");
         setRedirecting(true);
-        setPendingMessage(gatewayChargeText
-          ? `${gatewayChargeText}. Redirecting to secure checkout. Wallet balance updates only after provider verification.`
-          : "Redirecting to secure checkout. Wallet balance updates only after provider verification.");
+        setPendingMessage(redirectSummary
+          ? `${redirectSummary}. ${t("topUp.redirectingPending")}`
+          : t("topUp.redirectingPending"));
         showToast({
           type: "success",
-          title: "Redirecting to checkout",
-          message: gatewayChargeText || "Complete the card payment on the secure hosted page.",
+          title: t("topUp.redirectingTitle"),
+          message: redirectSummary || t("topUp.redirectingMessage"),
         });
         window.setTimeout(() => {
           window.location.assign(result.payment.checkoutUrl);
-        }, gatewayChargeText ? 1200 : 0);
+        }, redirectSummary ? 1200 : 0);
         return;
       }
 
-      setPendingMessage(`Payment intent created with status ${result.payment.statusLabel}.`);
+      setPendingMessage(t("topUp.paymentIntentCreated", { status: result.payment.statusLabel }));
       await refreshWalletReads();
       showToast({
         type: "success",
-        title: "Payment intent created",
+        title: t("topUp.intentCreatedTitle"),
         message: result.payment.statusLabel,
       });
     } catch (requestError) {
       if (isPaymentRiskLimitError(requestError) || isPaymentCurrencyConversionError(requestError)) {
-        const message = requestError.userMessage || "Online top-up is temporarily unavailable for this currency. Please use manual deposit or contact support.";
+        const message = requestError.userMessage || t("topUp.topUpUnavailable");
         setRiskBlockedMessage(message);
         setErrorMessage(message);
         showToast({
           type: "warning",
-          title: isPaymentRiskLimitError(requestError) ? "Online top-up limited" : "Online top-up unavailable",
+          title: isPaymentRiskLimitError(requestError) ? t("topUp.onlineLimitedTitle") : t("topUp.onlineUnavailableTitle"),
           message,
         });
       } else {
-        setErrorMessage(requestError.userMessage || "Top-up request could not be created.");
+        setErrorMessage(requestError.userMessage || t("topUp.requestFailed"));
       }
     } finally {
       if (!shouldRedirect) setSubmitting(false);
@@ -262,8 +267,8 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                 <CreditCard className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8B5CF6] dark:text-[#C084FC]">Wallet top-up</p>
-                <h1 className="mt-0.5 text-xl font-black text-slate-950 dark:text-white">Confirm top-up details</h1>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8B5CF6] dark:text-[#C084FC]">{t("topUp.walletTopUp")}</p>
+                <h1 className="mt-0.5 text-xl font-black text-slate-950 dark:text-white">{t("topUp.confirmDetails")}</h1>
               </div>
             </div>
 
@@ -272,7 +277,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
               className="interactive-ring inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-[#060a18]/[0.82] dark:text-white/70"
             >
               <ArrowRight className="h-3.5 w-3.5" />
-              Wallet
+              {t("topUp.wallet")}
             </Link>
           </div>
         </header>
@@ -286,10 +291,10 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                     <CreditCard className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-black text-slate-500 dark:text-white/[0.48]">Selected method</p>
+                    <p className="text-[11px] font-black text-slate-500 dark:text-white/[0.48]">{t("topUp.selectedMethod")}</p>
                     <h2 className="mt-0.5 truncate text-xl font-black text-slate-950 dark:text-white">{method.title}</h2>
                     <p className="mt-1 text-xs font-bold text-slate-500 dark:text-white/50">
-                      {isOnline ? "Online payment intent" : isManual ? "Manual deposit request" : "Not connected"}
+                      {isOnline ? t("topUp.onlineIntent") : isManual ? t("topUp.manualRequest") : t("topUp.notConnected")}
                     </p>
                   </div>
                 </div>
@@ -307,7 +312,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] dark:bg-[#C084FC]/10 dark:text-[#C084FC]">
                   <Hash className="h-3.5 w-3.5" />
                 </span>
-                <span>Top-up amount</span>
+                <span>{t("topUp.amount")}</span>
               </span>
               <div className="relative">
                 <input
@@ -316,7 +321,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                   value={amount}
                   onChange={(event) => updateAmount(event.target.value)}
                   placeholder="0.00"
-                  aria-label="Top-up amount"
+                  aria-label={t("topUp.amountAria")}
                   className="peer h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pl-20 text-right text-2xl font-black text-slate-950 outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition placeholder:text-slate-300 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050918] dark:text-white dark:placeholder:text-white/20"
                 />
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-black text-slate-500 transition peer-focus:border-[#8B5CF6]/30 peer-focus:bg-[#8B5CF6]/10 peer-focus:text-[#8B5CF6] dark:border-white/10 dark:bg-white/[0.04] dark:text-white/50 dark:peer-focus:text-[#C084FC]">
@@ -333,9 +338,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                   <Upload className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1 text-right">
-                  <span className="block text-xs font-black text-slate-700 dark:text-white/80">Receipt image</span>
+                  <span className="block text-xs font-black text-slate-700 dark:text-white/80">{t("topUp.receiptImage")}</span>
                   <span className="mt-1 block truncate text-[11px] font-bold text-slate-500 dark:text-white/45">
-                    {receiptFile ? receiptFile.name : "Upload transfer receipt"}
+                    {receiptFile ? receiptFile.name : t("topUp.uploadReceipt")}
                   </span>
                 </span>
                 <input
@@ -356,7 +361,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
           <section className="mt-3 rounded-[16px] border border-[#8B5CF6]/[0.16] bg-[linear-gradient(135deg,rgba(139,92,246,0.12),rgba(255,255,255,0.94)_44%)] p-3 dark:border-[#8B5CF6]/[0.24] dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.46),rgba(8,13,30,0.98)_44%)]">
             <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl bg-white/85 p-3 dark:bg-[#050918]/80">
               <div>
-                <p className="text-[11px] font-bold text-slate-500 dark:text-white/[0.48]">Requested amount</p>
+                <p className="text-[11px] font-bold text-slate-500 dark:text-white/[0.48]">{t("topUp.requestedAmount")}</p>
                 <p dir="ltr" className="mt-1 text-3xl font-black leading-none text-slate-950 dark:text-white">
                   {formatMoney(amountValue)} {currency}
                 </p>
@@ -375,7 +380,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                     className="interactive-ring mt-2 inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-amber-500/25 bg-white/70 px-3 text-[11px] font-black text-amber-800 dark:bg-[#050918]/70 dark:text-amber-200"
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
-                    Choose manual deposit
+                    {t("topUp.chooseManualDeposit")}
                   </Link>
                 )}
               </div>
@@ -390,11 +395,11 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
             {paymentIntent?.hasGatewayCharge && (
               <div className="mt-3 grid gap-2 rounded-2xl border border-sky-500/25 bg-sky-500/10 p-3 text-right dark:border-sky-400/20 dark:bg-sky-400/10">
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">Requested amount</span>
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{t("topUp.requestedAmountShort")}</span>
                   <span dir="ltr" className="text-sm font-black text-slate-900 dark:text-white">{paymentIntent.requestedAmountLabel}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">Secure checkout charge</span>
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{t("topUp.secureChargeShort")}</span>
                   <span dir="ltr" className="text-sm font-black text-sky-700 dark:text-sky-300">{paymentIntent.gatewayAmountLabel}</span>
                 </div>
               </div>
@@ -412,7 +417,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                 className="interactive-ring mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-sky-500/20 bg-sky-500/10 px-4 text-xs font-black text-sky-700 dark:text-sky-300"
               >
                 <ExternalLink className="h-4 w-4" />
-                Secure checkout
+                {t("topUp.secureCheckout")}
               </a>
             )}
 
@@ -422,7 +427,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
               className="interactive-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#A855F7] px-4 text-sm font-black text-white shadow-[0_12px_30px_rgba(139,92,246,0.30)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting || redirecting ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <CheckCircle2 className="h-[18px] w-[18px]" />}
-              {redirecting ? "Redirecting..." : submitting ? "Submitting..." : isManual ? "Submit deposit request" : isOnline ? "Continue to secure checkout" : "Not connected"}
+              {redirecting ? t("common:states.redirecting") : submitting ? t("common:states.submitting") : isManual ? t("topUp.submitDeposit") : isOnline ? t("topUp.continueSecureCheckout") : t("topUp.notConnected")}
             </button>
           </section>
         </form>
@@ -432,6 +437,8 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
 }
 
 function TopUpLoading({ basePath }) {
+  const { t } = useTranslation("wallet");
+
   return (
     <div
       dir="rtl"
@@ -439,13 +446,13 @@ function TopUpLoading({ basePath }) {
     >
       <section className="w-full max-w-[440px] rounded-[20px] border border-slate-200 bg-white/90 p-6 text-center shadow-soft dark:border-white/10 dark:bg-[#080d1e]">
         <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#8B5CF6]" />
-        <h1 className="mt-4 text-xl font-black">Loading payment method</h1>
+        <h1 className="mt-4 text-xl font-black">{t("topUp.loadingMethod")}</h1>
         <Link
           to={`${basePath}/wallet`}
           className="interactive-ring mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#8B5CF6] px-4 text-sm font-black text-white"
         >
           <ArrowRight className="h-4 w-4" />
-          Back to wallet
+          {t("topUp.backToWallet")}
         </Link>
       </section>
     </div>
@@ -453,6 +460,8 @@ function TopUpLoading({ basePath }) {
 }
 
 function NoPaymentMethods({ basePath, message }) {
+  const { t } = useTranslation("wallet");
+
   return (
     <div
       dir="rtl"
@@ -460,14 +469,14 @@ function NoPaymentMethods({ basePath, message }) {
     >
       <section className="w-full max-w-[440px] rounded-[20px] border border-dashed border-slate-200 bg-white/90 p-6 text-center shadow-soft dark:border-white/10 dark:bg-[#080d1e]">
         <CreditCard className="mx-auto h-10 w-10 text-[#8B5CF6]" />
-        <h1 className="mt-4 text-xl font-black">No payment methods available</h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-white/50">{message || "Return to the wallet and choose another method."}</p>
+        <h1 className="mt-4 text-xl font-black">{t("topUp.noMethodsTitle")}</h1>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-white/50">{message || t("topUp.noMethodsDescription")}</p>
         <Link
           to={`${basePath}/wallet`}
           className="interactive-ring mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#8B5CF6] px-4 text-sm font-black text-white"
         >
           <ArrowRight className="h-4 w-4" />
-          Back to wallet
+          {t("topUp.backToWallet")}
         </Link>
       </section>
     </div>
@@ -475,13 +484,14 @@ function NoPaymentMethods({ basePath, message }) {
 }
 
 function PaymentDetails({ method, onCopyAccount }) {
+  const { t } = useTranslation("wallet");
   const details = [
-    ["Account", method.account],
-    ["Bank", method.bank],
-    ["Owner", method.owner],
-    ["Fee", method.fee ? `${method.fee}%` : ""],
-    ["Min", method.minAmount ? `${formatMoney(method.minAmount)} ${method.currency}` : ""],
-    ["Max", method.maxAmount ? `${formatMoney(method.maxAmount)} ${method.currency}` : ""],
+    [t("topUp.account"), method.account, "account"],
+    [t("topUp.bank"), method.bank, "bank"],
+    [t("topUp.owner"), method.owner, "owner"],
+    [t("topUp.fee"), method.fee ? `${method.fee}%` : "", "fee"],
+    [t("topUp.min"), method.minAmount ? `${formatMoney(method.minAmount)} ${method.currency}` : "", "min"],
+    [t("topUp.max"), method.maxAmount ? `${formatMoney(method.maxAmount)} ${method.currency}` : "", "max"],
   ].filter(([, value]) => Boolean(value));
 
   if (!details.length && !method.instructions) return null;
@@ -489,7 +499,7 @@ function PaymentDetails({ method, onCopyAccount }) {
   return (
     <section className="mt-3 rounded-[16px] border border-slate-200 bg-white/90 p-3 shadow-[0_16px_36px_rgba(139,92,246,0.08)] dark:border-white/[0.08] dark:bg-[#080d1e]/[0.96]">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black text-slate-950 dark:text-white">Payment details</h2>
+        <h2 className="text-sm font-black text-slate-950 dark:text-white">{t("topUp.paymentDetails")}</h2>
         {method.account && (
           <button
             type="button"
@@ -497,15 +507,15 @@ function PaymentDetails({ method, onCopyAccount }) {
             className="interactive-ring inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-3 text-[11px] font-black text-[#8B5CF6] dark:border-[#C084FC]/20 dark:text-[#C084FC]"
           >
             <Copy className="h-3.5 w-3.5" />
-            Copy
+            {t("common:actions.copy")}
           </button>
         )}
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
-        {details.map(([label, value]) => (
+        {details.map(([label, value, key]) => (
           <div key={label} className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-[#050918]">
             <p className="text-[10px] font-black text-slate-400 dark:text-white/35">{label}</p>
-            <p dir={label === "Account" ? "ltr" : "rtl"} className="mt-1 truncate text-sm font-black text-slate-800 dark:text-white">
+            <p dir={key === "account" ? "ltr" : "rtl"} className="mt-1 truncate text-sm font-black text-slate-800 dark:text-white">
               {value}
             </p>
           </div>
@@ -521,6 +531,7 @@ function PaymentDetails({ method, onCopyAccount }) {
 }
 
 function SelectedPaymentCard({ method }) {
+  const { t } = useTranslation("wallet");
   const type = getPaymentVisualType(method);
 
   if (type === "apple") {
@@ -528,7 +539,7 @@ function SelectedPaymentCard({ method }) {
       <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff,#d9dbe2)] p-4 text-[#111827] shadow-[0_16px_34px_rgba(15,23,42,0.16)]">
         <span className="absolute -left-7 -top-7 h-20 w-20 rounded-full bg-white/60" />
         <p className="relative text-2xl font-black">Apple Pay</p>
-        <p className="relative mt-8 text-xs font-black text-slate-500">Online payment</p>
+        <p className="relative mt-8 text-xs font-black text-slate-500">{t("topUp.onlineIntent")}</p>
       </div>
     );
   }
@@ -606,7 +617,10 @@ function formatMoney(value) {
   }).format(value);
 }
 
-function formatGatewayChargeText(payment) {
+function formatGatewayChargeText(payment, t) {
   if (!payment?.hasGatewayCharge || !payment.gatewayAmountLabel || !payment.requestedAmountLabel) return "";
-  return `Requested ${payment.requestedAmountLabel}; secure checkout will charge ${payment.gatewayAmountLabel}`;
+  return t("topUp.secureCharge", {
+    requested: payment.requestedAmountLabel,
+    gateway: payment.gatewayAmountLabel,
+  });
 }

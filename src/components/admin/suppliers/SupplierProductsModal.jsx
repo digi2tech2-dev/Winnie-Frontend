@@ -30,9 +30,9 @@ export default function SupplierProductsModal({
         <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <Boxes className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-black dark:text-white">{supplier.name} products</h2>
+            <h2 className="truncate text-sm font-black dark:text-white">منتجات {supplier.name}</h2>
             <p className="text-[8px] font-bold text-slate-400">
-              {(pagination?.total ?? products.length).toLocaleString("ar-EG")} backend provider products
+              {(pagination?.total ?? products.length).toLocaleString("ar-EG-u-nu-latn")} منتجًا للمورد من الخادم
             </p>
           </div>
           <button
@@ -42,7 +42,7 @@ export default function SupplierProductsModal({
             className="inline-flex h-9 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${syncBusy ? "animate-spin" : ""}`} />
-            Sync
+            مزامنة
           </button>
           <button type="button" onClick={onClose} disabled={syncBusy} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-white/[0.07]">
             <X className="h-4 w-4" />
@@ -61,12 +61,12 @@ export default function SupplierProductsModal({
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search cached provider products"
+              placeholder="ابحث في منتجات المورد المحفوظة"
               className="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-xs font-black outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
             />
           </label>
           <button type="submit" disabled={loading} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black text-white disabled:opacity-60 dark:bg-white dark:text-slate-950">
-            Search
+            بحث
           </button>
         </form>
 
@@ -79,7 +79,7 @@ export default function SupplierProductsModal({
           )}
 
           {loading ? (
-            <p className="py-8 text-center text-xs font-black text-slate-400">Loading provider products...</p>
+            <p className="py-8 text-center text-xs font-black text-slate-400">جارٍ تحميل منتجات المورد...</p>
           ) : products.length ? (
             products.map((product) => (
               <article key={product.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220] sm:grid-cols-[1fr_auto]">
@@ -89,7 +89,7 @@ export default function SupplierProductsModal({
                     {product.externalProductId || product.id}
                   </p>
                   <p className="mt-1 text-[9px] font-bold text-slate-500 dark:text-slate-300">
-                    Qty {product.minQty} - {product.maxQty} | Last synced {product.lastSyncedAtLabel}
+                    الكمية {product.minQty} - {product.maxQty} | آخر مزامنة {product.lastSyncedAtLabel}
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
@@ -99,7 +99,7 @@ export default function SupplierProductsModal({
               </article>
             ))
           ) : (
-            <p className="py-8 text-center text-xs font-black text-slate-400">No provider products returned.</p>
+            <p className="py-8 text-center text-xs font-black text-slate-400">لم يتم العثور على منتجات للمورد.</p>
           )}
         </div>
 
@@ -107,13 +107,13 @@ export default function SupplierProductsModal({
           <footer className="flex items-center justify-between border-t border-slate-100 p-3 dark:border-white/[0.07]">
             <button type="button" disabled={loading || pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)} className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[9px] font-black text-slate-600 disabled:opacity-50 dark:border-white/10 dark:text-slate-300">
               <ChevronRight className="h-3.5 w-3.5" />
-              Previous
+              السابق
             </button>
             <span className="text-[10px] font-black text-slate-500 dark:text-slate-300">
               Page {pagination.page} of {pagination.pages}
             </span>
             <button type="button" disabled={loading || pagination.page >= pagination.pages} onClick={() => onPageChange(pagination.page + 1)} className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[9px] font-black text-slate-600 disabled:opacity-50 dark:border-white/10 dark:text-slate-300">
-              Next
+              التالي
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
           </footer>

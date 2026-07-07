@@ -54,7 +54,7 @@ export default function PaymentMethodsPage() {
       setCurrencyOptions(currencyResult.currencies.map((currency) => currency.code).filter(Boolean));
     } catch (requestError) {
       setGroups([]);
-      setError(requestError.userMessage || "Unable to load backend payment methods.");
+      setError(requestError.userMessage || "تعذر تحميل طرق الدفع.");
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function PaymentMethodsPage() {
       await load();
       toast(successTitle, successMessage);
     } catch (requestError) {
-      const message = requestError.userMessage || requestError.message || "Payment setting could not be saved.";
+      const message = requestError.userMessage || requestError.message || "تعذر حفظ إعدادات الدفع.";
       setError(message);
       toast("تعذر الحفظ", message, "error");
     } finally {
@@ -153,7 +153,7 @@ export default function PaymentMethodsPage() {
         </span>
         <div className="flex-1">
           <h1 className="text-2xl font-black dark:text-white">إدارة طرق الدفع</h1>
-          <p className="text-[9px] font-bold text-slate-400">البيانات محفوظة في إعدادات الدفع الخلفية وتظهر للعميل من route آمن.</p>
+          <p className="text-[9px] font-bold text-slate-400">البيانات محفوظة في إعدادات الدفع بالخادم وتظهر للعميل من مسار آمن.</p>
         </div>
         <button
           type="button"
@@ -182,7 +182,7 @@ export default function PaymentMethodsPage() {
             {stats.map(({ label, value, icon: Icon }) => (
               <article key={label} className="rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
                 <Icon className="h-8 w-8 rounded-xl bg-violet-500/10 p-2 text-violet-600" />
-                <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG")}</strong>
+                <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG-u-nu-latn")}</strong>
                 <p className="text-[8px] font-black text-slate-400">{label}</p>
               </article>
             ))}

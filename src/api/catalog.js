@@ -58,7 +58,9 @@ export function normalizeCategory(category = {}, index = 0) {
     nameAr: category.nameAr || "",
     slug: category.slug || id,
     subtitle: category.description || category.subtitle || "",
-    image: resolveBackendAssetUrl(category.image),
+    image: resolveBackendAssetUrl(
+      category.image || category.imageUrl || category.imageURL || category.thumbnail || category.cover,
+    ),
     parentCategory: parentId,
     sortOrder: toNumber(category.sortOrder, index),
     isActive: category.isActive !== false,
@@ -77,6 +79,8 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
   const numericPrice = hasDisplayPrice ? toNumber(displayPrice, 0) : null;
   const name = product.name || product.title || "Untitled product";
   const categoryTitle = category?.title || product.categoryName || humanizeToken(categoryValue, "Catalog");
+  const isPaused = product.isPaused === true || product.paused === true;
+  const status = product.status === "unavailable" ? "unavailable" : "available";
 
   return {
     ...product,
@@ -88,18 +92,26 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     categoryTitle,
     cover: product.cover || pickTone(`${id}${name}`),
     description: product.description || "",
+    discountPercentage: Math.min(100, Math.max(0, toNumber(product.discountPercentage ?? product.discountPercent, 0))),
     displayCurrency,
     displayPrice: numericPrice,
     displayPriceLabel: hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : "",
     icon: product.icon || pickIcon(`${name} ${categoryTitle}`),
-    image: resolveBackendAssetUrl(product.image),
+    image: resolveBackendAssetUrl(
+      product.image || product.imageUrl || product.imageURL || product.thumbnail || product.coverImage,
+    ),
     isActive: product.isActive !== false,
+    isPaused,
+    isPurchasable: product.isPurchasable !== false && !isPaused && status !== "unavailable",
     maxQty: toNumber(product.maxQty, 999),
     minQty: toNumber(product.minQty, 1),
     name,
     price: hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : "",
     priceValue: numericPrice,
+    status,
     tone: product.tone || pickTone(`${name}${categoryTitle}`),
+    visible: product.visibleInStore !== false,
+    visibleInStore: product.visibleInStore !== false,
   };
 }
 

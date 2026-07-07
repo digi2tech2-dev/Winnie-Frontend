@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { Search, ShoppingCart, Star, ShoppingBag } from "lucide-react";
+import { Search, ShoppingCart, ShoppingBag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { getCustomerProducts, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import { iconMap } from "../../components/icons";
@@ -13,13 +14,19 @@ const pageSize = 100;
 export default function CustomerBestSelling({ loginOnPurchase = false, basePath = "/customer" }) {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { t } = useTranslation("products");
+  const outletContext = useOutletContext() || {};
   const [query, setQuery] = useState("");
   const [backendProducts, setBackendProducts] = useState([]);
   const [publicProducts, setPublicProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const useBackendProducts = !loginOnPurchase && Boolean(token);
-  const { openPurchase, purchaseModals } = useCustomerPurchase({ basePath, token });
+  const { openPurchase, purchaseModals } = useCustomerPurchase({
+    basePath,
+    onSuccess: outletContext.onWalletRefresh,
+    token,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +46,7 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
         if (!cancelled) setPublicProducts(result.products);
       } catch (requestError) {
         if (!cancelled) {
-          setError(requestError.userMessage || "Unable to load products.");
+          setError(requestError.userMessage || t("listing.loadError"));
           setBackendProducts([]);
           setPublicProducts([]);
         }
@@ -71,7 +78,7 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
       return;
     }
 
-    openPurchase(product, product.categoryTitle || "Customer catalog");
+    openPurchase(product, product.categoryTitle || t("listing.catalog"));
   };
 
   return (
@@ -81,12 +88,12 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
           <ShoppingBag className="h-8 w-8" />
         </div>
         <div className="max-w-[720px]">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8B5CF6] dark:text-[#C084FC]">Winnie Fun</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">Products</h1>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8B5CF6] dark:text-[#C084FC]">{t("listing.eyebrow")}</p>
+          <h1 className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{t("listing.title")}</h1>
           <p className="mt-2 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">
             {useBackendProducts
-              ? "Authenticated product prices are loaded from the backend."
-              : "Browse active catalog products and log in before placing orders."}
+              ? t("listing.authenticatedDescription")
+              : t("listing.publicDescription")}
           </p>
         </div>
       </section>
@@ -98,7 +105,7 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search products..."
+            placeholder={t("listing.searchPlaceholder")}
             className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-12 text-sm font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white"
           />
         </label>
@@ -106,16 +113,16 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
 
       {loading ? (
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
-          Loading products...
+          {t("common:states.loadingProducts")}
         </div>
       ) : error ? (
-        <EmptyState title="Unable to load products" description={error} />
+        <EmptyState title={t("listing.loadError")} description={error} />
       ) : visibleProducts.length ? (
         <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
           {visibleProducts.map((product, index) => (
             <ProductGridCard
               key={product.id || product.name}
-              actionLabel={useBackendProducts ? "Buy now" : "Log in"}
+              actionLabel={useBackendProducts ? t("common:actions.buyNow") : t("listing.logIn")}
               product={product}
               index={index}
               onSelect={() => handleProductSelect(product)}
@@ -124,9 +131,9 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
         </section>
       ) : (
         <EmptyState
-          title="No products found"
-          description={query ? "Clear the search to view all loaded products." : "No active backend products are available yet."}
-          actionLabel={query ? "Clear search" : undefined}
+          title={t("listing.noProductsFound")}
+          description={query ? t("listing.noProductsFoundDescription") : t("listing.noActiveProductsDescription")}
+          actionLabel={query ? t("listing.clearSearch") : undefined}
           onAction={() => setQuery("")}
         />
       )}
@@ -136,6 +143,7 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
 }
 
 function ProductGridCard({ actionLabel, product, index, onSelect }) {
+  const { t } = useTranslation("products");
   const Icon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
   const cover = product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
   const priceLabel = product.displayPriceLabel || product.price || "";
@@ -153,7 +161,7 @@ function ProductGridCard({ actionLabel, product, index, onSelect }) {
     >
       <div className={`relative grid h-36 place-items-center overflow-hidden bg-gradient-to-br ${cover} sm:h-44`}>
         <span className="absolute right-3 top-3 rounded-full bg-[#7C3AED] px-2.5 py-1 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
-          Catalog
+          {t("listing.catalog")}
         </span>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
         <span className="relative grid h-20 w-20 place-items-center rounded-[26px] border border-white/20 bg-white/14 text-white shadow-[0_22px_42px_rgba(0,0,0,0.32)] backdrop-blur transition group-hover:scale-105 sm:h-24 sm:w-24">
@@ -169,20 +177,14 @@ function ProductGridCard({ actionLabel, product, index, onSelect }) {
         <h2 dir="ltr" className="truncate text-center text-base font-black tracking-normal text-slate-950 dark:text-white sm:text-lg">
           {product.name}
         </h2>
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-3 flex items-center justify-center">
           {priceLabel ? (
             <span dir="ltr" className="truncate text-sm font-black text-slate-500 dark:text-[#A78BFA] sm:text-base">
               {priceLabel}
             </span>
           ) : (
-            <span className="truncate text-sm font-black text-slate-400 dark:text-slate-500">Log in for pricing</span>
+            <span className="truncate text-sm font-black text-slate-400 dark:text-slate-500">{t("listing.loginForPricing")}</span>
           )}
-          {product.rating ? (
-            <span dir="ltr" className="inline-flex items-center gap-1 text-sm font-black text-slate-600 dark:text-slate-300">
-              <Star className="h-4 w-4 fill-[#FBBF24] text-[#FBBF24]" />
-              {product.rating}
-            </span>
-          ) : null}
         </div>
         <span className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-slate-100 text-xs font-black text-slate-500 dark:bg-white/10 dark:text-white/60">
           <ShoppingCart className="h-4 w-4" />

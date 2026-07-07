@@ -129,3 +129,19 @@ export async function updateAdminUserGroup(token, id, { groupId, reason } = {}) 
     user: normalizeAdminUser(response.data?.user || response.data || {}),
   };
 }
+
+export async function updateAdminUserCurrency(token, id, currency, reason = "Admin update") {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/currency`, {
+    body: {
+      currency: String(currency || "").trim().toUpperCase(),
+      reason,
+    },
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}

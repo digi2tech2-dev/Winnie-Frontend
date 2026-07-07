@@ -53,7 +53,7 @@ export default function AdminOrdersPage() {
   const loadOrders = useCallback(async () => {
     if (!token) {
       setOrders([]);
-      setError("Admin session is required.");
+      setError("يلزم تسجيل الدخول بحساب مدير.");
       setIsLoading(false);
       return;
     }
@@ -70,11 +70,11 @@ export default function AdminOrdersPage() {
       setOrders(result.orders);
       setPagination(result.pagination);
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "Unable to load backend orders.");
+      const message = getErrorMessage(requestError, "تعذر تحميل الطلبات.");
       setOrders([]);
       setPagination({ page, limit: pageSize, total: 0, pages: 1 });
       setError(message);
-      showToast({ type: "error", title: "Orders not loaded", message });
+      showToast({ type: "error", title: "لم يتم تحميل الطلبات", message });
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
         if (!cancelled) setSelectedOrder(result.order);
       } catch (requestError) {
         if (!cancelled) {
-          setDetailsError(getErrorMessage(requestError, "Unable to load order details."));
+          setDetailsError(getErrorMessage(requestError, "تعذر تحميل تفاصيل الطلب."));
         }
       } finally {
         if (!cancelled) setDetailsLoading(false);
@@ -155,11 +155,11 @@ export default function AdminOrdersPage() {
         sync: syncAdminOrder,
       };
       const handler = handlers[action];
-      if (!handler) throw new Error("Unsupported order action.");
+      if (!handler) throw new Error("إجراء الطلب غير مدعوم.");
 
       const result = await handler(token, orderId, payload);
       setSelectedOrder(result.order);
-      showToast({ type: "success", title: result.message || "Order updated" });
+      showToast({ type: "success", title: result.message || "تم تحديث الطلب" });
       await loadOrders();
 
       try {
@@ -169,8 +169,8 @@ export default function AdminOrdersPage() {
         // List refresh already succeeded; keep the backend-confirmed action result.
       }
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "Order action failed.");
-      showToast({ type: "error", title: "Action failed", message });
+      const message = getErrorMessage(requestError, "فشل تنفيذ الإجراء على الطلب.");
+      showToast({ type: "error", title: "فشل الإجراء", message });
     } finally {
       setActionKey("");
     }
@@ -185,14 +185,14 @@ export default function AdminOrdersPage() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">Admin orders</h1>
+              <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">إدارة الطلبات</h1>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
                 <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Backend connected
+                متصل بالخادم
               </span>
             </div>
             <p className="mt-1 text-xs font-bold text-slate-500 sm:text-sm dark:text-[#9AA7BD]">
-              Real customer orders from the backend admin order service.
+              متابعة طلبات العملاء الفعلية وإدارتها من الخادم.
             </p>
           </div>
           <button
@@ -202,7 +202,7 @@ export default function AdminOrdersPage() {
             className="inline-flex h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh
+            تحديث
           </button>
           <Sparkles className="hidden h-6 w-6 text-violet-400/60 sm:block" />
         </div>
@@ -221,13 +221,13 @@ export default function AdminOrdersPage() {
       <section aria-labelledby="orders-list-title">
         <div className="mb-3 flex items-end justify-between gap-3 px-1">
           <div>
-            <h2 id="orders-list-title" className="text-base font-black text-slate-950 dark:text-white">Orders list</h2>
+            <h2 id="orders-list-title" className="text-base font-black text-slate-950 dark:text-white">قائمة الطلبات</h2>
             <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-[#8A94A7]">
-              Open details to use backend-confirmed order actions.
+              افتح التفاصيل لتنفيذ الإجراءات المعتمدة على الطلب.
             </p>
           </div>
           <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-600 shadow-sm dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
-            {visibleOrders.length.toLocaleString("ar-EG")} loaded / {(pagination.total || orders.length).toLocaleString("ar-EG")}
+            تم تحميل {visibleOrders.length.toLocaleString("ar-EG-u-nu-latn")} من {(pagination.total || orders.length).toLocaleString("ar-EG-u-nu-latn")}
           </span>
         </div>
 
@@ -249,9 +249,9 @@ export default function AdminOrdersPage() {
         ) : (
           <EmptyState
             icon={Search}
-            title={error ? "Unable to load orders" : "No backend orders found"}
-            description={error || "No orders matched the current backend filters."}
-            actionLabel="Reset filters"
+            title={error ? "تعذر تحميل الطلبات" : "لا توجد طلبات"}
+            description={error || "لا توجد طلبات مطابقة للفلاتر الحالية."}
+            actionLabel="إعادة ضبط الفلاتر"
             onAction={resetFilters}
           />
         )}
@@ -264,10 +264,10 @@ export default function AdminOrdersPage() {
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
             >
-              Previous
+              السابق
             </button>
             <span className="text-xs font-black text-slate-500 dark:text-slate-400">
-              Page {pagination.page} of {pagination.pages}
+              صفحة {pagination.page} من {pagination.pages}
             </span>
             <button
               type="button"
@@ -275,7 +275,7 @@ export default function AdminOrdersPage() {
               onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
               className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
             >
-              Next
+              التالي
             </button>
           </div>
         )}
@@ -295,7 +295,7 @@ export default function AdminOrdersPage() {
 
 function OrdersLoadingState() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Loading admin orders" aria-busy="true">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="جارٍ تحميل طلبات الإدارة" aria-busy="true">
       {Array.from({ length: 6 }).map((_, index) => (
         <article key={index} className="rounded-[24px] border border-slate-200/80 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111827]">
           <div className="flex justify-between gap-3">

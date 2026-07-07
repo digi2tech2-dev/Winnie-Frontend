@@ -51,17 +51,17 @@ const orderStatusStyles = {
 };
 
 const orderStatusLabels = {
-  canceled: "Canceled",
-  completed: "Completed",
-  failed: "Failed",
-  manual_review: "Manual review",
-  partial: "Partial",
-  pending: "Pending",
-  processing: "Processing",
+  canceled: "ملغي",
+  completed: "مكتمل",
+  failed: "فشل",
+  manual_review: "مراجعة يدوية",
+  partial: "مكتمل جزئيًا",
+  pending: "قيد الانتظار",
+  processing: "قيد التنفيذ",
 };
 
 function formatCount(value) {
-  if (value === null || value === undefined) return "Not available";
+  if (value === null || value === undefined) return "غير متاح";
   return numberFormatter.format(value);
 }
 
@@ -78,7 +78,7 @@ function buildMetrics(values = {}) {
     {
       icon: PackageOpen,
       id: "total-orders",
-      label: "Total Orders",
+      label: "إجمالي الطلبات",
       rawValue: values.totalOrders,
       tone: metricTones.orders,
     },
@@ -86,14 +86,14 @@ function buildMetrics(values = {}) {
       icon: Clock3,
       id: "pending-orders",
       inverse: true,
-      label: "Pending / Processing Orders",
+      label: "طلبات قيد الانتظار أو التنفيذ",
       rawValue: values.pendingOrders,
       tone: metricTones.pending,
     },
     {
       icon: PackageCheck,
       id: "completed-orders",
-      label: "Completed Orders",
+      label: "الطلبات المكتملة",
       rawValue: values.completedOrders,
       tone: metricTones.completed,
     },
@@ -101,14 +101,14 @@ function buildMetrics(values = {}) {
       icon: XCircle,
       id: "failed-orders",
       inverse: true,
-      label: "Failed Orders",
+      label: "الطلبات الفاشلة",
       rawValue: values.failedOrders,
       tone: metricTones.failed,
     },
     {
       icon: Users,
       id: "total-users",
-      label: "Total Users",
+      label: "إجمالي المستخدمين",
       rawValue: values.totalUsers,
       tone: metricTones.users,
     },
@@ -116,14 +116,14 @@ function buildMetrics(values = {}) {
       icon: AlertTriangle,
       id: "pending-users",
       inverse: true,
-      label: "Pending Users",
+      label: "مستخدمون بانتظار المراجعة",
       rawValue: values.pendingUsers,
       tone: metricTones.pending,
     },
     {
       icon: Boxes,
       id: "total-products",
-      label: "Total Products",
+      label: "إجمالي المنتجات",
       rawValue: values.totalProducts,
       tone: metricTones.products,
     },
@@ -131,7 +131,7 @@ function buildMetrics(values = {}) {
       icon: Truck,
       id: "pending-deposits",
       inverse: true,
-      label: "Pending Deposits",
+      label: "إيداعات قيد الانتظار",
       rawValue: values.pendingDeposits,
       tone: metricTones.pending,
     },
@@ -139,14 +139,14 @@ function buildMetrics(values = {}) {
       icon: Activity,
       id: "pending-requests",
       inverse: true,
-      label: "Pending Group/Sub-Agent Requests",
+      label: "طلبات المجموعات والوكلاء المعلقة",
       rawValue: values.pendingGroupRequests,
       tone: metricTones.requests,
     },
     {
       icon: Server,
       id: "providers",
-      label: "Providers",
+      label: "الموردون",
       rawValue: values.providersCount,
       tone: metricTones.providers,
     },
@@ -159,7 +159,7 @@ function buildMetrics(values = {}) {
 }
 
 function formatRefreshTime(value) {
-  if (!value) return "Not refreshed yet";
+  if (!value) return "لم تُحدّث بعد";
   return new Intl.DateTimeFormat("ar-EG-u-nu-latn", {
     hour: "2-digit",
     minute: "2-digit",
@@ -169,24 +169,24 @@ function formatRefreshTime(value) {
 function getOperationalAlerts(metrics = {}, failures = []) {
   const items = [
     metrics.pendingOrders > 0
-      ? { id: "orders", title: "Orders need attention", value: `${formatCount(metrics.pendingOrders)} pending/processing`, tone: "warning" }
+      ? { id: "orders", title: "طلبات تحتاج إلى متابعة", value: `${formatCount(metrics.pendingOrders)} قيد الانتظار أو التنفيذ`, tone: "warning" }
       : null,
     metrics.pendingDeposits > 0
-      ? { id: "deposits", title: "Manual deposits pending", value: `${formatCount(metrics.pendingDeposits)} requests`, tone: "danger" }
+      ? { id: "deposits", title: "إيداعات يدوية معلقة", value: `${formatCount(metrics.pendingDeposits)} طلبات`, tone: "danger" }
       : null,
     metrics.pendingUsers > 0
-      ? { id: "users", title: "Users awaiting approval", value: `${formatCount(metrics.pendingUsers)} users`, tone: "warning" }
+      ? { id: "users", title: "مستخدمون بانتظار الموافقة", value: `${formatCount(metrics.pendingUsers)} مستخدمين`, tone: "warning" }
       : null,
     metrics.pendingGroupRequests > 0
-      ? { id: "group-requests", title: "Group/sub-agent requests pending", value: `${formatCount(metrics.pendingGroupRequests)} requests`, tone: "warning" }
+      ? { id: "group-requests", title: "طلبات مجموعات أو وكلاء معلقة", value: `${formatCount(metrics.pendingGroupRequests)} طلبات`, tone: "warning" }
       : null,
     failures.length
-      ? { id: "partial", title: "Partial dashboard data", value: `${numberFormatter.format(failures.length)} request(s) failed`, tone: "warning" }
+      ? { id: "partial", title: "بيانات لوحة التحكم غير مكتملة", value: `فشل ${numberFormatter.format(failures.length)} من الطلبات`, tone: "warning" }
       : null,
   ].filter(Boolean);
 
   if (items.length) return items;
-  return [{ id: "clear", title: "No pending operational counters returned", value: "Current backend counters are clear.", tone: "success" }];
+  return [{ id: "clear", title: "لا توجد عمليات معلقة", value: "مؤشرات النظام الحالية سليمة.", tone: "success" }];
 }
 
 export default function AdminDashboardPage() {
@@ -200,7 +200,7 @@ export default function AdminDashboardPage() {
   const loadDashboard = useCallback(async ({ notify = false } = {}) => {
     if (!token) {
       setDashboard(null);
-      setError("Admin session is not available.");
+      setError("جلسة المدير غير متاحة.");
       setLoading(false);
       return;
     }
@@ -213,22 +213,22 @@ export default function AdminDashboardPage() {
       setDashboard(result);
 
       if (result.failures.length) {
-        setError("Some dashboard data could not be loaded. Available metrics are still shown.");
+        setError("تعذر تحميل بعض بيانات لوحة التحكم، وتظهر المؤشرات المتاحة حاليًا.");
       }
 
       if (notify) {
         showToast({
-          title: result.failures.length ? "Dashboard partially refreshed" : "Dashboard refreshed",
-          message: result.failures.length ? "Some backend counters failed to load." : "Latest backend data is now shown.",
+          title: result.failures.length ? "تم تحديث اللوحة جزئيًا" : "تم تحديث لوحة التحكم",
+          message: result.failures.length ? "تعذر تحميل بعض مؤشرات النظام." : "تظهر الآن أحدث البيانات.",
           type: result.failures.length ? "warning" : "success",
         });
       }
     } catch (loadError) {
-      const normalized = normalizeApiError(loadError, "Unable to load dashboard data.");
+      const normalized = normalizeApiError(loadError, "تعذر تحميل بيانات لوحة التحكم.");
       setError(normalized.userMessage || normalized.message);
       if (notify) {
         showToast({
-          title: "Dashboard refresh failed",
+          title: "فشل تحديث لوحة التحكم",
           message: normalized.userMessage || normalized.message,
           type: "error",
         });
@@ -254,7 +254,7 @@ export default function AdminDashboardPage() {
     <div dir="rtl" className="admin-dashboard space-y-3">
       <section className="admin-dashboard-top">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Admin Command Center</p>
+          <p className="text-xs font-black tracking-[0.08em] text-slate-500 dark:text-slate-400">مركز إدارة المنصة</p>
           <h1 className="mt-1 text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">لوحة الإدارة</h1>
           <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
             آخر تحديث {formatRefreshTime(dashboard?.refreshedAt)}
@@ -282,8 +282,8 @@ export default function AdminDashboardPage() {
 
       {loading ? (
         <DashboardPanel>
-          <PanelHeading icon={RefreshCw} title="Loading backend dashboard data" />
-          <EmptyStateInline text="Fetching live admin counters..." />
+          <PanelHeading icon={RefreshCw} title="جارٍ تحميل بيانات لوحة التحكم" />
+          <EmptyStateInline text="جارٍ تحميل مؤشرات الإدارة..." />
         </DashboardPanel>
       ) : (
         <>
@@ -318,7 +318,7 @@ function RecentOrdersPanel({ orders }) {
     <DashboardPanel className="admin-orders-panel">
       <PanelHeading
         icon={PackageOpen}
-        title="Recent Orders"
+        title="أحدث الطلبات"
         action={<span className="admin-orders-count">{numberFormatter.format(orders.length)} latest</span>}
       />
       {orders.length ? (
@@ -333,7 +333,7 @@ function RecentOrdersPanel({ orders }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p dir="ltr" className="truncate text-right text-xs font-black text-slate-400 dark:text-slate-500">{order.displayId || order.id}</p>
-                    <h3 className="mt-0.5 truncate text-sm font-black text-slate-950 dark:text-white">{order.username || order.userEmail || "Customer"}</h3>
+                    <h3 className="mt-0.5 truncate text-sm font-black text-slate-950 dark:text-white">{order.username || order.userEmail || "عميل"}</h3>
                   </div>
                   <p dir="ltr" className="shrink-0 text-sm font-black text-slate-950 dark:text-white">{order.amountLabel}</p>
                 </div>
@@ -351,8 +351,8 @@ function RecentOrdersPanel({ orders }) {
                 <Link
                   to="/admin/tools/orders"
                   className="admin-action-icon-button grid shrink-0 place-items-center border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                  aria-label="Open orders page"
-                  title="Open orders page"
+                  aria-label="فتح صفحة الطلبات"
+                  title="فتح صفحة الطلبات"
                 >
                   <ExternalLink className="admin-action-icon" />
                 </Link>
@@ -361,7 +361,7 @@ function RecentOrdersPanel({ orders }) {
           ))}
         </div>
       ) : (
-        <EmptyStateInline text="No backend orders returned yet." />
+        <EmptyStateInline text="لا توجد طلبات حتى الآن." />
       )}
     </DashboardPanel>
   );
@@ -371,7 +371,7 @@ function OrderStatusBadge({ status, label }) {
   return (
     <span className={`admin-status-badge inline-flex items-center gap-1 rounded-md border font-black ${orderStatusStyles[status] || orderStatusStyles.manual_review}`}>
       <span className="admin-status-dot rounded-full bg-current" />
-      {label || orderStatusLabels[status] || status}
+      {orderStatusLabels[status] || label || status}
     </span>
   );
 }
@@ -385,7 +385,7 @@ function OperationalAlertsPanel({ alerts }) {
 
   return (
     <DashboardPanel>
-      <PanelHeading icon={AlertTriangle} title="Operational Counters" />
+      <PanelHeading icon={AlertTriangle} title="مؤشرات التشغيل" />
       <div className="admin-compact-list">
         {alerts.map((alert) => (
           <article key={alert.id} className="admin-alert-row">
@@ -406,10 +406,10 @@ function OperationalAlertsPanel({ alerts }) {
 function UnavailableMetricsPanel() {
   return (
     <DashboardPanel>
-      <PanelHeading icon={Activity} title="Unavailable Metrics" />
+      <PanelHeading icon={Activity} title="مؤشرات غير متاحة" />
       <div className="space-y-2 text-sm font-bold leading-6 text-slate-600 dark:text-slate-300">
-        <p>Revenue, profit, wallet totals, provider balances, charts, and activity feed are not shown here.</p>
-        <p>They need dedicated reliable backend analytics before this dashboard can display them.</p>
+        <p>لا تُعرض هنا الإيرادات والأرباح وإجماليات المحافظ وأرصدة الموردين والرسوم وسجل النشاط.</p>
+        <p>تحتاج هذه البيانات إلى تحليلات موثوقة ومخصصة من الخادم قبل عرضها في لوحة التحكم.</p>
       </div>
     </DashboardPanel>
   );
@@ -418,7 +418,7 @@ function UnavailableMetricsPanel() {
 function PartialFailuresPanel({ failures }) {
   return (
     <DashboardPanel>
-      <PanelHeading icon={AlertTriangle} title="Partial Load Details" />
+      <PanelHeading icon={AlertTriangle} title="تفاصيل التحميل الجزئي" />
       <div className="admin-compact-list">
         {failures.map((failure) => (
           <article key={failure.label} className="admin-alert-row">

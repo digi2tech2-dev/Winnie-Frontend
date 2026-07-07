@@ -107,6 +107,14 @@ export async function apiRequest(endpoint, options = {}) {
     const payload = await parseResponse(response);
 
     if (!response.ok) {
+      if (import.meta.env.DEV) {
+        console.error("[api] request failed", {
+          endpoint,
+          method,
+          status: response.status,
+          response: payload,
+        });
+      }
       throw createApiError({ response, payload });
     }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Phone, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { resolveBackendAssetUrl } from "../api/adapters";
 import { normalizeApiError } from "../api/errors";
@@ -9,8 +10,14 @@ import BackButton from "../components/BackButton";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ToastProvider";
 
-const profileCountries = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
+const profileCountries = ["United States", "Egypt", "Saudi Arabia", "United Arab Emirates", "Kuwait", "Qatar"];
 const countryDialCodes = {
+  "United States": "+1",
+  Egypt: "+20",
+  "Saudi Arabia": "+966",
+  "United Arab Emirates": "+971",
+  Kuwait: "+965",
+  Qatar: "+974",
   "الولايات المتحدة": "+1",
   "مصر": "+20",
   "السعودية": "+966",
@@ -18,6 +25,20 @@ const countryDialCodes = {
   "الكويت": "+965",
   "قطر": "+974",
 };
+
+const countryAliases = {
+  "الولايات المتحدة": "United States",
+  "مصر": "Egypt",
+  "السعودية": "Saudi Arabia",
+  "الإمارات": "United Arab Emirates",
+  "الكويت": "Kuwait",
+  "قطر": "Qatar",
+};
+
+function normalizeCountryValue(value) {
+  if (!value) return "";
+  return countryAliases[value] || value;
+}
 
 export default function ProfilePage({ basePath = "/customer" }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,11 +54,12 @@ export default function ProfilePage({ basePath = "/customer" }) {
   const navigate = useNavigate();
   const { token, user, logout, refreshCurrentUser } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation("profile");
   const activeProfile = profileData || user || {};
-  const displayName = activeProfile.name || "Winnie user";
+  const displayName = activeProfile.name || t("defaultName");
   const email = activeProfile.email || "";
   const avatarUrl = resolveBackendAssetUrl(activeProfile.avatar) || "/hero-winnie-fun.png";
-  const tier = activeProfile.group?.name || activeProfile.tier || "Member";
+  const tier = activeProfile.group?.name || activeProfile.tier || t("member");
   const country = activeProfile.country || "";
   const currency = activeProfile.currency || "USD";
   const phone = activeProfile.phone || "";
@@ -57,7 +79,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
         if (!cancelled) setProfileData(result);
       } catch (requestError) {
         if (!cancelled) {
-          setProfileError(requestError.userMessage || "Unable to load profile.");
+          setProfileError(requestError.userMessage || t("loadError"));
           setProfileData(null);
         }
       } finally {
@@ -76,14 +98,14 @@ export default function ProfilePage({ basePath = "/customer" }) {
     if (basePath !== "/customer") {
       showToast({
         type: "info",
-        title: "Customer action only",
-        message: "Referral invite links are available from the customer workspace only.",
+        title: t("inviteCustomerOnlyTitle"),
+        message: t("inviteCustomerOnlyMessage"),
       });
       return;
     }
 
     if (!token) {
-      showToast({ type: "error", title: "Login required", message: "Please sign in before copying your invite link." });
+      showToast({ type: "error", title: t("avatarLoginRequiredTitle"), message: t("inviteLoginRequiredMessage") });
       return;
     }
 
@@ -92,24 +114,24 @@ export default function ProfilePage({ basePath = "/customer" }) {
       const inviteText = result.summary?.referralLink || result.summary?.inviteLink || result.summary?.referralCode || "";
 
       if (!inviteText) {
-        showToast({ type: "warning", title: "Invite unavailable", message: "Referral data is not available yet." });
+        showToast({ type: "warning", title: t("inviteUnavailableTitle"), message: t("inviteUnavailableMessage") });
         return;
       }
 
       if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard is not available");
+        throw new Error(t("clipboardUnavailable"));
       }
 
       await navigator.clipboard.writeText(inviteText);
-      showToast({ type: "success", title: "Invite link copied", message: inviteText });
+      showToast({ type: "success", title: t("inviteCopiedTitle"), message: inviteText });
     } catch (requestError) {
       showToast({
         type: "error",
-        title: "Unable to copy invite",
-        message: requestError.userMessage || requestError.message || "Please try again.",
+        title: t("inviteCopyFailedTitle"),
+        message: requestError.userMessage || requestError.message || t("common:errors.tryAgain"),
       });
     }
-  }, [basePath, showToast, token]);
+  }, [basePath, showToast, t, token]);
 
   const refreshProfileSnapshot = useCallback(async () => {
     if (!token) return null;
@@ -120,20 +142,20 @@ export default function ProfilePage({ basePath = "/customer" }) {
   }, [token]);
 
   const refreshSessionAndProfile = useCallback(async () => {
-    if (!token) throw new Error("Please sign in before updating your profile.");
+    if (!token) throw new Error(t("profileUpdateLoginMessage"));
 
     const refreshed = await refreshCurrentUser(token);
     if (!refreshed.ok) {
-      throw new Error(refreshed.message || "Unable to refresh your account after saving.");
+      throw new Error(refreshed.message || t("refreshFailed"));
     }
 
     await refreshProfileSnapshot();
-  }, [refreshCurrentUser, refreshProfileSnapshot, token]);
+  }, [refreshCurrentUser, refreshProfileSnapshot, t, token]);
 
   const handleProfileSave = useCallback(
     async (payload) => {
       if (!token) {
-        showToast({ type: "error", title: "Login required", message: "Please sign in before updating your profile." });
+        showToast({ type: "error", title: t("avatarLoginRequiredTitle"), message: t("profileUpdateLoginMessage") });
         return;
       }
 
@@ -144,27 +166,27 @@ export default function ProfilePage({ basePath = "/customer" }) {
         await refreshSessionAndProfile();
         showToast({
           type: "success",
-          title: "Profile updated",
-          message: result.message || "Your profile was saved by the backend.",
+          title: t("profileUpdatedTitle"),
+          message: result.message || t("profileUpdatedMessage"),
         });
       } catch (requestError) {
-        const normalized = normalizeApiError(requestError, "Unable to update profile.");
+        const normalized = normalizeApiError(requestError, t("profileUpdateFailedMessage"));
         showToast({
           type: "error",
-          title: "Profile update failed",
+          title: t("profileUpdateFailedTitle"),
           message: normalized.userMessage,
         });
       } finally {
         setProfileSaving(false);
       }
     },
-    [refreshSessionAndProfile, showToast, token],
+    [refreshSessionAndProfile, showToast, t, token],
   );
 
   const handlePasswordChange = useCallback(
     async ({ currentPassword, newPassword }) => {
       if (!token) {
-        showToast({ type: "error", title: "Login required", message: "Please sign in before changing your password." });
+        showToast({ type: "error", title: t("avatarLoginRequiredTitle"), message: t("passwordLoginMessage") });
         return false;
       }
 
@@ -172,21 +194,21 @@ export default function ProfilePage({ basePath = "/customer" }) {
         const result = await changeMyPassword(token, { currentPassword, newPassword });
         showToast({
           type: "success",
-          title: "Password updated",
-          message: result.message || "Your password was updated successfully.",
+          title: t("passwordUpdatedTitle"),
+          message: result.message || t("passwordUpdatedMessage"),
         });
         return true;
       } catch (requestError) {
-        const normalized = normalizeApiError(requestError, "Unable to update password.");
+        const normalized = normalizeApiError(requestError, t("passwordUpdateFailedMessage"));
         showToast({
           type: "error",
-          title: "Password update failed",
+          title: t("passwordUpdateFailedTitle"),
           message: normalized.userMessage,
         });
         return false;
       }
     },
-    [showToast, token],
+    [showToast, t, token],
   );
 
   const handleLogout = useCallback(() => {
@@ -241,7 +263,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
 
     if (!file) return;
     if (!token) {
-      showToast({ type: "error", title: "Login required", message: "Please sign in before uploading an avatar." });
+      showToast({ type: "error", title: t("avatarLoginRequiredTitle"), message: t("avatarLoginRequiredMessage") });
       return;
     }
 
@@ -252,14 +274,14 @@ export default function ProfilePage({ basePath = "/customer" }) {
       await refreshSessionAndProfile();
       showToast({
         type: "success",
-        title: "Avatar updated",
-        message: result.message || "Your avatar was saved by the backend.",
+        title: t("avatarUpdatedTitle"),
+        message: result.message || t("avatarUpdatedMessage"),
       });
     } catch (requestError) {
-      const normalized = normalizeApiError(requestError, "Unable to upload avatar.");
+      const normalized = normalizeApiError(requestError, t("avatarFailedMessage"));
       showToast({
         type: "error",
-        title: "Avatar upload failed",
+        title: t("avatarFailedTitle"),
         message: normalized.userMessage,
       });
     } finally {
@@ -286,8 +308,8 @@ export default function ProfilePage({ basePath = "/customer" }) {
             type="button"
             onClick={() => setEditing((value) => !value)}
             className="interactive-ring grid h-11 w-11 place-items-center justify-self-start rounded-full border border-white/70 bg-white/82 text-slate-800 shadow-[0_12px_28px_rgba(14,165,233,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111827]/86 dark:text-[#E9D5FF] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] sm:h-14 sm:w-14"
-            aria-label="تعديل الملف الشخصي"
-            title="تعديل الملف الشخصي"
+            aria-label={t("editProfile")}
+            title={t("editProfile")}
           >
             <Pencil className="h-5 w-5 sm:h-7 sm:w-7" />
           </button>
@@ -301,16 +323,16 @@ export default function ProfilePage({ basePath = "/customer" }) {
               type="button"
               onClick={() => navigate(`${basePath}/settings`)}
               className="interactive-ring grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-white/82 text-slate-800 shadow-[0_12px_28px_rgba(14,165,233,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111827]/86 dark:text-[#E9D5FF] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] sm:h-14 sm:w-14"
-              aria-label="إعدادات الملف"
-              title="إعدادات الملف"
+              aria-label={t("profileSettings")}
+              title={t("profileSettings")}
             >
               <Settings className="h-5 w-5 sm:h-7 sm:w-7" />
             </button>
             <button
               type="button"
               className="interactive-ring hidden h-14 w-14 place-items-center rounded-full border border-white/70 bg-white/82 text-slate-800 shadow-[0_16px_38px_rgba(14,165,233,0.14)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111827]/86 dark:text-[#E9D5FF] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] md:grid"
-              aria-label="المحفوظات"
-              title="المحفوظات"
+              aria-label={t("savedItems")}
+              title={t("savedItems")}
             >
               <Bookmark className="h-7 w-7" />
             </button>
@@ -318,8 +340,8 @@ export default function ProfilePage({ basePath = "/customer" }) {
               type="button"
               onClick={() => setMenuOpen(true)}
               className="interactive-ring grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-white/82 text-slate-800 shadow-[0_12px_28px_rgba(14,165,233,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111827]/86 dark:text-[#E9D5FF] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] sm:h-14 sm:w-14"
-              aria-label="المزيد"
-              title="المزيد"
+              aria-label={t("more")}
+              title={t("more")}
             >
               <MoreHorizontal className="h-6 w-6 sm:h-8 sm:w-8" />
             </button>
@@ -335,8 +357,8 @@ export default function ProfilePage({ basePath = "/customer" }) {
               disabled={avatarUploading}
               aria-busy={avatarUploading}
               className="interactive-ring absolute bottom-1 right-1 grid h-11 w-11 place-items-center rounded-full border border-white/80 bg-white text-[#7C3AED] shadow-[0_12px_26px_rgba(139,92,246,0.20)] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#8B5CF6]/34 dark:bg-[#111827] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.24)]"
-              aria-label="تعديل صورة الحساب"
-              title="تعديل صورة الحساب"
+              aria-label={t("editAvatar")}
+              title={t("editAvatar")}
             >
               <Pencil className="h-5 w-5" />
             </button>
@@ -350,7 +372,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
 
       {(profileLoading || profileError) && (
         <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 text-sm font-bold text-slate-600 shadow-[0_12px_28px_rgba(14,165,233,0.10)] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4]">
-          {profileLoading ? "Loading backend profile..." : profileError}
+          {profileLoading ? t("loading") : profileError}
         </section>
       )}
 
@@ -403,7 +425,8 @@ function EditProfilePanel({
   saving = false,
   usernameValue = "",
 }) {
-  const initialCountry = countryValue || profileCountries[0];
+  const { t } = useTranslation("profile");
+  const initialCountry = normalizeCountryValue(countryValue) || profileCountries[0];
   const [country, setCountry] = useState(initialCountry);
   const [form, setForm] = useState({
     name: displayName || "",
@@ -414,7 +437,8 @@ function EditProfilePanel({
   const dirty =
     form.name.trim() !== (displayName || "").trim() ||
     form.phone.trim() !== (phoneValue || "").trim() ||
-    form.username.trim() !== (usernameValue || "").trim();
+    form.username.trim() !== (usernameValue || "").trim() ||
+    country !== initialCountry;
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -429,39 +453,41 @@ function EditProfilePanel({
       name: form.name.trim(),
       phone: form.phone.trim(),
       username: form.username.trim(),
+      country,
     });
   };
 
   return (
-    <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] rounded-[24px] border border-[#C4B5FD]/45 bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] p-4 shadow-[0_22px_58px_rgba(14,165,233,0.16)] backdrop-blur-xl dark:border-[#8B5CF6]/24 dark:bg-[linear-gradient(180deg,#111827_0%,#0D1324_100%)] dark:shadow-[0_0_28px_rgba(139,92,246,0.20)] sm:p-5">
+    <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] overflow-hidden rounded-[24px] border border-violet-300/55 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.16),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.14),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-4 shadow-[0_24px_64px_rgba(91,33,182,0.16),inset_0_1px_0_rgba(255,255,255,0.92)] backdrop-blur-2xl dark:border-violet-400/25 dark:bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.24),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.13),transparent_44%),linear-gradient(180deg,#0D1324_0%,#070B19_100%)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.34),0_0_30px_rgba(124,58,237,0.12)] sm:p-5">
+      <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/80 to-transparent" />
       <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 place-items-center rounded-2xl border border-[#C4B5FD]/45 bg-[linear-gradient(145deg,#F5F3FF,#E0F2FE)] text-[#7C3AED] shadow-[0_10px_24px_rgba(139,92,246,0.12)] dark:border-[#8B5CF6]/34 dark:bg-[linear-gradient(145deg,#1A2335,#111827)] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.18)]">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/35 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-blue-500 text-white shadow-[0_12px_28px_rgba(124,58,237,0.30),0_0_18px_rgba(59,130,246,0.12)]">
           <UserRound className="h-5 w-5" />
         </span>
         <div>
-          <h2 className="text-xl font-black text-slate-950 dark:text-[#F8F9FA]">إعدادات الملف الشخصي</h2>
-          <p className="text-sm font-semibold text-slate-600 dark:text-[#8A94A7]">تعديل بيانات حسابك الأساسية</p>
+          <h2 className="bg-gradient-to-l from-violet-800 via-fuchsia-600 to-blue-600 bg-clip-text text-xl font-black text-transparent dark:from-violet-200 dark:via-fuchsia-300 dark:to-sky-300">{t("panel.title")}</h2>
+          <p className="text-sm font-semibold text-slate-600 dark:text-[#8A94A7]">{t("panel.description")}</p>
         </div>
       </div>
 
       <form className="mt-5 grid gap-3 sm:grid-cols-2" onSubmit={submitProfile}>
         <Field
-          label="Name"
+          label={t("panel.name")}
           value={form.name}
           onChange={(value) => updateField("name", value)}
-          helper="Saved through the backend profile route."
+          helper={t("panel.nameHelper")}
         />
         <Field
-          label="Username"
+          label={t("panel.username")}
           value={form.username}
           onChange={(value) => updateField("username", value)}
-          helper="Optional account username saved by the backend."
+          helper={t("panel.usernameHelper")}
         />
-        <Field label="Email" defaultValue={email} readOnly helper="Email is not updated from this profile form." />
-        <CountrySelectField disabled label="Country" value={country} options={profileCountries} onChange={setCountry} />
-        <Field label="Currency" defaultValue={currencyValue} readOnly helper="Change your active currency from Settings." />
+        <Field label={t("panel.email")} defaultValue={email} readOnly helper={t("panel.emailHelper")} />
+        <CountrySelectField label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} />
+        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} />
         <ProfilePhoneField
-          label="Phone"
+          label={t("panel.phone")}
           countryCode={selectedDialCode}
           value={form.phone}
           onChange={(value) => updateField("phone", value)}
@@ -469,48 +495,48 @@ function EditProfilePanel({
         <button
           type="submit"
           disabled={saving || !dirty}
-          className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.22)] transition disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none dark:disabled:bg-white/10 dark:disabled:text-white/40 sm:col-span-2"
+          className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/25 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-blue-500 text-sm font-black text-white shadow-[0_14px_32px_rgba(124,58,237,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(124,58,237,0.36)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-none disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:hover:translate-y-0 dark:disabled:bg-white/10 dark:disabled:text-white/40 sm:col-span-2"
         >
           <Save className="h-5 w-5" />
-          {saving ? "Saving..." : "Save changes"}
+          {saving ? t("panel.saving") : t("panel.saveChanges")}
         </button>
         <button
           type="button"
           onClick={onChangePassword}
-          className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#C4B5FD]/55 bg-white text-sm font-black text-[#7C3AED] shadow-[0_12px_28px_rgba(14,165,233,0.12)] dark:border-[#8B5CF6]/32 dark:bg-[#0D1324] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.18)] sm:col-span-2"
+          className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-violet-300/65 bg-gradient-to-r from-white/85 to-violet-50/85 text-sm font-black text-violet-700 shadow-[0_10px_28px_rgba(91,33,182,0.12)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-fuchsia-400/70 hover:text-fuchsia-700 dark:border-violet-400/25 dark:bg-[linear-gradient(90deg,rgba(124,58,237,0.12),rgba(59,130,246,0.08))] dark:text-violet-200 dark:shadow-[0_0_20px_rgba(139,92,246,0.14)] dark:hover:border-fuchsia-400/45 dark:hover:text-fuchsia-200 sm:col-span-2"
         >
           <LockKeyhole className="h-5 w-5" />
-          Change password
+          {t("panel.changePassword")}
         </button>
       </form>
 
       <form className="hidden">
-        <Field label="الاسم" defaultValue={displayName} readOnly helper="Profile editing is read-only in this phase." />
+        <Field label={t("panel.name")} defaultValue={displayName} readOnly helper={t("panel.nameHelper")} />
         <Field
-          label="البريد الإلكتروني"
+          label={t("panel.email")}
           defaultValue={email}
           readOnly
-          helper="لا يمكن تغيير البريد الإلكتروني المرتبط بالحساب."
+          helper={t("panel.emailHelper")}
         />
-        <CountrySelectField disabled label="الدولة" value={country} options={profileCountries} onChange={setCountry} />
-        <Field label="Currency" defaultValue={currencyValue} readOnly helper="Change your active currency from Settings." />
-        <ProfilePhoneField label="الهاتف" countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
+        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} />
+        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} />
+        <ProfilePhoneField label={t("panel.phone")} countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
         <button
           type="button"
           disabled
           className="mt-2 inline-flex h-12 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-200 text-sm font-black text-slate-500 dark:bg-white/10 dark:text-white/40 sm:col-span-2"
         >
           <Save className="h-5 w-5" />
-          حفظ التعديلات
+          {t("panel.saveChanges")}
         </button>
         <button
           type="button"
           onClick={onChangePassword}
           className="interactive-ring inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#C4B5FD]/55 bg-white text-sm font-black text-[#7C3AED] shadow-[0_12px_28px_rgba(14,165,233,0.12)] dark:border-[#8B5CF6]/32 dark:bg-[#0D1324] dark:text-[#E9D5FF] dark:shadow-[0_0_18px_rgba(139,92,246,0.18)] sm:col-span-2"
-          aria-label="تغيير كلمة السر"
+          aria-label={t("panel.changePassword")}
         >
           <LockKeyhole className="h-5 w-5" />
-          تغيير كلمة السر
+          {t("panel.changePassword")}
         </button>
       </form>
     </section>
@@ -518,6 +544,8 @@ function EditProfilePanel({
 }
 
 function ProfileMenu({ displayName, avatarUrl, onClose, onShareInvite, onChangePassword, onSettings, onLogout }) {
+  const { t } = useTranslation("profile");
+
   return (
     <div className="fixed inset-0 z-[150] flex items-end bg-[#050816]" role="dialog" aria-modal="true" onClick={onClose}>
       <div
@@ -530,10 +558,10 @@ function ProfileMenu({ displayName, avatarUrl, onClose, onShareInvite, onChangeP
           <h2 className="mt-4 text-2xl font-black text-slate-950 dark:text-[#F8F9FA]">{displayName}</h2>
 
           <div className="mx-auto mt-6 w-full max-w-[760px] space-y-2 rounded-[22px] bg-white p-2 text-right shadow-[0_14px_34px_rgba(14,165,233,0.10)] dark:bg-[#0D1324] dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]">
-            <MenuButton icon={Share2} label="مشاركة رمز الدعوة" onClick={onShareInvite} />
-            <MenuButton icon={LockKeyhole} label="تغيير كلمة السر" onClick={onChangePassword} />
-            <MenuButton icon={Settings} label="الإعدادات" onClick={onSettings} />
-            <MenuButton icon={LogOut} label="تسجيل الخروج" onClick={onLogout} danger />
+            <MenuButton icon={Share2} label={t("menu.shareInvite")} onClick={onShareInvite} />
+            <MenuButton icon={LockKeyhole} label={t("menu.changePassword")} onClick={onChangePassword} />
+            <MenuButton icon={Settings} label={t("menu.settings")} onClick={onSettings} />
+            <MenuButton icon={LogOut} label={t("menu.logout")} onClick={onLogout} danger />
           </div>
 
           <button
@@ -542,7 +570,7 @@ function ProfileMenu({ displayName, avatarUrl, onClose, onShareInvite, onChangeP
             className="mx-auto mt-5 inline-flex h-14 w-full max-w-[760px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#A855F7] px-8 text-base font-black text-white shadow-[0_16px_38px_rgba(139,92,246,0.34)] transition hover:-translate-y-0.5 dark:from-[#8B5CF6] dark:to-[#A855F7] dark:shadow-[0_0_26px_rgba(139,92,246,0.32)]"
           >
             <X className="h-5 w-5" />
-            إغلاق
+            {t("menu.close")}
           </button>
         </div>
       </div>
@@ -586,6 +614,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
   const [form, setForm] = useState({ current: "", next: "", repeat: "" });
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation("profile");
 
   const updateField = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -595,27 +624,27 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
     event.preventDefault();
 
     if (!form.current || !form.next || !form.repeat) {
-      showToast({ type: "error", title: "بيانات ناقصة", message: "اكتب كلمة السر الحالية والجديدة مرتين." });
+      showToast({ type: "error", title: t("password.missingTitle"), message: t("password.missingMessage") });
       return;
     }
 
     if (form.next.length < 8 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.next)) {
-      showToast({ type: "error", title: "Weak password", message: "Use at least 8 characters with uppercase, lowercase, and a number." });
+      showToast({ type: "error", title: t("password.weakTitle"), message: t("password.weakMessage") });
       return;
     }
 
     if (form.next.length < 0) {
-      showToast({ type: "error", title: "كلمة السر قصيرة", message: "كلمة السر الجديدة لازم تكون 6 أحرف على الأقل." });
+      showToast({ type: "error", title: t("password.weakTitle"), message: t("password.weakMessage") });
       return;
     }
 
     if (form.next === form.current) {
-      showToast({ type: "error", title: "Password unchanged", message: "Choose a new password that is different from your current password." });
+      showToast({ type: "error", title: t("password.unchangedTitle"), message: t("password.unchangedMessage") });
       return;
     }
 
     if (form.next !== form.repeat) {
-      showToast({ type: "error", title: "كلمة السر غير متطابقة", message: "اكتب كلمة السر الجديدة بنفس الشكل في الخانتين." });
+      showToast({ type: "error", title: t("password.mismatchTitle"), message: t("password.mismatchMessage") });
       return;
     }
 
@@ -655,9 +684,9 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
               <KeyRound className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-xl font-black">تغيير كلمة السر</h2>
+              <h2 className="text-xl font-black">{t("password.title")}</h2>
               <p className="text-sm font-semibold text-slate-600 dark:text-[#8A94A7]">
-                {confirming ? "راجع التأكيد قبل الحفظ" : "اكتب كلمة السر الحالية والجديدة"}
+                {confirming ? t("password.confirmSubtitle") : t("password.subtitle")}
               </p>
             </div>
           </div>
@@ -665,8 +694,8 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
             type="button"
             onClick={onClose}
             className="interactive-ring grid h-10 w-10 place-items-center rounded-full border border-white bg-white text-slate-700 shadow-[0_10px_22px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-[#111827] dark:text-[#E9D5FF]"
-            aria-label="إغلاق"
-            title="إغلاق"
+            aria-label={t("password.close")}
+            title={t("password.close")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -677,7 +706,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#1A2335] dark:text-[#E9D5FF]">
                 <ShieldCheck className="h-7 w-7" />
               </span>
-              <h3 className="mt-4 text-xl font-black text-slate-950 dark:text-white">هل أنت متأكد من تغيير كلمة السر؟</h3>
+              <h3 className="mt-4 text-xl font-black text-slate-950 dark:text-white">{t("password.confirmTitle")}</h3>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -686,7 +715,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
                   aria-busy={saving}
                   className="interactive-ring h-11 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.28)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  موافق
+                  {t("password.approve")}
                 </button>
                 <button
                   type="button"
@@ -694,21 +723,21 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
                   disabled={saving}
                   className="interactive-ring h-11 rounded-xl border border-sky-100 bg-white text-sm font-black text-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]"
                 >
-                  إلغاء
+                  {t("password.cancel")}
                 </button>
               </div>
           </section>
         ) : (
           <form className="relative mt-7 space-y-3" onSubmit={requestSave}>
-            <PasswordInput label="كلمة السر الحالية" value={form.current} onChange={(value) => updateField("current", value)} />
-            <PasswordInput label="كلمة السر الجديدة" value={form.next} onChange={(value) => updateField("next", value)} />
-            <PasswordInput label="تأكيد كلمة السر الجديدة" value={form.repeat} onChange={(value) => updateField("repeat", value)} />
+            <PasswordInput label={t("password.current")} value={form.current} onChange={(value) => updateField("current", value)} />
+            <PasswordInput label={t("password.next")} value={form.next} onChange={(value) => updateField("next", value)} />
+            <PasswordInput label={t("password.repeat")} value={form.repeat} onChange={(value) => updateField("repeat", value)} />
             <button
               type="submit"
               className="interactive-ring mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_14px_34px_rgba(139,92,246,0.30)] dark:from-[#8B5CF6] dark:to-[#A855F7] dark:shadow-[0_0_22px_rgba(139,92,246,0.28)]"
             >
               <Save className="h-5 w-5" />
-              حفظ
+              {t("password.save")}
             </button>
           </form>
         )}
@@ -719,12 +748,13 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
 
 function PasswordInput({ label, value, onChange }) {
   const [visible, setVisible] = useState(false);
+  const { t } = useTranslation("profile");
   const VisibilityIcon = visible ? EyeOff : Eye;
-  const visibilityLabel = visible ? "إخفاء كلمة السر" : "إظهار كلمة السر";
+  const visibilityLabel = visible ? t("password.hide") : t("password.show");
 
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-black text-slate-700 dark:text-[#C4C9D4]">{label}</span>
+      <span className="mb-2 block text-sm font-black text-violet-800 dark:text-violet-200">{label}</span>
       <span className="relative block">
         <input
           type={visible ? "text" : "password"}
@@ -750,6 +780,7 @@ function PasswordInput({ label, value, onChange }) {
 }
 
 function Field({ label, defaultValue, value, onChange, readOnly = false, helper }) {
+  const { t } = useTranslation("profile");
   const inputProps = value === undefined
     ? { defaultValue: defaultValue || "" }
     : { value, onChange: (event) => onChange?.(event.target.value) };
@@ -765,13 +796,13 @@ function Field({ label, defaultValue, value, onChange, readOnly = false, helper 
           aria-readonly={readOnly}
           className={`h-12 w-full rounded-xl border px-4 text-right font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition placeholder:text-slate-400 dark:border-white/10 dark:shadow-none dark:placeholder:text-[#8A94A7] ${
             readOnly
-              ? "cursor-default border-[#C4B5FD]/55 bg-[#F5F3FF] pl-28 text-[#6D28D9] focus:border-[#C4B5FD]/70 focus:ring-4 focus:ring-[#8B5CF6]/10 dark:bg-[#1A2335] dark:text-[#E9D5FF]"
-              : "border-sky-100 bg-white text-slate-950 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:bg-[#050816] dark:text-white"
+              ? "cursor-default border-violet-300/60 bg-gradient-to-r from-violet-50 to-blue-50/70 pl-28 text-violet-700 focus:border-violet-400/70 focus:ring-4 focus:ring-violet-500/10 dark:bg-[linear-gradient(90deg,rgba(124,58,237,0.14),rgba(59,130,246,0.08))] dark:text-violet-200"
+              : "border-violet-200/80 bg-white/80 text-slate-950 focus:border-violet-500/75 focus:ring-4 focus:ring-violet-500/15 dark:border-violet-400/20 dark:bg-[#050816]/85 dark:text-white dark:focus:border-violet-400/60"
           }`}
         />
         {readOnly && (
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-[#C4B5FD]/55 bg-white px-3 py-1 text-[11px] font-black text-[#7C3AED] dark:border-white/10 dark:bg-[#0D1324] dark:text-[#E9D5FF]">
-            ثابت
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-fuchsia-300/60 bg-gradient-to-r from-violet-600 to-fuchsia-500 px-3 py-1 text-[11px] font-black text-white shadow-[0_5px_14px_rgba(168,85,247,0.22)] dark:border-fuchsia-300/25">
+            {t("panel.readonly")}
           </span>
         )}
       </span>
@@ -785,20 +816,22 @@ function Field({ label, defaultValue, value, onChange, readOnly = false, helper 
 }
 
 function CountrySelectField({ disabled = false, label, value, options, onChange }) {
+  const { t } = useTranslation("profile");
+
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-black text-slate-700 dark:text-[#C4C9D4]">{label}</span>
+      <span className="mb-2 block text-sm font-black text-violet-800 dark:text-violet-200">{label}</span>
       <span className="relative block">
-        <Globe2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+        <Globe2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-500 dark:text-sky-300" />
         <select
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pr-12 text-right font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F5F3FF] disabled:text-[#6D28D9] focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:disabled:bg-[#1A2335] dark:disabled:text-[#E9D5FF]"
+          className="h-12 w-full rounded-xl border border-violet-200/80 bg-white/80 px-4 pr-12 text-right font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition disabled:cursor-not-allowed disabled:border-violet-300/60 disabled:bg-gradient-to-r disabled:from-violet-50 disabled:to-blue-50/70 disabled:text-violet-700 focus:border-violet-500/75 focus:ring-4 focus:ring-violet-500/15 dark:border-violet-400/20 dark:bg-[#050816]/85 dark:text-white dark:shadow-none dark:disabled:bg-[#1A1730] dark:disabled:text-violet-200"
         >
           {options.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {t(`countries.${option}`, { defaultValue: option })}
             </option>
           ))}
         </select>
@@ -808,11 +841,13 @@ function CountrySelectField({ disabled = false, label, value, options, onChange 
 }
 
 function ProfilePhoneField({ label, countryCode, readOnly = false, value, onChange }) {
+  const { t } = useTranslation("profile");
+
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-black text-slate-700 dark:text-[#C4C9D4]">{label}</span>
+      <span className="mb-2 block text-sm font-black text-violet-800 dark:text-violet-200">{label}</span>
       <span className="relative block">
-        <Phone className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+        <Phone className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-fuchsia-500 dark:text-fuchsia-300" />
         <input
           dir="ltr"
           type="tel"
@@ -821,12 +856,12 @@ function ProfilePhoneField({ label, countryCode, readOnly = false, value, onChan
           aria-readonly={readOnly}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pl-20 pr-12 text-left font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition read-only:cursor-default read-only:bg-[#F5F3FF] read-only:text-[#6D28D9] placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:read-only:bg-[#1A2335] dark:read-only:text-[#E9D5FF] dark:placeholder:text-[#8A94A7]"
+          className="h-12 w-full rounded-xl border border-violet-200/80 bg-white/80 px-4 pl-20 pr-12 text-left font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition read-only:cursor-default read-only:bg-violet-50 read-only:text-violet-700 placeholder:text-slate-400 focus:border-violet-500/75 focus:ring-4 focus:ring-violet-500/15 dark:border-violet-400/20 dark:bg-[#050816]/85 dark:text-white dark:shadow-none dark:read-only:bg-[#1A1730] dark:read-only:text-violet-200 dark:placeholder:text-[#8A94A7]"
         />
         <span
           dir="ltr"
-          className="pointer-events-none absolute left-3 top-1/2 grid h-8 min-w-14 -translate-y-1/2 select-none place-items-center rounded-lg border border-sky-100 bg-sky-50 px-2 text-sm font-black text-slate-600 dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4]"
-          title="رمز الدولة يتغير حسب الدولة المختارة ولا يمكن تعديله"
+          className="pointer-events-none absolute left-3 top-1/2 grid h-8 min-w-14 -translate-y-1/2 select-none place-items-center rounded-lg border border-blue-300/55 bg-gradient-to-r from-blue-50 to-violet-50 px-2 text-sm font-black text-blue-700 dark:border-blue-400/20 dark:bg-[linear-gradient(90deg,rgba(59,130,246,0.16),rgba(124,58,237,0.12))] dark:text-sky-200"
+          title={t("panel.countryCodeTitle")}
         >
           {countryCode}
         </span>

@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
+import BestSellingSection from "../../components/home/BestSellingSection";
+import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeShowcase from "../../components/home/HomeShowcase";
 import HomeSlide from "../../components/home/HomeSlide";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 
 export default function PublicHome() {
   const navigate = useNavigate();
+  const { t } = useTranslation("home");
   const [catalog, setCatalog] = useState({ categories: [], products: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,7 +37,7 @@ export default function PublicHome() {
       } catch (requestError) {
         if (!cancelled) {
           setCatalog({ categories: [], products: [] });
-          setError(requestError.userMessage || "Unable to load the public catalog.");
+          setError(requestError.userMessage || t("public.catalogLoadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -49,7 +53,7 @@ export default function PublicHome() {
 
   const openCategory = (category) => navigate(`/categories/${category.slug || category.id}`);
   const openProducts = () => navigate("/best-selling");
-  const openPurchase = (product, categoryTitle = "Catalog") => {
+  const openPurchase = (product, categoryTitle = t("showcase.catalog")) => {
     setPurchaseItem({ product, category: categoryTitle });
   };
   const confirmPurchase = () => {
@@ -67,23 +71,29 @@ export default function PublicHome() {
       <HomeSlide categoriesPath="/categories" />
       {loading ? (
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
-          Loading catalog...
+          {t("common:states.loadingCatalog")}
         </div>
       ) : error ? (
-        <EmptyState title="Unable to load catalog" description={error} />
+        <EmptyState title={t("public.catalogEmptyTitle")} description={error} />
       ) : (
         <HomeShowcase
           categories={catalog.categories}
           products={catalog.products.slice(0, 8)}
+          productsTitle={t("common:nav.bestSelling")}
           onViewAll={openProducts}
           onCategorySelect={openCategory}
-          onProductSelect={(product) => openPurchase(product, product.categoryTitle || "Catalog")}
+          onProductSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
         />
       )}
       <RecentAdditionsSection
         items={catalog.products}
-        onSelect={(product) => openPurchase(product, product.categoryTitle || "Catalog")}
+        onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
       />
+      <BestSellingSection
+        items={catalog.products}
+        onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
+      />
+      <CustomerReviews />
       <AnimatePresence>
         {purchaseItem && (
           <ProductPurchaseModal

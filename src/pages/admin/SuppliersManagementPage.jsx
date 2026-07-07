@@ -61,7 +61,7 @@ export default function SuppliersManagementPage() {
   const loadSuppliers = useCallback(async ({ silent = false } = {}) => {
     if (!token) {
       setInitialLoading(false);
-      setLoadError("Admin session is required.");
+      setLoadError("يلزم تسجيل الدخول بحساب مدير.");
       return;
     }
 
@@ -80,7 +80,7 @@ export default function SuppliersManagementPage() {
       }
     } catch (error) {
       setSuppliers([]);
-      setLoadError(error.userMessage || "Unable to load backend providers.");
+      setLoadError(error.userMessage || "تعذر تحميل الموردين.");
     } finally {
       setInitialLoading(false);
     }
@@ -91,10 +91,10 @@ export default function SuppliersManagementPage() {
   }, [loadSuppliers]);
 
   const stats = useMemo(() => [
-    { label: "Providers", value: suppliers.length, icon: Server },
-    { label: "Active", value: suppliers.filter((supplier) => supplier.active).length, icon: CloudCog },
-    { label: "Inactive", value: suppliers.filter((supplier) => !supplier.active).length, icon: RefreshCw },
-    { label: "Provider products", value: providerProductsTotal, icon: Boxes },
+    { label: "الموردون", value: suppliers.length, icon: Server },
+    { label: "النشطون", value: suppliers.filter((supplier) => supplier.active).length, icon: CloudCog },
+    { label: "غير النشطين", value: suppliers.filter((supplier) => !supplier.active).length, icon: RefreshCw },
+    { label: "منتجات الموردين", value: providerProductsTotal, icon: Boxes },
   ], [providerProductsTotal, suppliers]);
 
   const saveSupplier = async (values) => {
@@ -111,16 +111,16 @@ export default function SuppliersManagementPage() {
       setForm(undefined);
       showToast({
         type: "success",
-        title: editing ? "Provider updated" : "Provider created",
+        title: editing ? "تم تحديث المورد" : "تمت إضافة المورد",
         message: result.message || result.provider.name,
       });
       await loadSuppliers({ silent: true });
     } catch (error) {
-      setFormError(error.userMessage || "The provider could not be saved.");
+      setFormError(error.userMessage || "تعذر حفظ المورد.");
       showToast({
         type: "error",
-        title: "Provider save failed",
-        message: error.userMessage || "The provider could not be saved.",
+        title: "فشل حفظ المورد",
+        message: error.userMessage || "تعذر حفظ المورد.",
       });
     } finally {
       setSaving(false);
@@ -135,11 +135,11 @@ export default function SuppliersManagementPage() {
       setConnectionResults((current) => ({ ...current, [supplier.id]: result.result }));
       showToast({
         type: result.result.connected ? "success" : "error",
-        title: result.result.connected ? "Connection successful" : "Connection failed",
+        title: result.result.connected ? "نجح الاتصال" : "فشل الاتصال",
         message: result.result.message,
       });
     } catch (error) {
-      showToast({ type: "error", title: "Connection test failed", message: error.userMessage || "Backend provider test failed." });
+      showToast({ type: "error", title: "فشل اختبار الاتصال", message: error.userMessage || "فشل اختبار المورد من الخادم." });
     } finally {
       setActionKey("");
     }
@@ -159,8 +159,8 @@ export default function SuppliersManagementPage() {
         const result = await syncAdminProviderProducts(token, supplier.id);
         showToast({
           type: result.result.errors.length ? "warning" : "success",
-          title: result.message || "Provider sync completed",
-          message: `${result.result.totalFetched} fetched, ${result.result.updated + result.result.upserted} upserted/updated.`,
+          title: result.message || "اكتملت مزامنة المورد",
+        message: `تم جلب ${result.result.totalFetched} منتج، وتحديث أو إضافة ${result.result.updated + result.result.upserted} منتج.`,
         });
         if (productsState.supplier?.id === supplier.id) {
           await loadProviderProducts(supplier, { page: productsState.page, search: productsState.search });
@@ -169,12 +169,12 @@ export default function SuppliersManagementPage() {
         const result = await toggleAdminProvider(token, supplier.id);
         showToast({
           type: result.provider.active ? "success" : "warning",
-          title: result.provider.active ? "Provider enabled" : "Provider disabled",
+          title: result.provider.active ? "تم تفعيل المورد" : "تم تعطيل المورد",
           message: result.message || result.provider.name,
         });
       } else if (kind === "archive") {
         const result = await deleteAdminProvider(token, supplier.id);
-        showToast({ type: "warning", title: "Provider archived", message: result.message || result.provider.name });
+        showToast({ type: "warning", title: "تمت أرشفة المورد", message: result.message || result.provider.name });
       }
 
       setConfirm({ kind: "", supplier: null });
@@ -182,8 +182,8 @@ export default function SuppliersManagementPage() {
     } catch (error) {
       showToast({
         type: "error",
-        title: "Provider action failed",
-        message: error.userMessage || "Backend provider action failed.",
+        title: "فشل إجراء المورد",
+        message: error.userMessage || "فشل تنفيذ الإجراء على المورد.",
       });
     } finally {
       setActionKey("");
@@ -221,7 +221,7 @@ export default function SuppliersManagementPage() {
     } catch (error) {
       setProductsState((current) => ({
         ...current,
-        error: error.userMessage || "Unable to load provider products.",
+        error: error.userMessage || "تعذر تحميل منتجات المورد.",
         loading: false,
         products: [],
       }));
@@ -247,7 +247,7 @@ export default function SuppliersManagementPage() {
       });
     } catch (error) {
       setGlobalSearch({
-        error: error.userMessage || "Unable to search provider products.",
+        error: error.userMessage || "تعذر البحث في منتجات الموردين.",
         loading: false,
         pagination: null,
         products: [],
@@ -263,14 +263,14 @@ export default function SuppliersManagementPage() {
       {initialLoading ? (
         <SuppliersLoadingState />
       ) : loadError ? (
-        <EmptyState icon={AlertTriangle} title="Unable to load providers" description={loadError} actionLabel="Try again" onAction={() => loadSuppliers()} />
+        <EmptyState icon={AlertTriangle} title="تعذر تحميل الموردين" description={loadError} actionLabel="حاول مجددًا" onAction={() => loadSuppliers()} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
             {stats.map(({ label, value, icon: Icon }) => (
               <article key={label} className="rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
                 <Icon className="h-8 w-8 rounded-xl bg-violet-500/10 p-2 text-violet-600" />
-                <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG")}</strong>
+                <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG-u-nu-latn")}</strong>
                 <p className="text-[8px] font-black text-slate-400">{label}</p>
               </article>
             ))}
@@ -299,13 +299,13 @@ export default function SuppliersManagementPage() {
                   onTest={testConnection}
                   onToggle={requestToggle}
                   onTools={setToolsFor}
-                  productCountLabel="Open catalog"
+                  productCountLabel="فتح الكتالوج"
                   supplier={supplier}
                 />
               ))}
             </div>
           ) : (
-            <EmptyState icon={Search} title="No backend providers found" description="Create a provider to start syncing provider products." actionLabel="Create provider" onAction={() => setForm(null)} />
+            <EmptyState icon={Search} title="لا يوجد موردون" description="أضف موردًا لبدء مزامنة منتجاته." actionLabel="إضافة مورد" onAction={() => setForm(null)} />
           )}
         </>
       )}
@@ -348,12 +348,12 @@ function Header({ onAdd, onRefresh, refreshing }) {
     <section className="flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-sky-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><Server className="h-5 w-5" /></span>
       <div className="min-w-0 flex-1">
-        <h1 className="text-2xl font-black dark:text-white">Provider management</h1>
-        <p className="text-[9px] font-bold text-slate-400">Backend providers, catalog sync, diagnostics, and safe product browsing.</p>
+        <h1 className="text-2xl font-black dark:text-white">إدارة الموردين</h1>
+        <p className="text-[9px] font-bold text-slate-400">إدارة الموردين ومزامنة الكتالوج واختبار الاتصال وتصفح المنتجات.</p>
       </div>
       <button type="button" onClick={onRefresh} disabled={refreshing} className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-[9px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300">
         <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-        Refresh
+        تحديث
       </button>
       <button type="button" onClick={onAdd} className="inline-flex h-10 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white">
         <Plus className="h-4 w-4" />
@@ -378,23 +378,23 @@ function SuppliersLoadingState() {
 }
 
 function getConfirmTitle(kind) {
-  if (kind === "sync") return "Sync provider catalog?";
-  if (kind === "toggle") return "Change provider status?";
-  if (kind === "archive") return "Archive provider?";
-  return "Confirm provider action";
+  if (kind === "sync") return "هل تريد مزامنة كتالوج المورد؟";
+  if (kind === "toggle") return "هل تريد تغيير حالة المورد؟";
+  if (kind === "archive") return "هل تريد أرشفة المورد؟";
+  return "تأكيد إجراء المورد";
 }
 
 function getConfirmLabel(kind, supplier) {
-  if (kind === "sync") return "Sync catalog";
-  if (kind === "toggle") return supplier?.active ? "Disable provider" : "Enable provider";
-  if (kind === "archive") return "Archive provider";
-  return "Confirm";
+  if (kind === "sync") return "مزامنة الكتالوج";
+  if (kind === "toggle") return supplier?.active ? "تعطيل المورد" : "تفعيل المورد";
+  if (kind === "archive") return "أرشفة المورد";
+  return "تأكيد";
 }
 
 function getConfirmMessage(kind, supplier) {
   if (!supplier) return "";
-  if (kind === "sync") return `Ask the backend to sync cached provider products for ${supplier.name}. The frontend will refetch after the backend confirms.`;
-  if (kind === "toggle") return `Ask the backend to ${supplier.active ? "disable" : "enable"} ${supplier.name}. Linked products and orders remain controlled by backend rules.`;
-  if (kind === "archive") return `Soft-delete ${supplier.name} through the backend. The provider will be disabled and removed from active use.`;
-  return `Run backend action for ${supplier.name}.`;
+  if (kind === "sync") return `سيزامن الخادم منتجات المورد ${supplier.name}، ثم تُحدّث القائمة بعد التأكيد.`;
+  if (kind === "toggle") return `سيقوم الخادم بـ${supplier.active ? "تعطيل" : "تفعيل"} المورد ${supplier.name} مع بقاء المنتجات والطلبات خاضعة لقواعد النظام.`;
+  if (kind === "archive") return `سيُؤرشف المورد ${supplier.name} ويُعطّل ويُزال من الاستخدام النشط.`;
+  return `تنفيذ الإجراء على المورد ${supplier.name}.`;
 }

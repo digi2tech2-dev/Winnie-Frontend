@@ -14,7 +14,7 @@ export default function SupplierSearchProducts({
 
   return (
     <section className="rounded-[24px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
-      <h2 className="text-sm font-black dark:text-white">Search provider products</h2>
+      <h2 className="text-sm font-black dark:text-white">البحث في منتجات الموردين</h2>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -27,12 +27,12 @@ export default function SupplierSearchProducts({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Provider product name or translated name"
+            placeholder="اسم منتج المورد أو اسمه المترجم"
             className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-xs font-black outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
           />
         </label>
         <button type="submit" disabled={loading} className="h-11 rounded-2xl bg-violet-600 px-4 text-[10px] font-black text-white disabled:opacity-60">
-          {loading ? "Searching..." : "Search"}
+          {loading ? "جارٍ البحث..." : "بحث"}
         </button>
       </form>
 
@@ -50,8 +50,8 @@ export default function SupplierSearchProducts({
               <article key={product.id} className="grid grid-cols-[1fr_auto] gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 dark:border-white/[0.06] dark:bg-[#0B1220]">
                 <div className="min-w-0">
                   <h3 className="truncate text-[10px] font-black dark:text-white">{product.name}</h3>
-                  <p className="mt-0.5 text-[8px] font-bold text-slate-400">{product.providerName || "Provider"} - {product.externalProductId || product.id}</p>
-                  <p className="mt-1 text-[8px] font-bold text-slate-500 dark:text-slate-300">Qty {product.minQty} - {product.maxQty}</p>
+                  <p className="mt-0.5 text-[8px] font-bold text-slate-400">{product.providerName || "المورد"} - {product.externalProductId || product.id}</p>
+                  <p className="mt-1 text-[8px] font-bold text-slate-500 dark:text-slate-300">الكمية {product.minQty} - {product.maxQty}</p>
                 </div>
                 <div className="text-left">
                   <strong dir="ltr" className="text-[11px] text-violet-700 dark:text-violet-300">{product.priceLabel}</strong>
@@ -60,11 +60,11 @@ export default function SupplierSearchProducts({
               </article>
             ))
           ) : (
-            <p className="py-5 text-center text-[9px] font-bold text-slate-400">No matching provider products.</p>
+            <p className="py-5 text-center text-[9px] font-bold text-slate-400">لا توجد منتجات موردين مطابقة.</p>
           )}
           {pagination?.total > products.length && (
             <p className="text-center text-[9px] font-bold text-slate-400">
-              Showing {products.length.toLocaleString("ar-EG")} of {pagination.total.toLocaleString("ar-EG")} backend matches.
+              يتم عرض {products.length.toLocaleString("ar-EG-u-nu-latn")} من أصل {pagination.total.toLocaleString("ar-EG-u-nu-latn")} نتيجة مطابقة من الخادم.
             </p>
           )}
         </div>

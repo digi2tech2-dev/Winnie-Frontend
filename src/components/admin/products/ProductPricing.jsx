@@ -1,4 +1,5 @@
 import { AlertTriangle, Bot, CheckCircle2, Link2, RefreshCw, Search, UserRound } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Field, inputClassName, Section } from "./BasicProductInfo";
 
 const emptyProviderLink = {
@@ -24,23 +25,37 @@ export default function ProductPricing({
   const selectedProduct = providerLink.providerProducts.find((product) => product.id === value.providerProductId)
     || getCurrentProductSummary(value);
   const searchValue = value.providerProductSearch || "";
+  const providerProductCount = providerLink.pagination?.total ?? providerLink.providerProducts.length;
+  const searchTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+
+  const updateProductSearch = (nextValue) => {
+    onPatch({ providerProductSearch: nextValue });
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      if (value.providerId) onProductSearch(nextValue);
+    }, 450);
+  };
 
   return (
     <Section title="الكمية والتسعير" description="حدد حدود الطلب والسعر الأساسي، واختر طريقة تنفيذ المنتج.">
-      <div className="grid grid-cols-2 gap-2.5">
-        <TypeButton active={!automatic} icon={UserRound} title="ربط يدوي" description="منتج يدوي من لوحة الإدارة" onClick={() => onLinkModeChange("manual")} />
-        <TypeButton active={automatic} icon={Bot} title="ربط آلي" description="تنفيذ الطلبات عبر مورد" onClick={() => onLinkModeChange("automatic")} />
+      <div className="flex flex-col">
+      <div className="order-1 grid grid-cols-2 gap-2.5 sm:gap-3">
+        <TypeButton active={!automatic} tone="manual" icon={UserRound} title="ربط يدوي" description="منتج يدوي من لوحة الإدارة" onClick={() => onLinkModeChange("manual")} />
+        <TypeButton active={automatic} tone="automatic" icon={Bot} title="ربط آلي" description="تنفيذ الطلبات عبر مورد" onClick={() => onLinkModeChange("automatic")} />
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="order-3 mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-4">
         <NumberField label="الحد الأدنى للطلب" value={value.min} onChange={(next) => onChange("min", next)} min="1" />
         <NumberField label="الحد الأقصى للطلب" value={value.max} onChange={(next) => onChange("max", next)} min="1" />
-        <NumberField label="السعر الأصلي" value={value.originalPrice} onChange={(next) => onChange("originalPrice", next)} step="0.01" />
-        <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => onChange("finalPrice", next)} step="0.01" />
+        <NumberField label="السعر الأصلي" value={value.originalPrice} onChange={(next) => onChange("originalPrice", next)} step="any" />
+        <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => onChange("finalPrice", next)} step="any" />
+        <NumberField className="col-span-2" label="نسبة الخصم %" value={value.discountPercentage} onChange={(next) => onChange("discountPercentage", next)} min="0" max="100" step="1" />
       </div>
 
       {automatic && (
-        <div className="mt-4 space-y-3 rounded-2xl border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-400/20 dark:bg-sky-500/10">
+        <div className="order-2 mt-4 space-y-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.08] p-3 sm:p-4">
           <div className="flex items-start gap-2">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-sky-500/12 text-sky-700 dark:text-sky-300">
               <Link2 className="h-4 w-4" />
@@ -50,6 +65,9 @@ export default function ProductPricing({
               <p className="mt-0.5 text-[9px] font-bold leading-5 text-slate-500 dark:text-slate-300">سيتم تنفيذ الطلبات تلقائيًا من خلال المورد المختار.</p>
               <p className="text-[9px] font-bold leading-5 text-slate-500 dark:text-slate-300">بيانات توثيق المورد لا تظهر هنا.</p>
             </div>
+            <span className="inline-flex shrink-0 items-center rounded-full border border-sky-400/20 bg-sky-500/10 px-2.5 py-1.5 text-[9px] font-black text-sky-300">
+              {providerLink.loadingProducts ? "جارٍ التحميل" : `${providerProductCount.toLocaleString("ar-EG-u-nu-latn")} منتج`}
+            </span>
           </div>
 
           {providerLink.error && (
@@ -83,32 +101,31 @@ export default function ProductPricing({
             <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[10px] font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">تنبيه: هذا المورد لا يظهر كبيانات توثيق مكتملة.</p>
           )}
 
-          <form
-            className="flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              onProductSearch(searchValue);
-            }}
-          >
-            <label className="relative min-w-0 flex-1">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-600 dark:text-sky-300" />
+          <div className="rounded-2xl border border-cyan-400/25 bg-gradient-to-l from-cyan-500/[0.08] to-blue-500/[0.06] p-2.5 shadow-[0_0_20px_rgba(6,182,212,0.06)]">
+            <div className="mb-2 flex items-center justify-between gap-3 px-1">
+              <span className="text-[10px] font-black text-cyan-200">البحث في منتجات المورد</span>
+              <span className="text-[8px] font-bold text-slate-500">يبحث تلقائيًا أثناء الكتابة</span>
+            </div>
+            <label className="relative block min-w-0">
+              <span className="pointer-events-none absolute left-1 top-1 grid h-9 w-9 place-items-center rounded-lg border border-cyan-400/30 bg-cyan-500/15 text-cyan-300">
+                {providerLink.loadingProducts ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </span>
               <input
                 value={searchValue}
-                onChange={(event) => onPatch({ providerProductSearch: event.target.value })}
-                disabled={!value.providerId || providerLink.loadingProducts}
-                placeholder="ابحث في منتجات المورد"
-                className={`${inputClassName} pe-9`}
+                onChange={(event) => updateProductSearch(event.target.value)}
+                disabled={!value.providerId}
+                placeholder="اكتب اسم المنتج أو المعرّف..."
+                className="h-11 w-full rounded-xl border border-cyan-400/20 bg-[#040c1e] py-0 pl-12 pr-3 text-[11px] font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-4 focus:ring-cyan-500/10"
               />
             </label>
-            <button
-              type="submit"
-              disabled={!value.providerId || providerLink.loadingProducts}
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-slate-900 px-4 text-[10px] font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white dark:text-slate-950"
-            >
-              {providerLink.loadingProducts ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-              بحث
-            </button>
-          </form>
+          </div>
+
+          {!providerLink.loadingProducts && value.providerId && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#071126] px-3 py-2 text-[9px] font-bold text-slate-400">
+              <span>{searchValue ? "نتائج البحث في منتجات المورد" : "منتجات المورد المتاحة"}</span>
+              <strong className="text-sky-300">{providerProductCount.toLocaleString("ar-EG-u-nu-latn")} منتج</strong>
+            </div>
+          )}
 
           <div className="grid max-h-60 gap-2 overflow-y-auto rounded-2xl border border-white/70 bg-white/70 p-2 dark:border-white/10 dark:bg-[#0B1220]/60">
             {!value.providerId ? (
@@ -150,30 +167,37 @@ export default function ProductPricing({
           </div>
         </div>
       )}
+      </div>
     </Section>
   );
 }
 
-function TypeButton({ active, icon: Icon, title, description, onClick }) {
+function TypeButton({ active, icon: Icon, title, description, onClick, tone }) {
+  const activeTone = tone === "manual"
+    ? "border-sky-400/60 bg-sky-500/15 shadow-[0_0_22px_rgba(14,165,233,0.15)]"
+    : "border-fuchsia-400/60 bg-violet-500/15 shadow-[0_0_22px_rgba(168,85,247,0.16)]";
+  const iconTone = tone === "manual" ? "from-sky-500 to-blue-600" : "from-violet-500 to-fuchsia-600";
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-2xl border p-3 text-right transition ${active ? "border-violet-300 bg-violet-50 shadow-[0_8px_22px_rgba(124,58,237,0.10)] dark:border-violet-400/35 dark:bg-violet-500/10" : "border-slate-200 bg-slate-50 hover:border-violet-200 dark:border-white/10 dark:bg-[#0B1220]"}`}
+      className={`flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-right transition sm:gap-3 sm:rounded-2xl sm:p-4 ${active ? activeTone : "border-[#203664] bg-[#071126] hover:border-violet-400/40"}`}
     >
-      <span className={`grid h-8 w-8 place-items-center rounded-xl ${active ? "bg-violet-500 text-white" : "bg-white text-slate-400 dark:bg-white/[0.06]"}`}>
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg sm:h-9 sm:w-9 sm:rounded-xl ${active ? `bg-gradient-to-br ${iconTone} text-white` : "bg-white/[0.06] text-slate-400"}`}>
         <Icon className="h-4 w-4" />
       </span>
-      <strong className="mt-2 block text-[11px] text-slate-800 dark:text-white">{title}</strong>
-      <span className="mt-0.5 block text-[8px] font-bold text-slate-400">{description}</span>
+      <span className="min-w-0">
+        <strong className="block truncate text-[10px] text-white sm:text-xs">{title}</strong>
+        <span className="mt-0.5 block truncate text-[8px] font-bold text-slate-400 sm:mt-1 sm:text-[9px]">{description}</span>
+      </span>
     </button>
   );
 }
 
-function NumberField({ label, value, onChange, min = "0", step = "1" }) {
+function NumberField({ className = "", label, value, onChange, min = "0", max, step = "1" }) {
   return (
-    <Field label={label}>
-      <input type="number" min={min} step={step} value={value} onChange={(event) => onChange(event.target.value)} className={inputClassName} />
+    <Field label={label} className={className}>
+      <input type="number" min={min} max={max} step={step} value={value} onChange={(event) => onChange(event.target.value)} className={inputClassName} />
     </Field>
   );
 }

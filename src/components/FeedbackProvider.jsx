@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, CircleAlert, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const FeedbackContext = createContext(null);
 
@@ -24,10 +25,11 @@ const modalConfig = {
 
 export function FeedbackProvider({ children }) {
   const [modal, setModal] = useState(null);
+  const { t } = useTranslation("common");
 
   const showFeedback = useCallback((nextModal) => {
-    setModal({ type: "success", confirmLabel: "تم", ...nextModal });
-  }, []);
+    setModal({ type: "success", confirmLabel: t("feedback.done"), ...nextModal });
+  }, [t]);
 
   const closeFeedback = useCallback(() => setModal(null), []);
 
@@ -63,8 +65,8 @@ export function FeedbackProvider({ children }) {
                   type="button"
                   onClick={closeFeedback}
                   className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-[rgba(255,255,255,0.08)] dark:text-[#8A94A7] dark:hover:bg-[#1A2335] dark:hover:text-white"
-                  aria-label="إغلاق النافذة"
-                  title="إغلاق"
+                  aria-label={t("feedback.closeWindow")}
+                  title={t("actions.close")}
                 >
                   <X className="h-5 w-5" />
                 </button>

@@ -1,24 +1,17 @@
 import { FileText, PackageCheck, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
-const policySections = [
-  {
-    title: "سياسة الخصوصية",
-    icon: ShieldCheck,
-    text: "نستخدم بيانات الحساب والتواصل والطلبات لتقديم الخدمة، تأمين عمليات الدفع، متابعة الطلبات، وتحسين تجربة المستخدم. لا يتم بيع بياناتك الشخصية، ويتم مشاركتها فقط عند الحاجة لتنفيذ الخدمة أو الالتزام بالمتطلبات النظامية.",
-  },
-  {
-    title: "سياسة الاسترداد والإلغاء",
-    icon: RotateCcw,
-    text: "يمكن طلب الإلغاء أو الاسترداد قبل تنفيذ الطلب أو تسليم الخدمة الرقمية. بعد تنفيذ الشحن أو تفعيل المنتج قد لا يكون الاسترداد متاحًا إلا عند وجود خطأ واضح في التنفيذ أو فشل من مزود الخدمة.",
-  },
-  {
-    title: "سياسة الشحن والطلبات",
-    icon: PackageCheck,
-    text: "تتم معالجة الطلبات الرقمية بعد تأكيد الدفع والبيانات المطلوبة. تختلف مدة التسليم حسب نوع الخدمة ومزودها، ويتحمل المستخدم مسؤولية التأكد من صحة بيانات الحساب أو المعرف قبل إرسال الطلب.",
-  },
+const policyIcons = [ShieldCheck, RotateCcw, PackageCheck];
+const policyPaths = [
+  "/privacy-policy",
+  "/replacement-cancellation-policy",
+  "/terms-and-conditions",
 ];
 
 export default function PolicyAgreement({ checked, onChange, onOpenPolicies, id = "policy-agreement" }) {
+  const { t } = useTranslation("auth");
+
   return (
     <div className="flex items-center justify-center gap-2.5 rounded-md px-1 py-1 text-center">
       <span className="relative grid h-5 w-5 shrink-0 place-items-center">
@@ -34,14 +27,14 @@ export default function PolicyAgreement({ checked, onChange, onOpenPolicies, id 
 
       <p className="min-w-0 whitespace-nowrap text-[13px] font-bold text-slate-600 dark:text-slate-300 sm:text-sm">
         <label htmlFor={id} className="cursor-pointer">
-          أوافق على
+          {t("policies:agreement.accept", { defaultValue: "أوافق على" })}
         </label>{" "}
         <button
           type="button"
           onClick={onOpenPolicies}
           className="interactive-ring font-black text-royal underline decoration-[#E4C46B] decoration-2 underline-offset-4 transition hover:text-pulse dark:text-pulse dark:hover:text-white"
         >
-          الشروط والأحكام
+          {t("policies:agreement.terms", { defaultValue: "الشروط والأحكام" })}
         </button>
       </p>
     </div>
@@ -49,6 +42,9 @@ export default function PolicyAgreement({ checked, onChange, onOpenPolicies, id 
 }
 
 export function PoliciesModal({ onClose }) {
+  const { t } = useTranslation("policies");
+  const policySections = t("agreement.sections", { returnObjects: true });
+
   return (
     <div className="fixed inset-0 z-[180] grid place-items-center bg-slate-950/78 px-4 py-6 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="policies-title" onClick={onClose}>
       <div className="max-h-[88vh] w-full max-w-[680px] overflow-hidden rounded-lg border border-white/18 bg-white text-right text-slate-950 shadow-[0_34px_110px_rgba(2,6,23,0.45)] dark:border-white/10 dark:bg-[#0A1020] dark:text-white" onClick={(event) => event.stopPropagation()}>
@@ -61,26 +57,26 @@ export function PoliciesModal({ onClose }) {
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#BAF1FF]">Winnie Fun</p>
                 <h2 id="policies-title" className="mt-1 text-2xl font-black">
-                  الشروط والأحكام
+                  {t("agreement.title")}
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-white/72">مركز سياسات الموقع والتعاملات الرقمية</p>
+                <p className="mt-1 text-sm font-semibold text-white/72">{t("agreement.subtitle")}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/16 bg-white/10 text-white transition hover:bg-white/18"
-              aria-label="إغلاق النافذة"
-              title="إغلاق"
+              aria-label={t("agreement.closeWindow")}
+              title={t("agreement.close")}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           <div className="relative z-10 mt-5 grid grid-cols-3 gap-2 text-center text-[11px] font-black text-white/80">
-            <span className="rounded-md border border-white/14 bg-white/10 px-2 py-2">خصوصية</span>
-            <span className="rounded-md border border-white/14 bg-white/10 px-2 py-2">استرداد</span>
-            <span className="rounded-md border border-white/14 bg-white/10 px-2 py-2">طلبات</span>
+            <span className="rounded-md border border-white/14 bg-white/10 px-2 py-2">{t("agreement.tabs.privacy")}</span>
+            <span className="rounded-md border border-white/14 bg-white/10 px-2 py-2">{t("agreement.tabs.refund")}</span>
+            <span className="rounded-md border border-white/14 bg-white/10 px-2 py-2">{t("agreement.tabs.orders")}</span>
           </div>
         </div>
 
@@ -90,14 +86,15 @@ export function PoliciesModal({ onClose }) {
               <FileText className="h-5 w-5" />
             </span>
             <p className="text-sm font-bold leading-6 text-slate-600 dark:text-slate-300">
-              يرجى قراءة البنود التالية قبل المتابعة. استمرارك يعني قبولك بسياسات Winnie Fun الخاصة بالخدمات الرقمية.
+              {t("agreement.notice")}
             </p>
           </div>
         </div>
 
         <div className="max-h-[52vh] space-y-3 overflow-y-auto p-5">
-          {policySections.map((section) => {
-            const Icon = section.icon;
+          {policySections.map((section, index) => {
+            const Icon = policyIcons[index] || FileText;
+            const policyPath = policyPaths[index] || "/terms-and-conditions";
 
             return (
               <section key={section.title} className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-white/[0.055]">
@@ -107,7 +104,16 @@ export function PoliciesModal({ onClose }) {
                   </span>
                   <div>
                     <h3 className="text-base font-black text-slate-950 dark:text-white">{section.title}</h3>
-                    <p className="mt-2 text-sm font-semibold leading-7 text-slate-600 dark:text-slate-300">{section.text}</p>
+                    <p className="mt-2 text-sm font-semibold leading-7 text-slate-600 dark:text-slate-300">
+                      {section.text}{" "}
+                      <Link
+                        to={policyPath}
+                        onClick={onClose}
+                        className="interactive-ring inline-flex items-center font-black text-royal underline decoration-[#E4C46B] decoration-2 underline-offset-4 transition hover:text-pulse dark:text-pulse dark:hover:text-white"
+                      >
+                        {t("agreement.more")}
+                      </Link>
+                    </p>
                   </div>
                 </div>
               </section>
@@ -121,7 +127,7 @@ export function PoliciesModal({ onClose }) {
             onClick={onClose}
             className="interactive-ring h-11 rounded-lg bg-gradient-to-l from-royal to-pulse px-6 text-sm font-black text-white shadow-glow"
           >
-            فهمت
+            {t("agreement.understood")}
           </button>
         </div>
       </div>

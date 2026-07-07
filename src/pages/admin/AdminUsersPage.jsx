@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Ban,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Eye,
   Filter,
@@ -24,19 +25,19 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 
 const statusOptions = [
-  { value: "all", label: "All statuses" },
-  { value: "PENDING", label: "Pending review" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "REJECTED", label: "Rejected" },
+  { value: "all", label: "كل الحالات" },
+  { value: "PENDING", label: "بانتظار المراجعة" },
+  { value: "ACTIVE", label: "نشط" },
+  { value: "REJECTED", label: "مرفوض" },
 ];
 
 const sortOptions = [
-  { value: "newest", label: "Newest", sortBy: "createdAt", sortOrder: "desc" },
-  { value: "oldest", label: "Oldest", sortBy: "createdAt", sortOrder: "asc" },
-  { value: "nameAsc", label: "Name A-Z", sortBy: "name", sortOrder: "asc" },
-  { value: "emailAsc", label: "Email A-Z", sortBy: "email", sortOrder: "asc" },
-  { value: "highestBalance", label: "Highest balance", sortBy: "walletBalance", sortOrder: "desc" },
-  { value: "lowestBalance", label: "Lowest balance", sortBy: "walletBalance", sortOrder: "asc" },
+  { value: "newest", label: "الأحدث", sortBy: "createdAt", sortOrder: "desc" },
+  { value: "oldest", label: "الأقدم", sortBy: "createdAt", sortOrder: "asc" },
+  { value: "nameAsc", label: "الاسم أبجديًا", sortBy: "name", sortOrder: "asc" },
+  { value: "emailAsc", label: "البريد أبجديًا", sortBy: "email", sortOrder: "asc" },
+  { value: "highestBalance", label: "الرصيد الأعلى", sortBy: "walletBalance", sortOrder: "desc" },
+  { value: "lowestBalance", label: "الرصيد الأقل", sortBy: "walletBalance", sortOrder: "asc" },
 ];
 
 const statusTone = {
@@ -46,10 +47,10 @@ const statusTone = {
 };
 
 const statConfig = [
-  { id: "total", label: "Total users", icon: Users, tone: "admin-users-stat-total" },
-  { id: "pending", label: "Pending review", icon: ShieldAlert, tone: "admin-users-stat-active" },
-  { id: "active", label: "Active accounts", icon: UserCheck, tone: "admin-users-stat-active" },
-  { id: "rejected", label: "Rejected accounts", icon: Ban, tone: "admin-users-stat-total" },
+  { id: "total", label: "إجمالي المستخدمين", icon: Users, tone: "admin-users-stat-total" },
+  { id: "pending", label: "بانتظار المراجعة", icon: ShieldAlert, tone: "admin-users-stat-active" },
+  { id: "active", label: "الحسابات النشطة", icon: UserCheck, tone: "admin-users-stat-active" },
+  { id: "rejected", label: "الحسابات المرفوضة", icon: Ban, tone: "admin-users-stat-total" },
 ];
 
 const avatarTones = [
@@ -105,6 +106,7 @@ export default function AdminUsersPage() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [actionKey, setActionKey] = useState("");
@@ -117,7 +119,7 @@ export default function AdminUsersPage() {
   const loadUsers = useCallback(async () => {
     if (!token) {
       setUsers([]);
-      setError("Admin session is required.");
+      setError("يلزم تسجيل الدخول بحساب مدير.");
       setLoading(false);
       return;
     }
@@ -135,9 +137,9 @@ export default function AdminUsersPage() {
       setUsers(result.users);
       setPagination(result.pagination);
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "Unable to load users.");
+      const message = getErrorMessage(requestError, "تعذر تحميل المستخدمين.");
       setError(message);
-      showToast({ type: "error", title: "Users not loaded", message });
+      showToast({ type: "error", title: "لم يتم تحميل المستخدمين", message });
     } finally {
       setLoading(false);
     }
@@ -168,9 +170,9 @@ export default function AdminUsersPage() {
   const copyUserId = async (userId) => {
     try {
       await navigator.clipboard?.writeText(userId);
-      showToast({ title: "Copied", message: userId, type: "success", duration: 1800 });
+      showToast({ title: "تم النسخ", message: userId, type: "success", duration: 1800 });
     } catch {
-      showToast({ title: "Copy failed", message: userId, type: "error" });
+      showToast({ title: "فشل النسخ", message: userId, type: "error" });
     }
   };
 
@@ -178,9 +180,9 @@ export default function AdminUsersPage() {
     setConfirmation({
       action,
       userId: user.id,
-      title: action === "approve" ? "Approve user account" : "Reject user account",
-      message: `${action === "approve" ? "Approve" : "Reject"} ${user.name} (${user.email})? The backend account status will be the source of truth.`,
-      confirmLabel: action === "approve" ? "Approve account" : "Reject account",
+      title: action === "approve" ? "قبول حساب المستخدم" : "رفض حساب المستخدم",
+      message: `هل تريد ${action === "approve" ? "قبول" : "رفض"} حساب ${user.name} (${user.email})؟`,
+      confirmLabel: action === "approve" ? "قبول الحساب" : "رفض الحساب",
       tone: action === "approve" ? "success" : "danger",
     });
   };
@@ -197,13 +199,13 @@ export default function AdminUsersPage() {
 
       showToast({
         type: confirmation.action === "approve" ? "success" : "warning",
-        title: result.message || (confirmation.action === "approve" ? "User approved" : "User rejected"),
+        title: result.message || (confirmation.action === "approve" ? "تم قبول المستخدم" : "تم رفض المستخدم"),
       });
       setConfirmation(null);
       await loadUsers();
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "User review action failed.");
-      showToast({ type: "error", title: "Action failed", message });
+      const message = getErrorMessage(requestError, "فشلت مراجعة المستخدم.");
+      showToast({ type: "error", title: "فشل الإجراء", message });
     } finally {
       setActionKey("");
     }
@@ -213,8 +215,8 @@ export default function AdminUsersPage() {
     <div dir="rtl" className="admin-users-page">
       <section className="admin-users-hero">
         <div className="min-w-0">
-          <p className="admin-users-kicker">Users Review</p>
-          <h1>Account approval review</h1>
+          <p className="admin-users-kicker">مراجعة المستخدمين</p>
+          <h1>مراجعة واعتماد الحسابات</h1>
         </div>
         <form
           className="admin-users-search-shell"
@@ -227,12 +229,12 @@ export default function AdminUsersPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by email"
-            aria-label="Search users by email"
+            placeholder="ابحث بالبريد الإلكتروني"
+            aria-label="البحث عن المستخدمين بالبريد الإلكتروني"
           />
-          <button type="button" onClick={() => { setSearch(""); setAppliedSearch(""); }} title="Clear search" aria-label="Clear search">
+          <button type="button" onClick={() => { setSearch(""); setAppliedSearch(""); }} title="مسح البحث" aria-label="مسح البحث">
             <X className="h-4 w-4" />
-            <span>Clear</span>
+            <span>مسح</span>
           </button>
         </form>
       </section>
@@ -243,43 +245,71 @@ export default function AdminUsersPage() {
         ))}
       </section>
 
-      <section className="admin-users-filterbar">
-        <Filter className="h-5 w-5 text-amber-600 dark:text-amber-300" />
-        <FilterField label="Status">
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Sort">
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </FilterField>
-        <button type="button" className="admin-users-reset" onClick={() => setAppliedSearch(search.trim())}>
-          <Search className="h-4 w-4" />
-          <span>Apply</span>
+      <section className="admin-users-filter-panel">
+        <button
+          type="button"
+          className="admin-users-filter-toggle"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          aria-controls="admin-users-filters"
+        >
+          <span className="admin-users-filter-title">
+            <Filter className="h-5 w-5" />
+            <span>فلترة</span>
+          </span>
+          <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`} />
         </button>
-        <button type="button" className="admin-users-reset" onClick={loadUsers} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          <span>Refresh</span>
-        </button>
-        <button type="button" className="admin-users-reset" onClick={resetFilters}>
-          <RotateCcw className="h-4 w-4" />
-          <span>Reset</span>
-        </button>
+
+        <AnimatePresence initial={false}>
+          {filtersOpen && (
+            <motion.div
+              id="admin-users-filters"
+              className="admin-users-filter-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="admin-users-filterbar">
+                <FilterField label="الحالة">
+                  <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </FilterField>
+                <FilterField label="الترتيب">
+                  <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </FilterField>
+                <button type="button" className="admin-users-reset" onClick={() => setAppliedSearch(search.trim())}>
+                  <Search className="h-4 w-4" />
+                  <span>تطبيق</span>
+                </button>
+                <button type="button" className="admin-users-reset" onClick={loadUsers} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                  <span>تحديث</span>
+                </button>
+                <button type="button" className="admin-users-reset" onClick={resetFilters}>
+                  <RotateCcw className="h-4 w-4" />
+                  <span>إعادة ضبط</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       <section className="admin-users-table-card">
         <div className="admin-users-table-head">
           <div>
-            <h2>Users</h2>
-            <p>{numberFormat(users.length)} loaded from {numberFormat(pagination.total)} backend result(s)</p>
+            <h2>المستخدمون</h2>
+            <p>تم تحميل {numberFormat(users.length)} من أصل {numberFormat(pagination.total)} نتيجة</p>
           </div>
-          <span>{statusFilter === "all" ? "All" : statusFilter}</span>
+          <span>{statusFilter === "all" ? "الكل" : statusOptions.find((option) => option.value === statusFilter)?.label}</span>
         </div>
 
         {error && (
@@ -308,7 +338,7 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="admin-user-meta-grid">
                   <div className="admin-user-meta-card admin-user-meta-identity">
-                    <button type="button" className="admin-user-id" onClick={() => copyUserId(user.id)} title="Copy User ID">
+                    <button type="button" className="admin-user-id" onClick={() => copyUserId(user.id)} title="نسخ معرّف المستخدم">
                       <Copy className="h-3.5 w-3.5" />
                       <span dir="ltr">{user.id}</span>
                     </button>
@@ -316,10 +346,10 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="admin-user-meta-card admin-user-money">
                     <strong dir="ltr">{user.walletBalanceLabel}</strong>
-                    <span>{user.currency} wallet</span>
+                    <span>محفظة {user.currency}</span>
                   </div>
                   <div className="admin-user-meta-card admin-user-meta-status">
-                    <span>{user.roleLabel}</span>
+                    <span>{user.role === "SUPERVISOR" ? "مشرف" : "مستخدم"}</span>
                     <StatusBadge status={user.status} label={user.statusLabel} />
                     <div className="admin-user-status-actions">
                       {user.status === "PENDING" && (
@@ -330,7 +360,7 @@ export default function AdminUsersPage() {
                             onClick={() => requestUserReview(user, "approve")}
                             disabled={Boolean(actionKey)}
                           >
-                            Approve
+                            قبول
                           </button>
                           <button
                             type="button"
@@ -338,17 +368,17 @@ export default function AdminUsersPage() {
                             onClick={() => requestUserReview(user, "reject")}
                             disabled={Boolean(actionKey)}
                           >
-                            Reject
+                            رفض
                           </button>
                         </>
                       )}
                       <button type="button" className="admin-user-details-button" onClick={() => openUserWallet(user.id)}>
                         <WalletCards className="h-4 w-4" />
-                        <span>Wallet & Controls</span>
+                        <span>المحفظة والتحكم</span>
                       </button>
                       <button type="button" className="admin-user-details-button" onClick={() => setSelectedUserId(user.id)}>
                         <Eye className="h-4 w-4" />
-                        <span>Details</span>
+                        <span>التفاصيل</span>
                       </button>
                     </div>
                   </div>
@@ -356,7 +386,7 @@ export default function AdminUsersPage() {
               </article>
             ))
           ) : (
-            <div className="admin-user-empty-log">No users matched the current backend filters.</div>
+            <div className="admin-user-empty-log">لا يوجد مستخدمون مطابقون للفلاتر الحالية.</div>
           )}
         </div>
       </section>
@@ -423,9 +453,10 @@ function Avatar({ user, large = false }) {
 }
 
 function StatusBadge({ status, label }) {
+  const arabicStatus = { ACTIVE: "نشط", PENDING: "بانتظار المراجعة", REJECTED: "مرفوض" }[status];
   return (
     <span className={`admin-user-status ${statusTone[status] || statusTone.PENDING}`}>
-      {label || status}
+      {arabicStatus || label || status}
     </span>
   );
 }
@@ -434,7 +465,7 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
   const canReview = user.status === "PENDING";
   return (
     <div className="admin-user-drawer-layer">
-      <button type="button" className="admin-user-drawer-backdrop" onClick={onClose} aria-label="Close user details" />
+      <button type="button" className="admin-user-drawer-backdrop" onClick={onClose} aria-label="إغلاق تفاصيل المستخدم" />
       <motion.aside
         className="admin-user-drawer"
         initial={{ x: 48, opacity: 0 }}
@@ -451,49 +482,49 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
               <span dir="ltr">{user.id}</span>
             </button>
           </div>
-          <button type="button" className="admin-user-drawer-close" onClick={onClose} title="Close">
+          <button type="button" className="admin-user-drawer-close" onClick={onClose} title="إغلاق">
             <X className="h-5 w-5" />
           </button>
         </header>
 
         <div className="admin-user-drawer-body">
-          <DrawerSection icon={UserRound} title="Account review">
+          <DrawerSection icon={UserRound} title="مراجعة الحساب">
             <div className="admin-user-info-grid">
-              <InfoItem label="Name" value={user.name} />
-              <InfoItem label="Email" value={user.email || "-"} ltr />
-              <InfoItem label="Phone" value={user.phone || "-"} ltr />
-              <InfoItem label="Country" value={user.country || "-"} />
-              <InfoItem label="Currency" value={user.currency} ltr />
-              <InfoItem label="Group" value={`${user.groupName}${user.groupPercentage !== null ? ` (${user.groupPercentage}%)` : ""}`} />
+              <InfoItem label="الاسم" value={user.name} />
+              <InfoItem label="البريد الإلكتروني" value={user.email || "-"} ltr />
+              <InfoItem label="الهاتف" value={user.phone || "-"} ltr />
+              <InfoItem label="الدولة" value={user.country || "-"} />
+              <InfoItem label="العملة" value={user.currency} ltr />
+              <InfoItem label="المجموعة" value={`${user.groupName}${user.groupPercentage !== null ? ` (${user.groupPercentage}%)` : ""}`} />
               <div className="admin-user-info-item">
-                <span>Status</span>
+                <span>الحالة</span>
                 <StatusBadge status={user.status} label={user.statusLabel} />
               </div>
-              <InfoItem label="Role" value={user.roleLabel} />
-              <InfoItem label="Email verified" value={user.verified ? "Yes" : "No"} />
-              <InfoItem label="Registered" value={formatDate(user.createdAt)} />
-              <InfoItem label="Approved at" value={formatDate(user.approvedAt)} />
-              <InfoItem label="Rejected at" value={formatDate(user.rejectedAt)} />
+              <InfoItem label="الدور" value={user.role === "SUPERVISOR" ? "مشرف" : "مستخدم"} />
+              <InfoItem label="البريد موثّق" value={user.verified ? "نعم" : "لا"} />
+              <InfoItem label="تاريخ التسجيل" value={formatDate(user.createdAt)} />
+              <InfoItem label="تاريخ القبول" value={formatDate(user.approvedAt)} />
+              <InfoItem label="تاريخ الرفض" value={formatDate(user.rejectedAt)} />
             </div>
           </DrawerSection>
 
-          <DrawerSection icon={ShieldCheck} title="Sub-agent business status">
+          <DrawerSection icon={ShieldCheck} title="حالة الوكيل الفرعي">
             <div className="admin-user-info-grid">
-              <InfoItem label="Sub-agent" value={user.isSubAgent ? "Yes" : "No"} />
-              <InfoItem label="Sub-agent status" value={user.subAgentStatus} />
-              <InfoItem label="Supervisor role" value={user.role === "SUPERVISOR" ? "Supervisor" : "Not supervisor"} />
+              <InfoItem label="وكيل فرعي" value={user.isSubAgent ? "نعم" : "لا"} />
+              <InfoItem label="حالة الوكيل الفرعي" value={user.subAgentStatus || "-"} />
+              <InfoItem label="صلاحية المشرف" value={user.role === "SUPERVISOR" ? "مشرف" : "ليس مشرفًا"} />
             </div>
           </DrawerSection>
 
-          <DrawerSection icon={WalletCards} title="Wallet snapshot">
+          <DrawerSection icon={WalletCards} title="ملخص المحفظة">
             <div className="admin-user-wallet-grid">
-              <WalletItem label="Wallet balance" value={user.walletBalanceLabel} strong />
-              <WalletItem label="Credit limit" value={`${user.creditLimit.toFixed(2)} ${user.currency}`} />
-              <WalletItem label="Credit used" value={`${user.creditUsed.toFixed(2)} ${user.currency}`} />
+              <WalletItem label="رصيد المحفظة" value={user.walletBalanceLabel} strong />
+              <WalletItem label="حد الائتمان" value={`${user.creditLimit.toFixed(2)} ${user.currency}`} />
+              <WalletItem label="الائتمان المستخدم" value={`${user.creditUsed.toFixed(2)} ${user.currency}`} />
             </div>
             <button type="button" onClick={onOpenWallet} className="admin-user-details-button mt-3 w-full">
               <WalletCards className="h-4 w-4" />
-              <span>Wallet & Controls</span>
+              <span>المحفظة والتحكم</span>
             </button>
           </DrawerSection>
         </div>
@@ -503,17 +534,17 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
             <>
               <button type="button" onClick={onApprove} className="admin-user-footer-primary" disabled={busy}>
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Approve account</span>
+                <span>قبول الحساب</span>
               </button>
               <button type="button" onClick={onReject} className="admin-user-footer-danger" disabled={busy}>
                 <Ban className="h-4 w-4" />
-                <span>Reject account</span>
+                <span>رفض الحساب</span>
               </button>
             </>
           ) : (
             <button type="button" onClick={onClose}>
               <Eye className="h-4 w-4" />
-              <span>Review only</span>
+              <span>إغلاق المراجعة</span>
             </button>
           )}
         </footer>
@@ -569,7 +600,7 @@ function ConfirmDialog({ confirmation, busy, onCancel, onConfirm }) {
         <h2>{confirmation.title}</h2>
         <p>{confirmation.message}</p>
         <div>
-          <button type="button" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button type="button" onClick={onCancel} disabled={busy}>إلغاء</button>
           <button
             type="button"
             onClick={onConfirm}
@@ -577,7 +608,7 @@ function ConfirmDialog({ confirmation, busy, onCancel, onConfirm }) {
             className={danger ? "admin-user-confirm-danger" : success ? "admin-user-confirm-success" : ""}
           >
             {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : danger ? <Ban className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-            <span>{busy ? "Working..." : confirmation.confirmLabel}</span>
+            <span>{busy ? "جارٍ التنفيذ..." : confirmation.confirmLabel}</span>
           </button>
         </div>
       </motion.div>

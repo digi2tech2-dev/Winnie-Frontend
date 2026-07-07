@@ -1,0 +1,53 @@
+{
+  "list": {
+    "title": "My orders",
+    "description": "Read-only backend order history.",
+    "loadError": "Unable to load orders.",
+    "count": "{{shown}} of {{total}}",
+    "resetFilters": "Reset filters",
+    "searchFilter": "Search and filter orders",
+    "searchPlaceholder": "Search by order number, product, status, price...",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "sort": "Sort",
+    "newest": "Newest first",
+    "oldest": "Oldest first",
+    "highestPrice": "Highest price",
+    "lowestPrice": "Lowest price",
+    "date": "Date",
+    "from": "From",
+    "to": "To",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "loading": "Loading orders...",
+    "emptyTitle": "No matching orders",
+    "emptyDescription": "Change the search or filters to view loaded backend orders.",
+    "order": "Order",
+    "product": "Product",
+    "price": "Price",
+    "progress": "Progress",
+    "action": "Action",
+    "details": "Details"
+  },
+  "details": {
+    "loading": "Loading order details...",
+    "loadError": "Unable to load order details.",
+    "notFoundTitle": "Order not found",
+    "notFoundDescription": "This backend order could not be loaded.",
+    "backToOrders": "Back to orders",
+    "eyebrow": "Order details",
+    "status": "Status",
+    "price": "Price",
+    "quantity": "Quantity",
+    "submittedDetails": "Submitted details",
+    "timeline": "Order timeline",
+    "steps": {
+      "created": "Order created",
+      "createdText": "The backend has recorded this order.",
+      "processing": "Processing",
+      "processingText": "The order is being handled by the platform or provider.",
+      "completed": "Completed",
+      "completedText": "The order has been completed."
+    }
+  }
+}

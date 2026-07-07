@@ -1,0 +1,170 @@
+{
+  "app": {
+    "name": "Winnie Fun",
+    "logoAlt": "Winnie Fun logo",
+    "tagline": "Global top-up",
+    "defaultUser": "Winnie user",
+    "member": "Premium member"
+  },
+  "language": {
+    "label": "Language",
+    "change": "Change language",
+    "arabic": "العربية",
+    "english": "English"
+  },
+  "theme": {
+    "title": "Change appearance",
+    "appearance": "Appearance",
+    "light": "Light mode",
+    "dark": "Dark mode"
+  },
+  "nav": {
+    "home": "Home",
+    "categories": "Categories",
+    "orders": "Orders",
+    "wallet": "Wallet",
+    "subAgent": "Sub-agent",
+    "about": "About",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "settings": "Settings",
+    "account": "Account",
+    "bestSelling": "Best selling",
+    "dashboardMeta": "Your account hub",
+    "mobileNavigation": "Mobile navigation",
+    "categoriesMeta": "All service categories",
+    "ordersMeta": "Orders and tracking",
+    "walletMeta": "Balance and transfers",
+    "subAgentMeta": "Agent and referral program",
+    "notificationsMeta": "Alerts and updates",
+    "profileMeta": "Account details",
+    "settingsMeta": "Preferences",
+    "aboutMeta": "Learn about Winnie Fun"
+  },
+  "actions": {
+    "back": "Back",
+    "backAria": "Go back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied",
+    "delete": "Delete",
+    "details": "Details",
+    "read": "Read",
+    "reset": "Reset",
+    "save": "Save",
+    "search": "Search",
+    "submit": "Submit",
+    "previous": "Previous",
+    "next": "Next",
+    "loadMore": "Load more",
+    "viewAll": "View all",
+    "buyNow": "Buy now",
+    "login": "Login",
+    "register": "Register"
+  },
+  "states": {
+    "loading": "Loading...",
+    "loadingCatalog": "Loading catalog...",
+    "loadingCategories": "Loading categories...",
+    "loadingProducts": "Loading products...",
+    "loadingOrders": "Loading orders...",
+    "loadingNotifications": "Loading notifications...",
+    "saving": "Saving...",
+    "submitting": "Submitting...",
+    "redirecting": "Redirecting...",
+    "unavailable": "Unavailable",
+    "notConnected": "Not connected",
+    "noDataTitle": "Nothing here yet",
+    "noDataDescription": "New data will appear here when it becomes available."
+  },
+  "search": {
+    "open": "Open search",
+    "close": "Close search",
+    "dialogLabel": "Search products",
+    "placeholder": "Search for a game, app, or service...",
+    "compactPlaceholder": "Search services...",
+    "results": "Search results",
+    "suggestedProducts": "Suggested products",
+    "productCount": "{{count}} product",
+    "productCount_plural": "{{count}} products",
+    "noMatches": "No matching products.",
+    "noQuickResults": "No quick results."
+  },
+  "footer": {
+    "description": "A Winnie brand focused on gaming top-ups, software services, and digital cards with reliable service quality.",
+    "importantLinks": "Important links",
+    "importantLinksAria": "Important links",
+    "followUs": "Follow and contact us",
+    "socialAria": "Social media links",
+    "companyAria": "About Winnie Fun",
+    "companyBadge": "The Winnie digital experience",
+    "instagram": "Instagram",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "contactNow": "Contact now",
+    "followNow": "Follow us",
+    "sendEmail": "Send a message",
+    "whyUs": "Why choose Winnie Fun?",
+    "trust": {
+      "secureTitle": "Secure & trusted",
+      "secureDescription": "Protected data and secure transactions.",
+      "fastTitle": "Fast delivery",
+      "fastDescription": "Quick and reliable digital fulfillment.",
+      "qualityTitle": "Guaranteed quality",
+      "qualityDescription": "Authentic products from trusted sources.",
+      "supportTitle": "24/7 support",
+      "supportDescription": "We are here whenever you need us."
+    },
+    "rights": "All rights reserved © Winnie 2026",
+    "commercialRegistration": "Commercial registration:",
+    "taxNumber": "Tax number:"
+  },
+  "sidebar": {
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "openPurchaseMenu": "Open purchase menu",
+    "settings": "Settings",
+    "walletBalance": "Wallet balance",
+    "copyAccountId": "Click to copy account ID",
+    "copyAccountIdAria": "Copy account ID {{id}}",
+    "logout": "Log out",
+    "profile": "Profile",
+    "purchaseNote": "Browse public categories. You can sign in when you are ready to place an order.",
+    "googleLogin": "Continue with Google"
+  },
+  "loginRequired": {
+    "title": "Login required",
+    "message": "Please sign in first to open {{item}} and use your account securely.",
+    "goLogin": "Go to login",
+    "backBrowse": "Back to browsing"
+  },
+  "empty": {
+    "defaultTitle": "Nothing here yet",
+    "defaultDescription": "New data will appear here when it becomes available."
+  },
+  "errors": {
+    "tryAgain": "Please try again.",
+    "loginRequired": "Login required",
+    "customerActionOnly": "This action is available from the customer workspace only."
+  },
+  "feedback": {
+    "done": "Done",
+    "closeWindow": "Close window"
+  },
+  "toast": {
+    "close": "Close notification"
+  },
+  "pagination": {
+    "pageOf": "Page {{page}} of {{pages}}"
+  },
+  "error": {
+    "code": "Error {{code}}",
+    "serverTitle": "Something needs attention",
+    "serverDescription": "This page is ready to show server faults or real operating states.",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The requested page is not part of the current Winnie Fun navigation map.",
+    "home": "Back to home"
+  }
+}

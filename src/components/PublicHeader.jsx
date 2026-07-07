@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Building2, CircleUserRound, Home, Languages, LayoutGrid, LogIn, Menu, Search, UserPlus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getPublicCatalog } from "../api/catalog";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
@@ -13,21 +14,21 @@ import ThemeToggle from "./ThemeToggle";
 
 const purchaseLinks = [
   {
-    label: { ar: "الرئيسية", en: "Home" },
+    labelKey: "nav.home",
     path: "/",
     icon: Home,
     iconClass:
       "bg-[#E0F2FE] text-[#0369A1] ring-1 ring-[#7DD3FC]/60 shadow-[0_10px_22px_rgba(14,165,233,0.16)] dark:bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] dark:text-white dark:ring-0 dark:shadow-[0_0_18px_rgba(139,92,246,0.25)]",
   },
   {
-    label: { ar: "الأقسام", en: "Categories" },
+    labelKey: "nav.categories",
     path: "/categories",
     icon: LayoutGrid,
     iconClass:
       "bg-[#ECFEFF] text-[#0E7490] ring-1 ring-[#67E8F9]/60 shadow-[0_10px_22px_rgba(6,182,212,0.14)] dark:bg-[linear-gradient(135deg,#06B6D4,#7C3AED)] dark:text-white dark:ring-0 dark:shadow-[0_0_18px_rgba(139,92,246,0.25)]",
   },
   {
-    label: { ar: "من نحن", en: "About" },
+    labelKey: "nav.about",
     path: "/about",
     icon: Building2,
     iconClass:
@@ -37,14 +38,14 @@ const purchaseLinks = [
 
 const authLinks = [
   {
-    label: { ar: "تسجيل الدخول", en: "Login" },
+    labelKey: "actions.login",
     path: "/login",
     icon: LogIn,
     className:
       "border-[#BAE6FD] bg-[#E0F2FE] text-[#075985] shadow-[0_14px_30px_rgba(14,165,233,0.16)] hover:border-[#7DD3FC] hover:bg-[#BAE6FD] dark:border-transparent dark:bg-[linear-gradient(135deg,#8B5CF6,#38BDF8)] dark:text-white dark:shadow-[0_0_24px_rgba(139,92,246,0.24)]",
   },
   {
-    label: { ar: "إنشاء حساب", en: "Register" },
+    labelKey: "actions.register",
     path: "/register",
     icon: UserPlus,
     className:
@@ -55,51 +56,19 @@ const authLinks = [
 const PUBLIC_SIDEBAR_PANEL_Z_INDEX = 2147483647;
 const PUBLIC_SIDEBAR_BACKDROP_Z_INDEX = PUBLIC_SIDEBAR_PANEL_Z_INDEX - 1;
 
-const publicText = {
-  ar: {
-    menuButton: "القائمة",
-    openMenu: "فتح قائمة الشراء",
-    closeMenu: "إغلاق القائمة",
-    menuTitle: "القائمة",
-    themeTitle: "تغيير المظهر",
-    lightMode: "الوضع الفاتح",
-    darkMode: "الوضع الغامق",
-    googleLogin: "تسجيل عبر جوجل",
-    note: "تصفح الأقسام من الصفحة العامة، وعند إتمام الطلب هتدخل لحسابك.",
-    loginAria: "تسجيل الدخول",
-    languageTitle: "تغيير اللغة",
-    settingsTitle: "الإعدادات",
-    languageLabel: "اللغة",
-  },
-  en: {
-    menuButton: "Menu",
-    openMenu: "Open purchase menu",
-    closeMenu: "Close menu",
-    menuTitle: "Menu",
-    themeTitle: "Appearance",
-    lightMode: "Light mode",
-    darkMode: "Dark mode",
-    googleLogin: "Continue with Google",
-    note: "Browse categories from the public pages. You can sign in when you are ready to place an order.",
-    loginAria: "Login",
-    languageTitle: "Change language",
-    settingsTitle: "Settings",
-    languageLabel: "Language",
-  },
-};
-
 export default function PublicHeader() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchProducts, setSearchProducts] = useState([]);
   const [purchaseItem, setPurchaseItem] = useState(null);
   const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation("common");
   const location = useLocation();
   const navigate = useNavigate();
   const closeSidebar = () => setSidebarOpen(false);
-  const t = publicText[language];
   const nextLanguage = language === "ar" ? "en" : "ar";
   const isLoginPage = location.pathname === "/login";
+  const isAuthPage = isLoginPage || location.pathname === "/register";
 
   useEffect(() => {
     let cancelled = false;
@@ -127,11 +96,13 @@ export default function PublicHeader() {
 
   return (
     <>
-      <header dir="ltr" className="site-header-warm fixed inset-x-0 top-0 z-[70] border-b border-sky-100/90 bg-white/[0.88] px-4 py-4 shadow-[0_18px_55px_rgba(14,165,233,0.12)] backdrop-blur-2xl dark:border-[rgba(255,255,255,0.08)] dark:bg-[rgba(10,15,29,0.95)] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] lg:px-8">
-        <div className="mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
+      <header dir="ltr" className="site-header-warm fixed inset-x-0 top-0 z-[70] overflow-hidden border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-4 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
+        <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
+        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-400/10" />
+        <div className="relative mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
           <Link to="/" className="flex min-w-0 items-center gap-0.5 sm:gap-1">
             <span className="grid h-11 w-11 shrink-0 place-items-center sm:h-14 sm:w-14">
-              <img src="/logo.png" alt="شعار Winnie Fun" className="h-10 w-10 object-contain sm:h-[52px] sm:w-[52px]" />
+              <img src="/logo.png" alt={t("app.logoAlt")} className="h-10 w-10 object-contain sm:h-[52px] sm:w-[52px]" />
             </span>
             <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_16px_rgba(139,92,246,0.25)]">
               <span className="block truncate text-xl font-black italic tracking-wide text-slate-950 dark:text-white sm:text-3xl">
@@ -146,22 +117,24 @@ export default function PublicHeader() {
           <div className="mx-auto" />
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              aria-label="فتح البحث"
-              title="بحث"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-sky-100 bg-white/90 text-[#8B5CF6] shadow-[0_10px_24px_rgba(14,165,233,0.10)] transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] hover:text-[#6D28D9] dark:border-white/10 dark:bg-[#111827] dark:text-[#C084FC] dark:hover:border-[#A855F7]/70 dark:hover:bg-[#1A2335]"
-            >
-              <Search className="h-5 w-5" />
-            </button>
+            {!isAuthPage && (
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                aria-label={t("search.open")}
+                title={t("actions.search")}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 hover:text-[#6D28D9] dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#C084FC] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]"
+              >
+                <Search className="h-5 w-5" />
+              </button>
+            )}
 
             <button
               type="button"
               onClick={() => setLanguage(nextLanguage)}
-              aria-label={t.languageTitle}
-              title={t.languageTitle}
-              className="hidden h-11 shrink-0 items-center gap-1 rounded-2xl border border-sky-100 bg-white/90 p-1 text-[11px] font-black text-slate-600 shadow-[0_10px_24px_rgba(14,165,233,0.10)] transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4] dark:hover:border-[#A855F7]/70 dark:hover:bg-[#1A2335] sm:inline-flex"
+              aria-label={t("language.change")}
+              title={t("language.change")}
+              className="hidden h-11 shrink-0 items-center gap-1 rounded-2xl border border-violet-200/70 bg-white/55 p-1 text-[11px] font-black text-slate-600 shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#C4C9D4] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A] sm:inline-flex"
             >
               <Languages className="hidden h-4 w-4 text-[#8B5CF6] sm:block" />
               <span className={`rounded-xl px-2 py-1.5 transition ${language === "ar" ? "bg-[#7C3AED] text-white shadow-[0_8px_18px_rgba(124,58,237,0.24)]" : "text-slate-500 dark:text-[#8A94A7]"}`}>
@@ -172,38 +145,31 @@ export default function PublicHeader() {
               </span>
             </button>
 
-            <Link
-              to="/login"
-              aria-label={t.loginAria}
-              title={t.loginAria}
-              className={`group relative inline-flex h-12 min-w-12 items-center justify-center gap-2 rounded-full border text-[#7C3AED] shadow-[0_12px_28px_rgba(14,165,233,0.18)] transition hover:-translate-y-0.5 hover:border-[#38BDF8]/80 hover:text-[#0369A1] dark:text-[#E9D5FF] dark:shadow-[0_0_28px_rgba(168,85,247,0.28)] dark:hover:border-[#38BDF8]/70 dark:hover:text-[#38BDF8] ${
-                isLoginPage
-                  ? "border-[#38BDF8]/80 bg-[linear-gradient(135deg,#ECFEFF_0%,#FFFFFF_45%,#F5F3FF_100%)] px-3 sm:px-4 dark:border-[#38BDF8]/60 dark:bg-[linear-gradient(135deg,#0D1324,#1A2335,#24133D)]"
-                  : "w-12 border-[#C4B5FD]/80 bg-[linear-gradient(135deg,#FFFFFF_0%,#EEF6FF_50%,#F5F3FF_100%)] px-0 dark:border-[#A855F7]/55 dark:bg-[linear-gradient(135deg,#111827,#1A2335)]"
-              }`}
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/70 ring-1 ring-[#DDD6FE]/80 transition group-hover:bg-white group-hover:ring-[#7DD3FC] dark:bg-[#0D1324]/90 dark:ring-white/10 dark:group-hover:ring-[#38BDF8]/55">
-                <CircleUserRound className="h-7 w-7 transition group-hover:scale-105" />
-              </span>
-              {isLoginPage && (
-                <span className="hidden whitespace-nowrap pe-2 text-sm font-black sm:inline">
-                  {t.loginAria}
+            {!isAuthPage && (
+              <Link
+                to="/login"
+                aria-label={t("actions.login")}
+                title={t("actions.login")}
+                className="group relative inline-flex h-12 min-w-12 w-12 items-center justify-center gap-2 rounded-full border border-[#C4B5FD]/80 bg-[linear-gradient(135deg,#FFFFFF_0%,#EEF6FF_50%,#F5F3FF_100%)] px-0 text-[#7C3AED] shadow-[0_12px_28px_rgba(14,165,233,0.18)] transition hover:-translate-y-0.5 hover:border-[#38BDF8]/80 hover:text-[#0369A1] dark:border-[#A855F7]/55 dark:bg-[linear-gradient(135deg,#111827,#1A2335)] dark:text-[#E9D5FF] dark:shadow-[0_0_28px_rgba(168,85,247,0.28)] dark:hover:border-[#38BDF8]/70 dark:hover:text-[#38BDF8]"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/70 ring-1 ring-[#DDD6FE]/80 transition group-hover:bg-white group-hover:ring-[#7DD3FC] dark:bg-[#0D1324]/90 dark:ring-white/10 dark:group-hover:ring-[#38BDF8]/55">
+                  <CircleUserRound className="h-7 w-7 transition group-hover:scale-105" />
                 </span>
-              )}
-              <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border-2 border-white bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-white shadow-[0_8px_18px_rgba(15,23,42,0.25)] dark:border-[#0A0F1D]">
-                <LogIn className="h-3 w-3" />
-              </span>
-            </Link>
+                <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border-2 border-white bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-white shadow-[0_8px_18px_rgba(15,23,42,0.25)] dark:border-[#0A0F1D]">
+                  <LogIn className="h-3 w-3" />
+                </span>
+              </Link>
+            )}
 
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              aria-label={t.openMenu}
-              title={t.openMenu}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-sky-100 bg-sky-50/90 px-3 text-sm font-black text-[#8B5CF6] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] dark:border-[rgba(255,255,255,0.08)] dark:bg-[#111827] dark:text-[#A855F7] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)] dark:hover:border-[#A855F7]/70 dark:hover:bg-[#1A2335]"
+              aria-label={t("sidebar.openPurchaseMenu")}
+              title={t("sidebar.openPurchaseMenu")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-violet-200/70 bg-white/55 px-3 text-sm font-black text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]"
             >
               <Menu className="h-5 w-5" />
-              <span className="hidden sm:inline">{t.menuButton}</span>
+              <span className="hidden sm:inline">{t("sidebar.menu")}</span>
             </button>
           </div>
         </div>
@@ -228,15 +194,15 @@ export default function PublicHeader() {
           />
         )}
       </AnimatePresence>
-      <PublicPurchaseSidebar language={language} open={sidebarOpen} onClose={closeSidebar} />
+      <PublicPurchaseSidebar open={sidebarOpen} onClose={closeSidebar} />
     </>
   );
 }
 
-function PublicPurchaseSidebar({ language, open, onClose }) {
-  const { setLanguage } = useLanguage();
+function PublicPurchaseSidebar({ open, onClose }) {
+  const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const t = publicText[language];
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     if (!open) return undefined;
@@ -280,15 +246,15 @@ function PublicPurchaseSidebar({ language, open, onClose }) {
               </span>
               <div>
                 <p className="text-xs font-black text-[#0284C7] dark:text-[#38BDF8]">Winnie Fun</p>
-                <h2 className="mt-0.5 text-lg font-black text-slate-950 dark:text-white">{t.menuTitle}</h2>
+                <h2 className="mt-0.5 text-lg font-black text-slate-950 dark:text-white">{t("sidebar.menu")}</h2>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="grid h-9 w-9 place-items-center rounded-2xl border border-[#BAE6FD] bg-white text-[#0369A1] shadow-[0_8px_18px_rgba(14,165,233,0.12)] transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] hover:text-[#7C3AED] dark:border-white/10 dark:bg-[#111827] dark:text-[#E9D5FF] dark:shadow-none dark:hover:border-[#A855F7]/70 dark:hover:bg-[#1A2335]"
-              aria-label={t.closeMenu}
-              title={t.closeMenu}
+              aria-label={t("sidebar.closeMenu")}
+              title={t("sidebar.closeMenu")}
             >
               <X className="h-5 w-5" />
             </button>
@@ -296,14 +262,14 @@ function PublicPurchaseSidebar({ language, open, onClose }) {
         </div>
 
         <nav className="mt-3 flex-1 space-y-1.5">
-          {purchaseLinks.map(({ label, path, icon: Icon, iconClass }) => (
-            <SidebarLink key={path} to={path} icon={Icon} iconClass={iconClass} label={label[language]} onClick={onClose} />
+          {purchaseLinks.map(({ labelKey, path, icon: Icon, iconClass }) => (
+            <SidebarLink key={path} to={path} icon={Icon} iconClass={iconClass} label={t(labelKey)} onClick={onClose} />
           ))}
         </nav>
 
         <div className="mb-2.5 space-y-1.5">
           <div className="grid grid-cols-2 gap-1.5">
-            {authLinks.map(({ label, path, icon: Icon, className }) => (
+            {authLinks.map(({ labelKey, path, icon: Icon, className }) => (
               <Link
                 key={path}
                 to={path}
@@ -311,7 +277,7 @@ function PublicPurchaseSidebar({ language, open, onClose }) {
                 className={`flex min-h-10 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-center text-xs font-black transition hover:-translate-y-0.5 ${className}`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 leading-5">{label[language]}</span>
+                <span className="min-w-0 leading-5">{t(labelKey)}</span>
               </Link>
             ))}
           </div>
@@ -325,17 +291,17 @@ function PublicPurchaseSidebar({ language, open, onClose }) {
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
                 <GoogleMark className="h-4 w-4" />
               </span>
-              <span>{t.googleLogin}</span>
+              <span>{t("sidebar.googleLogin")}</span>
             </span>
           </Link>
         </div>
 
         <div className="mb-2.5 space-y-2 rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 shadow-[0_10px_24px_rgba(14,165,233,0.10)] dark:border-white/10 dark:bg-[#0D1324] dark:shadow-none">
-          <p className="text-sm font-black text-slate-950 dark:text-white">{t.settingsTitle}</p>
+          <p className="text-sm font-black text-slate-950 dark:text-white">{t("sidebar.settings")}</p>
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-black text-slate-600 dark:text-[#D9E4EA]">{t.languageLabel}</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-[#8A94A7]">{language === "ar" ? "العربية" : "English"}</p>
+              <p className="text-xs font-black text-slate-600 dark:text-[#D9E4EA]">{t("language.label")}</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-[#8A94A7]">{language === "ar" ? t("language.arabic") : t("language.english")}</p>
             </div>
             <div className="inline-flex rounded-2xl border border-sky-100 bg-slate-50 p-1 text-[10px] font-black dark:border-white/10 dark:bg-[#111827]">
               <button type="button" onClick={() => setLanguage("ar")} className={`rounded-xl px-2 py-1.5 ${language === "ar" ? "bg-[#7C3AED] text-white" : "text-slate-500 dark:text-[#8A94A7]"}`}>AR</button>
@@ -344,9 +310,9 @@ function PublicPurchaseSidebar({ language, open, onClose }) {
           </div>
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-black text-slate-600 dark:text-[#D9E4EA]">{t.themeTitle}</p>
+              <p className="text-xs font-black text-slate-600 dark:text-[#D9E4EA]">{t("theme.title")}</p>
               <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-[#8A94A7]">
-                {theme === "dark" ? t.darkMode : t.lightMode}
+                {theme === "dark" ? t("theme.dark") : t("theme.light")}
               </p>
             </div>
             <ThemeToggle theme={theme} onToggle={toggleTheme} compact />
@@ -354,7 +320,7 @@ function PublicPurchaseSidebar({ language, open, onClose }) {
         </div>
 
         <p className="rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 text-[11px] font-semibold leading-5 text-slate-600 shadow-[0_10px_24px_rgba(14,165,233,0.08)] dark:border-white/10 dark:bg-[#0D1324] dark:text-[#8A94A7] dark:shadow-none">
-          {t.note}
+          {t("sidebar.purchaseNote")}
         </p>
       </aside>
     </>

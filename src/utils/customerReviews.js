@@ -1,109 +1,199 @@
-export const REVIEW_STORAGE_KEY = "winnie-customer-reviews";
-export const REVIEW_CREATED_EVENT = "winnie-customer-review-created";
-export const PROFILE_AVATAR_KEY = "winnie-profile-avatar";
+const now = Date.now();
 
-const defaultReviewSeeds = [
+const mockReviews = [
   {
-    id: "default-ahmed",
-    name: "أحمد محمد",
+    id: "review-1006",
+    orderId: "WF-2026-1006",
+    productId: "winnie-premium-topup",
+    userId: "customer-1006",
     rating: 5,
-    message: "خدمة ممتازة وسرعة في تنفيذ الطلب.",
-    ageMs: 3 * 60 * 1000,
+    message: "Fast delivery and a very smooth purchase experience. Everything worked perfectly.",
+    messageAr: "تسليم سريع وتجربة شراء سلسة جدًا. كل شيء اشتغل بشكل ممتاز.",
+    createdAt: new Date(now - 1000 * 60 * 45).toISOString(),
+    reviewer: {
+      name: "Ahmed Mohamed",
+      nameAr: "أحمد محمد",
+      avatar: "https://i.pravatar.cc/120?img=12",
+    },
+    approved: true,
   },
   {
-    id: "default-sara",
-    name: "سارة علي",
+    id: "review-1005",
+    orderId: "WF-2026-1005",
+    productId: "winnie-game-credit",
+    userId: "customer-1005",
     rating: 5,
-    message: "الموقع منظم والتعامل سهل جدًا.",
-    ageMs: 9 * 60 * 1000,
+    message: "Professional service, quick confirmation, and the product arrived exactly as expected.",
+    messageAr: "خدمة احترافية وتأكيد سريع، والمنتج وصل بالضبط كما توقعت.",
+    createdAt: new Date(now - 1000 * 60 * 60 * 8).toISOString(),
+    reviewer: {
+      name: "Sara Ali",
+      nameAr: "سارة علي",
+      avatar: "https://i.pravatar.cc/120?img=47",
+    },
+    approved: true,
   },
   {
-    id: "default-mohamed",
-    name: "محمد خالد",
+    id: "review-1004",
+    orderId: "WF-2026-1004",
+    productId: "winnie-digital-card",
+    userId: "customer-1004",
     rating: 4,
-    message: "تجربة جميلة والدعم سريع.",
-    ageMs: 18 * 60 * 1000,
+    message: "Great website and reliable checkout. I liked how clear the order status was.",
+    messageAr: "موقع ممتاز ودفع موثوق. أعجبني وضوح حالة الطلب.",
+    createdAt: new Date(now - 1000 * 60 * 60 * 21).toISOString(),
+    reviewer: {
+      name: "Mohamed Gamal",
+      nameAr: "محمد جمال",
+      avatar: "https://i.pravatar.cc/120?img=68",
+    },
+    approved: true,
+  },
+  {
+    id: "review-1003",
+    orderId: "WF-2026-1003",
+    productId: "winnie-fast-charge",
+    userId: "customer-1003",
+    rating: 5,
+    message: "Excellent support and very fast processing. I will definitely order again.",
+    messageAr: "دعم ممتاز وتنفيذ سريع جدًا. سأطلب مرة أخرى بالتأكيد.",
+    createdAt: new Date(now - 1000 * 60 * 60 * 34).toISOString(),
+    reviewer: {
+      name: "Nour Hassan",
+      nameAr: "نور حسن",
+      avatar: "https://i.pravatar.cc/120?img=32",
+    },
+    approved: true,
+  },
+  {
+    id: "review-1002",
+    orderId: "WF-2026-1002",
+    productId: "winnie-manual-product",
+    userId: "customer-1002",
+    rating: 5,
+    message: "The experience felt secure from start to finish. Clean UI and quick service.",
+    messageAr: "التجربة كانت آمنة من البداية للنهاية. واجهة مرتبة وخدمة سريعة.",
+    createdAt: new Date(now - 1000 * 60 * 60 * 49).toISOString(),
+    reviewer: {
+      name: "Omar Khaled",
+      nameAr: "عمر خالد",
+      avatar: "https://i.pravatar.cc/120?img=15",
+    },
+    approved: true,
+  },
+  {
+    id: "review-1001",
+    orderId: "WF-2026-1001",
+    productId: "winnie-topup",
+    userId: "customer-1001",
+    rating: 4,
+    message: "Easy purchase flow and the order completed without any confusion.",
+    messageAr: "خطوات الشراء سهلة والطلب اكتمل بدون أي تعقيد.",
+    createdAt: new Date(now - 1000 * 60 * 60 * 70).toISOString(),
+    reviewer: {
+      name: "Laila Samir",
+      nameAr: "ليلى سمير",
+      avatar: "https://i.pravatar.cc/120?img=49",
+    },
+    approved: true,
   },
 ];
 
-export function createDefaultReviews(now = Date.now()) {
-  return defaultReviewSeeds.map(({ ageMs, ...review }) => ({
-    ...review,
-    createdAt: now - ageMs,
-  }));
+let reviews = [...mockReviews];
+const listeners = new Set();
+
+function notify() {
+  const snapshot = getHomepageReviews();
+  listeners.forEach((listener) => listener(snapshot));
 }
 
-export function getReviewTimestamp(value) {
-  const numericValue = Number(value);
-  if (Number.isFinite(numericValue) && numericValue > 0) return numericValue;
-
-  const parsedValue = Date.parse(value);
-  return Number.isFinite(parsedValue) ? parsedValue : null;
+function normalizeRating(value) {
+  return Math.min(5, Math.max(1, Math.round(Number(value) || 0)));
 }
 
-export function normalizeReviews(items, now = Date.now()) {
-  return items.map((review, index) => ({
-    ...review,
-    createdAt: getReviewTimestamp(review.createdAt) || now - (index + 1) * 60 * 1000,
-  }));
+function normalizeId(value, fallback = "") {
+  return String(value || fallback).replace(/^#/, "").trim();
 }
 
-export function getInitialReviews() {
-  if (typeof window === "undefined") return createDefaultReviews();
+function formatDateLabel(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "";
 
-  try {
-    const stored = window.localStorage.getItem(REVIEW_STORAGE_KEY);
-    if (!stored) return createDefaultReviews();
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) && parsed.length ? normalizeReviews(parsed) : createDefaultReviews();
-  } catch {
-    return createDefaultReviews();
-  }
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
-export function persistReviews(reviews) {
-  if (typeof window === "undefined") return;
+function normalizeReview(review = {}) {
+  const createdAt = review.createdAt || new Date().toISOString();
+  const reviewer = review.reviewer || {};
 
-  try {
-    window.localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews));
-  } catch {
-    // Storage can fail in private mode; the UI still updates for this session.
-  }
+  return {
+    id: normalizeId(review.id, `review-${Date.now()}`),
+    orderId: normalizeId(review.orderId),
+    productId: normalizeId(review.productId, "local-product"),
+    userId: normalizeId(review.userId, "local-user"),
+    rating: normalizeRating(review.rating),
+    message: String(review.message || "").trim(),
+    messageAr: String(review.messageAr || "").trim(),
+    createdAt,
+    dateLabel: review.dateLabel || formatDateLabel(createdAt),
+    reviewer: {
+      name: reviewer.name || review.customerName || "Winnie Fun Customer",
+      nameAr: reviewer.nameAr || review.customerNameAr || "",
+      avatar: reviewer.avatar || review.avatar || "",
+    },
+    approved: review.approved !== false,
+  };
+}
+
+export function getHomepageReviews() {
+  return reviews
+    .filter((review) => review.approved !== false)
+    .map(normalizeReview)
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 10);
+}
+
+export function getReviewStats() {
+  const approvedReviews = reviews.filter((review) => review.approved !== false);
+  const totalReviews = approvedReviews.length;
+  const averageRating = totalReviews
+    ? approvedReviews.reduce((sum, review) => sum + normalizeRating(review.rating), 0) / totalReviews
+    : 0;
+
+  return {
+    averageRating: Number(averageRating.toFixed(1)),
+    totalReviews,
+  };
+}
+
+export function hasReviewForOrder(orderId) {
+  const targetOrderId = normalizeId(orderId);
+  if (!targetOrderId) return false;
+  return reviews.some((review) => normalizeId(review.orderId) === targetOrderId);
 }
 
 export function addCustomerReview(review) {
-  const nextReviews = [review, ...getInitialReviews().filter((item) => item.id !== review.id)];
-  persistReviews(nextReviews);
+  const normalizedReview = normalizeReview({
+    ...review,
+    id: review.id || `review-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    createdAt: review.createdAt || new Date().toISOString(),
+    approved: true,
+  });
 
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(REVIEW_CREATED_EVENT, { detail: review }));
+  if (hasReviewForOrder(normalizedReview.orderId)) {
+    return { review: reviews.find((item) => normalizeId(item.orderId) === normalizedReview.orderId), duplicate: true };
   }
 
-  return nextReviews;
+  reviews = [normalizedReview, ...reviews];
+  notify();
+  return { review: normalizedReview, duplicate: false };
 }
 
-export function getStoredProfileAvatar() {
-  if (typeof window === "undefined") return "";
-
-  try {
-    return window.localStorage.getItem(PROFILE_AVATAR_KEY) || "";
-  } catch {
-    return "";
-  }
-}
-
-export function isImageAvatar(value) {
-  return typeof value === "string" && /^(data:image\/|https?:\/\/|\/)/.test(value);
-}
-
-export function getReviewerAvatarUrl(user, storedAvatarUrl) {
-  if (storedAvatarUrl) return storedAvatarUrl;
-  if (isImageAvatar(user?.avatar)) return user.avatar;
-  return "/hero-winnie-fun.png";
-}
-
-export function getReviewerInitial(user, name) {
-  if (user?.avatar && !isImageAvatar(user.avatar)) return String(user.avatar).slice(0, 1);
-  return String(name || "W").slice(0, 1);
+export function subscribeToCustomerReviews(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }

@@ -124,7 +124,7 @@ export function MetricCard({ metric, rangeKey }) {
               : "bg-sky-500/12 text-sky-700 dark:text-sky-300"
           }`}
           >
-            {metric.unavailable ? "Unavailable" : "Live"}
+            {metric.unavailable ? "غير متاح" : "مباشر"}
           </span>
         )}
       </div>

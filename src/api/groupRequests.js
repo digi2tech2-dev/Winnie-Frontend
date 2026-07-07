@@ -29,6 +29,28 @@ function compactPayload(payload = {}) {
   }, {});
 }
 
+function buildGroupRequestBody(payload = {}) {
+  if (payload.proofImageFile) {
+    const formData = new FormData();
+    const compacted = compactPayload({
+      requestType: payload.requestType,
+      requestedGroupId: payload.requestedGroupId,
+      reason: payload.reason,
+    });
+
+    Object.entries(compacted).forEach(([key, value]) => formData.append(key, value));
+    formData.append("proofImage", payload.proofImageFile);
+
+    return formData;
+  }
+
+  return compactPayload({
+    requestType: payload.requestType,
+    requestedGroupId: payload.requestedGroupId,
+    reason: payload.reason,
+  });
+}
+
 export function normalizeGroupForRequest(group = null) {
   if (!group) return null;
   const id = getItemId(group);
@@ -130,11 +152,7 @@ export async function createGroupRequest(token, payload = {}) {
   const response = await apiRequest("/me/group-change-requests", {
     method: "POST",
     token,
-    body: compactPayload({
-      requestType: payload.requestType,
-      requestedGroupId: payload.requestedGroupId,
-      reason: payload.reason,
-    }),
+    body: buildGroupRequestBody(payload),
   });
 
   return {

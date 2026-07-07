@@ -4,7 +4,7 @@ import { getAdminDeposits } from "./adminDeposits";
 import { getAdminGroupRequests } from "./adminGroupRequests";
 import { getAdminOrders } from "./adminOrders";
 import { getAdminProducts } from "./adminProducts";
-import { getAdminProviders } from "./adminProviders";
+import { getAdminProviderBalance, getAdminProviders } from "./adminProviders";
 import { getAdminUsers } from "./adminUsers";
 import { toNumber } from "./adapters";
 
@@ -56,6 +56,32 @@ function getSettledValue(results, name) {
   return results.find((result) => result.name === name && result.ok)?.value || null;
 }
 
+async function getProvidersWithBalances(token, providers = []) {
+  return Promise.all(
+    providers.map(async (provider) => {
+      try {
+        const result = await getAdminProviderBalance(token, provider.id);
+        return {
+          ...provider,
+          balance: result.balance,
+          balanceError: "",
+          balanceLabel: result.balance?.amountLabel || "غير متاح",
+          balanceStatus: "ok",
+        };
+      } catch (error) {
+        const normalized = normalizeApiError(error, "تعذر تحميل رصيد المورد.");
+        return {
+          ...provider,
+          balance: null,
+          balanceError: normalized.userMessage || normalized.message,
+          balanceLabel: "غير متاح",
+          balanceStatus: "error",
+        };
+      }
+    }),
+  );
+}
+
 export async function getAdminDashboardData(token) {
   const results = await Promise.all([
     settle("stats", "Dashboard statistics", getAdminDashboardStats(token)),
@@ -84,6 +110,7 @@ export async function getAdminDashboardData(token) {
   const providers = getSettledValue(results, "providers");
 
   const providerItems = Array.isArray(providers?.providers) ? providers.providers : [];
+  const providersWithBalances = providerItems.length ? await getProvidersWithBalances(token, providerItems) : [];
 
   return {
     failures: results
@@ -102,6 +129,7 @@ export async function getAdminDashboardData(token) {
       totalUsers: firstNumber(stats?.users?.total, paginationTotal(users)),
     },
     recentOrders: Array.isArray(recentOrders?.orders) ? recentOrders.orders : [],
+    providers: providersWithBalances,
     refreshedAt: new Date().toISOString(),
     sources: {
       dashboardStats: Boolean(stats),

@@ -83,7 +83,12 @@ export function formatCurrency(value, currency = DEFAULT_CURRENCY, locale = "en-
 }
 
 export function resolveBackendAssetUrl(path) {
-  const value = String(path || "").trim();
+  const source = Array.isArray(path)
+    ? path[0]
+    : path && typeof path === "object"
+      ? path.url || path.secureUrl || path.secure_url || path.path || path.location || path.src
+      : path;
+  const value = String(source || "").trim();
   if (!value) return "";
   if (/^https?:\/\//i.test(value) || /^data:/i.test(value)) return value;
   if (!/^\/?uploads\//i.test(value)) return value;

@@ -11,7 +11,7 @@ import {
   toNumber,
 } from "./adapters";
 
-const NETWORK_GATEWAY = "NETWORK_INTERNATIONAL";
+const SYNCABLE_GATEWAYS = new Set(["NETWORK_INTERNATIONAL", "PAYMENTO"]);
 const syncableStatuses = new Set(["INITIATED", "PENDING", "REQUIRES_ACTION"]);
 
 function normalizeStatus(status) {
@@ -128,7 +128,7 @@ export function normalizeAdminPayment(payment = {}) {
     amount,
     amountLabel: formatCurrency(amount, currency, "ar-EG-u-nu-latn"),
     canceledAtLabel: payment.canceledAt ? formatDateTime(payment.canceledAt, "ar-EG-u-nu-latn") : "-",
-    canSync: gateway === NETWORK_GATEWAY && syncableStatuses.has(status),
+    canSync: SYNCABLE_GATEWAYS.has(gateway) && syncableStatuses.has(status),
     createdAtLabel: payment.createdAt ? formatDateTime(payment.createdAt, "ar-EG-u-nu-latn") : "-",
     credited,
     creditedAtLabel: payment.creditedAt ? formatDateTime(payment.creditedAt, "ar-EG-u-nu-latn") : "-",

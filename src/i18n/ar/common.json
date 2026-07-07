@@ -1,0 +1,169 @@
+{
+  "app": {
+    "name": "ويني فن",
+    "logoAlt": "شعار ويني فن",
+    "tagline": "شحن عالمي",
+    "defaultUser": "مستخدم ويني",
+    "member": "عضو مميز"
+  },
+  "language": {
+    "label": "اللغة",
+    "change": "تغيير اللغة",
+    "arabic": "العربية",
+    "english": "English"
+  },
+  "theme": {
+    "title": "تغيير المظهر",
+    "appearance": "تغيير مظهر الواجهة",
+    "light": "الوضع الفاتح",
+    "dark": "الوضع الغامق"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "categories": "الأقسام",
+    "orders": "طلباتي",
+    "wallet": "محفظتي",
+    "subAgent": "وكيل فرعي",
+    "about": "من نحن",
+    "notifications": "الإشعارات",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "account": "حسابي",
+    "bestSelling": "الأكثر مبيعًا",
+    "dashboardMeta": "واجهة حسابك",
+    "mobileNavigation": "التنقل على الهاتف",
+    "categoriesMeta": "كل أقسام الخدمات",
+    "ordersMeta": "الطلبات والتتبع",
+    "walletMeta": "الرصيد والتحويلات",
+    "subAgentMeta": "برنامج الوكلاء والإحالات",
+    "notificationsMeta": "التنبيهات والتحديثات",
+    "profileMeta": "بيانات الحساب",
+    "settingsMeta": "التفضيلات",
+    "aboutMeta": "تعرف على ويني فن"
+  },
+  "actions": {
+    "back": "رجوع",
+    "backAria": "رجوع للخلف",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "delete": "حذف",
+    "details": "التفاصيل",
+    "read": "قراءة",
+    "reset": "إعادة ضبط",
+    "save": "حفظ",
+    "search": "بحث",
+    "submit": "إرسال",
+    "previous": "السابق",
+    "next": "التالي",
+    "loadMore": "تحميل المزيد",
+    "viewAll": "عرض الكل",
+    "buyNow": "اشتر الآن",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب"
+  },
+  "states": {
+    "loading": "جار التحميل...",
+    "loadingCatalog": "جار تحميل الكتالوج...",
+    "loadingCategories": "جار تحميل الأقسام...",
+    "loadingProducts": "جار تحميل المنتجات...",
+    "loadingOrders": "جار تحميل الطلبات...",
+    "loadingNotifications": "جار تحميل الإشعارات...",
+    "saving": "جار الحفظ...",
+    "submitting": "جار الإرسال...",
+    "redirecting": "جار التحويل...",
+    "unavailable": "غير متاح",
+    "notConnected": "غير متصل",
+    "noDataTitle": "لا يوجد شيء هنا بعد",
+    "noDataDescription": "عند توفر بيانات جديدة ستظهر هنا."
+  },
+  "search": {
+    "open": "فتح البحث",
+    "close": "إغلاق البحث",
+    "dialogLabel": "البحث في المنتجات",
+    "placeholder": "ابحث عن لعبة أو تطبيق أو خدمة...",
+    "compactPlaceholder": "ابحث في الخدمات...",
+    "results": "نتائج البحث",
+    "suggestedProducts": "منتجات مقترحة",
+    "productCount": "{{count}} منتج",
+    "noMatches": "لا توجد منتجات مطابقة.",
+    "noQuickResults": "لا توجد نتائج سريعة."
+  },
+  "footer": {
+    "description": "العلامة التجارية التابعة لشركة ويني، متخصصون في تقديم خدمات شحن الألعاب، البرامج، والبطاقات الرقمية بجودة وموثوقية عالية.",
+    "importantLinks": "روابط مهمة",
+    "importantLinksAria": "روابط مهمة",
+    "followUs": "تابعنا وتواصل معنا",
+    "socialAria": "روابط التواصل الاجتماعي",
+    "companyAria": "عن ويني فن",
+    "companyBadge": "تجربة ويني الرقمية",
+    "instagram": "إنستجرام",
+    "whatsapp": "واتساب",
+    "email": "البريد الإلكتروني",
+    "contactNow": "تواصل الآن",
+    "followNow": "تابعنا",
+    "sendEmail": "راسلنا",
+    "whyUs": "لماذا ويني فن؟",
+    "trust": {
+      "secureTitle": "موثوق وآمن",
+      "secureDescription": "حماية لبياناتك ومعاملاتك.",
+      "fastTitle": "تسليم فوري",
+      "fastDescription": "تنفيذ رقمي سريع وموثوق.",
+      "qualityTitle": "جودة مضمونة",
+      "qualityDescription": "منتجات أصلية من مصادر موثوقة.",
+      "supportTitle": "دعم 24/7",
+      "supportDescription": "نحن هنا دائمًا لمساعدتك."
+    },
+    "rights": "جميع الحقوق محفوظة لدى © ويني 2026",
+    "commercialRegistration": "رقم السجل التجاري :",
+    "taxNumber": "الرقم الضريبي :"
+  },
+  "sidebar": {
+    "menu": "القائمة",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "openPurchaseMenu": "فتح قائمة الشراء",
+    "settings": "الإعدادات",
+    "walletBalance": "رصيد المحفظة",
+    "copyAccountId": "اضغط لنسخ معرّف الحساب",
+    "copyAccountIdAria": "نسخ معرّف الحساب {{id}}",
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي",
+    "purchaseNote": "تصفح الأقسام من الصفحة العامة، وعند إتمام الطلب هتدخل لحسابك.",
+    "googleLogin": "تسجيل عبر جوجل"
+  },
+  "loginRequired": {
+    "title": "تسجيل الدخول مطلوب",
+    "message": "لازم تسجل دخول أولًا علشان تقدر تفتح {{item}} وتستخدم بيانات حسابك بأمان.",
+    "goLogin": "الذهاب إلى تسجيل الدخول",
+    "backBrowse": "العودة للتصفح"
+  },
+  "empty": {
+    "defaultTitle": "لا يوجد شيء هنا بعد",
+    "defaultDescription": "عند توفر بيانات جديدة ستظهر هنا."
+  },
+  "errors": {
+    "tryAgain": "يرجى المحاولة مرة أخرى.",
+    "loginRequired": "تسجيل الدخول مطلوب",
+    "customerActionOnly": "هذا الإجراء متاح من مساحة العميل فقط."
+  },
+  "feedback": {
+    "done": "تم",
+    "closeWindow": "إغلاق النافذة"
+  },
+  "toast": {
+    "close": "إغلاق الإشعار"
+  },
+  "pagination": {
+    "pageOf": "صفحة {{page}} من {{pages}}"
+  },
+  "error": {
+    "code": "خطأ {{code}}",
+    "serverTitle": "هناك شيء يحتاج إلى مراجعة",
+    "serverDescription": "هذه الصفحة جاهزة لعرض أعطال الخادم أو حالات التشغيل الفعلية.",
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundDescription": "الصفحة المطلوبة غير موجودة ضمن خريطة تنقل ويني فن الحالية.",
+    "home": "العودة إلى الرئيسية"
+  }
+}

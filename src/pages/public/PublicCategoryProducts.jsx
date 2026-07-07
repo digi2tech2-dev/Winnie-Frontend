@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ArrowRight, Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { filterProductsByCategory, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import { iconMap } from "../../components/icons";
@@ -10,6 +11,7 @@ import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 export default function PublicCategoryProducts() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation("home");
   const searchInputRef = useRef(null);
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -35,7 +37,7 @@ export default function PublicCategoryProducts() {
       } catch (requestError) {
         if (!cancelled) {
           setCatalog({ categories: [], products: [] });
-          setError(requestError.userMessage || "Unable to load products.");
+          setError(requestError.userMessage || t("products:listing.loadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -56,7 +58,7 @@ export default function PublicCategoryProducts() {
       ),
     [catalog.categories, categoryId],
   );
-  const categoryTitle = category?.title || "Category";
+  const categoryTitle = category?.title || t("showcase.categories");
 
   const products = useMemo(() => {
     if (!category) return [];
@@ -80,7 +82,7 @@ export default function PublicCategoryProducts() {
     return (
       <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
-          Loading products...
+          {t("common:states.loadingProducts")}
         </div>
       </div>
     );
@@ -89,7 +91,7 @@ export default function PublicCategoryProducts() {
   if (error) {
     return (
       <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
-        <EmptyState title="Unable to load products" description={error} />
+        <EmptyState title={t("products:listing.loadError")} description={error} />
       </div>
     );
   }
@@ -98,9 +100,9 @@ export default function PublicCategoryProducts() {
     return (
       <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
         <EmptyState
-          title="Category not found"
-          description="This backend category is not available right now."
-          actionLabel="Back to categories"
+          title={t("public.categoryNotFoundTitle")}
+          description={t("public.categoryNotFoundDescription")}
+          actionLabel={t("public.backToCategories")}
           onAction={() => navigate("/categories")}
         />
       </div>
@@ -117,14 +119,14 @@ export default function PublicCategoryProducts() {
             className="mb-2 inline-flex items-center gap-1.5 text-xs font-black text-slate-500 transition hover:text-[#7C3AED] dark:text-[#AAB6CC] dark:hover:text-[#C084FC]"
           >
             <ArrowRight className="h-4 w-4" />
-            Categories
+            {t("public.categoriesTitle")}
           </button>
           <h1 className="relative pr-3 text-2xl font-black tracking-normal text-slate-950 dark:text-white sm:text-3xl">
             <span className="absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#38BDF8,#7C3AED)]" />
             {categoryTitle}
           </h1>
           <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-500 dark:text-[#8A94A7]">
-            Active backend products in this category appear here.
+            {t("public.productsInCategoryDescription")}
           </p>
         </div>
 
@@ -132,8 +134,8 @@ export default function PublicCategoryProducts() {
           type="button"
           onClick={() => searchInputRef.current?.focus()}
           className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-sky-100 bg-white text-[#7C3AED] shadow-[0_12px_26px_rgba(14,165,233,0.10)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:bg-[#F5F3FF] dark:border-[#2B3650] dark:bg-[#111827] dark:text-[#C084FC] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#172033]"
-          aria-label="Search category"
-          title="Search"
+          aria-label={t("public.searchCategory")}
+          title={t("common:actions.search")}
         >
           <Search className="h-5 w-5" />
         </button>
@@ -149,13 +151,13 @@ export default function PublicCategoryProducts() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-11 min-w-0 flex-1 bg-transparent px-1 text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]"
-          placeholder={`Search ${categoryTitle}`}
+          placeholder={t("public.searchCategoryPlaceholder", { category: categoryTitle })}
         />
         <button
           type="submit"
           className="h-11 rounded-2xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-4 text-sm font-black text-white shadow-[0_12px_24px_rgba(124,58,237,0.20)] transition hover:-translate-y-0.5"
         >
-          Search
+          {t("common:actions.search")}
         </button>
       </form>
 
@@ -172,9 +174,9 @@ export default function PublicCategoryProducts() {
         </section>
       ) : (
         <EmptyState
-          title={query ? "No products found" : "No products available yet"}
-          description={query ? "Clear the search to view all loaded products." : "This category does not have active backend products yet."}
-          actionLabel={query ? "Clear search" : undefined}
+          title={query ? t("public.noProductsFound") : t("public.noProductsYet")}
+          description={query ? t("public.clearSearchDescription") : t("public.categoryEmptyDescription")}
+          actionLabel={query ? t("public.clearSearch") : undefined}
           onAction={() => setQuery("")}
         />
       )}

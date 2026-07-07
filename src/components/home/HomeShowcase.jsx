@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { iconMap } from "../icons";
+import productsBanner from "../../../photo/اسلايد 3.jpg";
 
 const categoryAccentIcons = {
   games: ["Sword", "Flame"],
@@ -14,25 +16,28 @@ const categoryAccentIcons = {
 export default function HomeShowcase({
   categories = [],
   products = [],
+  productsTitle,
   onViewAll,
   onCategorySelect,
   onProductSelect,
 }) {
+  const { t } = useTranslation("home");
+
   return (
     <div dir="rtl" className="space-y-6 text-right lg:space-y-8">
       <section id="home-categories">
-        <ShowcaseHeading title="Categories" />
+        <ShowcaseHeading title={t("showcase.categories")} />
         {categories.length ? (
           <CategoriesGrid categories={categories} onCategorySelect={onCategorySelect} />
         ) : (
-          <CleanEmptyState title="No categories available yet." />
+          <CleanEmptyState title={t("showcase.noCategories")} />
         )}
       </section>
 
       <section id="catalog-products">
-        <ShowcaseHeading title="Products" onAction={products.length ? onViewAll : undefined} />
+        <ShowcaseHeading title={productsTitle || t("showcase.products")} action={t("showcase.viewAll")} onAction={products.length ? onViewAll : undefined} />
         {products.length ? (
-          <div dir="rtl" className="no-scrollbar flex gap-4 overflow-x-auto overflow-y-hidden pb-2 sm:gap-5">
+          <div dir="rtl" className="no-scrollbar flex items-stretch gap-3 overflow-x-auto overflow-y-hidden pb-2 sm:gap-4">
             {products.map((product, index) => (
               <ProductCatalogCard
                 key={product.id || product.name}
@@ -43,9 +48,27 @@ export default function HomeShowcase({
             ))}
           </div>
         ) : (
-          <CleanEmptyState title="No products available yet." />
+          <CleanEmptyState title={t("showcase.noProducts")} />
         )}
       </section>
+
+      <ProductsBanner />
+
+    </div>
+  );
+}
+
+function ProductsBanner() {
+  const { t } = useTranslation("home");
+
+  return (
+    <div className="mx-auto mb-4 w-[92%] max-w-[820px] overflow-hidden rounded-[16px] border border-slate-100 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.09)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.14)] sm:w-[86%]">
+      <img
+        src={productsBanner}
+        alt={t("showcase.products")}
+        className="h-auto w-full object-cover"
+        loading="lazy"
+      />
     </div>
   );
 }
@@ -157,12 +180,21 @@ function CategoryImageItem({ category, index, onSelect, size = "default" }) {
         </span>
 
         <span
-          className={`relative grid place-items-center border border-white/55 bg-gradient-to-br ${category.tone} text-white shadow-[0_18px_32px_rgba(15,23,42,0.25)] transition group-hover:-translate-y-2 group-hover:rotate-[3deg] ${
+          className={`relative grid place-items-center overflow-hidden border border-white/55 bg-gradient-to-br ${category.tone} text-white shadow-[0_18px_32px_rgba(15,23,42,0.25)] transition group-hover:-translate-y-2 group-hover:rotate-[3deg] ${
             isLarge ? "h-[90px] w-[90px] rounded-[30px] sm:h-[126px] sm:w-[126px] sm:rounded-[40px] lg:h-[138px] lg:w-[138px]" : "h-[72px] w-[72px] rounded-[26px] sm:h-[94px] sm:w-[94px] sm:rounded-[32px]"
           }`}
         >
           <span className={`absolute inset-1 bg-white/14 ${isLarge ? "rounded-[26px] sm:rounded-[36px]" : "rounded-[22px] sm:rounded-[28px]"}`} />
           <Icon className={`relative drop-shadow-[0_10px_18px_rgba(15,23,42,0.30)] ${isLarge ? "h-12 w-12 sm:h-[72px] sm:w-[72px] lg:h-20 lg:w-20" : "h-10 w-10 sm:h-14 sm:w-14"}`} />
+          {category.image ? (
+            <img
+              src={category.image}
+              alt={category.title}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+              onError={(event) => event.currentTarget.remove()}
+            />
+          ) : null}
         </span>
       </span>
       <span
@@ -177,6 +209,7 @@ function CategoryImageItem({ category, index, onSelect, size = "default" }) {
 }
 
 function ProductCatalogCard({ product, index, onSelect }) {
+  const { t } = useTranslation("home");
   const priceLabel = product.displayPriceLabel || product.price || "";
 
   return (
@@ -189,30 +222,30 @@ function ProductCatalogCard({ product, index, onSelect }) {
       whileHover={{ y: -6 }}
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
-      className="group relative min-w-[170px] overflow-hidden rounded-[22px] border border-slate-100 bg-white text-right shadow-[0_18px_42px_rgba(15,23,42,0.10)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.18)] dark:focus-visible:ring-offset-[#050816] sm:min-w-[190px] lg:min-w-[205px]"
+      className="group relative flex h-[190px] w-[138px] min-w-[138px] flex-col overflow-hidden rounded-[18px] border border-slate-100 bg-white text-right shadow-[0_14px_30px_rgba(15,23,42,0.09)] outline-none transition focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.16)] dark:focus-visible:ring-offset-[#050816] sm:h-[212px] sm:w-[158px] sm:min-w-[158px] sm:rounded-[20px]"
     >
-      <span className="absolute right-3 top-3 z-20 rounded-full bg-[#7C3AED] px-2.5 py-1 text-[10px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.34)]">
-        Catalog
+      <span className="absolute right-2 top-2 z-20 rounded-full bg-[#7C3AED] px-2 py-0.5 text-[8px] font-black text-white shadow-[0_7px_16px_rgba(124,58,237,0.34)] sm:right-2.5 sm:top-2.5 sm:text-[9px]">
+        {t("showcase.catalog")}
       </span>
-      <div className={`relative grid h-40 place-items-center overflow-hidden bg-gradient-to-br ${product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]"} sm:h-48`}>
+      <div className={`relative grid h-[112px] shrink-0 place-items-center overflow-hidden bg-gradient-to-br ${product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]"} sm:h-[128px]`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
         <ProductVisual product={product} />
       </div>
-      <div className="p-4">
-        <h3 dir="ltr" className="truncate text-center text-lg font-black tracking-normal text-slate-950 dark:text-white">
+      <div className="flex min-h-0 flex-1 flex-col justify-between p-2.5 sm:p-3">
+        <h3 dir="ltr" className="truncate text-center text-[13px] font-black tracking-normal text-slate-950 dark:text-white sm:text-sm">
           {product.name}
         </h3>
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-2 flex min-h-5 items-center justify-center gap-2">
           {priceLabel ? (
-            <span dir="ltr" className="truncate text-base font-black text-slate-500 dark:text-[#A78BFA]">
+            <span dir="ltr" className="truncate text-[11px] font-black text-slate-500 dark:text-[#A78BFA] sm:text-xs">
               {priceLabel}
             </span>
           ) : (
-            <span className="text-sm font-bold text-slate-400 dark:text-slate-500">Price unavailable</span>
+            <span className="truncate text-[10px] font-bold text-slate-400 dark:text-slate-500">{t("showcase.priceUnavailable")}</span>
           )}
           {product.rating ? (
-            <span dir="ltr" className="inline-flex items-center gap-1 text-sm font-black text-slate-600 dark:text-slate-300">
-              <Star className="h-4 w-4 fill-[#FBBF24] text-[#FBBF24]" />
+            <span dir="ltr" className="inline-flex shrink-0 items-center gap-0.5 text-[10px] font-black text-slate-600 dark:text-slate-300">
+              <Star className="h-3 w-3 fill-[#FBBF24] text-[#FBBF24]" />
               {product.rating}
             </span>
           ) : null}
@@ -226,9 +259,18 @@ function ProductVisual({ product }) {
   const Icon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
 
   return (
-    <div className="relative grid h-24 w-24 place-items-center rounded-full border border-white/20 bg-white/12 text-white shadow-[0_22px_42px_rgba(0,0,0,0.32)] backdrop-blur transition group-hover:scale-105 sm:h-28 sm:w-28">
-      <div className="absolute inset-2 rounded-full bg-white/10" />
-      <Icon className="relative h-14 w-14 drop-shadow-[0_0_22px_rgba(255,255,255,0.45)] sm:h-16 sm:w-16" />
+    <div className={`${product.image ? "h-full w-full" : "h-16 w-16 rounded-full sm:h-[72px] sm:w-[72px]"} relative grid place-items-center overflow-hidden border border-white/20 bg-white/12 text-white shadow-[0_18px_34px_rgba(0,0,0,0.30)] backdrop-blur transition group-hover:scale-105`}>
+      <div className="absolute inset-1.5 rounded-full bg-white/10" />
+      <Icon className="relative h-9 w-9 drop-shadow-[0_0_18px_rgba(255,255,255,0.45)] sm:h-10 sm:w-10" />
+      {product.image ? (
+        <img
+          src={product.image}
+          alt={product.name}
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+          onError={(event) => event.currentTarget.remove()}
+        />
+      ) : null}
     </div>
   );
 }

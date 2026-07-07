@@ -50,6 +50,39 @@ function numberOrNull(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function firstNonEmpty(...values) {
+  return values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+}
+
+function toPayloadId(value) {
+  const id = toId(value);
+  return /^[a-f0-9]{24}$/i.test(id) ? id : undefined;
+}
+
+function toPayloadImage(value) {
+  if (typeof value !== "string") return undefined;
+  const image = value.trim();
+  if (!image || /^data:/i.test(image)) return undefined;
+  return image;
+}
+
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value || {}, key);
+}
+
+function normalizeStatusValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function mapStatusToIsActive(value) {
+  const status = normalizeStatusValue(value);
+
+  if (["available", "active", "متوفر"].includes(status)) return true;
+  if (["unavailable", "inactive", "disabled", "غير متوفر"].includes(status)) return false;
+
+  return undefined;
+}
+
 function normalizeExtraFields(fields = []) {
   return asArray(fields)
     .map((field, index) => {
@@ -76,6 +109,43 @@ function normalizeExtraFields(fields = []) {
       };
     })
     .filter((field) => field.key && field.label);
+}
+
+function buildOrderFields(fields = []) {
+  return normalizeExtraFields(fields).map((field) => ({
+    id: field.id,
+    isActive: field.isActive,
+    key: field.key,
+    label: field.label,
+    max: field.max,
+    min: field.min,
+    options: field.options,
+    placeholder: field.placeholder || null,
+    required: field.required,
+    sortOrder: field.sortOrder,
+    type: field.type,
+  }));
+}
+
+function buildDynamicFields(fields = []) {
+  return normalizeExtraFields(fields).map((field) => ({
+    isActive: field.isActive,
+    label: field.label,
+    max: field.max,
+    min: field.min,
+    name: field.key,
+    options: field.options,
+    required: field.required,
+    type: field.type,
+  }));
+}
+
+function stableStringify(value) {
+  return JSON.stringify(value ?? null);
+}
+
+function hasChanged(nextValue, previousValue) {
+  return stableStringify(nextValue) !== stableStringify(previousValue);
 }
 
 function getProductFields(product = {}) {
@@ -139,6 +209,10 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
   const parentId = category?.parentId || toId(category?.parentCategory);
   const hasSubCategory = Boolean(category && parentId);
   const isActive = product.isActive !== false;
+  const visibleInStore = product.visibleInStore !== false;
+  const isPaused = product.isPaused === true || product.paused === true;
+  const backendStatus = String(product.status || "").toLowerCase();
+  const productStatus = !isActive || backendStatus === "unavailable" ? "unavailable" : "available";
   const priceValue = toNumber(product.finalPrice ?? product.basePrice ?? product.price, 0);
   const provider = product.provider && typeof product.provider === "object" ? product.provider : null;
   const providerProduct = product.providerProduct && typeof product.providerProduct === "object" ? product.providerProduct : null;
@@ -151,12 +225,14 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     category: categoryId,
     createdAt: product.createdAt || null,
     displayOrder: toNumber(product.displayOrder, index + 1),
+    discountPercentage: Math.min(100, Math.max(0, toNumber(product.discountPercentage ?? product.discountPercent, 0))),
     executionType: product.executionType || "manual",
     extraFields: getProductFields(product),
     finalPrice: priceValue,
     finalPriceLabel: formatCurrency(priceValue, "USD", "ar-EG-u-nu-latn"),
     image: resolveBackendAssetUrl(product.image) || "/logo.png",
     isActive,
+    isPaused,
     isProviderLinked,
     linkType: isProviderLinked ? "automatic" : "manual",
     mainCategoryId: hasSubCategory ? parentId : categoryId,
@@ -168,7 +244,7 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     nameAr: product.name || product.nameAr || "Untitled product",
     nameEn: product.nameEn || product.name || "Untitled product",
     originalPrice: toNumber(product.providerPrice ?? product.basePrice ?? product.price, priceValue),
-    paused: !isActive,
+    paused: isPaused,
     providerId: toId(product.provider),
     providerName: provider?.name || product.currentProviderName || "",
     providerProductActive: providerProduct?.isActive === undefined ? null : providerProduct.isActive !== false,
@@ -180,10 +256,11 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     providerProductName: providerProduct?.translatedName || providerProduct?.rawName || product.currentProviderProductName || "",
     syncPriceWithProvider: product.syncPriceWithProvider !== false,
     pricingMode: product.pricingMode || (isProviderLinked ? "sync" : "manual"),
-    status: "available",
+    status: productStatus,
     subCategoryId: hasSubCategory ? categoryId : "",
     supplierPrice: toNumber(product.providerPrice, 0),
-    visible: isActive,
+    visible: visibleInStore,
+    visibleInStore,
   };
 }
 
@@ -201,49 +278,101 @@ async function uploadAdminProductImage(token, file) {
   return response.data?.path || "";
 }
 
+export function buildAdminProductPayload(form = {}, options = {}) {
+  const {
+    includeDynamicFields = true,
+    includeOrderFields = true,
+    includePaused = true,
+    includeVisibility = true,
+  } = options;
+  const hasStatus = hasOwn(form, "status");
+  const isActive = hasStatus
+    ? mapStatusToIsActive(form.status)
+    : typeof form.isActive === "boolean"
+      ? form.isActive
+      : undefined;
+  const visibleInStore = typeof form.visibleInStore === "boolean"
+    ? form.visibleInStore
+    : typeof form.visible === "boolean"
+      ? form.visible
+      : undefined;
+  const isPaused = typeof form.isPaused === "boolean"
+    ? form.isPaused
+    : typeof form.paused === "boolean"
+      ? form.paused
+      : undefined;
+  const category = firstNonEmpty(
+    toPayloadId(form.subCategoryId),
+    toPayloadId(form.mainCategoryId),
+    toPayloadId(form.category),
+    toPayloadId(form.categoryId),
+  );
+  const priceValue = firstNonEmpty(form.basePrice, form.finalPrice, form.price);
+  const minQty = firstNonEmpty(form.minQty, form.min);
+  const maxQty = firstNonEmpty(form.maxQty, form.max);
+  const fieldsSource = form.orderFields ?? form.extraFields;
+  const orderFields = includeOrderFields && fieldsSource !== undefined ? buildOrderFields(fieldsSource) : undefined;
+  const dynamicFields = includeDynamicFields && fieldsSource !== undefined ? buildDynamicFields(fieldsSource) : undefined;
+  const image = toPayloadImage(form.image);
+
+  return compactObject({
+    name: firstNonEmpty(form.nameAr, form.name, form.nameEn, form.title),
+    description: form.description,
+    category,
+    image,
+    basePrice: priceValue === undefined ? undefined : Math.max(0, toNumber(priceValue, 0)),
+    minQty: minQty === undefined ? undefined : Math.max(1, toNumber(minQty, 1)),
+    maxQty: maxQty === undefined ? undefined : Math.max(Math.max(1, toNumber(minQty, 1)), toNumber(maxQty, Math.max(1, toNumber(minQty, 1)))),
+    displayOrder: form.displayOrder === undefined ? undefined : toNumber(form.displayOrder, 0),
+    isActive,
+    visibleInStore: includeVisibility ? visibleInStore : undefined,
+    isPaused: includePaused ? isPaused : undefined,
+    orderFields,
+    dynamicFields,
+  });
+}
+
+export function buildAdminProductUpdatePayload(form = {}, previousProduct = null) {
+  const hasStatus = hasOwn(form, "status");
+  const mappedIsActive = hasStatus
+    ? mapStatusToIsActive(form.status)
+    : typeof form.isActive === "boolean"
+      ? form.isActive
+      : undefined;
+
+  const nextPayload = buildAdminProductPayload(form, {
+    includeDynamicFields: false,
+    includeOrderFields: true,
+    includePaused: false,
+    includeVisibility: false,
+  });
+
+  if (!previousProduct) {
+    if (hasStatus && typeof mappedIsActive === "boolean") nextPayload.isActive = mappedIsActive;
+    return nextPayload;
+  }
+
+  const previousPayload = buildAdminProductPayload(previousProduct, {
+    includeDynamicFields: false,
+    includeOrderFields: true,
+    includePaused: false,
+    includeVisibility: false,
+  });
+
+  const diffPayload = Object.entries(nextPayload).reduce((payload, [key, value]) => {
+    if (hasChanged(value, previousPayload[key])) payload[key] = value;
+    return payload;
+  }, {});
+
+  if (hasStatus && typeof mappedIsActive === "boolean") diffPayload.isActive = mappedIsActive;
+
+  return diffPayload;
+}
+
 async function buildProductPayload(token, values = {}) {
   const uploadedImage = await uploadAdminProductImage(token, values.imageFile);
   const image = uploadedImage || values.imagePath || values.image || "";
-  const minQty = Math.max(1, toNumber(values.minQty ?? values.min, 1));
-  const maxQty = Math.max(minQty, toNumber(values.maxQty ?? values.max, minQty));
-  const priceValue = values.basePrice ?? values.finalPrice ?? values.price ?? values.originalPrice;
-  const fields = normalizeExtraFields(values.extraFields);
-  const isActive = values.isActive ?? (values.visible !== false && values.paused !== true && values.status !== "unavailable");
-
-  return compactObject({
-    basePrice: String(Math.max(0, toNumber(priceValue, 0))),
-    category: values.subCategoryId || values.mainCategoryId || values.category,
-    description: values.description,
-    displayOrder: toNumber(values.displayOrder, 0),
-    dynamicFields: fields.map((field) => ({
-      isActive: field.isActive,
-      label: field.label,
-      max: field.max,
-      min: field.min,
-      name: field.key,
-      options: field.options,
-      required: field.required,
-      type: field.type,
-    })),
-    image: /^data:/i.test(image) ? undefined : image,
-    isActive,
-    maxQty,
-    minQty,
-    name: values.nameAr || values.name || values.nameEn,
-    orderFields: fields.map((field) => ({
-      id: field.id,
-      isActive: field.isActive,
-      key: field.key,
-      label: field.label,
-      max: field.max,
-      min: field.min,
-      options: field.options,
-      placeholder: field.placeholder || null,
-      required: field.required,
-      sortOrder: field.sortOrder,
-      type: field.type,
-    })),
-  });
+  return buildAdminProductPayload({ ...values, image });
 }
 
 function getProductFromResponse(response = {}) {
@@ -308,9 +437,35 @@ export async function createAdminProduct(token, values = {}, categoryLookup = ne
   };
 }
 
-export async function updateAdminProduct(token, id, values = {}, categoryLookup = new Map()) {
+export async function updateAdminProduct(token, id, values = {}, categoryLookup = new Map(), previousProduct = null) {
+  const payload = await buildProductPayload(token, values);
+  const updatePayload = previousProduct
+    ? buildAdminProductUpdatePayload({ ...values, image: payload.image }, previousProduct)
+    : buildAdminProductUpdatePayload(payload);
+
+  if (import.meta.env.DEV) {
+    const hasStatus = hasOwn(values, "status");
+    const mappedIsActive = hasStatus
+      ? mapStatusToIsActive(values.status)
+      : typeof values.isActive === "boolean"
+        ? values.isActive
+        : undefined;
+
+    if (hasStatus) {
+      console.warn("[admin.products.status.debug]", {
+        formStatus: values.status,
+        formIsActive: values.isActive,
+        originalIsActive: previousProduct?.isActive,
+        mappedIsActive,
+        payloadIsActive: updatePayload.isActive,
+      });
+    }
+
+    console.warn("[admin.products.update.payload]", updatePayload);
+  }
+
   const response = await apiRequest(`/admin/products/${id}`, {
-    body: await buildProductPayload(token, values),
+    body: updatePayload,
     method: "PATCH",
     token,
   });

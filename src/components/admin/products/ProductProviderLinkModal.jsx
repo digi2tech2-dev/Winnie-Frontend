@@ -29,7 +29,7 @@ export default function ProductProviderLinkModal({
             <Link2 className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 id="provider-link-title" className="text-sm font-black text-slate-950 dark:text-white">Link product to provider</h2>
+            <h2 id="provider-link-title" className="text-sm font-black text-slate-950 dark:text-white">ربط المنتج بمورد</h2>
             <p className="truncate text-[9px] font-bold text-slate-400">{linkState.product.nameAr || linkState.product.name}</p>
           </div>
           <button type="button" onClick={onClose} disabled={saving} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-white/[0.07]">
@@ -46,14 +46,14 @@ export default function ProductProviderLinkModal({
           )}
 
           <label className="block">
-            <span className="mb-1 block text-[10px] font-black text-slate-500">Provider</span>
+            <span className="mb-1 block text-[10px] font-black text-slate-500">المورد</span>
             <select
               value={linkState.providerId}
               onChange={(event) => onProviderChange(event.target.value)}
               disabled={loadingProviders || saving}
               className={fieldClassName}
             >
-              <option value="">{loadingProviders ? "Loading providers..." : "Select provider"}</option>
+              <option value="">{loadingProviders ? "جارٍ تحميل الموردين..." : "اختر المورد"}</option>
               {linkState.providers.map((provider) => (
                 <option key={provider.id} value={provider.id}>{provider.name}</option>
               ))}
@@ -73,7 +73,7 @@ export default function ProductProviderLinkModal({
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 disabled={!linkState.providerId || loadingProducts || saving}
-                placeholder="Search provider products"
+                placeholder="ابحث في منتجات المورد"
                 className="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-xs font-black outline-none disabled:opacity-60 dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               />
             </label>
@@ -85,7 +85,7 @@ export default function ProductProviderLinkModal({
 
           <div className="grid gap-2">
             {loadingProducts ? (
-              <p className="rounded-2xl bg-slate-50 p-4 text-center text-xs font-black text-slate-400 dark:bg-[#0B1220]">Loading provider products...</p>
+              <p className="rounded-2xl bg-slate-50 p-4 text-center text-xs font-black text-slate-400 dark:bg-[#0B1220]">جارٍ تحميل منتجات المورد...</p>
             ) : linkState.providerProducts.length ? (
               linkState.providerProducts.map((product) => {
                 const selected = product.id === linkState.providerProductId;
@@ -103,26 +103,26 @@ export default function ProductProviderLinkModal({
                   >
                     <strong className="block truncate text-[11px] font-black text-slate-900 dark:text-white">{product.name}</strong>
                     <span className="mt-1 block text-[9px] font-bold text-slate-400">
-                      {product.providerName || selectedProvider?.name || "Provider"} | Qty {product.minQty ?? "-"} - {product.maxQty ?? "-"}
+                      {product.providerName || selectedProvider?.name || "المورد"} | الكمية {product.minQty ?? "-"} - {product.maxQty ?? "-"}
                     </span>
                   </button>
                 );
               })
             ) : (
-              <p className="rounded-2xl bg-slate-50 p-4 text-center text-xs font-black text-slate-400 dark:bg-[#0B1220]">No provider products returned.</p>
+              <p className="rounded-2xl bg-slate-50 p-4 text-center text-xs font-black text-slate-400 dark:bg-[#0B1220]">لا توجد منتجات لهذا المورد.</p>
             )}
           </div>
 
           {(selectedProvider || selectedProduct) && (
             <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-[10px] font-bold text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200">
-              {selectedProvider?.name || "Provider"} {selectedProduct ? `- ${selectedProduct.name}` : ""}
+              {selectedProvider?.name || "المورد"} {selectedProduct ? `- ${selectedProduct.name}` : ""}
             </div>
           )}
         </div>
 
         <footer className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
           <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-xl border border-slate-200 text-[10px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-white">
-            Cancel
+            إلغاء
           </button>
           <button
             type="button"
@@ -131,7 +131,7 @@ export default function ProductProviderLinkModal({
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-violet-600 text-[10px] font-black text-white disabled:opacity-60"
           >
             {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
-            {saving ? "Linking..." : "Link through backend"}
+            {saving ? "جارٍ الربط..." : "ربط المنتج"}
           </button>
         </footer>
       </section>

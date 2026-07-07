@@ -1,0 +1,52 @@
+{
+  "public": {
+    "catalogLoadError": "Unable to load the public catalog.",
+    "catalogEmptyTitle": "Unable to load catalog",
+    "categoriesTitle": "Categories",
+    "categoriesDescription": "Active backend categories appear here.",
+    "categoriesLoadError": "Unable to load categories.",
+    "categoriesEmptyTitle": "No categories yet",
+    "categoriesEmptyDescription": "Active backend categories will appear here when they are available.",
+    "productsInCategoryDescription": "Active backend products in this category appear here.",
+    "categoryNotFoundTitle": "Category not found",
+    "categoryNotFoundDescription": "This backend category is not available right now.",
+    "backToCategories": "Back to categories",
+    "searchCategory": "Search category",
+    "searchCategoryPlaceholder": "Search {{category}}",
+    "noProductsFound": "No products found",
+    "noProductsYet": "No products available yet",
+    "clearSearchDescription": "Clear the search to view all loaded products.",
+    "categoryEmptyDescription": "This category does not have active backend products yet.",
+    "clearSearch": "Clear search"
+  },
+  "showcase": {
+    "categories": "Categories",
+    "products": "Products",
+    "viewAll": "View all",
+    "noCategories": "No categories available yet.",
+    "noProducts": "No products available yet.",
+    "catalog": "Catalog",
+    "priceUnavailable": "Price unavailable",
+    "recentlyAdded": "Recently added",
+    "bestSelling": "Best selling"
+  },
+  "slider": {
+    "label": "Winnie Fun offers",
+    "slideAlt": "Winnie Fun offer {{number}}"
+  },
+  "dashboard": {
+    "eyebrow": "Customer dashboard",
+    "welcome": "Welcome back, {{name}}",
+    "loadingDescription": "Loading your backend account data...",
+    "description": "Your dashboard uses read-only backend wallet, catalog, and order data.",
+    "partialError": "Some dashboard data could not be loaded: {{error}}",
+    "currentBalance": "Current balance",
+    "recentTransactions": "Recent transactions",
+    "recentOrders": "Recent orders",
+    "productsLoaded": "Products loaded",
+    "categoriesLoaded": "Categories loaded",
+    "customerCatalog": "Customer catalog",
+    "completeProfileTitle": "Complete your profile",
+    "completeProfileDescription": "Add an account photo so your Winnie Fun profile looks complete."
+  }
+}

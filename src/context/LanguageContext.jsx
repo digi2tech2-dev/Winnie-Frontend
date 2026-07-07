@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import i18n from "../i18n";
 
 const languageStorageKey = "winnie-language";
 const legacyPublicLanguageKey = "winnie-public-language";
@@ -20,7 +21,9 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.lang = language;
-    document.documentElement.dir = "ltr";
+    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+    document.documentElement.dataset.language = language;
+    void i18n.changeLanguage(language);
 
     try {
       window.localStorage.setItem(languageStorageKey, language);

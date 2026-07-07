@@ -21,7 +21,7 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
       setBalance(result.balance);
     } catch (error) {
       setBalance(null);
-      setBalanceError(error.userMessage || error.message || "Provider balance could not be loaded.");
+      setBalanceError(error.userMessage || error.message || "تعذر تحميل رصيد المورد.");
     } finally {
       setBalanceLoading(false);
     }
@@ -38,7 +38,7 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
       setOrderResult(result.result);
     } catch (error) {
       setOrderResult(null);
-      setOrderError(error.userMessage || error.message || "Provider order status could not be checked.");
+      setOrderError(error.userMessage || error.message || "تعذر التحقق من حالة طلب المورد.");
     } finally {
       setOrderLoading(false);
     }
@@ -50,7 +50,7 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
         <header className="flex items-center gap-3">
           <Stethoscope className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-black dark:text-white">Provider tools</h2>
+            <h2 className="text-sm font-black dark:text-white">أدوات المورد</h2>
             <p className="truncate text-[8px] text-slate-400">{supplier.name}</p>
           </div>
           <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.07]">
@@ -59,7 +59,7 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
         </header>
 
         <section className="mt-4 rounded-2xl border border-slate-200 p-3 dark:border-white/10">
-          <h3 className="text-[11px] font-black dark:text-white">Balance</h3>
+          <h3 className="text-[11px] font-black dark:text-white">الرصيد</h3>
           <button
             type="button"
             onClick={fetchBalance}
@@ -67,7 +67,7 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
             className="mt-2 inline-flex h-9 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-[9px] font-black text-white disabled:opacity-60"
           >
             <CircleDollarSign className="h-3.5 w-3.5" />
-            {balanceLoading ? "Checking..." : "Check balance"}
+            {balanceLoading ? "جارٍ التحقق..." : "التحقق من الرصيد"}
           </button>
           {balanceError && <ErrorMessage message={balanceError} />}
           {balance && (
@@ -79,25 +79,25 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
         </section>
 
         <section className="mt-3 rounded-2xl border border-slate-200 p-3 dark:border-white/10">
-          <h3 className="text-[11px] font-black dark:text-white">Provider order status</h3>
+          <h3 className="text-[11px] font-black dark:text-white">حالة طلب المورد</h3>
           <form onSubmit={checkOrder} className="mt-2 flex gap-2">
             <input
               value={orderId}
               onChange={(event) => setOrderId(event.target.value)}
-              placeholder="Provider order id"
+              placeholder="معرّف طلب المورد"
               className="h-9 min-w-0 flex-1 rounded-xl bg-slate-50 px-3 text-[9px] font-black outline-none dark:bg-[#0B1220] dark:text-white"
               dir="ltr"
             />
             <button type="submit" disabled={orderLoading || !supplier.active} className="inline-flex items-center gap-1 rounded-xl bg-sky-600 px-3 text-[8px] font-black text-white disabled:opacity-60">
               <Search className="h-3 w-3" />
-              {orderLoading ? "Checking..." : "Check"}
+              {orderLoading ? "جارٍ التحقق..." : "تحقق"}
             </button>
           </form>
           {orderError && <ErrorMessage message={orderError} />}
           {orderResult && (
             <div className={`mt-2 rounded-xl p-2 text-[9px] font-black ${orderResult.dlq ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" : "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300"}`}>
-              <p>Status: {orderResult.unifiedStatus || orderResult.providerStatus || "Not returned"}</p>
-              <p dir="ltr" className="mt-1 text-right">Provider order: {orderResult.providerOrderId || orderResult.orderId || "-"}</p>
+              <p>الحالة: {orderResult.unifiedStatus || orderResult.providerStatus || "غير متاحة"}</p>
+              <p dir="ltr" className="mt-1 text-right">طلب المورد: {orderResult.providerOrderId || orderResult.orderId || "-"}</p>
               {orderResult.dlqReason && <p className="mt-1">Review reason: {orderResult.dlqReason}</p>}
               {orderResult.errorMessage && <p className="mt-1">{orderResult.errorMessage}</p>}
             </div>

@@ -78,7 +78,7 @@ export default function DateRangePicker({ value, onChange }) {
 
   const triggerLabel = value.start && value.end
     ? `${triggerDateFormatter.format(value.start)} — ${triggerDateFormatter.format(value.end)}`
-    : "Select Date Range";
+    : "اختر الفترة الزمنية";
 
   const showStartTooltip = () => {
     setStartTooltipVisible(true);

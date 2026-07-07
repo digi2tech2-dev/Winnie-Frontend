@@ -3,12 +3,12 @@ import StatusBadge from "./StatusBadge";
 
 export default function OrderCard({ order, onDetails }) {
   const details = [
-    { label: "Order", value: order.displayId, icon: Hash, dir: "ltr" },
-    { label: "Submitted value", value: order.playerId, icon: CircleUserRound, dir: "ltr" },
-    { label: "Customer", value: order.username, icon: UserRound },
-    { label: "Email", value: order.userEmail || "-", icon: Mail, dir: "ltr" },
-    { label: "Customer ID", value: order.userId || "-", icon: AtSign, dir: "ltr" },
-    { label: "Created", value: order.createdAtLabel, icon: Clock3 },
+    { label: "الطلب", value: order.displayId, icon: Hash, dir: "ltr" },
+    { label: "القيمة المُدخلة", value: order.playerId, icon: CircleUserRound, dir: "ltr" },
+    { label: "العميل", value: order.username, icon: UserRound },
+    { label: "البريد الإلكتروني", value: order.userEmail || "-", icon: Mail, dir: "ltr" },
+    { label: "معرّف العميل", value: order.userId || "-", icon: AtSign, dir: "ltr" },
+    { label: "تاريخ الإنشاء", value: order.createdAtLabel, icon: Clock3 },
   ];
 
   return (
@@ -17,7 +17,7 @@ export default function OrderCard({ order, onDetails }) {
 
       <div className="flex items-start justify-between gap-3 pt-1">
         <div className="min-w-0">
-          <p className="text-[10px] font-black text-slate-400 dark:text-[#7C8598]">Provider</p>
+          <p className="text-[10px] font-black text-slate-400 dark:text-[#7C8598]">المورد</p>
           <h2 className="mt-1 truncate text-sm font-black text-slate-950 sm:text-base dark:text-white">{order.supplier}</h2>
         </div>
         <StatusBadge status={order.status} compact />
@@ -32,7 +32,7 @@ export default function OrderCard({ order, onDetails }) {
           </p>
           <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-black text-slate-500 dark:text-slate-400">
             <Package className="h-3 w-3" />
-            Qty {order.quantity.toLocaleString("ar-EG")} - {order.executionType}
+            الكمية {order.quantity.toLocaleString("ar-EG-u-nu-latn")} - {order.executionType === "automatic" ? "تلقائي" : "يدوي"}
           </p>
         </div>
       </div>
@@ -66,7 +66,7 @@ export default function OrderCard({ order, onDetails }) {
         onClick={() => onDetails(order.id)}
         className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 text-xs font-black text-[#7C3AED] transition hover:border-violet-300 hover:bg-violet-100 group-hover:shadow-[0_8px_22px_rgba(124,58,237,0.10)] dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-[#C084FC] dark:hover:bg-violet-500/15"
       >
-        Details
+        التفاصيل
         <ArrowLeft className="h-4 w-4" />
       </button>
     </article>

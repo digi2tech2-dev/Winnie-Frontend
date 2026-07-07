@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { iconMap } from "./icons";
 
 export default function GlobalSearch({
@@ -7,10 +8,12 @@ export default function GlobalSearch({
   onChange,
   results,
   onNavigate,
-  placeholder = "ابحث عن ألعاب أو تطبيقات أو خدمات...",
+  placeholder,
   compact = false,
 }) {
+  const { t } = useTranslation("common");
   const open = value.trim().length > 0;
+  const resolvedPlaceholder = placeholder || t("search.placeholder");
 
   return (
     <div className="relative w-full">
@@ -20,7 +23,7 @@ export default function GlobalSearch({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className="h-12 w-full rounded-2xl border border-sky-100 bg-white/[0.82] pl-4 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#C4B5FD] focus:ring-4 focus:ring-sky-100 dark:border-[rgba(255,255,255,0.08)] dark:bg-[#0D1324] dark:text-white dark:placeholder:text-[#8A94A7] dark:focus:border-[#8B5CF6]/70 dark:focus:ring-[#8B5CF6]/15"
-          placeholder={compact ? "ابحث في الخدمات..." : placeholder}
+          placeholder={compact ? t("search.compactPlaceholder") : resolvedPlaceholder}
         />
       </label>
 
@@ -58,7 +61,7 @@ export default function GlobalSearch({
               </div>
             ) : (
               <div className="p-4 text-sm text-slate-500 dark:text-[#8A94A7]">
-                لا توجد نتائج سريعة.
+                {t("search.noQuickResults")}
               </div>
             )}
           </motion.div>

@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BadgeDollarSign,
   Clock3,
   Copy,
+  ImagePlus,
   Link2,
-  RotateCcw,
   Send,
   Share2,
   UserPlus,
   WalletCards,
+  X,
   XCircle,
 } from "lucide-react";
-import EmptyState from "../../components/EmptyState";
+import { useTranslation } from "react-i18next";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { formatCurrency } from "../../api/adapters";
 import {
   cancelGroupRequest,
-  createGroupRequest,
   createSubAgentRequest,
-  getGroupChangeOptions,
   getMyGroupRequests,
   GROUP_REQUEST_STATUS,
   GROUP_REQUEST_TYPES,
@@ -35,19 +35,18 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
   const connectedCustomerPage = basePath === "/customer";
   const { refreshCurrentUser, token, user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation("subAgent");
   const [summary, setSummary] = useState(null);
   const [commissions, setCommissions] = useState([]);
   const [commissionPagination, setCommissionPagination] = useState(null);
-  const [groupOptions, setGroupOptions] = useState({ currentGroup: null, groups: [] });
   const [requests, setRequests] = useState([]);
   const [requestPagination, setRequestPagination] = useState(null);
-  const [groupChangeReason, setGroupChangeReason] = useState("");
-  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [proofImageFile, setProofImageFile] = useState(null);
   const [requestReason, setRequestReason] = useState("");
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMoreCommissions, setLoadingMoreCommissions] = useState(false);
   const [loadingMoreRequests, setLoadingMoreRequests] = useState(false);
-  const [submittingGroupChange, setSubmittingGroupChange] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cancelingId, setCancelingId] = useState("");
   const [error, setError] = useState("");
@@ -61,11 +60,10 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     setLoading(true);
     setError("");
 
-    const [summaryResult, commissionsResult, requestsResult, groupOptionsResult] = await Promise.allSettled([
+    const [summaryResult, commissionsResult, requestsResult] = await Promise.allSettled([
       getMyReferrals(token),
       getMyReferralCommissions(token, { page: 1, limit: COMMISSION_PAGE_SIZE }),
       getMyGroupRequests(token, { page: 1, limit: REQUEST_PAGE_SIZE }),
-      getGroupChangeOptions(token),
     ]);
 
     if (summaryResult.status === "fulfilled") {
@@ -90,18 +88,7 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       setRequestPagination(null);
     }
 
-    if (groupOptionsResult.status === "fulfilled") {
-      setGroupOptions(groupOptionsResult.value.options);
-      setSelectedGroupId((current) => {
-        const selectedStillAvailable = groupOptionsResult.value.options.groups.some((group) => group.id === current && !group.isCurrent);
-        return selectedStillAvailable ? current : "";
-      });
-    } else {
-      setGroupOptions({ currentGroup: null, groups: [] });
-      setSelectedGroupId("");
-    }
-
-    const failed = [summaryResult, commissionsResult, requestsResult, groupOptionsResult].find((result) => result.status === "rejected");
+    const failed = [summaryResult, commissionsResult, requestsResult].find((result) => result.status === "rejected");
     setError(failed?.reason?.userMessage || "");
     setLoading(false);
   }, [connectedCustomerPage, token]);
@@ -115,42 +102,33 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     [requests],
   );
 
-  const latestSubAgentRequest = useMemo(
-    () => requests.find((request) => request.requestType === GROUP_REQUEST_TYPES.SUB_AGENT) || null,
-    [requests],
-  );
-
-  const pendingGroupChangeRequest = useMemo(
-    () => requests.find((request) => request.requestType === GROUP_REQUEST_TYPES.GROUP_CHANGE && request.status === GROUP_REQUEST_STATUS.PENDING),
-    [requests],
-  );
-
-  const selectableGroups = useMemo(
-    () => groupOptions.groups.filter((group) => !group.isCurrent),
-    [groupOptions.groups],
-  );
-
-  const currentGroup = groupOptions.currentGroup?.name || user?.group?.name || latestSubAgentRequest?.currentGroup?.name || requests.find((request) => request.currentGroup)?.currentGroup?.name || "Current group";
   const referralCode = summary?.referralCode || "";
   const referralLink = summary?.referralLink || summary?.inviteLink || "";
   const invitedUsersCount = summary?.invitedUsersCount ?? 0;
   const commissionTotalLabel = getTotalCommissionLabel(summary, user?.currency);
   const commissionPercentage = summary?.settings?.depositCommissionPercentage ?? 0;
+  const proofImagePreview = useMemo(() => (proofImageFile ? URL.createObjectURL(proofImageFile) : ""), [proofImageFile]);
+
+  useEffect(() => {
+    return () => {
+      if (proofImagePreview) URL.revokeObjectURL(proofImagePreview);
+    };
+  }, [proofImagePreview]);
 
   const copyText = async (text, title) => {
     if (!text) {
-      showToast({ type: "warning", title: "Nothing to copy", message: "Referral data is not available yet." });
+      showToast({ type: "warning", title: t("nothingToCopyTitle"), message: t("nothingToCopyMessage") });
       return;
     }
 
     try {
       if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard is not available");
+        throw new Error(t("clipboardUnavailable"));
       }
       await navigator.clipboard.writeText(text);
       showToast({ type: "success", title, message: text });
     } catch {
-      showToast({ type: "info", title: "Copy manually", message: text });
+      showToast({ type: "info", title: t("copyManuallyTitle"), message: text });
     }
   };
 
@@ -158,22 +136,22 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     if (!connectedCustomerPage) {
       showToast({
         type: "info",
-        title: "Customer action only",
-        message: "Sub-agent requests are available from the customer workspace only.",
+        title: t("customerOnlyTitle"),
+        message: t("subAgentCustomerOnly"),
       });
       return;
     }
 
     if (!token) {
-      showToast({ type: "error", title: "Login required", message: "Please sign in before submitting a request." });
+      showToast({ type: "error", title: t("loginRequiredTitle"), message: t("loginRequiredMessage") });
       return;
     }
 
     if (pendingSubAgentRequest) {
       showToast({
         type: "info",
-        title: "Request already pending",
-        message: "Your pending sub-agent request is waiting for admin review.",
+        title: t("alreadyPendingTitle"),
+        message: t("subAgentPendingMessage"),
       });
       return;
     }
@@ -181,8 +159,17 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     if (!requestReason.trim()) {
       showToast({
         type: "warning",
-        title: "Reason required",
-        message: "Tell the team about your activity before submitting the request.",
+        title: t("reasonRequiredTitle"),
+        message: t("subAgentReasonRequired"),
+      });
+      return;
+    }
+
+    if (!proofImageFile) {
+      showToast({
+        type: "warning",
+        title: t("proofRequiredTitle"),
+        message: t("proofRequiredMessage"),
       });
       return;
     }
@@ -191,89 +178,22 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     setError("");
 
     try {
-      const result = await createSubAgentRequest(token, { reason: requestReason });
+      const result = await createSubAgentRequest(token, { reason: requestReason, proofImageFile });
       showToast({
         type: "success",
-        title: "Request submitted",
-        message: result.message || "Your sub-agent request is pending admin review.",
+        title: t("requestSubmittedTitle"),
+        message: result.message || t("subAgentSubmittedMessage"),
       });
       setRequestReason("");
+      setProofImageFile(null);
+      setRequestModalOpen(false);
       await Promise.allSettled([loadPageData(), refreshCurrentUser?.()]);
     } catch (requestError) {
-      const message = requestError.userMessage || "Unable to submit the request.";
+      const message = requestError.userMessage || t("subAgentFailedMessage");
       setError(message);
-      showToast({ type: "error", title: "Request failed", message });
+      showToast({ type: "error", title: t("requestFailedTitle"), message });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const submitGroupChangeRequest = async () => {
-    if (!connectedCustomerPage) {
-      showToast({
-        type: "info",
-        title: "Customer action only",
-        message: "Group-change requests are available from the customer workspace only.",
-      });
-      return;
-    }
-
-    if (!token) {
-      showToast({ type: "error", title: "Login required", message: "Please sign in before submitting a request." });
-      return;
-    }
-
-    if (pendingGroupChangeRequest) {
-      showToast({
-        type: "info",
-        title: "Request already pending",
-        message: "Your pending group-change request is waiting for admin review.",
-      });
-      return;
-    }
-
-    const selectedGroup = selectableGroups.find((group) => group.id === selectedGroupId);
-    if (!selectedGroup) {
-      showToast({
-        type: "warning",
-        title: "Select a group",
-        message: "Choose an available target group before submitting.",
-      });
-      return;
-    }
-
-    if (!groupChangeReason.trim()) {
-      showToast({
-        type: "warning",
-        title: "Reason required",
-        message: "Tell the team why you want to change groups.",
-      });
-      return;
-    }
-
-    setSubmittingGroupChange(true);
-    setError("");
-
-    try {
-      const result = await createGroupRequest(token, {
-        requestType: GROUP_REQUEST_TYPES.GROUP_CHANGE,
-        requestedGroupId: selectedGroup.id,
-        reason: groupChangeReason,
-      });
-      showToast({
-        type: "success",
-        title: "Request submitted",
-        message: result.message || "Your group-change request is pending admin review.",
-      });
-      setGroupChangeReason("");
-      setSelectedGroupId("");
-      await Promise.allSettled([loadPageData(), refreshCurrentUser?.()]);
-    } catch (requestError) {
-      const message = requestError.userMessage || "Unable to submit the group-change request.";
-      setError(message);
-      showToast({ type: "error", title: "Request failed", message });
-    } finally {
-      setSubmittingGroupChange(false);
     }
   };
 
@@ -287,14 +207,14 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       const result = await cancelGroupRequest(token, request.id);
       showToast({
         type: "success",
-        title: "Request canceled",
-        message: result.message || "The pending request was canceled.",
+        title: t("requestCanceledTitle"),
+        message: result.message || t("requestCanceledMessage"),
       });
       await Promise.allSettled([loadPageData(), refreshCurrentUser?.()]);
     } catch (requestError) {
-      const message = requestError.userMessage || "Unable to cancel the request.";
+      const message = requestError.userMessage || t("cancelFailedMessage");
       setError(message);
-      showToast({ type: "error", title: "Cancel failed", message });
+      showToast({ type: "error", title: t("cancelFailedTitle"), message });
     } finally {
       setCancelingId("");
     }
@@ -314,8 +234,8 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     } catch (requestError) {
       showToast({
         type: "error",
-        title: "Unable to load commissions",
-        message: requestError.userMessage || "Please try again.",
+        title: t("commissionsLoadFailedTitle"),
+        message: requestError.userMessage || t("common:errors.tryAgain"),
       });
     } finally {
       setLoadingMoreCommissions(false);
@@ -336,8 +256,8 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     } catch (requestError) {
       showToast({
         type: "error",
-        title: "Unable to load requests",
-        message: requestError.userMessage || "Please try again.",
+        title: t("requestsLoadFailedTitle"),
+        message: requestError.userMessage || t("common:errors.tryAgain"),
       });
     } finally {
       setLoadingMoreRequests(false);
@@ -349,9 +269,9 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       <div className="space-y-6">
         <HeroPanel />
         <section className="glass-panel rounded-lg p-5">
-          <h1 className="text-xl font-black text-slate-950 dark:text-white">Customer referral workspace</h1>
+          <h1 className="text-xl font-black text-slate-950 dark:text-white">{t("customerWorkspaceTitle")}</h1>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
-            Referral and group request actions are customer-only. This admin mirror keeps the page informational and does not call customer mutation endpoints.
+            {t("customerWorkspaceDescription")}
           </p>
         </section>
       </div>
@@ -372,84 +292,49 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
         <LoadingGrid />
       ) : (
         <>
-          <section className="grid gap-4 lg:grid-cols-3">
-            <MetricCard icon={Share2} label="Invite code" value={referralCode || "Unavailable"} />
-            <MetricCard icon={UserPlus} label="Invited users" value={String(invitedUsersCount)} />
-            <MetricCard icon={BadgeDollarSign} label="Credited commission" value={commissionTotalLabel} />
+          <section className="grid grid-cols-3 gap-2 sm:gap-4">
+            <MetricCard icon={Share2} label={t("inviteCode")} tone="violet" value={referralCode || t("common:states.unavailable")} />
+            <MetricCard icon={UserPlus} label={t("invitedUsers")} tone="sky" value={String(invitedUsersCount)} />
+            <MetricCard icon={BadgeDollarSign} label={t("creditedCommission")} tone="emerald" value={commissionTotalLabel} />
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-3">
-            <article className="glass-panel rounded-lg p-5 lg:col-span-2">
-              <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
-                  <Send className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-black text-slate-950 dark:text-white">Sub-agent request</h2>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">
-                    Requests stay pending until an admin reviews them. Sub-agent status does not grant supervisor permissions.
-                  </p>
-                </div>
-                {latestSubAgentRequest && <RequestBadge status={latestSubAgentRequest.status} />}
-              </div>
-
-              {pendingSubAgentRequest && (
-                <p className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold leading-5 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200">
-                  A sub-agent request is already pending since {pendingSubAgentRequest.createdAtLabel}.
-                </p>
-              )}
-
-              <textarea
-                value={requestReason}
-                onChange={(event) => setRequestReason(event.target.value.slice(0, 1000))}
-                placeholder="Tell us about your digital services activity and why you want sub-agent status."
-                disabled={submitting || Boolean(pendingSubAgentRequest)}
-                className="mt-4 min-h-[110px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-950 outline-none focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-70 dark:border-white/10 dark:bg-[#0D1324] dark:text-white"
-              />
-              <button
-                type="button"
-                onClick={submitSubAgentRequest}
-                disabled={submitting || Boolean(pendingSubAgentRequest)}
-                className="interactive-ring mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-65"
-              >
-                <Send className="h-4 w-4" />
-                {submitting ? "Submitting..." : pendingSubAgentRequest ? "Waiting for admin review" : "Submit sub-agent request"}
-              </button>
-            </article>
-
-            <article className="glass-panel rounded-lg p-5">
-              <span className="grid h-11 w-11 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
-                <WalletCards className="h-5 w-5" />
-              </span>
-              <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Referral wallet behavior</p>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-700 dark:text-slate-300">
-                Referral commissions are credited directly to your wallet after eligible successful wallet credits.
-              </p>
-              <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-black text-slate-500 dark:bg-[#0D1324] dark:text-slate-400">
-                Current backend commission setting: {commissionPercentage}%.
-              </p>
-            </article>
-          </section>
-
-          <section className="grid gap-4 lg:grid-cols-3">
+          <section>
             <InviteCard
               referralCode={referralCode}
               referralLink={referralLink}
               inviter={summary?.inviter}
               onCopy={copyText}
             />
-            <GroupChangeCard
-              currentGroup={currentGroup}
-              groupOptions={selectableGroups}
-              onReasonChange={setGroupChangeReason}
-              onSelectGroup={setSelectedGroupId}
-              onSubmit={submitGroupChangeRequest}
-              pendingRequest={pendingGroupChangeRequest}
-              reason={groupChangeReason}
-              selectedGroupId={selectedGroupId}
-              submitting={submittingGroupChange}
-            />
           </section>
+
+          <article className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-l from-emerald-50 via-white to-sky-50 p-4 shadow-[0_14px_36px_rgba(16,185,129,0.09)] dark:border-emerald-400/15 dark:bg-[linear-gradient(120deg,rgba(16,185,129,0.10),rgba(17,24,39,0.96),rgba(14,165,233,0.08))] sm:p-5">
+            <span aria-hidden="true" className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-sky-300/20 blur-3xl" />
+            <div className="relative flex items-start gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-white shadow-[0_12px_26px_rgba(16,185,129,0.25)]">
+                <WalletCards className="h-6 w-6" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-black text-slate-950 dark:text-white">{t("referralWalletBehavior")}</h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300">{t("referralWalletDescription")}</p>
+                <span className="mt-3 inline-flex rounded-full border border-emerald-200 bg-white/80 px-3 py-1.5 text-[11px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
+                  {t("commissionSetting", { percent: commissionPercentage })}
+                </span>
+              </div>
+            </div>
+          </article>
+
+          {requestModalOpen ? (
+            <SubAgentRequestModal
+              onClose={() => !submitting && setRequestModalOpen(false)}
+              onProofImageChange={setProofImageFile}
+              onReasonChange={setRequestReason}
+              onSubmit={submitSubAgentRequest}
+              proofImageFile={proofImageFile}
+              proofImagePreview={proofImagePreview}
+              reason={requestReason}
+              submitting={submitting}
+            />
+          ) : null}
 
           <section className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <CommissionHistory
@@ -458,14 +343,30 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
               pagination={commissionPagination}
               loadingMore={loadingMoreCommissions}
             />
-            <RequestTimeline
-              cancelingId={cancelingId}
-              onCancel={cancelRequest}
-              onLoadMore={loadMoreRequests}
-              pagination={requestPagination}
-              requests={requests}
-              loadingMore={loadingMoreRequests}
-            />
+            <div className="space-y-4">
+              <section className="flex flex-col items-center gap-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setRequestModalOpen(true)}
+                  disabled={submitting || Boolean(pendingSubAgentRequest)}
+                  className="interactive-ring inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-[#7C3AED] via-[#A855F7] to-[#0EA5E9] px-5 text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
+                >
+                  <Send className="h-4 w-4" />
+                  {pendingSubAgentRequest ? t("waitingAdmin") : t("submitSubAgent")}
+                </button>
+                {pendingSubAgentRequest ? (
+                  <span className="text-xs font-bold text-sky-600 dark:text-sky-300">{t("subAgentAlreadyPending", { date: pendingSubAgentRequest.createdAtLabel })}</span>
+                ) : null}
+              </section>
+              <RequestTimeline
+                cancelingId={cancelingId}
+                onCancel={cancelRequest}
+                onLoadMore={loadMoreRequests}
+                pagination={requestPagination}
+                requests={requests}
+                loadingMore={loadingMoreRequests}
+              />
+            </div>
           </section>
         </>
       )}
@@ -474,21 +375,130 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
 }
 
 function HeroPanel() {
+  const { t } = useTranslation("common");
+
   return (
     <section className="overflow-hidden rounded-lg border border-[#8B5CF6]/20 bg-[#050816] shadow-[0_20px_60px_rgba(139,92,246,0.18)] dark:border-white/10 dark:shadow-[0_0_28px_rgba(139,92,246,0.22)]">
       <img
         src={subAgentSlide}
-        alt="Winnie sub-agent"
+        alt={t("nav.subAgent")}
         className="block h-auto w-full"
       />
     </section>
   );
 }
 
+function SubAgentRequestModal({
+  onClose,
+  onProofImageChange,
+  onReasonChange,
+  onSubmit,
+  proofImageFile,
+  proofImagePreview,
+  reason,
+  submitting,
+}) {
+  const { t } = useTranslation("subAgent");
+
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !submitting) onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onClose, submitting]);
+
+  const pickProofImage = (file) => {
+    if (!file) return;
+    if (!file.type?.startsWith("image/")) return;
+    onProofImageChange(file);
+  };
+
+  const modal = (
+    <div
+      className="fixed inset-0 z-[180] grid place-items-center bg-slate-950/65 p-4 backdrop-blur-sm"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && !submitting && onClose()}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sub-agent-request-title"
+        className="relative w-full max-w-[430px] overflow-hidden rounded-[24px] border-2 border-violet-400/55 bg-white p-4 shadow-[0_24px_80px_rgba(124,58,237,0.32)] ring-1 ring-sky-300/35 sm:p-5 dark:border-violet-400/45 dark:bg-[#111827] dark:shadow-[0_0_48px_rgba(139,92,246,0.28)]"
+      >
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-l from-violet-600 via-fuchsia-500 to-sky-400" />
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-50 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/[0.1]"
+          aria-label={t("common:actions.close")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start gap-3">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#0EA5E9] text-white shadow-[0_14px_30px_rgba(124,58,237,0.3)]">
+            <Send className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 pe-8">
+            <h2 id="sub-agent-request-title" className="text-lg font-black text-slate-950 dark:text-white">{t("subAgentRequest")}</h2>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">{t("subAgentDescription")}</p>
+          </div>
+        </div>
+
+        <textarea
+          autoFocus
+          value={reason}
+          onChange={(event) => onReasonChange(event.target.value.slice(0, 1000))}
+          placeholder={t("subAgentPlaceholder")}
+          disabled={submitting}
+          className="mt-4 min-h-[108px] w-full resize-none rounded-2xl border border-violet-200 bg-slate-50 p-3 text-sm font-bold leading-6 text-slate-950 outline-none transition focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-70 dark:border-violet-400/20 dark:bg-[#0D1324] dark:text-white"
+        />
+        <label className="mt-3 block cursor-pointer overflow-hidden rounded-2xl border border-dashed border-sky-300 bg-sky-50/70 p-3 transition hover:border-violet-400 hover:bg-violet-50/70 dark:border-sky-400/25 dark:bg-sky-400/[0.06] dark:hover:bg-violet-400/[0.08]">
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={submitting}
+            onChange={(event) => pickProofImage(event.target.files?.[0])}
+          />
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-sky-600 shadow-sm dark:bg-white/10 dark:text-sky-200">
+              {proofImagePreview ? (
+                <img src={proofImagePreview} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <ImagePlus className="h-5 w-5" />
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-black text-slate-900 dark:text-white">{t("proofImageLabel")}</span>
+              <span className="mt-1 block truncate text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                {proofImageFile?.name || t("proofImageHint")}
+              </span>
+            </span>
+          </div>
+        </label>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button type="button" onClick={onClose} disabled={submitting} className="h-11 rounded-xl border border-slate-200 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.05]">
+            {t("common:actions.cancel")}
+          </button>
+          <button type="button" onClick={onSubmit} disabled={submitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_26px_rgba(124,58,237,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
+            <Send className="h-4 w-4" />
+            {submitting ? t("submitting") : t("submitSubAgent")}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
+}
+
 function LoadingGrid() {
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {Array.from({ length: 3 }).map((_, index) => (
           <SkeletonBlock key={index} className="h-32" />
         ))}
@@ -505,154 +515,110 @@ function LoadingGrid() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value }) {
+function MetricCard({ icon: Icon, label, tone = "violet", value }) {
+  const tones = {
+    emerald: {
+      card: "border-emerald-200/70 bg-gradient-to-b from-emerald-50/90 to-white dark:border-emerald-400/15 dark:from-emerald-500/10 dark:to-[#111827]",
+      icon: "from-emerald-500 to-teal-500 shadow-[0_10px_24px_rgba(16,185,129,0.24)]",
+      value: "text-emerald-700 dark:text-emerald-300",
+    },
+    sky: {
+      card: "border-sky-200/70 bg-gradient-to-b from-sky-50/90 to-white dark:border-sky-400/15 dark:from-sky-500/10 dark:to-[#111827]",
+      icon: "from-sky-500 to-blue-600 shadow-[0_10px_24px_rgba(14,165,233,0.24)]",
+      value: "text-sky-700 dark:text-sky-300",
+    },
+    violet: {
+      card: "border-violet-200/70 bg-gradient-to-b from-violet-50/90 to-white dark:border-violet-400/15 dark:from-violet-500/10 dark:to-[#111827]",
+      icon: "from-violet-600 to-fuchsia-500 shadow-[0_10px_24px_rgba(124,58,237,0.24)]",
+      value: "text-violet-700 dark:text-violet-300",
+    },
+  };
+  const colors = tones[tone] || tones.violet;
+
   return (
-    <article className="glass-panel rounded-lg p-5">
-      <span className="grid h-11 w-11 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
-        <Icon className="h-5 w-5" />
+    <article className={`min-w-0 rounded-[20px] border p-2.5 text-center shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-5 sm:text-start ${colors.card}`}>
+      <span className={`mx-auto grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br text-white sm:mx-0 sm:h-11 sm:w-11 sm:rounded-2xl ${colors.icon}`}>
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </span>
-      <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">{label}</p>
-      <p dir="ltr" className="mt-1 break-words text-2xl font-black text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-2 min-h-8 text-[10px] font-bold leading-4 text-slate-500 dark:text-slate-400 sm:mt-4 sm:min-h-0 sm:text-sm sm:font-semibold sm:leading-5">{label}</p>
+      <p dir="ltr" className={`mt-1 truncate text-sm font-black sm:break-words sm:text-2xl ${colors.value}`}>{value}</p>
     </article>
   );
 }
 
 function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
+  const { t } = useTranslation("subAgent");
+
   return (
-    <article className="glass-panel rounded-lg p-5 lg:col-span-2">
-      <span className="grid h-11 w-11 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
-        <Share2 className="h-5 w-5" />
-      </span>
-      <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Invite link</p>
-      <p dir="ltr" className="mt-1 break-all text-xl font-black text-slate-950 dark:text-white">{referralCode || "Unavailable"}</p>
+    <article className="relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(124,58,237,0.09)] dark:border-violet-400/15 dark:bg-[#111827] lg:col-span-2">
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-violet-600 via-fuchsia-500 to-sky-400" />
+      <div className="flex items-center gap-3">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-[0_12px_26px_rgba(124,58,237,0.26)]">
+          <Share2 className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="text-base font-black text-slate-950 dark:text-white">{t("inviteLink")}</h2>
+          <p dir="ltr" className="mt-0.5 text-lg font-black tracking-wider text-violet-700 dark:text-violet-300">{referralCode || t("common:states.unavailable")}</p>
+        </div>
+      </div>
 
       {inviter && (
         <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-600 dark:bg-[#0D1324] dark:text-slate-300">
-          You joined through {inviter.name}.
+          {t("joinedThrough", { name: inviter.name })}
         </p>
       )}
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <button
           type="button"
-          onClick={() => onCopy(referralLink, "Referral link copied")}
+          onClick={() => onCopy(referralLink, t("referralLinkCopied"))}
           disabled={!referralLink}
-          className="interactive-ring flex min-h-14 items-center justify-between gap-3 rounded-xl border border-sky-100 bg-white px-4 text-left text-sm font-black text-slate-700 shadow-[0_8px_20px_rgba(14,165,233,0.08)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-[#0D1324] dark:text-slate-300"
+          className="interactive-ring flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-4 text-left text-sm font-black text-sky-900 shadow-[0_8px_20px_rgba(14,165,233,0.07)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-sky-400/15 dark:bg-sky-400/[0.07] dark:text-sky-100"
         >
           <span className="flex min-w-0 flex-col">
-            <span>Copy registration link</span>
+            <span>{t("copyRegistrationLink")}</span>
             <span dir="ltr" className="mt-1 truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {referralLink || "Unavailable"}
+              {referralLink || t("common:states.unavailable")}
             </span>
           </span>
-          <Link2 className="h-5 w-5 shrink-0 text-[#8B5CF6]" />
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sky-500 text-white"><Link2 className="h-4 w-4" /></span>
         </button>
 
         <button
           type="button"
-          onClick={() => onCopy(referralCode, "Invite code copied")}
+          onClick={() => onCopy(referralCode, t("inviteCodeCopied"))}
           disabled={!referralCode}
-          className="interactive-ring flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[#C4B5FD]/55 bg-[#F5F3FF] px-4 text-left text-sm font-black text-[#7C3AED] shadow-[0_8px_20px_rgba(139,92,246,0.10)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-[#8B5CF6]/32 dark:bg-[#1A2335] dark:text-[#E9D5FF]"
+          className="interactive-ring flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-violet-200/80 bg-violet-50/80 px-4 text-left text-sm font-black text-violet-800 shadow-[0_8px_20px_rgba(139,92,246,0.08)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-violet-400/15 dark:bg-violet-400/[0.08] dark:text-violet-100"
         >
           <span className="flex min-w-0 flex-col">
-            <span>Copy code only</span>
+            <span>{t("copyCodeOnly")}</span>
             <span dir="ltr" className="mt-1 text-xs font-semibold">
-              {referralCode || "Unavailable"}
+              {referralCode || t("common:states.unavailable")}
             </span>
           </span>
-          <Copy className="h-5 w-5 shrink-0" />
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-white"><Copy className="h-4 w-4" /></span>
         </button>
       </div>
     </article>
   );
 }
 
-function GroupChangeCard({
-  currentGroup,
-  groupOptions,
-  onReasonChange,
-  onSelectGroup,
-  onSubmit,
-  pendingRequest,
-  reason,
-  selectedGroupId,
-  submitting,
-}) {
-  const hasOptions = groupOptions.length > 0;
-  const disabled = submitting || Boolean(pendingRequest) || !hasOptions;
-
-  return (
-    <article className="glass-panel rounded-lg p-5">
-      <span className="grid h-11 w-11 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
-        <RotateCcw className="h-5 w-5" />
-      </span>
-      <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Group-change request</p>
-      <p className="mt-1 text-xl font-black text-slate-950 dark:text-white">{currentGroup}</p>
-      {pendingRequest ? (
-        <p className="mt-3 rounded-xl bg-sky-50 p-3 text-xs font-bold leading-5 text-sky-700 dark:bg-sky-400/10 dark:text-sky-200">
-          Your group-change request is pending admin review.
-        </p>
-      ) : hasOptions ? (
-        <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-600 dark:bg-[#0D1324] dark:text-slate-300">
-          Select a new active group and submit it for admin review. Your current group will not change until approval.
-        </p>
-      ) : (
-        <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-600 dark:bg-[#0D1324] dark:text-slate-300">
-          No other active groups are available for request right now.
-        </p>
-      )}
-
-      <label className="mt-4 block">
-        <span className="text-xs font-black text-slate-500 dark:text-slate-400">Target group</span>
-        <select
-          value={selectedGroupId}
-          onChange={(event) => onSelectGroup(event.target.value)}
-          disabled={disabled}
-          className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-950 outline-none focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-[#0D1324] dark:text-white"
-        >
-          <option value="">{hasOptions ? "Choose a group" : "No groups available"}</option>
-          {groupOptions.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <textarea
-        value={reason}
-        onChange={(event) => onReasonChange(event.target.value.slice(0, 1000))}
-        placeholder="Why do you want to change groups?"
-        disabled={disabled}
-        className="mt-3 min-h-[88px] w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-950 outline-none focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-[#0D1324] dark:text-white"
-      />
-
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={disabled}
-        className="interactive-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] px-4 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-65"
-      >
-        <RotateCcw className="h-4 w-4" />
-        {submitting ? "Submitting..." : pendingRequest ? "Waiting for admin review" : "Submit group-change request"}
-      </button>
-    </article>
-  );
-}
-
 function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination }) {
+  const { t } = useTranslation("subAgent");
   const hasMore = pagination && pagination.page < pagination.pages;
 
   return (
-    <article className="glass-panel rounded-lg p-5">
+    <article className="rounded-[26px] border border-emerald-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(16,185,129,0.08)] dark:border-emerald-400/15 dark:bg-[#111827]">
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">Commission history</h2>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]"><BadgeDollarSign className="h-5 w-5" /></span>
+          <div>
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("commissionHistory")}</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Backend-calculated referral records.
+            {t("commissionHistoryDescription")}
           </p>
+          </div>
         </div>
-        <BadgeDollarSign className="h-5 w-5 text-royal dark:text-pulse" />
       </div>
 
       {commissions.length ? (
@@ -665,7 +631,7 @@ function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination })
                     {commission.invitedUser?.name || commission.sourceTypeLabel}
                   </p>
                   <p className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {commission.sourceTypeLabel} {commission.sourceAmountLabel ? `from ${commission.sourceAmountLabel}` : ""}
+                    {commission.sourceTypeLabel} {commission.sourceAmountLabel ? t("sourceFrom", { amount: commission.sourceAmountLabel }) : ""}
                   </p>
                   <p className="mt-1 text-[11px] font-bold text-slate-400">{commission.creditedAtLabel || commission.createdAtLabel}</p>
                 </div>
@@ -680,10 +646,11 @@ function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination })
           ))}
         </div>
       ) : (
-        <EmptyState
+        <SectionEmptyState
           icon={WalletCards}
-          title="No referral commissions yet"
-          description="Eligible commissions will appear after backend-confirmed wallet credits generate referral records."
+          tone="emerald"
+          title={t("noCommissionsTitle")}
+          description={t("noCommissionsDescription")}
         />
       )}
 
@@ -694,7 +661,7 @@ function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination })
           disabled={loadingMore}
           className="interactive-ring mt-4 h-11 w-full rounded-xl border border-[#C4B5FD]/55 bg-white text-xs font-black text-[#7C3AED] disabled:cursor-wait disabled:opacity-70 dark:border-[#8B5CF6]/32 dark:bg-[#0D1324] dark:text-[#E9D5FF]"
         >
-          {loadingMore ? "Loading..." : "Load more commissions"}
+          {loadingMore ? t("loading") : t("loadMoreCommissions")}
         </button>
       )}
     </article>
@@ -702,18 +669,21 @@ function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination })
 }
 
 function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagination, requests }) {
+  const { t } = useTranslation("subAgent");
   const hasMore = pagination && pagination.page < pagination.pages;
 
   return (
-    <article className="glass-panel rounded-lg p-5">
+    <article className="rounded-[26px] border border-sky-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(14,165,233,0.08)] dark:border-sky-400/15 dark:bg-[#111827]">
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">Request status</h2>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)]"><Clock3 className="h-5 w-5" /></span>
+          <div>
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("requestStatus")}</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Own customer requests only.
+            {t("requestStatusDescription")}
           </p>
+          </div>
         </div>
-        <Clock3 className="h-5 w-5 text-royal dark:text-pulse" />
       </div>
 
       {requests.length ? (
@@ -724,18 +694,18 @@ function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagin
                 <div className="min-w-0">
                   <p className="text-sm font-black text-slate-950 dark:text-white">{request.requestTypeLabel}</p>
                   <p className="mt-1 text-xs font-bold leading-5 text-slate-500 dark:text-slate-400">
-                    {request.reason || "No reason provided."}
+                    {request.reason || t("noReason")}
                   </p>
                 </div>
                 <RequestBadge status={request.status} />
               </div>
               <div className="mt-3 grid gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                <span>Current group: {request.currentGroup?.name || "Unknown"}</span>
-                <span>Requested group: {request.requestedGroup?.name || "Not selected"}</span>
-                {request.approvedGroup && <span>Approved group: {request.approvedGroup.name}</span>}
-                {request.adminNote && <span>Admin note: {request.adminNote}</span>}
-                <span>Created: {request.createdAtLabel}</span>
-                {request.reviewedAtLabel && <span>Reviewed: {request.reviewedAtLabel}</span>}
+                <span>{t("requestCurrentGroup", { value: request.currentGroup?.name || t("unknown") })}</span>
+                <span>{t("requestRequestedGroup", { value: request.requestedGroup?.name || t("notSelected") })}</span>
+                {request.approvedGroup && <span>{t("requestApprovedGroup", { value: request.approvedGroup.name })}</span>}
+                {request.adminNote && <span>{t("requestAdminNote", { value: request.adminNote })}</span>}
+                <span>{t("requestCreated", { value: request.createdAtLabel })}</span>
+                {request.reviewedAtLabel && <span>{t("requestReviewed", { value: request.reviewedAtLabel })}</span>}
               </div>
               {request.canCancel && (
                 <button
@@ -745,17 +715,18 @@ function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagin
                   className="interactive-ring mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-rose-500/10 px-4 text-xs font-black text-rose-700 disabled:cursor-wait disabled:opacity-70 dark:text-rose-300"
                 >
                   <XCircle className="h-4 w-4" />
-                  {cancelingId === request.id ? "Canceling..." : "Cancel pending request"}
+                  {cancelingId === request.id ? t("canceling") : t("cancelPending")}
                 </button>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <EmptyState
+        <SectionEmptyState
           icon={Clock3}
-          title="No requests yet"
-          description="Submitted sub-agent or group-change requests will appear here after the backend creates them."
+          tone="sky"
+          title={t("noRequestsTitle")}
+          description={t("noRequestsDescription")}
         />
       )}
 
@@ -766,14 +737,32 @@ function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagin
           disabled={loadingMore}
           className="interactive-ring mt-4 h-11 w-full rounded-xl border border-[#C4B5FD]/55 bg-white text-xs font-black text-[#7C3AED] disabled:cursor-wait disabled:opacity-70 dark:border-[#8B5CF6]/32 dark:bg-[#0D1324] dark:text-[#E9D5FF]"
         >
-          {loadingMore ? "Loading..." : "Load more requests"}
+          {loadingMore ? t("loading") : t("loadMoreRequests")}
         </button>
       )}
     </article>
   );
 }
 
+function SectionEmptyState({ description, icon: Icon, title, tone = "sky" }) {
+  const tones = {
+    emerald: "from-emerald-500 to-teal-500 shadow-[0_12px_28px_rgba(16,185,129,0.22)]",
+    sky: "from-sky-500 to-blue-600 shadow-[0_12px_28px_rgba(14,165,233,0.22)]",
+  };
+
+  return (
+    <div className="mt-5 rounded-[20px] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-7 text-center dark:border-white/10 dark:bg-white/[0.025]">
+      <span className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br text-white ${tones[tone] || tones.sky}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">{title}</h3>
+      <p className="mx-auto mt-1.5 max-w-md text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">{description}</p>
+    </div>
+  );
+}
+
 function RequestBadge({ status }) {
+  const { t } = useTranslation("subAgent");
   const normalized = String(status || "PENDING").toUpperCase();
   const styles = {
     APPROVED: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
@@ -787,7 +776,7 @@ function RequestBadge({ status }) {
 
   return (
     <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black ${styles[normalized] || styles.PENDING}`}>
-      {normalized.replace(/_/g, " ")}
+      {t(`statuses.${normalized}`, { defaultValue: normalized.replace(/_/g, " ") })}
     </span>
   );
 }

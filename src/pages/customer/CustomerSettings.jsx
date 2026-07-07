@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { getPublicCurrencies, updateMyCurrency, USER_CURRENCY_UPDATE_SUPPORTED } from "../../api/currencies";
 import SettingsPage from "../SettingsPage";
 import { useAuth } from "../../context/AuthContext";
@@ -7,16 +9,19 @@ import { useTheme } from "../../context/ThemeContext";
 import { useToast } from "../../components/ToastProvider";
 
 export default function CustomerSettings() {
+  const location = useLocation();
   const { refreshCurrentUser, token, user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { showToast } = useToast();
+  const { t } = useTranslation("settings");
   const [currencyOptions, setCurrencyOptions] = useState([]);
   const [currencyError, setCurrencyError] = useState("");
   const [currenciesLoading, setCurrenciesLoading] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [savingCurrency, setSavingCurrency] = useState(false);
   const currency = String(user?.currency || "USD").toUpperCase();
+  const isAdminArea = location.pathname.startsWith("/admin/");
 
   useEffect(() => {
     setSelectedCurrency(currency);
@@ -37,7 +42,7 @@ export default function CustomerSettings() {
       } catch (requestError) {
         if (!cancelled) {
           setCurrencyOptions([]);
-          setCurrencyError(requestError.userMessage || "Unable to load supported currencies.");
+          setCurrencyError(requestError.userMessage || t("currenciesLoadError"));
         }
       } finally {
         if (!cancelled) setCurrenciesLoading(false);
@@ -49,16 +54,11 @@ export default function CustomerSettings() {
     return () => {
       cancelled = true;
     };
-  }, [currency]);
+  }, [currency, t]);
 
-  const save = async ({ preferences }) => {
-    localStorage.setItem("winnie-user-preferences", JSON.stringify(preferences));
-
+  const save = async () => {
     if (selectedCurrency === currency) {
-      return {
-        title: "Currency unchanged",
-        message: "Choose a different active currency before saving.",
-      };
+      return undefined;
     }
 
     setSavingCurrency(true);
@@ -68,12 +68,12 @@ export default function CustomerSettings() {
       const refreshResult = await refreshCurrentUser(token);
 
       if (!refreshResult.ok) {
-        throw new Error(refreshResult.message || "Currency was saved, but the session could not be refreshed.");
+        throw new Error(refreshResult.message || t("currencySavedRefreshFailed"));
       }
 
       return {
-        title: "Currency updated",
-        message: result.message || `Currency updated to ${result.currency}.`,
+        title: t("currencyUpdatedTitle"),
+        message: result.message || t("currencyUpdatedMessage", { currency: result.currency }),
       };
     } finally {
       setSavingCurrency(false);
@@ -86,8 +86,8 @@ export default function CustomerSettings() {
     if (!USER_CURRENCY_UPDATE_SUPPORTED) {
       showToast({
         type: "info",
-        title: "Currency is backend-controlled",
-        message: "A self-service currency update route is not available yet.",
+        title: t("controlledCurrencyTitle"),
+        message: t("controlledCurrencyMessage"),
       });
       return;
     }
@@ -95,8 +95,8 @@ export default function CustomerSettings() {
     if (!currencyOptions.includes(code)) {
       showToast({
         type: "error",
-        title: "Unsupported currency",
-        message: "Choose one of the active currencies loaded from the backend.",
+        title: t("unsupportedCurrencyTitle"),
+        message: t("unsupportedCurrencyMessage"),
       });
       return;
     }
@@ -105,16 +105,16 @@ export default function CustomerSettings() {
   };
 
   const currencyDisabled = !USER_CURRENCY_UPDATE_SUPPORTED || currenciesLoading || savingCurrency || currencyOptions.length === 0;
-  const saveDisabled = currencyDisabled || selectedCurrency === currency;
+  const saveDisabled = savingCurrency;
   const visibleCurrencyOptions = currencyOptions.length ? currencyOptions : [currency];
   const currencyNote = currencyError
     || (currenciesLoading
-      ? "Loading active currencies..."
+      ? t("loadingCurrencies")
       : currencyOptions.length === 0
-        ? "No active currencies are available for self-service updates."
+        ? t("noCurrencies")
         : selectedCurrency === currency
-          ? "Select a different active currency to enable saving."
-          : "Currency will be saved through the backend and your session will be refreshed.");
+          ? t("selectDifferentCurrency")
+          : t("currencyBackendNote"));
 
   return (
     <SettingsPage
@@ -125,6 +125,7 @@ export default function CustomerSettings() {
       currencyNote={currencyNote}
       currencyOptions={visibleCurrencyOptions}
       isSaving={savingCurrency}
+      languageLocked={isAdminArea}
       onCurrencyChange={handleCurrencyChange}
       onLanguageChange={setLanguage}
       onSave={save}

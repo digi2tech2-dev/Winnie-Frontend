@@ -8,6 +8,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getCustomerOrders } from "../../api/orders";
 import EmptyState from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
@@ -59,6 +60,7 @@ function blockDateTyping(event) {
 
 export default function CustomerOrders({ basePath = "/customer" }) {
   const { token } = useAuth();
+  const { t } = useTranslation("orders");
   const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(1);
   const [orders, setOrders] = useState([]);
@@ -83,7 +85,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
         }
       } catch (requestError) {
         if (!cancelled) {
-          setError(requestError.userMessage || "Unable to load orders.");
+          setError(requestError.userMessage || t("list.loadError"));
           setOrders([]);
           setPagination({ page, limit: pageSize, total: 0, pages: 1 });
         }
@@ -160,13 +162,13 @@ export default function CustomerOrders({ basePath = "/customer" }) {
       <section className="glass-panel rounded-lg p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-3xl font-black">My orders</h1>
-            <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">Read-only backend order history.</p>
+            <h1 className="text-3xl font-black">{t("list.title")}</h1>
+            <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{t("list.description")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 text-sm font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300">
               <PackageCheck className="h-4 w-4 text-[#8B5CF6]" />
-              {filteredOrders.length} of {pagination.total || orders.length}
+              {t("list.count", { shown: filteredOrders.length, total: pagination.total || orders.length })}
             </span>
             <button
               type="button"
@@ -174,7 +176,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
               className="interactive-ring inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 text-sm font-black text-slate-600 transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300 dark:hover:bg-white/[0.075]"
             >
               <RotateCcw className="h-4 w-4" />
-              Reset filters
+              {t("list.resetFilters")}
               {activeFiltersCount > 0 && (
                 <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#8B5CF6] px-1 text-[11px] text-white">
                   {activeFiltersCount}
@@ -190,7 +192,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-[linear-gradient(135deg,#38BDF8,#8B5CF6)] text-white shadow-[0_12px_28px_rgba(56,189,248,0.22)]">
             <SlidersHorizontal className="h-5 w-5" />
           </span>
-          Search and filter orders
+          {t("list.searchFilter")}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -200,13 +202,13 @@ export default function CustomerOrders({ basePath = "/customer" }) {
               type="search"
               value={filters.query}
               onChange={(event) => updateFilter("query", event.target.value)}
-              placeholder="Search by order number, product, status, price..."
+              placeholder={t("list.searchPlaceholder")}
               className="h-12 w-full rounded-2xl border border-[#D8B4FE]/70 bg-white px-12 text-sm font-bold text-slate-950 shadow-[0_12px_28px_rgba(59,130,246,0.08)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/80 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-white/[0.065] dark:text-white dark:shadow-none"
             />
           </label>
 
-          <FilterSelect label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)}>
-            <option value="all">All statuses</option>
+          <FilterSelect label={t("list.status")} value={filters.status} onChange={(value) => updateFilter("status", value)}>
+            <option value="all">{t("list.allStatuses")}</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>{status}</option>
             ))}
@@ -218,34 +220,34 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             onChange={updateFilter}
           />
 
-          <FilterSelect label="Sort" value={filters.sort} onChange={(value) => updateFilter("sort", value)}>
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="price-high">Highest price</option>
-            <option value="price-low">Lowest price</option>
+          <FilterSelect label={t("list.sort")} value={filters.sort} onChange={(value) => updateFilter("sort", value)}>
+            <option value="newest">{t("list.newest")}</option>
+            <option value="oldest">{t("list.oldest")}</option>
+            <option value="price-high">{t("list.highestPrice")}</option>
+            <option value="price-low">{t("list.lowestPrice")}</option>
           </FilterSelect>
         </div>
       </section>
 
       {loading ? (
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
-          Loading orders...
+          {t("list.loading")}
         </div>
       ) : error ? (
-        <EmptyState icon={Search} title="Unable to load orders" description={error} />
+        <EmptyState icon={Search} title={t("list.loadError")} description={error} />
       ) : filteredOrders.length > 0 ? (
         <section className="glass-panel overflow-hidden rounded-lg">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[780px] text-right text-sm">
               <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-400">
                 <tr>
-                  <th className="px-5 py-4">Order</th>
-                  <th className="px-5 py-4">Product</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4">Price</th>
-                  <th className="px-5 py-4">Date</th>
-                  <th className="px-5 py-4">Progress</th>
-                  <th className="px-5 py-4">Action</th>
+                  <th className="px-5 py-4">{t("list.order")}</th>
+                  <th className="px-5 py-4">{t("list.product")}</th>
+                  <th className="px-5 py-4">{t("list.status")}</th>
+                  <th className="px-5 py-4">{t("list.price")}</th>
+                  <th className="px-5 py-4">{t("list.date")}</th>
+                  <th className="px-5 py-4">{t("list.progress")}</th>
+                  <th className="px-5 py-4">{t("list.action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-white/10">
@@ -270,7 +272,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
                     </td>
                     <td className="px-5 py-4">
                       <Link to={`${basePath}/order/${order.id}`} className="font-black text-pulse">
-                        Details
+                        {t("list.details")}
                       </Link>
                     </td>
                   </tr>
@@ -282,9 +284,9 @@ export default function CustomerOrders({ basePath = "/customer" }) {
       ) : (
         <EmptyState
           icon={Search}
-          title="No matching orders"
-          description="Change the search or filters to view loaded backend orders."
-          actionLabel="Reset filters"
+          title={t("list.emptyTitle")}
+          description={t("list.emptyDescription")}
+          actionLabel={t("list.resetFilters")}
           onAction={resetFilters}
         />
       )}
@@ -297,10 +299,10 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
           >
-            Previous
+            {t("common:actions.previous")}
           </button>
           <span className="text-sm font-black text-slate-500 dark:text-slate-400">
-            Page {pagination.page} of {pagination.pages}
+            {t("common:pagination.pageOf", { page: pagination.page, pages: pagination.pages })}
           </span>
           <button
             type="button"
@@ -308,7 +310,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
             className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
           >
-            Next
+            {t("common:actions.next")}
           </button>
         </div>
       )}
@@ -317,17 +319,19 @@ export default function CustomerOrders({ basePath = "/customer" }) {
 }
 
 function DateRangeFilter({ from, to, onChange }) {
+  const { t } = useTranslation("orders");
+
   return (
     <label className="block">
       <span className="mb-1.5 flex items-center gap-2 text-xs font-black text-slate-700 dark:text-slate-400">
         <span className="grid h-7 w-7 place-items-center rounded-xl bg-[linear-gradient(135deg,#22D3EE,#7C3AED,#EC4899)] text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)]">
           <CalendarDays className="h-4 w-4" />
         </span>
-        Date
+        {t("list.date")}
       </span>
       <span className="grid grid-cols-2 gap-2 rounded-2xl border border-[#D8B4FE]/70 bg-white p-1.5 shadow-[0_12px_28px_rgba(124,58,237,0.10)] transition focus-within:border-[#8B5CF6]/80 focus-within:ring-4 focus-within:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-white/[0.065] dark:shadow-none">
         <span className="min-w-0">
-          <span className="mb-1 block px-2 text-[10px] font-black text-[#8B5CF6] dark:text-[#C084FC]">From</span>
+          <span className="mb-1 block px-2 text-[10px] font-black text-[#8B5CF6] dark:text-[#C084FC]">{t("list.from")}</span>
           <input
             type="date"
             value={from}
@@ -338,11 +342,11 @@ function DateRangeFilter({ from, to, onChange }) {
             onPaste={(event) => event.preventDefault()}
             inputMode="none"
             className="h-9 w-full rounded-xl border border-transparent bg-[#F8FCFF] px-2 text-xs font-black text-slate-900 outline-none transition hover:border-[#C4B5FD] focus:border-[#8B5CF6]/60 dark:bg-[#0B1220] dark:text-white"
-            aria-label="Start date"
+            aria-label={t("list.startDate")}
           />
         </span>
         <span className="min-w-0">
-          <span className="mb-1 block px-2 text-[10px] font-black text-[#EC4899] dark:text-[#F0ABFC]">To</span>
+          <span className="mb-1 block px-2 text-[10px] font-black text-[#EC4899] dark:text-[#F0ABFC]">{t("list.to")}</span>
           <input
             type="date"
             value={to}
@@ -353,7 +357,7 @@ function DateRangeFilter({ from, to, onChange }) {
             onPaste={(event) => event.preventDefault()}
             inputMode="none"
             className="h-9 w-full rounded-xl border border-transparent bg-[#FDF7FF] px-2 text-xs font-black text-slate-900 outline-none transition hover:border-[#F0ABFC] focus:border-[#EC4899]/60 dark:bg-[#0B1220] dark:text-white"
-            aria-label="End date"
+            aria-label={t("list.endDate")}
           />
         </span>
       </span>

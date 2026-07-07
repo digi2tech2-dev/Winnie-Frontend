@@ -59,9 +59,11 @@ export function normalizeCreatedOrder(order = {}) {
   return normalizeOrder(order);
 }
 
-export function buildCustomerOrderPayload({ product, quantity, orderFieldsValues } = {}) {
+export function buildCustomerOrderPayload({ accountId, product, quantity, orderFieldsValues, selectedPackage } = {}) {
   const productId = product?._id || product?.id || product?.productId;
   const safeQuantity = Math.max(1, Number.parseInt(quantity, 10) || 1);
+  const packageId = selectedPackage?._id || selectedPackage?.id || selectedPackage?.packageId || selectedPackage?.name;
+  const cleanAccountId = String(accountId || "").trim();
   const fieldValues = orderFieldsValues && typeof orderFieldsValues === "object"
     ? Object.entries(orderFieldsValues).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
@@ -74,7 +76,9 @@ export function buildCustomerOrderPayload({ product, quantity, orderFieldsValues
   return {
     productId,
     quantity: safeQuantity,
-    ...(Object.keys(fieldValues).length ? { orderFieldsValues: fieldValues } : {}),
+    ...(packageId ? { packageId } : {}),
+    ...(cleanAccountId ? { accountId: cleanAccountId } : {}),
+    ...(Object.keys(fieldValues).length ? { fields: fieldValues, orderFieldsValues: fieldValues } : {}),
   };
 }
 
@@ -91,10 +95,14 @@ export async function createCustomerOrder(token, payload, options = {}) {
     body: payload,
   });
 
+  const data = response.data || {};
+  const order = data.order || data;
+
   return {
-    order: normalizeCreatedOrder(response.data || {}),
+    order: normalizeCreatedOrder(order),
     message: response.message,
-    raw: response.data,
+    raw: data,
+    wallet: data.wallet || null,
   };
 }
 
