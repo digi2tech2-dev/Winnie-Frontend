@@ -1,0 +1,53 @@
+{
+  "list": {
+    "title": "طلباتي",
+    "description": "سجل الطلبات من الخادم للقراءة فقط.",
+    "loadError": "تعذر تحميل الطلبات.",
+    "count": "{{shown}} من {{total}}",
+    "resetFilters": "إعادة ضبط الفلاتر",
+    "searchFilter": "بحث وتصفية الطلبات",
+    "searchPlaceholder": "ابحث برقم الطلب أو المنتج أو الحالة أو السعر...",
+    "status": "الحالة",
+    "allStatuses": "كل الحالات",
+    "sort": "الترتيب",
+    "newest": "الأحدث أولًا",
+    "oldest": "الأقدم أولًا",
+    "highestPrice": "أعلى سعر",
+    "lowestPrice": "أقل سعر",
+    "date": "التاريخ",
+    "from": "من",
+    "to": "إلى",
+    "startDate": "تاريخ البداية",
+    "endDate": "تاريخ النهاية",
+    "loading": "جار تحميل الطلبات...",
+    "emptyTitle": "لا توجد طلبات مطابقة",
+    "emptyDescription": "غيّر البحث أو الفلاتر لعرض الطلبات المحملة.",
+    "order": "الطلب",
+    "product": "المنتج",
+    "price": "السعر",
+    "progress": "التقدم",
+    "action": "الإجراء",
+    "details": "التفاصيل"
+  },
+  "details": {
+    "loading": "جار تحميل تفاصيل الطلب...",
+    "loadError": "تعذر تحميل تفاصيل الطلب.",
+    "notFoundTitle": "الطلب غير موجود",
+    "notFoundDescription": "تعذر تحميل هذا الطلب من الخادم.",
+    "backToOrders": "العودة للطلبات",
+    "eyebrow": "تفاصيل الطلب",
+    "status": "الحالة",
+    "price": "السعر",
+    "quantity": "الكمية",
+    "submittedDetails": "البيانات المرسلة",
+    "timeline": "مسار الطلب",
+    "steps": {
+      "created": "تم إنشاء الطلب",
+      "createdText": "تم تسجيل هذا الطلب في الخادم.",
+      "processing": "قيد التنفيذ",
+      "processingText": "يتم التعامل مع الطلب من المنصة أو المزود.",
+      "completed": "مكتمل",
+      "completedText": "تم إكمال الطلب."
+    }
+  }
+}

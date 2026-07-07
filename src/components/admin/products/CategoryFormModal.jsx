@@ -5,15 +5,15 @@ import { ImagePlus, Save, X } from "lucide-react";
 const emptyMain = { name: "", image: "", displayOrder: 1, visible: true };
 const emptySub = { name: "", image: "", parentId: "", displayOrder: 1 };
 
-export default function CategoryFormModal({ open, type, category, mainCategories, onClose, onSave }) {
+export default function CategoryFormModal({ open, type, category, mainCategories, onClose, onSave, saving = false }) {
   if (!open) return null;
   return createPortal(
-    <CategoryFormContent key={`${type}-${category?.id || "new"}`} type={type} category={category} mainCategories={mainCategories} onClose={onClose} onSave={onSave} />,
+    <CategoryFormContent key={`${type}-${category?.id || "new"}`} type={type} category={category} mainCategories={mainCategories} onClose={onClose} onSave={onSave} saving={saving} />,
     document.body,
   );
 }
 
-function CategoryFormContent({ type, category, mainCategories, onClose, onSave }) {
+function CategoryFormContent({ type, category, mainCategories, onClose, onSave, saving }) {
   const isMain = type === "main";
   const [form, setForm] = useState({ ...(isMain ? emptyMain : emptySub), ...category });
   const [error, setError] = useState("");
@@ -35,6 +35,7 @@ function CategoryFormContent({ type, category, mainCategories, onClose, onSave }
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => update("image", String(reader.result));
+    update("imageFile", file);
     reader.readAsDataURL(file);
   };
 
@@ -48,7 +49,8 @@ function CategoryFormContent({ type, category, mainCategories, onClose, onSave }
       setError("اختر القسم الرئيسي التابع له.");
       return;
     }
-    onSave({ ...form, name: form.name.trim(), displayOrder: Math.max(1, Number(form.displayOrder) || 1), image: form.image || "/logo.png" });
+    if (saving) return;
+    onSave({ ...form, name: form.name.trim(), displayOrder: Math.max(1, Number(form.displayOrder) || 1), image: form.image || "" });
   };
 
   const title = category ? `تعديل ${isMain ? "القسم" : "القسم الفرعي"}` : `إضافة ${isMain ? "قسم" : "قسم فرعي"}`;
@@ -68,7 +70,7 @@ function CategoryFormContent({ type, category, mainCategories, onClose, onSave }
         <form onSubmit={submit} className="max-h-[78dvh] overflow-y-auto p-4">
           <label className="block">
             <span className={labelClassName}>اسم {isMain ? "القسم" : "القسم الفرعي"}</span>
-            <input value={form.name} onChange={(event) => update("name", event.target.value)} className={inputClassName} placeholder={isMain ? "مثال: الألعاب" : "مثال: PUBG Mobile"} autoFocus />
+            <input value={form.name} onChange={(event) => update("name", event.target.value)} className={inputClassName} placeholder={isMain ? "مثال: الألعاب" : "مثال: ببجي موبايل"} autoFocus />
           </label>
 
           <div className="mt-3 grid grid-cols-[88px_1fr] gap-3">
@@ -77,7 +79,7 @@ function CategoryFormContent({ type, category, mainCategories, onClose, onSave }
             </span>
             <label className="flex cursor-pointer flex-col justify-center rounded-2xl border border-slate-200 bg-slate-50 px-3 transition hover:border-violet-300 dark:border-white/10 dark:bg-[#0B1220]">
               <span className="text-[11px] font-black text-slate-700 dark:text-slate-200">صورة القسم</span>
-              <span className="mt-1 text-[9px] font-bold text-slate-400">PNG أو JPG — تظهر المعاينة فورًا</span>
+              <span className="mt-1 text-[9px] font-bold text-slate-400">بي إن جي أو جيه بي جي — تظهر المعاينة فورًا</span>
               <input type="file" accept="image/*" onChange={(event) => readImage(event.target.files?.[0])} className="sr-only" />
             </label>
           </div>
@@ -113,8 +115,8 @@ function CategoryFormContent({ type, category, mainCategories, onClose, onSave }
           {error && <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>}
 
           <div className="mt-5 grid grid-cols-2 gap-2.5">
-            <button type="button" onClick={onClose} className="h-11 rounded-2xl border border-slate-200 text-xs font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">إلغاء</button>
-            <button type="submit" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#7C3AED] to-[#3B82F6] text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.22)]"><Save className="h-4 w-4" />حفظ</button>
+            <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-2xl border border-slate-200 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]">إلغاء</button>
+            <button type="submit" disabled={saving} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#7C3AED] to-[#3B82F6] text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.22)] disabled:cursor-not-allowed disabled:opacity-60"><Save className="h-4 w-4" />{saving ? "جارٍ الحفظ..." : "حفظ"}</button>
           </div>
         </form>
       </section>

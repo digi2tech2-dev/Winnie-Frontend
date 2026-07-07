@@ -1,82 +1,97 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import slideOneImage from "../../../photo/اسلايد1.jpg";
+import slideTwoImage from "../../../photo/اسلايد2.jpg";
+import subAgentSlideImage from "../../../photo/اسلايد وكيل.jpg";
 
-const slides = [
-  {
-    src: "/اسلايد1.jpg",
-    alt: "اشتري الآن - عروض رقمية حصرية وآمنة",
+const slideImages = [slideOneImage, slideTwoImage, subAgentSlideImage];
+const AUTO_PLAY_DELAY = 5000;
+const slideVariants = {
+  enter: (direction) => ({
+    opacity: 0.35,
+    scale: 1.025,
+    x: direction > 0 ? "100%" : "-100%",
+  }),
+  center: {
+    opacity: 1,
+    scale: 1,
+    x: "0%",
   },
-  {
-    src: "/اسلايد2.jpg",
-    alt: "Winnie Fun - شحن مميز وبطاقات واشتراكات رقمية",
-  },
-];
+  exit: (direction) => ({
+    opacity: 0.2,
+    scale: 0.99,
+    x: direction > 0 ? "-28%" : "28%",
+  }),
+};
 
-export default function HomeSlide({ categoriesPath = "/customer/categories" }) {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const navigate = useNavigate();
+function resolveSubAgentPath(categoriesPath) {
+  if (String(categoriesPath).startsWith("/admin/user")) return "/admin/user/sub-agent";
+  return "/customer/sub-agent";
+}
 
-  const openCategories = () => {
-    navigate(categoriesPath);
-  };
+export default function HomeSlide({ categoriesPath = "/categories", subAgentPath }) {
+  const { t } = useTranslation("home");
+  const [{ activeSlide, direction }, setSlider] = useState({ activeSlide: 0, direction: 1 });
+  const [paused, setPaused] = useState(false);
+  const slides = [
+    { image: slideImages[0], path: categoriesPath },
+    { image: slideImages[1], path: categoriesPath },
+    { image: slideImages[2], path: subAgentPath || resolveSubAgentPath(categoriesPath) },
+  ];
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % slides.length);
-    }, 5200);
+    if (paused) return undefined;
 
-    return () => window.clearInterval(interval);
-  }, []);
+    const timer = window.setInterval(() => {
+      setSlider(({ activeSlide: current }) => {
+        const nextSlide = (current + 1) % slideImages.length;
+        return {
+          activeSlide: nextSlide,
+          direction: nextSlide === 0 ? 1 : -1,
+        };
+      });
+    }, AUTO_PLAY_DELAY);
+
+    return () => window.clearInterval(timer);
+  }, [paused]);
 
   return (
-    <section dir="ltr" className="relative overflow-hidden rounded-lg border border-white/10 bg-[#080B20] shadow-[0_24px_70px_rgba(59,130,246,0.18)]">
-      <div
-        className="flex transition-transform duration-700 ease-out"
-        style={{ transform: `translateX(-${activeSlide * 100}%)` }}
-      >
-        {slides.map((slide, index) =>
-          index === 0 ? (
-            <button
-              key={slide.src}
-              type="button"
-              onClick={openCategories}
-              className="block aspect-[2106/747] w-full shrink-0 cursor-pointer overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-[#080B20]"
-              aria-label="فتح صفحة الأقسام"
-              title="الأقسام"
-            >
-              <img
-                src={slide.src}
-                alt={slide.alt}
-                className="h-full w-full object-cover"
-                loading="eager"
-              />
-            </button>
-          ) : (
+    <section
+      aria-label={t("slider.label")}
+      aria-roledescription="carousel"
+      className="group relative isolate aspect-[1024/364] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl shadow-royal/10"
+      onBlur={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <AnimatePresence custom={direction} initial={false} mode="sync">
+        <motion.div
+          key={activeSlide}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{
+            x: { duration: 0.9, ease: [0.22, 1, 0.36, 1] },
+            opacity: { duration: 0.7, ease: "easeOut" },
+            scale: { duration: 0.9, ease: "easeOut" },
+          }}
+          className="absolute inset-0 will-change-transform"
+        >
+          <Link to={slides[activeSlide].path} className="block h-full w-full">
             <img
-              key={slide.src}
-              src={slide.src}
-              alt={slide.alt}
-              className="block aspect-[2106/747] w-full shrink-0 object-cover"
-              loading="lazy"
+              src={slides[activeSlide].image}
+              alt={t("slider.slideAlt", { number: activeSlide + 1 })}
+              className="h-full w-full object-cover"
+              loading={activeSlide === 0 ? "eager" : "lazy"}
             />
-          ),
-        )}
-      </div>
-
-      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/22 px-2.5 py-1.5 backdrop-blur-md">
-        {slides.map((slide, index) => (
-          <button
-            key={slide.src}
-            type="button"
-            onClick={() => setActiveSlide(index)}
-            className={`h-2 rounded-full transition ${
-              activeSlide === index ? "w-8 bg-white shadow-[0_0_16px_rgba(255,255,255,0.62)]" : "w-2 bg-white/45 hover:bg-white/70"
-            }`}
-            aria-label={`عرض السلايد ${index + 1}`}
-            title={`السلايد ${index + 1}`}
-          />
-        ))}
-      </div>
+          </Link>
+        </motion.div>
+      </AnimatePresence>
     </section>
   );
 }

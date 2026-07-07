@@ -7,11 +7,22 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
+  UserRound,
 } from "lucide-react";
+
+const statusOptions = [
+  ["all", "كل الحالات"],
+  ["pending", "قيد الانتظار"],
+  ["processing", "قيد التنفيذ"],
+  ["manual_review", "مراجعة يدوية"],
+  ["partial", "مكتمل جزئيًا"],
+  ["completed", "مكتمل"],
+  ["failed", "فشل"],
+  ["canceled", "ملغي"],
+];
 
 export default function OrdersFilters({ filters, onChange, onApply, onReset, activeCount = 0 }) {
   const [isOpen, setIsOpen] = useState(true);
-
   const update = (key) => (event) => onChange(key, event.target.value);
 
   return (
@@ -31,12 +42,12 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
             الفلاتر
             {activeCount > 0 && (
               <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#8B5CF6] px-1.5 text-[10px] font-black text-white">
-                {activeCount.toLocaleString("ar-EG")}
+                {activeCount.toLocaleString("ar-EG-u-nu-latn")}
               </span>
             )}
           </span>
           <span className="mt-0.5 block text-[11px] font-bold text-slate-500 dark:text-[#8A94A7]">
-            خصّص النتائج للوصول إلى الطلب المطلوب بسرعة
+            البحث والحالة والمستخدم والتاريخ تُطبّق مباشرة على بيانات الخادم.
           </span>
         </span>
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
@@ -50,34 +61,43 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
       >
         <div className="overflow-hidden">
           <form onSubmit={onApply} className="border-t border-slate-100 px-4 pb-4 pt-4 sm:px-5 sm:pb-5 dark:border-white/[0.07]">
-            <label className="relative block">
-              <span className="mb-1.5 block text-[11px] font-black text-slate-600 dark:text-slate-300">البحث</span>
-              <Search className="pointer-events-none absolute bottom-3.5 right-3.5 h-4.5 w-4.5 text-[#8B5CF6]" />
-              <input
-                type="search"
-                value={filters.query}
-                onChange={update("query")}
-                placeholder="ابحث برقم الطلب أو معرف الطلب أو معرف اللاعب"
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/75 px-10 text-xs font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/65 focus:bg-white focus:ring-4 focus:ring-[#8B5CF6]/10 sm:text-sm dark:border-white/10 dark:bg-[#0B1220] dark:text-white dark:focus:bg-[#0D1324]"
-              />
-            </label>
+            <div className="grid gap-3 lg:grid-cols-[1fr_260px]">
+              <label className="relative block">
+                <span className="mb-1.5 block text-[11px] font-black text-slate-600 dark:text-slate-300">بحث</span>
+                <Search className="pointer-events-none absolute bottom-3.5 right-3.5 h-4.5 w-4.5 text-[#8B5CF6]" />
+                <input
+                  type="search"
+                  value={filters.query}
+                  onChange={update("query")}
+                  placeholder="رقم الطلب أو معرّفه أو رقم طلب المورد أو قيمة مُدخلة"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/75 px-10 text-xs font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/65 focus:bg-white focus:ring-4 focus:ring-[#8B5CF6]/10 sm:text-sm dark:border-white/10 dark:bg-[#0B1220] dark:text-white dark:focus:bg-[#0D1324]"
+                />
+              </label>
+
+              <FilterField label="معرّف العميل" icon={UserRound}>
+                <input
+                  value={filters.userId}
+                  onChange={update("userId")}
+                  placeholder="معرّف المستخدم المكوّن من 24 حرفًا"
+                  className={fieldClassName}
+                  dir="ltr"
+                />
+              </FilterField>
+            </div>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <FilterField label="الحالة" icon={Filter}>
                 <select value={filters.status} onChange={update("status")} className={fieldClassName}>
-                  <option value="all">كل الحالات</option>
-                  <option value="completed">مكتملة</option>
-                  <option value="incomplete">غير مكتملة</option>
-                  <option value="processing">قيد التنفيذ</option>
-                  <option value="pending">قيد الانتظار</option>
-                  <option value="rejected">مرفوضة</option>
+                  {statusOptions.map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
                 </select>
               </FilterField>
 
-              <FilterField label="النوع" icon={Sparkles}>
+              <FilterField label="نوع التنفيذ" icon={Sparkles}>
                 <select value={filters.type} onChange={update("type")} className={fieldClassName}>
-                  <option value="all">الكل</option>
-                  <option value="automatic">أوتوماتيكي</option>
+                  <option value="all">كل الأنواع</option>
+                  <option value="automatic">تلقائي</option>
                   <option value="manual">يدوي</option>
                 </select>
               </FilterField>
@@ -87,13 +107,13 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
                   <option value="all">كل الفترات</option>
                   <option value="today">اليوم</option>
                   <option value="last7">آخر 7 أيام</option>
-                  <option value="last30">آخر 30 يوم</option>
+                  <option value="last30">آخر 30 يومًا</option>
                   <option value="month">هذا الشهر</option>
-                  <option value="custom">من تاريخ إلى تاريخ</option>
+                  <option value="custom">فترة مخصصة</option>
                 </select>
               </FilterField>
 
-              <FilterField label="الترتيب" icon={SlidersHorizontal}>
+              <FilterField label="ترتيب الصفحة" icon={SlidersHorizontal}>
                 <select value={filters.sort} onChange={update("sort")} className={fieldClassName}>
                   <option value="newest">الأحدث أولًا</option>
                   <option value="oldest">الأقدم أولًا</option>
@@ -103,10 +123,10 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
 
             {filters.datePreset === "custom" && (
               <div className="mt-3 grid gap-3 rounded-2xl border border-violet-200/70 bg-violet-50/55 p-3 sm:grid-cols-2 dark:border-violet-400/15 dark:bg-violet-500/[0.06]">
-                <FilterField label="من تاريخ" icon={CalendarDays}>
+                <FilterField label="من" icon={CalendarDays}>
                   <input type="date" value={filters.dateFrom} onChange={update("dateFrom")} className={fieldClassName} />
                 </FilterField>
-                <FilterField label="إلى تاريخ" icon={CalendarDays}>
+                <FilterField label="إلى" icon={CalendarDays}>
                   <input type="date" value={filters.dateTo} min={filters.dateFrom || undefined} onChange={update("dateTo")} className={fieldClassName} />
                 </FilterField>
               </div>
@@ -119,7 +139,7 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300 dark:hover:bg-white/[0.08]"
               >
                 <RotateCcw className="h-4 w-4" />
-                إعادة تعيين
+                إعادة ضبط
               </button>
               <button
                 type="submit"

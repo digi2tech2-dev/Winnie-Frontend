@@ -1,19 +1,14 @@
-import { ArrowLeft, AtSign, CircleUserRound, Hash, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, AtSign, CircleUserRound, Clock3, Hash, Mail, Package, UserRound } from "lucide-react";
 import StatusBadge from "./StatusBadge";
-
-const priceFormatter = new Intl.NumberFormat("ar-EG", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-});
 
 export default function OrderCard({ order, onDetails }) {
   const details = [
-    { label: "رقم الطلب", value: order.id, icon: Hash, dir: "ltr" },
-    { label: "معرف اللاعب", value: order.playerId, icon: CircleUserRound, dir: "ltr" },
-    { label: "اسم المستخدم", value: order.username, icon: UserRound },
-    { label: "إيميل المستخدم", value: order.userEmail, icon: Mail, dir: "ltr" },
-    { label: "معرف المستخدم", value: order.userId, icon: AtSign, dir: "ltr" },
+    { label: "الطلب", value: order.displayId, icon: Hash, dir: "ltr" },
+    { label: "القيمة المُدخلة", value: order.playerId, icon: CircleUserRound, dir: "ltr" },
+    { label: "العميل", value: order.username, icon: UserRound },
+    { label: "البريد الإلكتروني", value: order.userEmail || "-", icon: Mail, dir: "ltr" },
+    { label: "معرّف العميل", value: order.userId || "-", icon: AtSign, dir: "ltr" },
+    { label: "تاريخ الإنشاء", value: order.createdAtLabel, icon: Clock3 },
   ];
 
   return (
@@ -33,7 +28,11 @@ export default function OrderCard({ order, onDetails }) {
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-xs font-black leading-5 text-slate-800 sm:text-sm dark:text-slate-100">{order.product}</p>
           <p dir="ltr" className="mt-1 text-right text-lg font-black text-[#7C3AED] dark:text-[#C084FC]">
-            {priceFormatter.format(order.price)}
+            {order.priceLabel}
+          </p>
+          <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-black text-slate-500 dark:text-slate-400">
+            <Package className="h-3 w-3" />
+            الكمية {order.quantity.toLocaleString("ar-EG-u-nu-latn")} - {order.executionType === "automatic" ? "تلقائي" : "يدوي"}
           </p>
         </div>
       </div>
@@ -44,19 +43,23 @@ export default function OrderCard({ order, onDetails }) {
           return (
             <div
               key={item.label}
-              className={`min-w-0 rounded-xl border border-slate-100 bg-white px-2.5 py-2 dark:border-white/[0.06] dark:bg-white/[0.025] ${index === 3 ? "col-span-2 sm:col-span-1" : ""}`}
+              className={`min-w-0 rounded-xl border border-slate-100 bg-white px-2.5 py-2 dark:border-white/[0.06] dark:bg-white/[0.025] ${index === 3 || index === 5 ? "col-span-2 sm:col-span-1" : ""}`}
             >
               <dt className="flex items-center gap-1 text-[9px] font-black text-slate-400 dark:text-[#7C8598]">
                 <Icon className="h-3 w-3 shrink-0" />
                 {item.label}
               </dt>
-              <dd dir={item.dir} title={item.value} className={`mt-1 truncate text-[11px] font-black text-slate-700 dark:text-slate-200 ${item.dir === "ltr" ? "text-right" : ""}`}>
+              <dd dir={item.dir} title={String(item.value)} className={`mt-1 truncate text-[11px] font-black text-slate-700 dark:text-slate-200 ${item.dir === "ltr" ? "text-right" : ""}`}>
                 {item.value}
               </dd>
             </div>
           );
         })}
       </dl>
+
+      <p className="mt-3 line-clamp-2 min-h-9 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-bold leading-5 text-slate-500 dark:border-white/[0.06] dark:bg-[#0B1220]/70 dark:text-slate-400">
+        {order.submittedFieldsSummary}
+      </p>
 
       <button
         type="button"

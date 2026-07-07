@@ -1,52 +1,79 @@
-import { Bot, Hash, Layers3, Pause, Pencil, Play, Trash2, UserRound } from "lucide-react";
-import StatusBadge from "./StatusBadge";
+import { Link2, MoreVertical, Pause, Pencil, Play, RefreshCw, Trash2 } from "lucide-react";
 
-const currency = new Intl.NumberFormat("ar-EG", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
+const currency = new Intl.NumberFormat("ar-EG-u-nu-latn", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
-export default function ProductCard({ product, mainCategory, subCategory, provider, onEdit, onDelete, onTogglePause }) {
+export default function ProductCard({ actionBusy = false, onDelete, onEdit, onProviderLink, onProviderSync, onTogglePause, product, subCategory }) {
   const displayStatus = product.paused ? "paused" : product.status;
-  const unavailable = product.status === "unavailable";
-
   return (
-    <article className={`group relative overflow-hidden rounded-[24px] border bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.09)] ${unavailable ? "border-rose-200/90 dark:border-rose-400/20" : "border-slate-200/90 hover:border-violet-200 dark:border-white/[0.08] dark:hover:border-violet-400/30"}`}>
-      <div className="relative h-36 overflow-hidden">
-        <img src={product.image || "/logo.png"} alt={product.nameAr} className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${unavailable ? "grayscale-[35%] opacity-65" : ""}`} />
-        <span className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/5 to-transparent" />
-        <span className="absolute left-2.5 top-2.5"><StatusBadge status={displayStatus} compact /></span>
-        {unavailable && <span className="absolute inset-x-3 top-1/2 -translate-y-1/2 rounded-xl bg-rose-600/90 px-3 py-2 text-center text-xs font-black text-white shadow-lg backdrop-blur-sm">غير متوفر</span>}
-        <div className="absolute bottom-3 right-3 left-3">
-          <h3 className="line-clamp-1 text-sm font-black text-white">{product.nameAr}</h3>
-          <p className="mt-0.5 truncate text-[9px] font-bold text-white/70">{product.nameEn}</p>
-        </div>
-      </div>
-      <div className="p-3.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-black text-slate-400">المزود</p>
-            <p className="mt-0.5 truncate text-[11px] font-black text-slate-700 dark:text-slate-200">{provider?.name || "بدون مزود"}</p>
+    <tr className="admin-products-row border-t border-[#142654] transition hover:bg-blue-500/[0.035]">
+      <td className="px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <img src={product.image || "/logo.png"} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-blue-500/30 object-cover shadow-[0_0_10px_rgba(59,130,246,0.16)]" />
+          <div className="min-w-0">
+            <p className="truncate text-xs font-black text-slate-100">{product.nameAr}</p>
+            <p className="mt-1 truncate text-[9px] font-bold text-slate-500">{product.nameEn || "منتج يدوي"}</p>
           </div>
-          <p dir="ltr" className={`shrink-0 text-right text-lg font-black text-violet-700 dark:text-violet-300 ${unavailable ? "line-through decoration-rose-500 decoration-2 opacity-60" : ""}`}>{currency.format(product.finalPrice)}</p>
         </div>
+      </td>
+      <td className="px-4 py-3 text-xs font-bold text-slate-300">{subCategory?.name || "لا يوجد"}</td>
+      <td dir="ltr" className="px-4 py-3 text-right text-xs font-black text-emerald-400">{currency.format(product.finalPrice)}</td>
+      <td className="px-4 py-3 text-xs font-bold text-slate-300">{product.status === "unavailable" ? "غير متوفر" : "متوفر"}</td>
+      <td className="px-4 py-3"><ProductStatus status={displayStatus} /></td>
+      <td className="px-4 py-3"><ProductActions actionBusy={actionBusy} product={product} onDelete={onDelete} onEdit={onEdit} onProviderLink={onProviderLink} onProviderSync={onProviderSync} onTogglePause={onTogglePause} /></td>
+    </tr>
+  );
+}
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Meta icon={Layers3} label="القسم الرئيسي" value={mainCategory?.name || "—"} />
-          <Meta icon={Layers3} label="القسم الفرعي" value={subCategory?.name || "بدون"} />
-          <Meta icon={Hash} label="ترتيب العرض" value={product.displayOrder.toLocaleString("ar-EG")} />
-          <Meta icon={product.linkType === "automatic" ? Bot : UserRound} label="نوع الربط" value={product.linkType === "automatic" ? "آلي" : "يدوي"} />
+export function ProductMobileCard({ actionBusy = false, onDelete, onEdit, onProviderLink, onProviderSync, onTogglePause, product, subCategory }) {
+  const displayStatus = product.paused ? "paused" : product.status;
+  return (
+    <article className="admin-products-mobile-card min-w-0 space-y-3 p-3.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <img src={product.image || "/logo.png"} alt="" className="h-11 w-11 shrink-0 rounded-lg border border-blue-500/30 object-cover" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-black text-slate-100">{product.nameAr}</p>
+          <p className="mt-1 truncate text-[9px] font-bold text-slate-500">{product.nameEn || "منتج يدوي"}</p>
         </div>
-
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <button type="button" onClick={() => onEdit(product)} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-sky-500/10 text-[9px] font-black text-sky-700 transition hover:bg-sky-500/15 dark:text-sky-300"><Pencil className="h-3.5 w-3.5" />تعديل</button>
-          <button type="button" onClick={() => onDelete(product)} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-rose-500/10 text-[9px] font-black text-rose-700 transition hover:bg-rose-500/15 dark:text-rose-300"><Trash2 className="h-3.5 w-3.5" />حذف</button>
-          <button type="button" onClick={() => onTogglePause(product)} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-orange-500/10 px-1 text-[8px] font-black text-orange-700 transition hover:bg-orange-500/15 dark:text-orange-300">
-            {product.paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}{product.paused ? "استئناف" : "إيقاف مؤقت"}
-          </button>
-        </div>
+        <ProductStatus status={displayStatus} />
       </div>
+      <div className="grid grid-cols-2 gap-2">
+        <MobileMeta label="القسم الفرعي" value={subCategory?.name || "لا يوجد"} />
+        <MobileMeta label="السعر" value={currency.format(product.finalPrice)} accent />
+        <MobileMeta label="المخزون" value={product.status === "unavailable" ? "غير متوفر" : "متوفر"} />
+        <MobileMeta label="نوع الربط" value={product.linkType === "automatic" ? "تلقائي" : "يدوي"} />
+      </div>
+      <div className="flex justify-end"><ProductActions actionBusy={actionBusy} product={product} onDelete={onDelete} onEdit={onEdit} onProviderLink={onProviderLink} onProviderSync={onProviderSync} onTogglePause={onTogglePause} /></div>
     </article>
   );
 }
 
-function Meta({ icon: Icon, label, value }) {
-  return <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 p-2 dark:border-white/[0.06] dark:bg-[#0B1220]/70"><p className="flex items-center gap-1 text-[8px] font-black text-slate-400"><Icon className="h-3 w-3" />{label}</p><p className="mt-1 truncate text-[10px] font-black text-slate-700 dark:text-slate-200">{value}</p></div>;
+function MobileMeta({ accent = false, label, value }) {
+  return <div className="admin-products-meta min-w-0 rounded-lg border border-[#142654] bg-[#060e29] p-2.5"><p className="text-[9px] font-bold text-slate-500">{label}</p><p className={`mt-1 truncate text-[11px] font-black ${accent ? "text-emerald-400" : "text-slate-200"}`}>{value}</p></div>;
+}
+
+function ProductStatus({ status }) {
+  const labels = { available: "نشط", unavailable: "غير متوفر", paused: "موقوف" };
+  const tone = status === "available" ? "bg-emerald-500/15 text-emerald-400" : status === "paused" ? "bg-amber-500/15 text-amber-400" : "bg-rose-500/15 text-rose-400";
+  return <span className={`inline-flex min-w-[58px] justify-center rounded-full px-3 py-1.5 text-[10px] font-black ${tone}`}>{labels[status] || status}</span>;
+}
+
+function ProductActions({ actionBusy, onDelete, onEdit, onProviderLink, onProviderSync, onTogglePause, product }) {
+  return (
+    <div className="admin-products-actions flex items-center gap-2">
+      <details className="group/details relative">
+        <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-md border border-[#1a2e5b] text-slate-400 transition hover:text-white"><MoreVertical className="h-4 w-4" /></summary>
+        <div className="admin-products-menu absolute left-0 top-10 z-20 w-44 space-y-1 rounded-xl border border-[#20376e] bg-[#07112d] p-2 shadow-2xl">
+          <MenuButton icon={product.paused ? Play : Pause} label={product.paused ? "استئناف المنتج" : "إيقاف مؤقت"} onClick={() => onTogglePause(product)} disabled={actionBusy} />
+          <MenuButton icon={Link2} label={product.isProviderLinked ? "تغيير الربط" : "ربط مورد"} onClick={() => onProviderLink(product)} disabled={actionBusy} />
+          <MenuButton icon={RefreshCw} label="مزامنة السعر" onClick={() => onProviderSync(product)} disabled={actionBusy || !product.isProviderLinked} />
+        </div>
+      </details>
+      <button type="button" onClick={() => onEdit(product)} disabled={actionBusy} className="grid h-8 w-8 place-items-center rounded-md border border-blue-600/60 bg-blue-600/10 text-blue-400 transition hover:bg-blue-600/20 disabled:opacity-50" aria-label={`تعديل ${product.nameAr}`}><Pencil className="h-4 w-4" /></button>
+      <button type="button" onClick={() => onDelete(product)} disabled={actionBusy} className="grid h-8 w-8 place-items-center rounded-md border border-rose-600/50 bg-rose-600/10 text-rose-500 transition hover:bg-rose-600/20 disabled:opacity-50" aria-label={`حذف ${product.nameAr}`}><Trash2 className="h-4 w-4" /></button>
+    </div>
+  );
+}
+
+function MenuButton({ disabled, icon: Icon, label, onClick }) {
+  return <button type="button" disabled={disabled} onClick={onClick} className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-right text-[10px] font-black text-slate-300 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"><Icon className="h-3.5 w-3.5 text-violet-400" />{label}</button>;
 }

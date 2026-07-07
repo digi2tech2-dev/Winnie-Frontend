@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, CircleAlert, Info, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const ToastContext = createContext(null);
 
@@ -20,9 +21,14 @@ const toastStyles = {
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const { t } = useTranslation("common");
 
   const removeToast = useCallback((id) => {
     setToasts((items) => items.filter((toast) => toast.id !== id));
+  }, []);
+
+  const clearToasts = useCallback(() => {
+    setToasts([]);
   }, []);
 
   const showToast = useCallback(
@@ -34,7 +40,7 @@ export function ToastProvider({ children }) {
     [removeToast],
   );
 
-  const value = useMemo(() => ({ showToast }), [showToast]);
+  const value = useMemo(() => ({ clearToasts, showToast }), [clearToasts, showToast]);
 
   return (
     <ToastContext.Provider value={value}>
@@ -67,8 +73,8 @@ export function ToastProvider({ children }) {
                     type="button"
                     onClick={() => removeToast(toast.id)}
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-[#8A94A7] dark:hover:bg-[#1A2335] dark:hover:text-white"
-                    aria-label="إغلاق الإشعار"
-                    title="إغلاق"
+                    aria-label={t("toast.close")}
+                    title={t("actions.close")}
                   >
                     <X className="h-4 w-4" />
                   </button>

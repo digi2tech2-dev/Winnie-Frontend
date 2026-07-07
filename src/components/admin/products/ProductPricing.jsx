@@ -1,131 +1,258 @@
-import { Bot, Check, DollarSign, RefreshCw, Search, UserRound, WandSparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertTriangle, Bot, CheckCircle2, Link2, RefreshCw, Search, UserRound } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Field, inputClassName, Section } from "./BasicProductInfo";
 
-const money = new Intl.NumberFormat("ar-EG", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
+const emptyProviderLink = {
+  error: "",
+  loadingProducts: false,
+  loadingProviders: false,
+  providerProducts: [],
+  providers: [],
+};
 
-export default function ProductPricing({ value, onChange, onPatch, providers, supplierProducts }) {
-  const [query, setQuery] = useState("");
-  const [manualOverride, setManualOverride] = useState(false);
-  const selectedSupplierProduct = supplierProducts.find((item) => item.id === value.providerProductId);
-  const results = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!value.providerId) return [];
-    return supplierProducts.filter((item) => item.providerId === value.providerId && (!normalized || `${item.name} ${item.id}`.toLowerCase().includes(normalized)));
-  }, [query, supplierProducts, value.providerId]);
+export default function ProductPricing({
+  onChange,
+  onLinkModeChange,
+  onPatch,
+  onProductSearch,
+  onProviderChange,
+  onProviderProductSelect,
+  providerLink = emptyProviderLink,
+  value,
+}) {
+  const automatic = value.linkType === "automatic";
+  const selectedProvider = providerLink.providers.find((provider) => provider.id === value.providerId);
+  const selectedProduct = providerLink.providerProducts.find((product) => product.id === value.providerProductId)
+    || getCurrentProductSummary(value);
+  const searchValue = value.providerProductSearch || "";
+  const providerProductCount = providerLink.pagination?.total ?? providerLink.providerProducts.length;
+  const searchTimerRef = useRef(null);
 
-  const setType = (type) => onPatch({ linkType: type, providerId: type === "manual" ? "winnie-manual" : "", providerProductId: "" });
+  useEffect(() => () => clearTimeout(searchTimerRef.current), []);
 
-  const chooseSupplierProduct = (item) => {
-    onPatch({
-      providerProductId: item.id,
-      supplierPrice: item.price,
-      supplierMin: item.min,
-      supplierMax: item.max,
-      originalPrice: item.price,
-      min: item.min,
-      max: item.max,
-      finalPrice: Number((item.price * 1.15).toFixed(2)),
-      profitMargin: 15,
-    });
-  };
-
-  const syncPrice = () => {
-    if (!selectedSupplierProduct) return;
-    onPatch({ supplierPrice: selectedSupplierProduct.price, originalPrice: selectedSupplierProduct.price, finalPrice: Number((selectedSupplierProduct.price * 1.15).toFixed(2)), profitMargin: 15 });
-  };
-
-  const syncLimits = () => {
-    if (!selectedSupplierProduct) return;
-    onPatch({ supplierMin: selectedSupplierProduct.min, supplierMax: selectedSupplierProduct.max, min: selectedSupplierProduct.min, max: selectedSupplierProduct.max });
+  const updateProductSearch = (nextValue) => {
+    onPatch({ providerProductSearch: nextValue });
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      if (value.providerId) onProductSearch(nextValue);
+    }, 450);
   };
 
   return (
-    <Section title="الكمية والتسعير" description="اختر طريقة تنفيذ المنتج وحدد حدود الطلب والسعر النهائي">
-      <div className="grid grid-cols-2 gap-2.5">
-        <TypeButton active={value.linkType === "manual"} icon={UserRound} title="ربط يدوي" description="تنفيذ ومراجعة يدوية" onClick={() => setType("manual")} />
-        <TypeButton active={value.linkType === "automatic"} icon={Bot} title="ربط آلي" description="متصل بمنتج المورد" onClick={() => setType("automatic")} />
+    <Section title="الكمية والتسعير" description="حدد حدود الطلب والسعر الأساسي، واختر طريقة تنفيذ المنتج.">
+      <div className="flex flex-col">
+      <div className="order-1 grid grid-cols-2 gap-2.5 sm:gap-3">
+        <TypeButton active={!automatic} tone="manual" icon={UserRound} title="ربط يدوي" description="منتج يدوي من لوحة الإدارة" onClick={() => onLinkModeChange("manual")} />
+        <TypeButton active={automatic} tone="automatic" icon={Bot} title="ربط آلي" description="تنفيذ الطلبات عبر مورد" onClick={() => onLinkModeChange("automatic")} />
       </div>
 
-      {value.linkType === "manual" ? (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <NumberField label="الحد الأدنى للطلب" value={value.min} onChange={(next) => onChange("min", next)} />
-          <NumberField label="الحد الأقصى للطلب" value={value.max} onChange={(next) => onChange("max", next)} />
-          <NumberField label="السعر الأصلي" value={value.originalPrice} onChange={(next) => onChange("originalPrice", next)} step="0.01" />
-          <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => onChange("finalPrice", next)} step="0.01" />
-          <p className="col-span-2 rounded-xl bg-sky-50 px-3 py-2 text-[9px] font-bold leading-5 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300">السعر الأصلي هو تكلفة المنتج قبل هامش الربح، والسعر النهائي هو ما يراه العميل.</p>
-        </div>
-      ) : (
-        <div className="mt-4 space-y-3">
-          <Field label="اختر المورد">
-            <select value={value.providerId} onChange={(event) => onPatch({ providerId: event.target.value, providerProductId: "" })} className={inputClassName}>
-              <option value="">اختر المورد</option>
-              {providers.filter((item) => item.id !== "winnie-manual").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      <div className="order-3 mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-4">
+        <NumberField label="الحد الأدنى للطلب" value={value.min} onChange={(next) => onChange("min", next)} min="1" />
+        <NumberField label="الحد الأقصى للطلب" value={value.max} onChange={(next) => onChange("max", next)} min="1" />
+        <NumberField label="السعر الأصلي" value={value.originalPrice} onChange={(next) => onChange("originalPrice", next)} step="any" />
+        <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => onChange("finalPrice", next)} step="any" />
+        <NumberField className="col-span-2" label="نسبة الخصم %" value={value.discountPercentage} onChange={(next) => onChange("discountPercentage", next)} min="0" max="100" step="1" />
+      </div>
+
+      {automatic && (
+        <div className="order-2 mt-4 space-y-3 rounded-2xl border border-sky-400/20 bg-sky-500/[0.08] p-3 sm:p-4">
+          <div className="flex items-start gap-2">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-sky-500/12 text-sky-700 dark:text-sky-300">
+              <Link2 className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-[11px] font-black text-slate-900 dark:text-white">إعداد الربط الآلي</h4>
+              <p className="mt-0.5 text-[9px] font-bold leading-5 text-slate-500 dark:text-slate-300">سيتم تنفيذ الطلبات تلقائيًا من خلال المورد المختار.</p>
+              <p className="text-[9px] font-bold leading-5 text-slate-500 dark:text-slate-300">بيانات توثيق المورد لا تظهر هنا.</p>
+            </div>
+            <span className="inline-flex shrink-0 items-center rounded-full border border-sky-400/20 bg-sky-500/10 px-2.5 py-1.5 text-[9px] font-black text-sky-300">
+              {providerLink.loadingProducts ? "جارٍ التحميل" : `${providerProductCount.toLocaleString("ar-EG-u-nu-latn")} منتج`}
+            </span>
+          </div>
+
+          {providerLink.error && (
+            <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[10px] font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{providerLink.error}</span>
+            </div>
+          )}
+
+          <Field label="المورد">
+            <select
+              value={value.providerId || ""}
+              onChange={(event) => onProviderChange(event.target.value)}
+              disabled={providerLink.loadingProviders}
+              className={inputClassName}
+            >
+              <option value="">{providerLink.loadingProviders ? "جاري تحميل الموردين..." : "اختر المورد"}</option>
+              {providerLink.providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.name}{provider.code ? ` (${provider.code})` : ""}
+                </option>
+              ))}
             </select>
           </Field>
 
-          <label className="relative block">
-            <span className="mb-1.5 block text-[10px] font-black text-slate-600 dark:text-slate-300">بحث داخل منتجات المورد</span>
-            <Search className="pointer-events-none absolute bottom-3.5 right-3.5 h-4 w-4 text-violet-500" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className={`${inputClassName} pe-10`} placeholder="اسم المنتج أو ID المورد" disabled={!value.providerId} />
-          </label>
+          {!providerLink.loadingProviders && !providerLink.providers.length && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[10px] font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">لا توجد موردين نشطين متاحين للربط.</p>
+          )}
 
-          {value.providerId && (
-            <div className="max-h-44 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/60 p-2 dark:border-white/10 dark:bg-[#0B1220]">
-              {results.length ? results.map((item) => {
-                const selected = item.id === value.providerProductId;
-                return (
-                  <button key={item.id} type="button" onClick={() => chooseSupplierProduct(item)} className={`flex w-full items-center gap-3 rounded-xl border p-2.5 text-right transition ${selected ? "border-violet-300 bg-violet-50 dark:border-violet-400/35 dark:bg-violet-500/10" : "border-transparent bg-white hover:border-slate-200 dark:bg-white/[0.04] dark:hover:border-white/10"}`}>
-                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${selected ? "bg-violet-500 text-white" : "bg-slate-100 text-slate-400 dark:bg-white/[0.06]"}`}>{selected ? <Check className="h-4 w-4" /> : <Bot className="h-4 w-4" />}</span>
-                    <span className="min-w-0 flex-1"><span className="block truncate text-[10px] font-black text-slate-800 dark:text-white">{item.name}</span><span dir="ltr" className="mt-0.5 block text-right text-[9px] font-bold text-slate-400">{item.id}</span></span>
-                    <span dir="ltr" className="text-[10px] font-black text-violet-700 dark:text-violet-300">{money.format(item.price)}</span>
-                  </button>
-                );
-              }) : <p className="py-5 text-center text-[10px] font-bold text-slate-400">لا توجد نتائج مطابقة</p>}
+          {selectedProvider && selectedProvider.credentialConfigured === false && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[10px] font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">تنبيه: هذا المورد لا يظهر كبيانات توثيق مكتملة.</p>
+          )}
+
+          <div className="rounded-2xl border border-cyan-400/25 bg-gradient-to-l from-cyan-500/[0.08] to-blue-500/[0.06] p-2.5 shadow-[0_0_20px_rgba(6,182,212,0.06)]">
+            <div className="mb-2 flex items-center justify-between gap-3 px-1">
+              <span className="text-[10px] font-black text-cyan-200">البحث في منتجات المورد</span>
+              <span className="text-[8px] font-bold text-slate-500">يبحث تلقائيًا أثناء الكتابة</span>
+            </div>
+            <label className="relative block min-w-0">
+              <span className="pointer-events-none absolute left-1 top-1 grid h-9 w-9 place-items-center rounded-lg border border-cyan-400/30 bg-cyan-500/15 text-cyan-300">
+                {providerLink.loadingProducts ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </span>
+              <input
+                value={searchValue}
+                onChange={(event) => updateProductSearch(event.target.value)}
+                disabled={!value.providerId}
+                placeholder="اكتب اسم المنتج أو المعرّف..."
+                className="h-11 w-full rounded-xl border border-cyan-400/20 bg-[#040c1e] py-0 pl-12 pr-3 text-[11px] font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-4 focus:ring-cyan-500/10"
+              />
+            </label>
+          </div>
+
+          {!providerLink.loadingProducts && value.providerId && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#071126] px-3 py-2 text-[9px] font-bold text-slate-400">
+              <span>{searchValue ? "نتائج البحث في منتجات المورد" : "منتجات المورد المتاحة"}</span>
+              <strong className="text-sky-300">{providerProductCount.toLocaleString("ar-EG-u-nu-latn")} منتج</strong>
             </div>
           )}
 
-          {value.providerProductId && (
-            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/55 p-3 dark:border-emerald-400/15 dark:bg-emerald-400/[0.06]">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <SupplierValue label="سعر المورد" value={money.format(value.supplierPrice)} />
-                <SupplierValue label="الحد الأدنى" value={value.supplierMin} />
-                <SupplierValue label="الحد الأقصى" value={value.supplierMax} />
-                <SupplierValue label="ID المورد" value={value.providerProductId} ltr />
+          <div className="grid max-h-60 gap-2 overflow-y-auto rounded-2xl border border-white/70 bg-white/70 p-2 dark:border-white/10 dark:bg-[#0B1220]/60">
+            {!value.providerId ? (
+              <EmptyProviderMessage text="اختر موردًا لتحميل المنتجات." />
+            ) : providerLink.loadingProducts ? (
+              <EmptyProviderMessage spinning text="جاري تحميل منتجات المورد..." />
+            ) : providerLink.providerProducts.length ? (
+              providerLink.providerProducts.map((product) => (
+                <ProviderProductButton
+                  key={product.id}
+                  product={product}
+                  selected={product.id === value.providerProductId}
+                  onClick={() => onProviderProductSelect(product)}
+                />
+              ))
+            ) : (
+              <EmptyProviderMessage text={searchValue ? "لا توجد منتجات مطابقة للبحث." : "لم تتم مزامنة منتجات لهذا المورد بعد."} />
+            )}
+          </div>
+
+          {selectedProduct && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] font-bold text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+              <p className="flex items-center gap-1.5 font-black">
+                <CheckCircle2 className="h-4 w-4" />
+                {selectedProduct.name}
+              </p>
+              <div className="mt-2 grid gap-1 sm:grid-cols-3">
+                <SummaryItem label="المعرف الخارجي" value={selectedProduct.externalProductId || "-"} />
+                <SummaryItem label="الكمية" value={`${selectedProduct.minQty ?? "-"} - ${selectedProduct.maxQty ?? "-"}`} />
+                <SummaryItem label="السعر" value={selectedProduct.priceLabel || "-"} />
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button type="button" onClick={syncPrice} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-emerald-600 text-[9px] font-black text-white"><RefreshCw className="h-3.5 w-3.5" />مزامنة السعر</button>
-                <button type="button" onClick={syncLimits} className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-sky-600 text-[9px] font-black text-white"><RefreshCw className="h-3.5 w-3.5" />مزامنة الحدود</button>
-              </div>
             </div>
           )}
 
-          <button type="button" onClick={() => setManualOverride((current) => !current)} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-violet-300 bg-violet-50/60 text-[10px] font-black text-violet-700 transition hover:bg-violet-100 dark:border-violet-400/30 dark:bg-violet-500/[0.07] dark:text-violet-300">
-            <WandSparkles className="h-4 w-4" />{manualOverride ? "إخفاء السعر اليدوي" : "إضافة سعر يدوي"}
-          </button>
-
-          {manualOverride && (
-            <div className="grid grid-cols-2 gap-3 rounded-2xl border border-violet-200/70 bg-violet-50/50 p-3 dark:border-violet-400/15 dark:bg-violet-500/[0.05]">
-              <NumberField label="الحد الأدنى" value={value.min} onChange={(next) => onChange("min", next)} />
-              <NumberField label="الحد الأقصى" value={value.max} onChange={(next) => onChange("max", next)} />
-              <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => onChange("finalPrice", next)} step="0.01" />
-              <NumberField label="هامش الربح %" value={value.profitMargin} onChange={(next) => onChange("profitMargin", next)} step="0.01" />
-            </div>
-          )}
+          <div className="grid gap-2 sm:grid-cols-3">
+            <CheckboxField checked={Boolean(value.syncPriceFromProvider)} label="مزامنة السعر من المورد" onChange={(checked) => onPatch({ syncPriceFromProvider: checked })} />
+            <CheckboxField checked={Boolean(value.syncLimitsFromProvider)} label="مزامنة حدود الطلب" onChange={(checked) => onPatch({ syncLimitsFromProvider: checked })} />
+            <CheckboxField checked={Boolean(value.syncNameFromProvider)} label="مزامنة اسم المنتج" onChange={(checked) => onPatch({ syncNameFromProvider: checked })} />
+          </div>
         </div>
       )}
+      </div>
     </Section>
   );
 }
 
-function TypeButton({ active, icon: Icon, title, description, onClick }) {
-  return <button type="button" onClick={onClick} className={`rounded-2xl border p-3 text-right transition ${active ? "border-violet-300 bg-violet-50 shadow-[0_8px_22px_rgba(124,58,237,0.10)] dark:border-violet-400/35 dark:bg-violet-500/10" : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#0B1220]"}`}><span className={`grid h-8 w-8 place-items-center rounded-xl ${active ? "bg-violet-500 text-white" : "bg-white text-slate-400 dark:bg-white/[0.06]"}`}><Icon className="h-4 w-4" /></span><strong className="mt-2 block text-[11px] text-slate-800 dark:text-white">{title}</strong><span className="mt-0.5 block text-[8px] font-bold text-slate-400">{description}</span></button>;
+function TypeButton({ active, icon: Icon, title, description, onClick, tone }) {
+  const activeTone = tone === "manual"
+    ? "border-sky-400/60 bg-sky-500/15 shadow-[0_0_22px_rgba(14,165,233,0.15)]"
+    : "border-fuchsia-400/60 bg-violet-500/15 shadow-[0_0_22px_rgba(168,85,247,0.16)]";
+  const iconTone = tone === "manual" ? "from-sky-500 to-blue-600" : "from-violet-500 to-fuchsia-600";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-right transition sm:gap-3 sm:rounded-2xl sm:p-4 ${active ? activeTone : "border-[#203664] bg-[#071126] hover:border-violet-400/40"}`}
+    >
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg sm:h-9 sm:w-9 sm:rounded-xl ${active ? `bg-gradient-to-br ${iconTone} text-white` : "bg-white/[0.06] text-slate-400"}`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0">
+        <strong className="block truncate text-[10px] text-white sm:text-xs">{title}</strong>
+        <span className="mt-0.5 block truncate text-[8px] font-bold text-slate-400 sm:mt-1 sm:text-[9px]">{description}</span>
+      </span>
+    </button>
+  );
 }
 
-function NumberField({ label, value, onChange, step = "1" }) {
-  return <Field label={label}><input type="number" min="0" step={step} value={value} onChange={(event) => onChange(event.target.value)} className={inputClassName} /></Field>;
+function NumberField({ className = "", label, value, onChange, min = "0", max, step = "1" }) {
+  return (
+    <Field label={label} className={className}>
+      <input type="number" min={min} max={max} step={step} value={value} onChange={(event) => onChange(event.target.value)} className={inputClassName} />
+    </Field>
+  );
 }
 
-function SupplierValue({ label, value, ltr }) {
-  return <div className="rounded-xl bg-white/80 p-2 dark:bg-white/[0.05]"><p className="text-[8px] font-black text-slate-400">{label}</p><p dir={ltr ? "ltr" : undefined} className={`mt-1 truncate text-[10px] font-black text-emerald-700 dark:text-emerald-300 ${ltr ? "text-right" : ""}`}>{value}</p></div>;
+function ProviderProductButton({ onClick, product, selected }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border p-2.5 text-right transition ${selected ? "border-violet-300 bg-violet-50 dark:border-violet-400/30 dark:bg-violet-500/10" : "border-slate-200 bg-white hover:border-violet-200 dark:border-white/10 dark:bg-[#111827]"}`}
+    >
+      <strong className="block truncate text-[11px] font-black text-slate-900 dark:text-white">{product.name}</strong>
+      <span className="mt-1 block truncate text-[9px] font-bold text-slate-500 dark:text-slate-400">
+        {product.externalProductId || "بدون معرف خارجي"} | {product.minQty ?? "-"} - {product.maxQty ?? "-"}{product.priceLabel ? ` | ${product.priceLabel}` : ""}
+      </span>
+    </button>
+  );
+}
+
+function CheckboxField({ checked, label, onChange }) {
+  return (
+    <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-200">
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-violet-600" />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function EmptyProviderMessage({ spinning = false, text }) {
+  return (
+    <p className="flex min-h-20 items-center justify-center gap-2 rounded-xl bg-slate-50 p-3 text-center text-[10px] font-black text-slate-400 dark:bg-[#111827]">
+      {spinning && <RefreshCw className="h-4 w-4 animate-spin" />}
+      {text}
+    </p>
+  );
+}
+
+function SummaryItem({ label, value }) {
+  return (
+    <span className="rounded-xl bg-white/70 px-2 py-1.5 dark:bg-white/[0.06]">
+      <span className="block text-[8px] text-emerald-700/70 dark:text-emerald-100/70">{label}</span>
+      <span className="mt-0.5 block truncate font-black">{value}</span>
+    </span>
+  );
+}
+
+function getCurrentProductSummary(value) {
+  if (!value.providerProductId || !value.providerProductName) return null;
+
+  return {
+    id: value.providerProductId,
+    externalProductId: value.providerProductExternalId || "",
+    maxQty: value.providerProductMaxQty ?? null,
+    minQty: value.providerProductMinQty ?? null,
+    name: value.providerProductName,
+    priceLabel: "",
+  };
 }

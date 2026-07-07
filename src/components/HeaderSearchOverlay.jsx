@@ -2,25 +2,34 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Search, ShoppingBag, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { iconMap } from "./icons";
-import { productGroups } from "../data/catalog";
 
-export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public" }) {
+export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
+  const { t } = useTranslation("common");
 
-  const products = useMemo(
-    () =>
-      Object.entries(productGroups).flatMap(([groupId, group]) =>
-        group.products.map((product) => ({
-          ...product,
-          groupId,
-          groupTitle: group.title,
-          searchText: `${product.name} ${product.price} ${group.title}`.toLowerCase(),
-        })),
-      ),
-    [],
-  );
+  const products = useMemo(() => {
+    const backendProducts = Array.isArray(providedProducts) ? providedProducts : [];
+
+    return backendProducts.map((product, index) => {
+      const id = product.id || product._id || `product-${index}`;
+      const name = product.name || product.title || t("products:listing.title", { defaultValue: "Untitled product" });
+      const groupTitle = product.categoryTitle || product.categoryName || t("home:showcase.catalog", { defaultValue: "Catalog" });
+      const price = product.displayPriceLabel || product.price || "";
+
+      return {
+        ...product,
+        id,
+        name,
+        groupId: product.categorySlug || product.categoryId || product.category || product.groupId || "",
+        groupTitle,
+        price,
+        searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
+      };
+    });
+  }, [providedProducts]);
 
   const shownProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -65,7 +74,14 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       return;
     }
 
-    const target = mode === "customer" ? "/customer/dashboard#best-selling" : `/categories/${product.groupId}`;
+    const categoryTarget = product.groupId || product.categorySlug || product.categoryId;
+    const target = mode === "customer" && categoryTarget
+      ? `/customer/categories/${categoryTarget}`
+      : mode === "customer"
+        ? "/customer/dashboard#best-selling"
+        : categoryTarget
+          ? `/categories/${categoryTarget}`
+          : "/categories";
     onNavigate(target);
     onClose();
   };
@@ -89,7 +105,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
             className="mx-auto mt-[76px] max-w-[980px] overflow-hidden rounded-[28px] border border-white/75 bg-white/95 text-slate-950 shadow-[0_28px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-[rgba(10,15,29,0.96)] dark:text-white dark:shadow-[0_0_46px_rgba(139,92,246,0.30)]"
             role="dialog"
             aria-modal="true"
-            aria-label="البحث في المنتجات"
+            aria-label={t("search.dialogLabel")}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="border-b border-sky-100/90 p-3 dark:border-white/10 sm:p-4">
@@ -101,7 +117,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                     type="search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="ابحث عن لعبة أو تطبيق أو خدمة..."
+                    placeholder={t("search.placeholder")}
                     className="h-14 w-full rounded-2xl border border-sky-100 bg-[#F8FCFF] pl-4 pr-12 text-base font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#A855F7]/70 focus:ring-4 focus:ring-[#EDE9FE] dark:border-white/10 dark:bg-[#0D1324] dark:text-white dark:placeholder:text-[#8A94A7] dark:focus:border-[#8B5CF6]/70 dark:focus:ring-[#8B5CF6]/18"
                   />
                 </label>
@@ -109,8 +125,8 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                   type="button"
                   onClick={onClose}
                   className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-sky-100 bg-white text-slate-500 transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] hover:text-[#7C3AED] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#1A2335] dark:hover:text-white"
-                  aria-label="إغلاق البحث"
-                  title="إغلاق"
+                  aria-label={t("search.close")}
+                  title={t("actions.close")}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -120,10 +136,10 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
             <div className="max-h-[min(64vh,620px)] overflow-y-auto p-3 sm:p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h2 className="text-base font-black sm:text-lg">
-                  {query.trim() ? "نتائج البحث" : "منتجات مقترحة"}
+                  {query.trim() ? t("search.results") : t("search.suggestedProducts")}
                 </h2>
                 <span className="text-xs font-black text-[#8B5CF6] dark:text-[#C084FC]">
-                  {shownProducts.length} منتج
+                  {t("search.productCount", { count: shownProducts.length })}
                 </span>
               </div>
 
@@ -131,7 +147,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                   {shownProducts.map((product) => (
                     <SearchProductCard
-                      key={`${product.groupId}-${product.name}`}
+                      key={product.id || `${product.groupId}-${product.name}`}
                       product={product}
                       onClick={() => handleProductClick(product)}
                     />
@@ -141,7 +157,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                 <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-sky-200 bg-sky-50/70 p-6 text-center dark:border-white/10 dark:bg-[#0D1324]">
                   <div>
                     <ShoppingBag className="mx-auto h-10 w-10 text-[#8B5CF6]" />
-                    <p className="mt-3 text-sm font-black">لا توجد منتجات مطابقة.</p>
+                    <p className="mt-3 text-sm font-black">{t("search.noMatches")}</p>
                   </div>
                 </div>
               )}
@@ -161,6 +177,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
 
 function SearchProductCard({ product, onClick }) {
   const Icon = iconMap[product.icon] || iconMap.ShoppingBag;
+  const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
 
   return (
     <button
@@ -168,14 +185,16 @@ function SearchProductCard({ product, onClick }) {
       onClick={onClick}
       className="group min-w-0 overflow-hidden rounded-2xl border border-sky-100 bg-white text-right shadow-[0_14px_34px_rgba(14,165,233,0.10)] transition hover:-translate-y-1 hover:border-[#C4B5FD] hover:shadow-[0_18px_44px_rgba(124,58,237,0.16)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.14)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
     >
-      <span className={`relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br ${product.tone}`}>
+      <span className={`relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br ${tone}`}>
         <span className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.38),transparent_32%),linear-gradient(180deg,transparent,rgba(2,6,23,0.34))]" />
         <Icon className="relative h-10 w-10 text-white drop-shadow-xl transition group-hover:scale-110 sm:h-12 sm:w-12" />
       </span>
       <span className="block p-3">
         <span className="block truncate text-sm font-black text-slate-950 dark:text-white">{product.name}</span>
         <span className="mt-1 block truncate text-xs font-bold text-slate-500 dark:text-[#8A94A7]">{product.groupTitle}</span>
-        <span dir="ltr" className="mt-2 block text-sm font-black text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
+        {product.price ? (
+          <span dir="ltr" className="mt-2 block text-sm font-black text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
+        ) : null}
       </span>
     </button>
   );

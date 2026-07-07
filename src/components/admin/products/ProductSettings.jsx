@@ -4,7 +4,7 @@ import { Section } from "./BasicProductInfo";
 export default function ProductSettings({ value, onChange }) {
   return (
     <Section title="إعدادات المنتج" description="تحكم في الظهور وإتاحة الشراء داخل المتجر">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <SettingRow icon={ShieldCheck} title="حالة المنتج" description="غير متوفر يظهر للعميل مع سعر مشطوب">
           <select value={value.status} onChange={(event) => onChange("status", event.target.value)} className={selectClassName}>
             <option value="available">متوفر</option><option value="unavailable">غير متوفر</option>
@@ -28,11 +28,11 @@ export default function ProductSettings({ value, onChange }) {
 }
 
 function SettingRow({ icon: Icon, title, description, children }) {
-  return <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-[#0B1220]"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-700 dark:text-violet-300"><Icon className="h-4.5 w-4.5" /></span><span className="min-w-0 flex-1"><strong className="block text-[11px] text-slate-800 dark:text-white">{title}</strong><span className="mt-0.5 block text-[8px] font-bold leading-4 text-slate-400">{description}</span></span>{children}</div>;
+  return <div className="flex flex-col items-stretch gap-3 rounded-2xl border border-[#203664] bg-[#071126] p-4 sm:flex-row sm:items-center"><div className="flex min-w-0 flex-1 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300"><Icon className="h-4.5 w-4.5" /></span><span className="min-w-0 flex-1"><strong className="block text-xs text-white">{title}</strong><span className="mt-1 block text-[9px] font-bold leading-5 text-slate-400">{description}</span></span></div>{children}</div>;
 }
 
 function YesNo({ value, onChange }) {
   return <select value={value ? "yes" : "no"} onChange={(event) => onChange(event.target.value === "yes")} className={selectClassName}><option value="yes">نعم</option><option value="no">لا</option></select>;
 }
 
-const selectClassName = "h-9 shrink-0 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-black text-slate-800 outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white";
+const selectClassName = "h-10 w-full shrink-0 rounded-xl border border-[#294474] bg-[#050d20] px-3 text-[10px] font-black text-white outline-none focus:border-violet-400 sm:w-32";

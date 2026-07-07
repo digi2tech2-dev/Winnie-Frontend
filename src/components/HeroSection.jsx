@@ -1,5 +1,6 @@
 import { ArrowRight, BadgeCheck, Headphones, ShieldCheck, Zap } from "lucide-react";
-import { paymentMethods } from "../data/catalog";
+
+const paymentMethods = ["Visa", "Mastercard", "Wallet"];
 
 export default function HeroSection({ onTopUp }) {
   return (

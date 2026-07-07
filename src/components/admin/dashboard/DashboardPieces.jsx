@@ -97,6 +97,7 @@ export function ChangePill({ value = 0, inverse = false }) {
 
 export function MetricCard({ metric, rangeKey }) {
   const Icon = metric.icon;
+  const showChange = metric.change !== null && metric.change !== undefined && !metric.unavailable;
 
   return (
     <motion.article
@@ -114,7 +115,18 @@ export function MetricCard({ metric, rangeKey }) {
       </div>
       <p dir="ltr" className="admin-metric-value">{metric.value}</p>
       <div className="mt-3 flex items-center justify-end gap-2">
-        <ChangePill value={metric.change} inverse={metric.inverse} />
+        {showChange ? (
+          <ChangePill value={metric.change} inverse={metric.inverse} />
+        ) : (
+          <span className={`inline-flex h-6 items-center rounded-md px-2 text-[11px] font-black ${
+            metric.unavailable
+              ? "bg-amber-500/12 text-amber-700 dark:text-amber-300"
+              : "bg-sky-500/12 text-sky-700 dark:text-sky-300"
+          }`}
+          >
+            {metric.unavailable ? "غير متاح" : "مباشر"}
+          </span>
+        )}
       </div>
     </motion.article>
   );

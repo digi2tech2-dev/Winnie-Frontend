@@ -3,19 +3,19 @@ export const permissionGroups = [
   { title: "الطلبات", items: ["عرض الطلبات", "تأكيد الطلبات"] },
   { title: "المنتجات والمجموعات", items: ["إدارة المجموعات", "إدارة المنتجات"] },
   { title: "المالية", items: ["سجل المدفوعات", "إدارة الأرصدة", "المحافظ", "طرق الدفع"] },
-  { title: "أخرى", items: ["إدارة الموردين", "العملاء", "تأكيد طلبات Target", "سجلات النشاط", "إدارة إعدادات الواتساب"] },
+  { title: "أخرى", items: ["إدارة الموردين", "العملاء", "تأكيد طلبات الجهة المستهدفة", "سجلات النشاط", "إدارة إعدادات الواتساب"] },
 ];
 
 export const supervisorsSeed = [
   { id: "SUP-1001", userId: "USR-10010", name: "كريم منصور", email: "karim@example.com", status: "active", lastSeen: "منذ 8 دقائق", permissions: ["عرض المستخدمين", "إدارة المستخدمين", "عرض الطلبات", "تأكيد الطلبات", "إدارة المنتجات", "سجل المدفوعات", "إدارة الأرصدة", "سجلات النشاط"] },
-  { id: "SUP-1002", userId: "USR-10076", name: "سارة علي", email: "sara@example.com", status: "active", lastSeen: "منذ 28 دقيقة", permissions: ["عرض المستخدمين", "تأكيد الحسابات", "عرض الطلبات", "تأكيد طلبات Target"] },
+  { id: "SUP-1002", userId: "USR-10076", name: "سارة علي", email: "sara@example.com", status: "active", lastSeen: "منذ 28 دقيقة", permissions: ["عرض المستخدمين", "تأكيد الحسابات", "عرض الطلبات", "تأكيد طلبات الجهة المستهدفة"] },
 ];
 
 export const supervisorLogsSeed = [
   { id: "LOG-88210", supervisorId: "SUP-1001", action: "اعتماد طلب إضافة رصيد", target: "REQ-44018", status: "completed", date: "21 يونيو 2026", time: "10:42 ص", details: "تمت مراجعة إيصال التحويل وإضافة 150.00 USD إلى محفظة المستخدم USR-10087.", ip: "89.39.20.7" },
   { id: "LOG-88204", supervisorId: "SUP-1001", action: "تعديل حالة منتج", target: "PRD-1032", status: "completed", date: "21 يونيو 2026", time: "09:18 ص", details: "تغيير حالة منتج Free Fire 530 Diamonds إلى غير متوفر.", ip: "89.39.20.7" },
   { id: "LOG-88198", supervisorId: "SUP-1002", action: "مراجعة حساب مستخدم", target: "USR-10022", status: "pending", date: "20 يونيو 2026", time: "08:06 م", details: "بدأت مراجعة بيانات الحساب ومستندات التحقق وما زالت العملية قيد التنفيذ.", ip: "185.61.44.8" },
-  { id: "LOG-88176", supervisorId: "SUP-1002", action: "رفض طلب Target", target: "TRG-2091", status: "completed", date: "20 يونيو 2026", time: "04:31 م", details: "تم رفض الطلب لعدم اكتمال بيانات الحساب المستهدف.", ip: "185.61.44.8" },
+  { id: "LOG-88176", supervisorId: "SUP-1002", action: "رفض طلب الجهة المستهدفة", target: "TRG-2091", status: "completed", date: "20 يونيو 2026", time: "04:31 م", details: "تم رفض الطلب لعدم اكتمال بيانات الحساب المستهدف.", ip: "185.61.44.8" },
 ];
 
 export const balanceRequestsSeed = [

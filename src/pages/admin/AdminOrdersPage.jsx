@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ClipboardList, Search, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ClipboardList, RefreshCw, Search, Sparkles } from "lucide-react";
+import {
+  getAdminOrder,
+  getAdminOrders,
+  markAdminOrderManualSuccess,
+  refundAdminOrder,
+  retryAdminOrder,
+  syncAdminOrder,
+} from "../../api/adminOrders";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -7,7 +15,9 @@ import OrderCard from "../../components/admin/orders/OrderCard";
 import OrderDetailsModal from "../../components/admin/orders/OrderDetailsModal";
 import OrdersFilters from "../../components/admin/orders/OrdersFilters";
 import OrdersStats from "../../components/admin/orders/OrdersStats";
-import { adminOrdersSeed, orderStatusMeta } from "../../data/adminOrders";
+import { useAuth } from "../../context/AuthContext";
+
+const pageSize = 20;
 
 const initialFilters = {
   query: "",
@@ -16,25 +26,97 @@ const initialFilters = {
   datePreset: "all",
   dateFrom: "",
   dateTo: "",
+  userId: "",
   sort: "newest",
 };
 
+function getErrorMessage(error, fallback) {
+  return error?.userMessage || error?.message || fallback;
+}
+
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState(adminOrdersSeed);
+  const { token } = useAuth();
+  const { showToast } = useToast();
+  const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
+  const [page, setPage] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const loadingTimerRef = useRef(null);
-  const { showToast } = useToast();
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [detailsError, setDetailsError] = useState("");
+  const [actionKey, setActionKey] = useState("");
+
+  const loadOrders = useCallback(async () => {
+    if (!token) {
+      setOrders([]);
+      setError("يلزم تسجيل الدخول بحساب مدير.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const result = await getAdminOrders(token, {
+        ...buildBackendQuery(appliedFilters),
+        page,
+        limit: pageSize,
+      });
+      setOrders(result.orders);
+      setPagination(result.pagination);
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, "تعذر تحميل الطلبات.");
+      setOrders([]);
+      setPagination({ page, limit: pageSize, total: 0, pages: 1 });
+      setError(message);
+      showToast({ type: "error", title: "لم يتم تحميل الطلبات", message });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [appliedFilters, page, showToast, token]);
 
   useEffect(() => {
-    loadingTimerRef.current = window.setTimeout(() => setIsLoading(false), 650);
-    return () => window.clearTimeout(loadingTimerRef.current);
-  }, []);
+    loadOrders();
+  }, [loadOrders]);
 
-  const filteredOrders = useMemo(() => filterOrders(orders, appliedFilters), [appliedFilters, orders]);
-  const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+  useEffect(() => {
+    if (!selectedOrderId || !token) return undefined;
+
+    let cancelled = false;
+    const fallback = orders.find((order) => order.id === selectedOrderId) || null;
+    setSelectedOrder(fallback);
+    setDetailsLoading(true);
+    setDetailsError("");
+
+    const loadDetails = async () => {
+      try {
+        const result = await getAdminOrder(token, selectedOrderId);
+        if (!cancelled) setSelectedOrder(result.order);
+      } catch (requestError) {
+        if (!cancelled) {
+          setDetailsError(getErrorMessage(requestError, "تعذر تحميل تفاصيل الطلب."));
+        }
+      } finally {
+        if (!cancelled) setDetailsLoading(false);
+      }
+    };
+
+    void loadDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [orders, selectedOrderId, token]);
+
+  const visibleOrders = useMemo(
+    () => filterLoadedOrders(orders, appliedFilters),
+    [appliedFilters, orders],
+  );
   const activeFiltersCount = countActiveFilters(appliedFilters);
 
   const updateFilter = (key, value) => {
@@ -43,55 +125,90 @@ export default function AdminOrdersPage() {
 
   const applyFilters = (event) => {
     event.preventDefault();
+    setPage(1);
     setAppliedFilters({ ...draftFilters });
-    setIsLoading(true);
-    window.clearTimeout(loadingTimerRef.current);
-    loadingTimerRef.current = window.setTimeout(() => setIsLoading(false), 280);
   };
 
   const resetFilters = () => {
     setDraftFilters({ ...initialFilters });
     setAppliedFilters({ ...initialFilters });
-    window.clearTimeout(loadingTimerRef.current);
-    setIsLoading(false);
+    setPage(1);
   };
 
-  const closeDetails = useCallback(() => setSelectedOrderId(null), []);
+  const closeDetails = useCallback(() => {
+    if (actionKey) return;
+    setSelectedOrderId(null);
+    setSelectedOrder(null);
+    setDetailsError("");
+  }, [actionKey]);
 
-  const saveStatus = async (orderId, nextStatus) => {
-    await new Promise((resolve) => window.setTimeout(resolve, 520));
-    setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status: nextStatus } : order)));
-    showToast({
-      type: "success",
-      title: "تم حفظ الحالة بنجاح",
-      message: `تم تحديث الطلب ${orderId} إلى ${orderStatusMeta[nextStatus]?.label || nextStatus}.`,
-    });
+  const executeOrderAction = async (orderId, action, payload = {}) => {
+    if (!token || actionKey) return;
+    const key = `${orderId}:${action}`;
+    setActionKey(key);
+
+    try {
+      const handlers = {
+        complete: markAdminOrderManualSuccess,
+        refund: refundAdminOrder,
+        retry: retryAdminOrder,
+        sync: syncAdminOrder,
+      };
+      const handler = handlers[action];
+      if (!handler) throw new Error("إجراء الطلب غير مدعوم.");
+
+      const result = await handler(token, orderId, payload);
+      setSelectedOrder(result.order);
+      showToast({ type: "success", title: result.message || "تم تحديث الطلب" });
+      await loadOrders();
+
+      try {
+        const details = await getAdminOrder(token, orderId);
+        setSelectedOrder(details.order);
+      } catch {
+        // List refresh already succeeded; keep the backend-confirmed action result.
+      }
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, "فشل تنفيذ الإجراء على الطلب.");
+      showToast({ type: "error", title: "فشل الإجراء", message });
+    } finally {
+      setActionKey("");
+    }
   };
 
   return (
     <div dir="rtl" className="space-y-4 sm:space-y-5">
       <section className="relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white via-sky-50/80 to-violet-50/80 p-5 shadow-[0_18px_48px_rgba(124,58,237,0.09)] sm:p-6 dark:border-white/[0.08] dark:bg-[linear-gradient(135deg,#111827,#0D1324_58%,#17152A)] dark:shadow-[0_0_26px_rgba(139,92,246,0.14)]">
-        <span className="pointer-events-none absolute -left-10 -top-14 h-36 w-36 rounded-full bg-violet-400/15 blur-3xl" aria-hidden="true" />
-        <span className="pointer-events-none absolute -bottom-16 right-1/3 h-32 w-32 rounded-full bg-sky-400/15 blur-3xl" aria-hidden="true" />
         <div className="relative flex items-center gap-3">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
             <ClipboardList className="h-6 w-6" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">الطلبات</h1>
+              <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">إدارة الطلبات</h1>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
-                <i className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                تحديث مباشر
+                <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                متصل بالخادم
               </span>
             </div>
-            <p className="mt-1 text-xs font-bold text-slate-500 sm:text-sm dark:text-[#9AA7BD]">إدارة الطلبات ومتابعة التنفيذ من مكان واحد.</p>
+            <p className="mt-1 text-xs font-bold text-slate-500 sm:text-sm dark:text-[#9AA7BD]">
+              متابعة طلبات العملاء الفعلية وإدارتها من الخادم.
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={loadOrders}
+            disabled={isLoading}
+            className="inline-flex h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            تحديث
+          </button>
           <Sparkles className="hidden h-6 w-6 text-violet-400/60 sm:block" />
         </div>
       </section>
 
-      <OrdersStats orders={orders} />
+      <OrdersStats orders={orders} total={pagination.total} />
 
       <OrdersFilters
         filters={draftFilters}
@@ -105,40 +222,80 @@ export default function AdminOrdersPage() {
         <div className="mb-3 flex items-end justify-between gap-3 px-1">
           <div>
             <h2 id="orders-list-title" className="text-base font-black text-slate-950 dark:text-white">قائمة الطلبات</h2>
-            <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-[#8A94A7]">اضغط على التفاصيل لإدارة حالة الطلب</p>
+            <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-[#8A94A7]">
+              افتح التفاصيل لتنفيذ الإجراءات المعتمدة على الطلب.
+            </p>
           </div>
           <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-600 shadow-sm dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
-            {filteredOrders.length.toLocaleString("ar-EG")} من {orders.length.toLocaleString("ar-EG")}
+            تم تحميل {visibleOrders.length.toLocaleString("ar-EG-u-nu-latn")} من {(pagination.total || orders.length).toLocaleString("ar-EG-u-nu-latn")}
           </span>
         </div>
 
+        {error && (
+          <div className="mb-3 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {isLoading ? (
           <OrdersLoadingState />
-        ) : filteredOrders.length > 0 ? (
+        ) : visibleOrders.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredOrders.map((order) => (
+            {visibleOrders.map((order) => (
               <OrderCard key={order.id} order={order} onDetails={setSelectedOrderId} />
             ))}
           </div>
         ) : (
           <EmptyState
             icon={Search}
-            title="لا توجد طلبات مطابقة"
-            description="جرّب تغيير كلمات البحث أو إعادة تعيين الفلاتر لعرض كل الطلبات."
-            actionLabel="إعادة تعيين الفلاتر"
+            title={error ? "تعذر تحميل الطلبات" : "لا توجد طلبات"}
+            description={error || "لا توجد طلبات مطابقة للفلاتر الحالية."}
+            actionLabel="إعادة ضبط الفلاتر"
             onAction={resetFilters}
           />
         )}
+
+        {!isLoading && !error && pagination.pages > 1 && (
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
+            >
+              السابق
+            </button>
+            <span className="text-xs font-black text-slate-500 dark:text-slate-400">
+              صفحة {pagination.page} من {pagination.pages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= pagination.pages}
+              onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
+              className="h-10 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
+            >
+              التالي
+            </button>
+          </div>
+        )}
       </section>
 
-      <OrderDetailsModal order={selectedOrder} onClose={closeDetails} onSaveStatus={saveStatus} />
+      <OrderDetailsModal
+        actionKey={actionKey}
+        detailsError={detailsError}
+        isLoading={detailsLoading}
+        onAction={executeOrderAction}
+        onClose={closeDetails}
+        order={selectedOrder}
+      />
     </div>
   );
 }
 
 function OrdersLoadingState() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="جاري تحميل الطلبات" aria-busy="true">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="جارٍ تحميل طلبات الإدارة" aria-busy="true">
       {Array.from({ length: 6 }).map((_, index) => (
         <article key={index} className="rounded-[24px] border border-slate-200/80 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111827]">
           <div className="flex justify-between gap-3">
@@ -165,39 +322,28 @@ function countActiveFilters(filters) {
     filters.status !== "all",
     filters.type !== "all",
     filters.datePreset !== "all",
+    filters.userId.trim() !== "",
     filters.sort !== "newest",
   ].filter(Boolean).length;
 }
 
-function filterOrders(orders, filters) {
-  const normalizedQuery = filters.query.trim().toLocaleLowerCase("ar");
-  const dateBounds = getDateBounds(filters);
+function buildBackendQuery(filters) {
+  const bounds = getDateBounds(filters);
+  return {
+    search: filters.query,
+    status: filters.status,
+    userId: filters.userId,
+    from: bounds.from,
+    to: bounds.to,
+  };
+}
 
+function filterLoadedOrders(orders, filters) {
   return orders
-    .filter((order) => {
-      const searchableText = [
-        order.id,
-        order.requestId,
-        order.playerId,
-        order.userId,
-        order.username,
-        order.userEmail,
-        order.supplier,
-        order.product,
-      ].join(" ").toLocaleLowerCase("ar");
-      const orderTime = new Date(order.createdAt).getTime();
-
-      return (
-        (!normalizedQuery || searchableText.includes(normalizedQuery)) &&
-        (filters.status === "all" || order.status === filters.status) &&
-        (filters.type === "all" || order.executionType === filters.type) &&
-        (!dateBounds.from || orderTime >= dateBounds.from) &&
-        (!dateBounds.to || orderTime <= dateBounds.to)
-      );
-    })
+    .filter((order) => filters.type === "all" || order.executionType === filters.type)
     .sort((first, second) => {
-      const firstTime = new Date(first.createdAt).getTime();
-      const secondTime = new Date(second.createdAt).getTime();
+      const firstTime = first.createdAt ? new Date(first.createdAt).getTime() : 0;
+      const secondTime = second.createdAt ? new Date(second.createdAt).getTime() : 0;
       return filters.sort === "oldest" ? firstTime - secondTime : secondTime - firstTime;
     });
 }
@@ -207,18 +353,18 @@ function getDateBounds(filters) {
 
   if (filters.datePreset === "custom") {
     return {
-      from: filters.dateFrom ? new Date(`${filters.dateFrom}T00:00:00`).getTime() : null,
-      to: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`).getTime() : null,
+      from: filters.dateFrom ? new Date(`${filters.dateFrom}T00:00:00`).toISOString() : undefined,
+      to: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`).toISOString() : undefined,
     };
   }
 
   const now = new Date();
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   let start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   if (filters.datePreset === "last7") start.setDate(start.getDate() - 6);
   if (filters.datePreset === "last30") start.setDate(start.getDate() - 29);
   if (filters.datePreset === "month") start = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  return { from: start.getTime(), to: endOfToday };
+  return { from: start.toISOString(), to: end.toISOString() };
 }

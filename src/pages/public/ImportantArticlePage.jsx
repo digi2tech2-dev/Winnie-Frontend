@@ -1,11 +1,14 @@
 import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import { ArrowRight, CalendarDays, CheckCircle2, Mail, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getImportantArticle } from "../../data/importantLinks";
 
 export default function ImportantArticlePage({ articleSlug }) {
   const { slug } = useParams();
   const location = useLocation();
-  const article = getImportantArticle(articleSlug || slug);
+  const { t } = useTranslation(["about", "policies"]);
+  const articles = t("articles", { ns: "policies", returnObjects: true });
+  const article = getImportantArticle(articleSlug || slug, articles);
   const homePath = location.pathname.startsWith("/customer")
     ? "/customer/dashboard"
     : location.pathname.startsWith("/admin")
@@ -23,7 +26,7 @@ export default function ImportantArticlePage({ articleSlug }) {
         className="inline-flex items-center gap-2 text-sm font-black text-[#7C3AED] transition hover:text-[#0369A1] dark:text-[#A78BFA] dark:hover:text-[#38BDF8]"
       >
         <ArrowRight className="h-4 w-4" />
-        {homePath === "/" ? "العودة للرئيسية" : "العودة للحساب"}
+        {homePath === "/" ? t("backHome") : t("backAccount")}
       </Link>
 
       <header className="mt-5 rounded-lg border border-sky-100/90 bg-white/[0.82] p-5 shadow-soft backdrop-blur-2xl dark:border-white/10 dark:bg-[#111827] sm:p-7">
@@ -34,7 +37,7 @@ export default function ImportantArticlePage({ articleSlug }) {
           </span>
           <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-[#8A94A7]">
             <CalendarDays className="h-4 w-4" />
-            آخر تحديث: {article.updated}
+            {t("lastUpdated", { date: article.updated })}
           </span>
         </div>
 
@@ -75,7 +78,7 @@ export default function ImportantArticlePage({ articleSlug }) {
             </div>
             {section.email && (
               <div className="mt-4 rounded-lg border border-[#DDD6FE] bg-[#F5F3FF]/80 p-4 dark:border-[#8B5CF6]/30 dark:bg-[#1A1024]">
-                <p className="text-sm font-black text-slate-950 dark:text-white">الايميل :</p>
+                <p className="text-sm font-black text-slate-950 dark:text-white">{t("emailLabel")}</p>
                 <a
                   href={`mailto:${section.email}`}
                   className="mt-2 inline-flex items-center gap-2 text-sm font-black text-[#7C3AED] transition hover:text-[#0369A1] dark:text-[#A78BFA] dark:hover:text-[#38BDF8]"
@@ -107,16 +110,16 @@ export default function ImportantArticlePage({ articleSlug }) {
       </footer>
 
       <section className="mt-5 rounded-lg border border-sky-100/90 bg-white/[0.82] p-5 text-center shadow-[0_14px_36px_rgba(14,165,233,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[#111827] sm:p-6">
-        <h2 className="text-xl font-black text-slate-950 dark:text-white">لم تجد ماتبحث عنه؟</h2>
+        <h2 className="text-xl font-black text-slate-950 dark:text-white">{t("notFoundTitle")}</h2>
         <p className="mt-2 text-sm font-semibold leading-7 text-slate-600 dark:text-[#C4C9D4]">
-          تحدث معنا أو تواصل عبر البريد الإلكتروني
+          {t("notFoundDescription")}
         </p>
         <a
           href="mailto:Support.winniefun@gmail.com"
           className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-5 text-sm font-black text-white shadow-[0_14px_34px_rgba(124,58,237,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(14,165,233,0.24)]"
         >
           <Mail className="h-4 w-4" />
-          تواصل عبر البريد الإلكتروني
+          {t("contactEmail")}
         </a>
       </section>
     </article>

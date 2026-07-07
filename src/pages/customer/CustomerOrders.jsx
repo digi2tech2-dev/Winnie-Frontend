@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   Filter,
@@ -8,58 +8,31 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { getCustomerOrders } from "../../api/orders";
 import EmptyState from "../../components/EmptyState";
-import { orders } from "../../data/catalog";
+import { useAuth } from "../../context/AuthContext";
+
+const pageSize = 20;
 
 const statusClasses = {
-  مكتمل: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
-  "قيد التنفيذ": "bg-blue-500/12 text-blue-700 dark:text-blue-300",
-  معلق: "bg-amber-500/14 text-amber-700 dark:text-amber-300",
-  ملغي: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
-};
-
-const monthMap = {
-  يناير: 0,
-  فبراير: 1,
-  مارس: 2,
-  أبريل: 3,
-  ابريل: 3,
-  مايو: 4,
-  يونيو: 5,
-  يوليو: 6,
-  أغسطس: 7,
-  اغسطس: 7,
-  سبتمبر: 8,
-  أكتوبر: 9,
-  اكتوبر: 9,
-  نوفمبر: 10,
-  ديسمبر: 11,
+  COMPLETED: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  PROCESSING: "bg-blue-500/12 text-blue-700 dark:text-blue-300",
+  PENDING: "bg-amber-500/14 text-amber-700 dark:text-amber-300",
+  MANUAL_REVIEW: "bg-amber-500/14 text-amber-700 dark:text-amber-300",
+  CANCELED: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
+  CANCELLED: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
+  FAILED: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
+  PARTIAL: "bg-violet-500/12 text-violet-700 dark:text-violet-300",
 };
 
 const initialFilters = {
   query: "",
   status: "all",
-  delivery: "all",
   dateFrom: "",
   dateTo: "",
   sort: "newest",
 };
-
-const hiddenDeliveryFilterOptions = new Set(["تفعيل الاشتراك"]);
-
-function uniqueValues(key) {
-  return Array.from(new Set(orders.map((order) => order[key]).filter(Boolean)));
-}
-
-function parseOrderPrice(price) {
-  const match = String(price).match(/[\d.]+/);
-  return match ? Number.parseFloat(match[0]) : 0;
-}
-
-function parseArabicDate(date) {
-  const [day, month, year] = String(date).split(" ");
-  return new Date(Number(year), monthMap[month] ?? 0, Number(day)).getTime();
-}
 
 function openDatePicker(event) {
   const input = event.currentTarget;
@@ -86,11 +59,51 @@ function blockDateTyping(event) {
 }
 
 export default function CustomerOrders({ basePath = "/customer" }) {
+  const { token } = useAuth();
+  const { t } = useTranslation("orders");
   const [filters, setFilters] = useState(initialFilters);
-  const statusOptions = useMemo(() => uniqueValues("status"), []);
-  const deliveryOptions = useMemo(
-    () => uniqueValues("delivery").filter((delivery) => !hiddenDeliveryFilterOptions.has(delivery)),
-    [],
+  const [page, setPage] = useState(1);
+  const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let cancelled = false;
+
+    const loadOrders = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getCustomerOrders(token, { page, limit: pageSize });
+        if (!cancelled) {
+          setOrders(result.orders);
+          setPagination(result.pagination);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError.userMessage || t("list.loadError"));
+          setOrders([]);
+          setPagination({ page, limit: pageSize, total: 0, pages: 1 });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadOrders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, token]);
+
+  const statusOptions = useMemo(
+    () => Array.from(new Set(orders.map((order) => order.status).filter(Boolean))),
+    [orders],
   );
 
   const updateFilter = (key, value) => {
@@ -108,14 +121,14 @@ export default function CustomerOrders({ basePath = "/customer" }) {
 
     return orders
       .filter((order) => {
-        const orderTime = parseArabicDate(order.date);
+        const orderTime = order.date ? new Date(order.date).getTime() : 0;
         const searchable = [
+          order.displayId,
           order.id,
-          order.product,
-          order.status,
+          order.productName,
+          order.statusLabel,
           order.price,
-          order.date,
-          order.delivery,
+          order.dateLabel,
           `${order.progress}%`,
         ]
           .join(" ")
@@ -123,22 +136,21 @@ export default function CustomerOrders({ basePath = "/customer" }) {
 
         const matchesSearch = !query || searchable.includes(query);
         const matchesStatus = filters.status === "all" || order.status === filters.status;
-        const matchesDelivery = filters.delivery === "all" || order.delivery === filters.delivery;
         const matchesDateRange =
           (fromTime === null || orderTime >= fromTime) &&
           (toTime === null || orderTime <= toTime);
 
-        return matchesSearch && matchesStatus && matchesDelivery && matchesDateRange;
+        return matchesSearch && matchesStatus && matchesDateRange;
       })
       .sort((first, second) => {
-        if (filters.sort === "oldest") return parseArabicDate(first.date) - parseArabicDate(second.date);
-        if (filters.sort === "price-high") return parseOrderPrice(second.price) - parseOrderPrice(first.price);
-        if (filters.sort === "price-low") return parseOrderPrice(first.price) - parseOrderPrice(second.price);
-        if (filters.sort === "progress-high") return second.progress - first.progress;
-        if (filters.sort === "progress-low") return first.progress - second.progress;
-        return parseArabicDate(second.date) - parseArabicDate(first.date);
+        const firstDate = first.date ? new Date(first.date).getTime() : 0;
+        const secondDate = second.date ? new Date(second.date).getTime() : 0;
+        if (filters.sort === "oldest") return firstDate - secondDate;
+        if (filters.sort === "price-high") return second.amount - first.amount;
+        if (filters.sort === "price-low") return first.amount - second.amount;
+        return secondDate - firstDate;
       });
-  }, [filters]);
+  }, [filters, orders]);
 
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
     if (key === "sort") return value !== initialFilters.sort;
@@ -150,13 +162,13 @@ export default function CustomerOrders({ basePath = "/customer" }) {
       <section className="glass-panel rounded-lg p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-3xl font-black">طلباتي</h1>
-            <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">سجل طلباتك وحالة التسليم.</p>
+            <h1 className="text-3xl font-black">{t("list.title")}</h1>
+            <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{t("list.description")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 text-sm font-black text-slate-600 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300">
               <PackageCheck className="h-4 w-4 text-[#8B5CF6]" />
-              {filteredOrders.length} من {orders.length}
+              {t("list.count", { shown: filteredOrders.length, total: pagination.total || orders.length })}
             </span>
             <button
               type="button"
@@ -164,7 +176,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
               className="interactive-ring inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 text-sm font-black text-slate-600 transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300 dark:hover:bg-white/[0.075]"
             >
               <RotateCcw className="h-4 w-4" />
-              تصفير الفلاتر
+              {t("list.resetFilters")}
               {activeFiltersCount > 0 && (
                 <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#8B5CF6] px-1 text-[11px] text-white">
                   {activeFiltersCount}
@@ -180,7 +192,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-[linear-gradient(135deg,#38BDF8,#8B5CF6)] text-white shadow-[0_12px_28px_rgba(56,189,248,0.22)]">
             <SlidersHorizontal className="h-5 w-5" />
           </span>
-          بحث وفلترة الطلبات
+          {t("list.searchFilter")}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -190,22 +202,15 @@ export default function CustomerOrders({ basePath = "/customer" }) {
               type="search"
               value={filters.query}
               onChange={(event) => updateFilter("query", event.target.value)}
-              placeholder="ابحث برقم الطلب، المنتج، الحالة، السعر..."
+              placeholder={t("list.searchPlaceholder")}
               className="h-12 w-full rounded-2xl border border-[#D8B4FE]/70 bg-white px-12 text-sm font-bold text-slate-950 shadow-[0_12px_28px_rgba(59,130,246,0.08)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/80 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-white/[0.065] dark:text-white dark:shadow-none"
             />
           </label>
 
-          <FilterSelect label="الحالة" value={filters.status} onChange={(value) => updateFilter("status", value)}>
-            <option value="all">كل الحالات</option>
+          <FilterSelect label={t("list.status")} value={filters.status} onChange={(value) => updateFilter("status", value)}>
+            <option value="all">{t("list.allStatuses")}</option>
             {statusOptions.map((status) => (
               <option key={status} value={status}>{status}</option>
-            ))}
-          </FilterSelect>
-
-          <FilterSelect label="التسليم" value={filters.delivery} onChange={(value) => updateFilter("delivery", value)}>
-            <option value="all">كل طرق التسليم</option>
-            {deliveryOptions.map((delivery) => (
-              <option key={delivery} value={delivery}>{delivery}</option>
             ))}
           </FilterSelect>
 
@@ -215,90 +220,118 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             onChange={updateFilter}
           />
 
-          <FilterSelect label="ترتيب النتائج" value={filters.sort} onChange={(value) => updateFilter("sort", value)}>
-            <option value="newest">الأحدث أولاً</option>
-            <option value="oldest">الأقدم أولاً</option>
-            <option value="price-high">السعر الأعلى</option>
-            <option value="price-low">السعر الأقل</option>
-            <option value="progress-high">الأقرب للتسليم</option>
-            <option value="progress-low">الأقل تقدماً</option>
+          <FilterSelect label={t("list.sort")} value={filters.sort} onChange={(value) => updateFilter("sort", value)}>
+            <option value="newest">{t("list.newest")}</option>
+            <option value="oldest">{t("list.oldest")}</option>
+            <option value="price-high">{t("list.highestPrice")}</option>
+            <option value="price-low">{t("list.lowestPrice")}</option>
           </FilterSelect>
         </div>
       </section>
 
-      {filteredOrders.length > 0 ? (
-      <section className="glass-panel overflow-hidden rounded-lg">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[780px] text-right text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-400">
-              <tr>
-                <th className="px-5 py-4">رقم الطلب</th>
-                <th className="px-5 py-4">المنتج</th>
-                <th className="px-5 py-4">الحالة</th>
-                <th className="px-5 py-4">السعر</th>
-                <th className="px-5 py-4">التاريخ</th>
-                <th className="px-5 py-4">التسليم</th>
-                <th className="px-5 py-4">التقدم</th>
-                <th className="px-5 py-4">الإجراء</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-white/10">
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="transition hover:bg-slate-50 dark:hover:bg-white/[0.045]">
-                  <td className="px-5 py-4 font-black">{order.id}</td>
-                  <td className="px-5 py-4 font-semibold">{order.product}</td>
-                  <td className="px-5 py-4">
-                    <span className={`rounded-md px-2.5 py-1 text-xs font-black ${statusClasses[order.status]}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 font-black">{order.price}</td>
-                  <td className="px-5 py-4 text-slate-500 dark:text-slate-400">{order.date}</td>
-                  <td className="px-5 py-4 text-slate-500 dark:text-slate-400">{order.delivery}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex min-w-[130px] items-center gap-2">
-                      <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                        <span className="block h-full rounded-full bg-[linear-gradient(90deg,#7C3AED,#38BDF8)]" style={{ width: `${order.progress}%` }} />
-                      </span>
-                      <span className="w-10 text-right text-xs font-black text-slate-500 dark:text-slate-400">{order.progress}%</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <Link to={`${basePath}/order/${order.id.replace("#", "")}`} className="font-black text-pulse">
-                      التفاصيل
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading ? (
+        <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+          {t("list.loading")}
         </div>
-      </section>
+      ) : error ? (
+        <EmptyState icon={Search} title={t("list.loadError")} description={error} />
+      ) : filteredOrders.length > 0 ? (
+        <section className="glass-panel overflow-hidden rounded-lg">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[780px] text-right text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-400">
+                <tr>
+                  <th className="px-5 py-4">{t("list.order")}</th>
+                  <th className="px-5 py-4">{t("list.product")}</th>
+                  <th className="px-5 py-4">{t("list.status")}</th>
+                  <th className="px-5 py-4">{t("list.price")}</th>
+                  <th className="px-5 py-4">{t("list.date")}</th>
+                  <th className="px-5 py-4">{t("list.progress")}</th>
+                  <th className="px-5 py-4">{t("list.action")}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                {filteredOrders.map((order) => (
+                  <tr key={order.id} className="transition hover:bg-slate-50 dark:hover:bg-white/[0.045]">
+                    <td className="px-5 py-4 font-black">{order.displayId}</td>
+                    <td className="px-5 py-4 font-semibold">{order.productName}</td>
+                    <td className="px-5 py-4">
+                      <span className={`rounded-md px-2.5 py-1 text-xs font-black ${statusClasses[order.status] || "bg-slate-500/12 text-slate-600 dark:text-slate-300"}`}>
+                        {order.statusLabel}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 font-black">{order.price}</td>
+                    <td className="px-5 py-4 text-slate-500 dark:text-slate-400">{order.dateLabel}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex min-w-[130px] items-center gap-2">
+                        <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                          <span className="block h-full rounded-full bg-[linear-gradient(90deg,#7C3AED,#38BDF8)]" style={{ width: `${order.progress}%` }} />
+                        </span>
+                        <span className="w-10 text-right text-xs font-black text-slate-500 dark:text-slate-400">{order.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Link to={`${basePath}/order/${order.id}`} className="font-black text-pulse">
+                        {t("list.details")}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : (
         <EmptyState
           icon={Search}
-          title="لا توجد طلبات مطابقة"
-          description="غيّر كلمات البحث أو صفّر الفلاتر لعرض كل الطلبات مرة أخرى."
-          actionLabel="تصفير الفلاتر"
+          title={t("list.emptyTitle")}
+          description={t("list.emptyDescription")}
+          actionLabel={t("list.resetFilters")}
           onAction={resetFilters}
         />
+      )}
+
+      {!loading && !error && pagination.pages > 1 && (
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
+          >
+            {t("common:actions.previous")}
+          </button>
+          <span className="text-sm font-black text-slate-500 dark:text-slate-400">
+            {t("common:pagination.pageOf", { page: pagination.page, pages: pagination.pages })}
+          </span>
+          <button
+            type="button"
+            disabled={page >= pagination.pages}
+            onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
+            className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
+          >
+            {t("common:actions.next")}
+          </button>
+        </div>
       )}
     </div>
   );
 }
 
 function DateRangeFilter({ from, to, onChange }) {
+  const { t } = useTranslation("orders");
+
   return (
     <label className="block">
       <span className="mb-1.5 flex items-center gap-2 text-xs font-black text-slate-700 dark:text-slate-400">
         <span className="grid h-7 w-7 place-items-center rounded-xl bg-[linear-gradient(135deg,#22D3EE,#7C3AED,#EC4899)] text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)]">
           <CalendarDays className="h-4 w-4" />
         </span>
-        التاريخ
+        {t("list.date")}
       </span>
       <span className="grid grid-cols-2 gap-2 rounded-2xl border border-[#D8B4FE]/70 bg-white p-1.5 shadow-[0_12px_28px_rgba(124,58,237,0.10)] transition focus-within:border-[#8B5CF6]/80 focus-within:ring-4 focus-within:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-white/[0.065] dark:shadow-none">
         <span className="min-w-0">
-          <span className="mb-1 block px-2 text-[10px] font-black text-[#8B5CF6] dark:text-[#C084FC]">من</span>
+          <span className="mb-1 block px-2 text-[10px] font-black text-[#8B5CF6] dark:text-[#C084FC]">{t("list.from")}</span>
           <input
             type="date"
             value={from}
@@ -309,11 +342,11 @@ function DateRangeFilter({ from, to, onChange }) {
             onPaste={(event) => event.preventDefault()}
             inputMode="none"
             className="h-9 w-full rounded-xl border border-transparent bg-[#F8FCFF] px-2 text-xs font-black text-slate-900 outline-none transition hover:border-[#C4B5FD] focus:border-[#8B5CF6]/60 dark:bg-[#0B1220] dark:text-white"
-            aria-label="تاريخ البداية"
+            aria-label={t("list.startDate")}
           />
         </span>
         <span className="min-w-0">
-          <span className="mb-1 block px-2 text-[10px] font-black text-[#EC4899] dark:text-[#F0ABFC]">إلى</span>
+          <span className="mb-1 block px-2 text-[10px] font-black text-[#EC4899] dark:text-[#F0ABFC]">{t("list.to")}</span>
           <input
             type="date"
             value={to}
@@ -324,7 +357,7 @@ function DateRangeFilter({ from, to, onChange }) {
             onPaste={(event) => event.preventDefault()}
             inputMode="none"
             className="h-9 w-full rounded-xl border border-transparent bg-[#FDF7FF] px-2 text-xs font-black text-slate-900 outline-none transition hover:border-[#F0ABFC] focus:border-[#EC4899]/60 dark:bg-[#0B1220] dark:text-white"
-            aria-label="تاريخ النهاية"
+            aria-label={t("list.endDate")}
           />
         </span>
       </span>

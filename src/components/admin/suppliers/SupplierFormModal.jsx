@@ -1,3 +1,231 @@
-import{createPortal}from"react-dom";import{useState}from"react";import{Save,Server,X}from"lucide-react";
-export default function SupplierFormModal({open,supplier,onClose,onSave}){if(!open)return null;return createPortal(<Content key={supplier?.id||"new"} supplier={supplier} onClose={onClose} onSave={onSave}/>,document.body)}function Content({supplier,onClose,onSave}){const[f,setF]=useState({name:supplier?.name||"",code:supplier?.code||"",apiUrl:supplier?.apiUrl||"",authType:supplier?.authType||"apiKey",credential:supplier?.credential||"",active:supplier?.active??true,autoExecution:supplier?.autoExecution??true});const update=(k,v)=>setF({...f,[k]:v});return <div className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4"><section className="flex max-h-[92dvh] w-full max-w-[580px] flex-col rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]"><header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10"><Server className="h-5 w-5 text-violet-500"/><h2 className="flex-1 text-sm font-black dark:text-white">{supplier?"تعديل المورد":"إضافة مورد"}</h2><button onClick={onClose}><X className="h-4 w-4"/></button></header><div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2"><Field label="اسم المورد"><input value={f.name} onChange={e=>update("name",e.target.value)} className={input}/></Field><Field label="كود المورد"><input dir="ltr" value={f.code} onChange={e=>update("code",e.target.value)} className={input}/></Field><Field label="رابط API الأساسي" wide><input dir="ltr" value={f.apiUrl} onChange={e=>update("apiUrl",e.target.value)} className={input}/></Field><Field label="نوع التوثيق"><select value={f.authType} onChange={e=>update("authType",e.target.value)} className={input}><option value="apiKey">API Key</option><option value="token">Token</option></select></Field><Field label={f.authType==="apiKey"?"API Key":"Token"}><input dir="ltr" type="password" value={f.credential} onChange={e=>update("credential",e.target.value)} className={input}/></Field><Field label="المورد نشط"><select value={f.active?"yes":"no"} onChange={e=>update("active",e.target.value==="yes")} className={input}><option value="yes">نعم</option><option value="no">لا</option></select></Field><Field label="التنفيذ التلقائي"><select value={f.autoExecution?"yes":"no"} onChange={e=>update("autoExecution",e.target.value==="yes")} className={input}><option value="yes">نعم</option><option value="no">لا</option></select></Field></div><footer className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#111827]"><button onClick={onClose} className="h-11 rounded-xl border border-slate-200 text-[10px] font-black dark:border-white/10 dark:text-white">إلغاء</button><button onClick={()=>f.name&&onSave(f)} className="inline-flex h-11 items-center justify-center gap-1 rounded-xl bg-violet-600 text-[10px] font-black text-white"><Save className="h-4 w-4"/>حفظ المورد</button></footer></section></div>}
-function Field({label,wide,children}){return <label className={wide?"sm:col-span-2":""}><span className="mb-1 block text-[9px] font-black text-slate-500">{label}</span>{children}</label>}const input="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[10px] font-black outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white";
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { Save, Server, X } from "lucide-react";
+
+const authTypeOptions = [
+  { value: "NONE", label: "بدون مصادقة" },
+  { value: "API_KEY", label: "مفتاح واجهة البرمجة" },
+  { value: "BEARER_TOKEN", label: "رمز المصادقة" },
+  { value: "USERNAME_PASSWORD", label: "اسم المستخدم وكلمة المرور" },
+];
+
+const integrationTypeOptions = [
+  { value: "API", label: "واجهة برمجة التطبيقات" },
+];
+
+export default function SupplierFormModal({ error = "", open, supplier, onClose, onSave, saving = false }) {
+  if (!open) return null;
+
+  return createPortal(
+    <SupplierFormContent
+      key={supplier?.id || "new-provider"}
+      backendError={error}
+      onClose={onClose}
+      onSave={onSave}
+      saving={saving}
+      supplier={supplier}
+    />,
+    document.body,
+  );
+}
+
+function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }) {
+  const editing = Boolean(supplier);
+  const [form, setForm] = useState({
+    apiKey: "",
+    apiToken: "",
+    authType: supplier?.authType || "NONE",
+    baseUrl: supplier?.baseUrl || "",
+    bearerToken: "",
+    integrationType: supplier?.integrationType || "API",
+    isActive: supplier?.active ?? true,
+    name: supplier?.name || "",
+    password: "",
+    slug: supplier?.slug || "",
+    supportedFeaturesText: (supplier?.supportedFeatures || []).join("\n"),
+    syncInterval: supplier?.syncInterval ?? 60,
+    username: "",
+  });
+  const [error, setError] = useState("");
+
+  const update = (key, value) => {
+    setError("");
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateAuthType = (value) => {
+    setError("");
+    setForm((current) => ({
+      ...current,
+      apiKey: "",
+      apiToken: "",
+      authType: value,
+      bearerToken: "",
+      password: "",
+      username: "",
+    }));
+  };
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (saving) return;
+
+    if (!form.name.trim() || !form.baseUrl.trim() || (!editing && !form.slug.trim())) {
+      setError(editing ? "اسم المورد ورابط واجهة البرمجة الأساسي مطلوبان." : "اسم المورد ورمزه ورابط واجهة البرمجة الأساسي مطلوبة.");
+      return;
+    }
+
+    onSave(form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4">
+      <section className="flex max-h-[92dvh] w-full max-w-[620px] flex-col rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
+        <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
+          <Server className="h-5 w-5 text-violet-500" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-black dark:text-white">{editing ? "تعديل المورد" : "إضافة مورد"}</h2>
+            <p className="mt-0.5 text-[9px] font-bold text-slate-400">تُحفظ بيانات المورد السرية في الخادم فقط ولا تظهر بعد الحفظ.</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={saving} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-white/[0.07]">
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        <form id="supplier-form" onSubmit={submit} className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2">
+          <Field label="اسم المورد">
+            <input value={form.name} onChange={(event) => update("name", event.target.value)} className={inputClassName} />
+          </Field>
+          <Field label="رمز المورد">
+            <input dir="ltr" value={form.slug} onChange={(event) => update("slug", event.target.value)} placeholder="provider-slug" className={inputClassName} />
+          </Field>
+          <Field label="رابط واجهة البرمجة الأساسي" wide={!editing}>
+            <input dir="ltr" value={form.baseUrl} onChange={(event) => update("baseUrl", event.target.value)} placeholder="https://provider.example/api" className={inputClassName} />
+          </Field>
+          <Field label="نوع المورد / التكامل">
+            <select value={form.integrationType} onChange={(event) => update("integrationType", event.target.value)} className={inputClassName}>
+              {integrationTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="نوع المصادقة">
+            <select value={form.authType} onChange={(event) => updateAuthType(event.target.value)} className={inputClassName}>
+              {authTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </Field>
+          <label className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[10px] font-black text-slate-600 dark:border-white/10 dark:bg-[#0B1220] dark:text-white">
+            <span>مورد نشط</span>
+            <input type="checkbox" checked={form.isActive} onChange={(event) => update("isActive", event.target.checked)} className="h-4 w-4 accent-violet-600" />
+          </label>
+          <CredentialFields authType={form.authType} editing={editing} form={form} update={update} />
+          {editing && (
+            <>
+              <Field label="مدة المزامنة">
+                <input dir="ltr" type="number" min="0" value={form.syncInterval} onChange={(event) => update("syncInterval", event.target.value)} className={inputClassName} />
+              </Field>
+              <Field label="الخصائص المدعومة" wide>
+                <textarea
+                  value={form.supportedFeaturesText}
+                  onChange={(event) => update("supportedFeaturesText", event.target.value)}
+                  rows={4}
+                  placeholder="fetchProducts&#10;placeOrder&#10;checkOrder"
+                  className={`${inputClassName} h-auto py-3`}
+                />
+              </Field>
+            </>
+          )}
+          {(error || backendError) && <p className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 sm:col-span-2 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">{error || backendError}</p>}
+        </form>
+
+        <footer className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+          <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-xl border border-slate-200 text-[10px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-white">
+            إلغاء
+          </button>
+          <button type="submit" form="supplier-form" disabled={saving} className="inline-flex h-11 items-center justify-center gap-1 rounded-xl bg-violet-600 text-[10px] font-black text-white disabled:opacity-60">
+            <Save className="h-4 w-4" />
+            {saving ? "جارٍ الحفظ..." : editing ? "حفظ المورد" : "إضافة المورد"}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function CredentialFields({ authType, editing, form, update }) {
+  const keepPlaceholder = editing ? "اتركه فارغًا للاحتفاظ بالبيانات المحفوظة" : "";
+
+  if (authType === "NONE") return null;
+
+  return (
+    <>
+      <p className="rounded-2xl border border-violet-100 bg-violet-50 px-3 py-2 text-[10px] font-black leading-5 text-violet-700 sm:col-span-2 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+        سيتم حفظ بيانات التوثيق مشفرة ولن تظهر مرة أخرى بعد الحفظ.
+      </p>
+      {authType === "API_KEY" && (
+        <Field label="مفتاح واجهة البرمجة" wide>
+          <input
+            dir="ltr"
+            type="password"
+            value={form.apiKey}
+            onChange={(event) => update("apiKey", event.target.value)}
+            placeholder={keepPlaceholder || "api-token"}
+            autoComplete="off"
+            className={inputClassName}
+          />
+        </Field>
+      )}
+      {authType === "BEARER_TOKEN" && (
+        <Field label="رمز المصادقة" wide>
+          <input
+            dir="ltr"
+            type="password"
+            value={form.bearerToken}
+            onChange={(event) => update("bearerToken", event.target.value)}
+            placeholder={keepPlaceholder || "رمز المصادقة"}
+            autoComplete="off"
+            className={inputClassName}
+          />
+        </Field>
+      )}
+      {authType === "USERNAME_PASSWORD" && (
+        <>
+          <Field label="اسم المستخدم">
+            <input
+              dir="ltr"
+              value={form.username}
+              onChange={(event) => update("username", event.target.value)}
+              placeholder={keepPlaceholder || "username"}
+              autoComplete="off"
+              className={inputClassName}
+            />
+          </Field>
+          <Field label="كلمة المرور">
+            <input
+              dir="ltr"
+              type="password"
+              value={form.password}
+              onChange={(event) => update("password", event.target.value)}
+              placeholder={keepPlaceholder || "password"}
+              autoComplete="new-password"
+              className={inputClassName}
+            />
+          </Field>
+        </>
+      )}
+    </>
+  );
+}
+
+function Field({ label, wide, children }) {
+  return (
+    <label className={wide ? "sm:col-span-2" : ""}>
+      <span className="mb-1 block text-[9px] font-black text-slate-500">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+const inputClassName = "h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[10px] font-black outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 dark:border-white/10 dark:bg-[#0B1220] dark:text-white";

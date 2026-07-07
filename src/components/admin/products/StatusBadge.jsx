@@ -1,5 +1,10 @@
 import { CheckCircle2, CircleOff, PauseCircle } from "lucide-react";
-import { productStatusLabels } from "../../../data/adminProducts";
+
+const productStatusLabels = {
+  available: "متوفر",
+  unavailable: "غير متوفر",
+  paused: "موقوف مؤقتًا",
+};
 
 const styles = {
   available: {

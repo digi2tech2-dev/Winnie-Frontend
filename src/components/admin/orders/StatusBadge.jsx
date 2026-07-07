@@ -27,6 +27,21 @@ const statusStyles = {
     className: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
     dotClassName: "bg-rose-500",
   },
+  failed: {
+    icon: XCircle,
+    className: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
+    dotClassName: "bg-rose-500",
+  },
+  canceled: {
+    icon: XCircle,
+    className: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300",
+    dotClassName: "bg-rose-500",
+  },
+  partial: {
+    icon: ShieldAlert,
+    className: "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:bg-violet-400/10 dark:text-violet-300",
+    dotClassName: "bg-violet-500",
+  },
   manual_review: {
     icon: ShieldAlert,
     className: "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300",
@@ -37,7 +52,7 @@ const statusStyles = {
 export default function StatusBadge({ status, compact = false, showIcon = true }) {
   const style = statusStyles[status] || statusStyles.pending;
   const Icon = style.icon;
-  const label = orderStatusMeta[status]?.label || status;
+  const label = orderStatusMeta[status]?.label || String(status || "pending").replace(/[_-]+/g, " ");
 
   return (
     <span

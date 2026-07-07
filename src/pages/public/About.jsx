@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -28,147 +29,14 @@ import GoogleMark from "../../components/GoogleMark";
 
 const company = {
   name: "Winnie",
-  locationAr: "Sharjah Publishing City",
-  locationEn: "United Arab Emirates - Sharjah - Sharjah Publishing City",
   registration: "4423622.01",
   tax: "105156169200001",
   email: "Support.winniefun@gmail.com",
 };
 
-const copy = {
-  ar: {
-    dir: "rtl",
-    langLabel: "English",
-    eyebrow: "شركة إماراتية مرخصة للخدمات الرقمية",
-    signature: "من الإمارات إلى العالم",
-    title: "من نحن",
-    subtitle:
-      "Winnie منصة رقمية عالمية تجمع بين سرعة التنفيذ، أمان المدفوعات، وأناقة التجربة لتقديم خدمات الشحن والمنتجات الإلكترونية بمعايير راقية.",
-    introTitle: "منصة بثقة عالمية",
-    intro:
-      "نصمم تجربة رقمية متماسكة للمستخدمين والشركاء، من اختيار الخدمة وحتى إتمام الدفع، مع اهتمام واضح بالتفاصيل والسرعة والاعتمادية.",
-    visionTitle: "رؤيتنا",
-    vision:
-      "أن تصبح Winnie بوابة عالمية للخدمات الرقمية، تربط المستخدمين بالمنتجات الإلكترونية الموثوقة من خلال تجربة سلسة وفاخرة.",
-    missionTitle: "رسالتنا",
-    mission:
-      "توفير خدمات رقمية آمنة وسريعة وشفافة، مع دعم احترافي ومنظومة دفع تناسب العملاء في الأسواق المحلية والعالمية.",
-    servicesTitle: "خدمات مصممة للسوق العالمي",
-    servicesSubtitle: "تجربة واحدة مرتبة تجمع الشحن الرقمي، الألعاب، البطاقات، والاشتراكات في واجهة واضحة وأنيقة.",
-    paymentTitle: "طرق دفع راقية وآمنة",
-    paymentSubtitle: "وسائل محلية وعالمية تدعم عملية دفع سلسة، موثوقة، وسريعة.",
-    paymentBadge: "دفع",
-    whyTitle: "لماذا يثق العملاء في Winnie؟",
-    statsTitle: "حضور عالمي بمعايير راقية",
-    headquartersTitle: "بيانات الشركة",
-    mapTitle: "موقع Winnie على الخريطة",
-    openMap: "عرض الموقع",
-    securityTitle: "الثقة والأمان",
-    ctaTitle: "ابدأ تجربة رقمية أكثر رقيًا مع Winnie",
-    ctaText: "اشحن، ادفع، وتابع خدماتك من منصة واحدة مصممة لتكون سريعة وآمنة وواضحة.",
-    startNow: "ابدأ الآن",
-    contactUs: "تواصل معنا",
-    companyName: "اسم الشركة",
-    address: "عنوان المقر",
-    registration: "الرخصة التجارية",
-    tax: "الرقم الضريبي",
-    email: "البريد الإلكتروني للتواصل",
-    identityTitle: "Winnie Global",
-    identitySubtitle: "منظومة ثقة رقمية من قلب الإمارات.",
-    highlights: ["مرخصة في الإمارات", "مدفوعات عالمية آمنة", "دعم سريع متعدد الأسواق"],
-    services: [
-      "شحن تطبيقات الدردشة الصوتية",
-      "شحن الألعاب الإلكترونية",
-      "البطاقات الرقمية",
-      "الاشتراكات الرقمية",
-      "الخدمات الإلكترونية المتنوعة",
-      "حلول الدفع والشحن العالمية",
-    ],
-    why: [
-      "تنفيذ سريع وآمن",
-      "دعم فني احترافي",
-      "تغطية عالمية",
-      "أسعار تنافسية",
-      "حماية وأمان عالي",
-      "توفر الخدمة على مدار الساعة",
-      "دعم أحدث وسائل الدفع",
-    ],
-    stats: ["عميل", "عملية شحن", "دولة مدعومة", "معدل رضا العملاء"],
-    security: ["معاملات آمنة", "حماية البيانات", "تشفير متقدم", "دعم عالمي"],
-    marquee: ["UAE Licensed", "Secure Payments", "Global Top-Ups", "Sharjah Publishing City", "Premium Digital Services"],
-  },
-  en: {
-    dir: "ltr",
-    langLabel: "العربية",
-    eyebrow: "Licensed UAE digital services company",
-    signature: "From the UAE to the world",
-    title: "About Us",
-    subtitle:
-      "Winnie is a global digital platform shaped around fast fulfillment, secure payments, and a refined experience for top-ups and electronic products.",
-    introTitle: "A Platform Built on Trust",
-    intro:
-      "We craft a cohesive digital experience for customers and partners, from service discovery to checkout, with attention to detail, speed, and reliability.",
-    visionTitle: "Our Vision",
-    vision:
-      "To make Winnie a global gateway for digital services, connecting users to trusted electronic products through a seamless premium experience.",
-    missionTitle: "Our Mission",
-    mission:
-      "To provide secure, fast, and transparent digital services with professional support and payment flows designed for local and international markets.",
-    servicesTitle: "Services Built for a Global Market",
-    servicesSubtitle: "One polished experience for digital top-ups, games, cards, subscriptions, and electronic services.",
-    paymentTitle: "Refined Secure Payments",
-    paymentSubtitle: "Local and global payment methods for a smooth, trusted, and fast checkout experience.",
-    paymentBadge: "Payment",
-    whyTitle: "Why Customers Trust Winnie",
-    statsTitle: "Global Reach, Premium Standards",
-    headquartersTitle: "Company Details",
-    mapTitle: "Winnie Location Map",
-    openMap: "Open Location",
-    securityTitle: "Trust & Security",
-    ctaTitle: "Start a more refined digital experience with Winnie",
-    ctaText: "Top up, pay, and manage your services from one platform designed to feel fast, secure, and clear.",
-    startNow: "Start Now",
-    contactUs: "Contact Us",
-    companyName: "Company Name",
-    address: "Headquarters Address",
-    registration: "Trade License",
-    tax: "Tax Number",
-    email: "Contact Email",
-    identityTitle: "Winnie Global",
-    identitySubtitle: "A digital trust system from the heart of the UAE.",
-    highlights: ["Licensed in the UAE", "Secure global payments", "Fast multi-market support"],
-    services: [
-      "Voice chat app top-ups",
-      "Gaming top-ups",
-      "Digital cards",
-      "Digital subscriptions",
-      "Diverse electronic services",
-      "Global payment and recharge solutions",
-    ],
-    why: [
-      "Fast and secure execution",
-      "Professional support",
-      "Global coverage",
-      "Competitive pricing",
-      "High protection and security",
-      "24/7 service availability",
-      "Latest payment methods supported",
-    ],
-    stats: ["Customers", "Top-up Orders", "Supported Countries", "Customer Satisfaction"],
-    security: ["Secure Transactions", "Data Protection", "Advanced Encryption", "Global Support"],
-    marquee: ["UAE Licensed", "Secure Payments", "Global Top-Ups", "Sharjah Publishing City", "Premium Digital Services"],
-  },
-};
-
 const serviceIcons = [MessageCircle, Trophy, CreditCard, Smartphone, Sparkles, Globe2];
 const whyIcons = [Zap, Headphones, Globe2, BadgeCheck, ShieldCheck, Clock3, WalletCards];
 const securityIcons = [ShieldCheck, LockKeyhole, BadgeCheck, Headphones];
-const statValues = [
-  { value: 125000, prefix: "+" },
-  { value: 580000, prefix: "+" },
-  { value: 52, prefix: "+" },
-  { value: 97, suffix: "%" },
-];
 const paymentMethods = ["VISA", "Mastercard", "Apple Pay", "Google Pay", "Wallets", "Bank Transfer", "Local Pay"];
 
 const fadeUp = {
@@ -185,35 +53,10 @@ const stagger = {
   },
 };
 
-function getInitialAboutLang() {
-  if (typeof window === "undefined") return "ar";
-
-  return window.localStorage.getItem("winnie-public-language") === "en" ? "en" : "ar";
-}
-
 export default function About() {
-  const [lang, setLang] = useState(getInitialAboutLang);
-  const t = copy[lang];
-  const location = lang === "ar" ? company.locationAr : company.locationEn;
-
-  useEffect(() => {
-    const syncLanguage = (event) => {
-      const nextLanguage = event.detail?.language || getInitialAboutLang();
-      setLang(nextLanguage === "en" ? "en" : "ar");
-    };
-
-    const syncStorageLanguage = () => {
-      setLang(getInitialAboutLang());
-    };
-
-    window.addEventListener("winnie-public-language-change", syncLanguage);
-    window.addEventListener("storage", syncStorageLanguage);
-
-    return () => {
-      window.removeEventListener("winnie-public-language-change", syncLanguage);
-      window.removeEventListener("storage", syncStorageLanguage);
-    };
-  }, []);
+  const { t: translate } = useTranslation("about");
+  const t = translate("page", { returnObjects: true });
+  const location = t.location;
 
   const headquarters = useMemo(
     () => [
@@ -381,17 +224,6 @@ export default function About() {
                 ))}
               </Reveal>
             </div>
-          </div>
-        </section>
-
-        <section className="about-lux-band px-4 py-12 text-white sm:px-6 lg:px-8">
-          <div className="relative mx-auto max-w-[1180px]">
-            <SectionTitle title={t.statsTitle} inverted />
-            <Reveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {statValues.map((item, index) => (
-                <StatCard key={t.stats[index]} value={item.value} label={t.stats[index]} prefix={item.prefix} suffix={item.suffix} />
-              ))}
-            </Reveal>
           </div>
         </section>
 
@@ -563,22 +395,6 @@ function PaymentCard({ method, index, label }) {
   );
 }
 
-function StatCard({ value, label, prefix = "", suffix = "" }) {
-  const count = useCountUp(value);
-  const display = new Intl.NumberFormat("en-US").format(count);
-
-  return (
-    <motion.div variants={fadeUp} transition={{ duration: 0.55, ease: "easeOut" }} className="rounded-lg border border-white/[0.12] bg-white/[0.07] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-      <p className="text-4xl font-black text-white">
-        {prefix}
-        {display}
-        {suffix}
-      </p>
-      <p className="mt-2 text-sm font-black text-white/[0.68]">{label}</p>
-    </motion.div>
-  );
-}
-
 function InfoRow({ icon: Icon, label, value }) {
   return (
     <div className="grid gap-3 py-4 sm:grid-cols-[170px_1fr] sm:items-center">
@@ -602,30 +418,4 @@ function TrustBadge({ icon: Icon, title }) {
       <h3 className="text-sm font-black text-[#111715] dark:text-[#F8F4E8]">{title}</h3>
     </motion.article>
   );
-}
-
-function useCountUp(target) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    let frame;
-    const duration = 1300;
-    const start = performance.now();
-
-    setValue(0);
-
-    const tick = (now) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(target * eased));
-      if (progress < 1) {
-        frame = requestAnimationFrame(tick);
-      }
-    };
-
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target]);
-
-  return value;
 }

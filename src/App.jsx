@@ -3,6 +3,8 @@ import { AnimatePresence } from "framer-motion";
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageTransition from "./components/PageTransition";
+import GlobalOverlayScrollLock from "./components/GlobalOverlayScrollLock";
+import ScrollProgressIndicator from "./components/ScrollProgressIndicator";
 import { PageSkeleton } from "./components/Skeletons";
 import AdminLayout from "./layouts/AdminLayout";
 import CustomerLayout from "./layouts/CustomerLayout";
@@ -17,6 +19,7 @@ const Login = lazy(() => import("./pages/public/Login"));
 const Register = lazy(() => import("./pages/public/Register"));
 const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword"));
 const ImportantArticlePage = lazy(() => import("./pages/public/ImportantArticlePage"));
+const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 
 const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
 const CustomerBestSelling = lazy(() => import("./pages/customer/CustomerBestSelling"));
@@ -34,6 +37,7 @@ const CustomerSubAgent = lazy(() => import("./pages/customer/CustomerSubAgent"))
 
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminOrdersPage = lazy(() => import("./pages/admin/AdminOrdersPage"));
+const AdminPaymentsPage = lazy(() => import("./pages/admin/AdminPaymentsPage"));
 const ProductsManagementPage = lazy(() => import("./pages/admin/ProductsManagementPage"));
 const GroupsManagementPage = lazy(() => import("./pages/admin/GroupsManagementPage"));
 const SuppliersManagementPage = lazy(() => import("./pages/admin/SuppliersManagementPage"));
@@ -43,6 +47,8 @@ const AdminBalanceRequestsPage = lazy(() => import("./pages/admin/AdminBalanceRe
 const AdminCurrenciesPage = lazy(() => import("./pages/admin/AdminCurrenciesPage"));
 const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
+const AdminUserWalletPage = lazy(() => import("./pages/admin/AdminUserWalletPage"));
+const AdminSettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const AdminToolsPage = lazy(() => import("./pages/admin/AdminToolsPage"));
 
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
@@ -58,6 +64,8 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageSkeleton />}>
+      <GlobalOverlayScrollLock />
+      <ScrollProgressIndicator />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route element={<PublicLayout />}>
@@ -69,6 +77,9 @@ export default function App() {
             <Route path="login" element={<Animated><Login /></Animated>} />
             <Route path="register" element={<Animated><Register /></Animated>} />
             <Route path="forgot-password" element={<Animated><ForgotPassword /></Animated>} />
+            <Route path="payment/success" element={<Animated><PaymentReturnPage variant="success" /></Animated>} />
+            <Route path="payment/cancel" element={<Animated><PaymentReturnPage variant="cancel" /></Animated>} />
+            <Route path="payment/pending" element={<Animated><PaymentReturnPage variant="pending" /></Animated>} />
             {importantLinks.map((article) => (
               <Route
                 key={article.slug}
@@ -135,7 +146,7 @@ export default function App() {
               <Route path="notifications" element={<Animated><CustomerNotifications /></Animated>} />
               <Route path="profile" element={<Animated><CustomerProfile basePath="/admin/user" /></Animated>} />
               <Route path="settings" element={<Animated><CustomerSettings /></Animated>} />
-              <Route path="sub-agent" element={<Animated><CustomerSubAgent /></Animated>} />
+              <Route path="sub-agent" element={<Animated><CustomerSubAgent basePath="/admin/user" /></Animated>} />
               <Route path="about" element={<Animated><About /></Animated>} />
               {importantLinks.map((article) => (
                 <Route
@@ -150,7 +161,9 @@ export default function App() {
               <Route index element={<Navigate to="/admin/tools/dashboard" replace />} />
               <Route path="dashboard" element={<Animated><AdminDashboardPage /></Animated>} />
               <Route path="users" element={<Animated><AdminUsersPage /></Animated>} />
+              <Route path="users/:id/wallet" element={<Animated><AdminUserWalletPage /></Animated>} />
               <Route path="orders" element={<Animated><AdminOrdersPage /></Animated>} />
+              <Route path="payments" element={<Animated><AdminPaymentsPage /></Animated>} />
               <Route path="products" element={<Animated><ProductsManagementPage /></Animated>} />
               <Route path="groups" element={<Animated><GroupsManagementPage /></Animated>} />
               <Route path="suppliers" element={<Animated><SuppliersManagementPage /></Animated>} />
@@ -158,6 +171,7 @@ export default function App() {
               <Route path="supervisors" element={<Animated><AdminSupervisorsPage /></Animated>} />
               <Route path="balance-requests" element={<Animated><AdminBalanceRequestsPage /></Animated>} />
               <Route path="currencies" element={<Animated><AdminCurrenciesPage /></Animated>} />
+              <Route path="settings" element={<Animated><AdminSettingsPage /></Animated>} />
               <Route path="sub-agents" element={<Animated><AdminSubAgentsPage /></Animated>} />
               <Route path="notifications" element={<Animated><AdminToolsPage /></Animated>} />
             </Route>
@@ -167,6 +181,7 @@ export default function App() {
             <Route path="categories" element={<LegacyAdminRedirect from="/admin/categories" to="/admin/user/categories" />} />
             <Route path="categories/:categoryId" element={<LegacyAdminRedirect from="/admin/categories" to="/admin/user/categories" />} />
             <Route path="orders" element={<LegacyAdminRedirect from="/admin/orders" to="/admin/user/orders" />} />
+            <Route path="payments" element={<LegacyAdminRedirect from="/admin/payments" to="/admin/tools/payments" />} />
             <Route path="order/:id" element={<LegacyAdminRedirect from="/admin/order" to="/admin/user/order" />} />
             <Route path="wallet" element={<LegacyAdminRedirect from="/admin/wallet" to="/admin/user/wallet" />} />
             <Route path="wallet/top-up/:methodId" element={<LegacyAdminRedirect from="/admin/wallet" to="/admin/user/wallet" />} />

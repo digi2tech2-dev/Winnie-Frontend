@@ -1,0 +1,644 @@
+.charge-success-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  isolation: isolate;
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(8px, 2dvh, 24px) 14px;
+  background: #f1f6fd;
+}
+
+.dark .charge-success-backdrop {
+  background: #040914;
+}
+
+.charge-success-screen {
+  display: flex;
+  height: auto;
+  max-height: none;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  flex-direction: column;
+  scale: var(--charge-success-scale, 1);
+  transform-origin: center;
+  color: #13223f;
+  font-family: "IBM Plex Sans Arabic", "Tajawal", "Cairo", "Segoe UI", sans-serif;
+}
+
+.dark .charge-success-screen { color: #f8fafc; }
+
+.charge-success-nav {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.charge-success-nav button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  color: #2f7ee8;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.charge-success-nav button:hover { background: rgba(47, 126, 232, 0.08); }
+.charge-success-nav button:first-child { border-radius: 50%; }
+.charge-success-nav button svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.dark .charge-success-nav button { color: #7db3ff; background: transparent; }
+.dark .charge-success-nav button:hover { background: rgba(125, 179, 255, 0.12); }
+
+.charge-success-nav h1 {
+  margin: 0;
+  color: #14233f;
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.dark .charge-success-nav h1 { color: #fff; }
+
+.charge-success-card {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px 18px 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #e0e7f0;
+  border-radius: 24px;
+  box-shadow: 0 20px 55px rgba(37, 67, 112, 0.13);
+}
+
+.dark .charge-success-card {
+  background: linear-gradient(145deg, #101a2c, #0c1525);
+  border-color: #293752;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.charge-success-hero {
+  padding-bottom: 18px;
+  text-align: center;
+  border-bottom: 1px solid #e9edf3;
+}
+
+.dark .charge-success-hero { border-bottom-color: #27344d; }
+
+.charge-success-check {
+  position: relative;
+  width: 116px;
+  height: 100px;
+  margin: 0 auto;
+}
+
+.charge-success-check__halo,
+.charge-success-check__circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.charge-success-check__halo {
+  width: 92px;
+  height: 92px;
+  background: rgba(16, 185, 129, 0.08);
+  box-shadow: 0 0 0 12px rgba(16, 185, 129, 0.035);
+}
+
+.charge-success-check__circle {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  color: #fff;
+  place-items: center;
+  background: linear-gradient(145deg, #19cf72, #02ae5f);
+  box-shadow: 0 14px 30px rgba(5, 180, 96, 0.28);
+}
+
+.charge-success-check__circle svg { width: 38px; height: 38px; stroke-width: 3.5; }
+
+.spark { position: absolute; width: 6px; height: 6px; background: #76cbd0; transform: rotate(45deg); }
+.spark--one { top: 28px; left: 9px; }
+.spark--two { top: 8px; left: 55px; width: 5px; height: 5px; background: #a9e3d2; }
+.spark--three { top: 28px; right: 7px; background: #f8d275; }
+.spark--four { bottom: 22px; left: 22px; width: 5px; height: 5px; background: #f6d586; }
+.spark--five { right: 18px; bottom: 26px; width: 5px; height: 5px; background: #8bd9c7; }
+.spark--six { right: 45px; bottom: 7px; width: 4px; height: 4px; background: #89bcd8; }
+
+.charge-success-hero h2 { margin: 4px 0 0; color: #06a95d; font-size: 27px; font-weight: 900; }
+.charge-success-hero p { margin: 6px 0 0; color: #697487; font-size: 14px; font-weight: 600; }
+.dark .charge-success-hero p { color: #aeb8c9; }
+
+.charge-review-gate {
+  margin-top: 14px;
+}
+
+.charge-review-gate--status {
+  margin: 12px 48px 0 0;
+}
+
+.charge-review-gate__button,
+.charge-review-gate__submitted {
+  display: inline-flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 900;
+  border-radius: 14px;
+}
+
+.charge-review-gate__button {
+  color: #fff;
+  background: linear-gradient(110deg, #8B5CF6, #A855F7 52%, #3B82F6);
+  border: 0;
+  box-shadow: 0 16px 34px rgba(139, 92, 246, 0.28);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.charge-review-gate__button:hover {
+  box-shadow: 0 20px 42px rgba(139, 92, 246, 0.36);
+  transform: translateY(-2px);
+}
+
+.charge-review-gate__button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+}
+
+.charge-review-gate__button svg,
+.charge-review-gate__submitted svg {
+  width: 20px;
+  height: 20px;
+}
+
+.charge-review-gate__button svg {
+  fill: currentColor;
+}
+
+.charge-review-gate__stars {
+  direction: ltr;
+  color: #ffc43d;
+  font-size: 17px;
+  letter-spacing: 1px;
+  line-height: 1;
+  text-shadow: 0 4px 13px rgba(255, 196, 61, 0.28);
+}
+
+.charge-review-gate__submitted {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+}
+
+.dark .charge-review-gate__submitted {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(110, 231, 183, 0.18);
+}
+
+.charge-spin {
+  animation: charge-spin 900ms linear infinite;
+}
+
+.charge-success-details {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+}
+
+.charge-detail-row {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: center;
+  border-bottom: 1px solid #e9edf3;
+}
+
+.dark .charge-detail-row { border-bottom-color: #27344d; }
+
+.charge-detail-row__label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #657186;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dark .charge-detail-row__label { color: #aeb8c9; }
+
+.charge-detail-icon {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  color: #2d7fd9;
+  place-items: center;
+  background: #edf6ff;
+  border-radius: 12px;
+}
+
+.charge-detail-icon svg { width: 20px; height: 20px; stroke-width: 2; }
+.charge-detail-icon--violet { color: #7146da; background: #f1edff; }
+.charge-detail-icon--green { color: #12a864; background: #eafaf1; }
+.dark .charge-detail-icon { background: #172841; }
+.dark .charge-detail-icon--violet { background: #282044; }
+.dark .charge-detail-icon--green { background: #11352b; }
+
+.charge-detail-row__value {
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 900;
+  text-align: start;
+}
+
+.charge-detail-row__value > strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.charge-order-number {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  color: #08a75c;
+  background: transparent;
+  border: 0;
+}
+
+.charge-order-number svg { width: 19px; height: 19px; color: #2981db; }
+.charge-order-number strong { font-size: 17px; }
+
+.charge-total-card {
+  display: flex;
+  min-height: 78px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: linear-gradient(100deg, #f5fffa, #effcf5);
+  border: 1px solid #cfefdc;
+  border-radius: 14px;
+}
+
+.dark .charge-total-card { background: linear-gradient(100deg, #102c27, #11271f); border-color: #205140; }
+
+.charge-total-card > div:last-child { text-align: start; }
+.charge-total-card span { color: #657186; font-size: 14px; font-weight: 600; }
+.dark .charge-total-card span { color: #aeb8c9; }
+.charge-total-card strong { display: block; margin-top: 5px; color: #0c9e58; font-size: 22px; font-weight: 900; }
+
+.charge-total-wallet { position: relative; width: 78px; height: 62px; }
+.charge-total-wallet__body { position: absolute; bottom: 0; left: 5px; display: grid; width: 66px; height: 46px; color: #fff; place-items: center; background: linear-gradient(145deg, #39dba5, #16b982); border-radius: 9px 14px 14px 9px; box-shadow: 0 8px 18px rgba(20, 184, 129, 0.22); }
+.charge-total-wallet__body svg { width: 28px; height: 28px; opacity: 0.3; }
+.charge-total-wallet__coin { position: absolute; top: 0; width: 27px; height: 27px; background: #ffc43d; border: 3px solid #f0aa1f; border-radius: 50%; }
+.charge-total-wallet__coin--one { left: 20px; }
+.charge-total-wallet__coin--two { left: 38px; top: 5px; }
+.charge-total-wallet__check { position: absolute; right: 0; bottom: 2px; display: grid; width: 24px; height: 24px; color: #fff; place-items: center; background: #25b7bc; border: 2px solid #dffff7; border-radius: 50%; }
+.charge-total-wallet__check svg { width: 13px; height: 13px; stroke-width: 3; }
+
+.charge-order-status { margin-top: 14px; padding: 14px 0; border-top: 1px solid #e9edf3; border-bottom: 1px solid #e9edf3; }
+.dark .charge-order-status { border-color: #27344d; }
+.charge-order-status__heading { display: flex; gap: 10px; align-items: center; }
+.charge-order-status__heading > strong { font-size: 16px; }
+.charge-order-status__badge { margin-inline-start: auto; padding: 5px 12px; color: #0a9d58; font-size: 12px; font-weight: 800; background: #e9fbf1; border-radius: 8px; }
+.dark .charge-order-status__badge { color: #55e09d; background: #11352b; }
+.charge-order-status p { margin: 9px 48px 0 0; color: #6c7788; font-size: 12px; font-weight: 600; line-height: 1.8; }
+.dark .charge-order-status p { color: #9da8ba; }
+
+.charge-success-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 18px; direction: ltr; }
+.charge-success-actions button { display: inline-flex; height: 54px; gap: 9px; align-items: center; justify-content: center; border-radius: 12px; font-size: 15px; font-weight: 900; transition: 180ms ease; }
+.charge-success-actions button:hover { transform: translateY(-2px); }
+.charge-success-actions button svg { width: 22px; height: 22px; }
+.charge-success-actions__orders { color: #15233e; background: #fff; border: 1px solid #cad4e1; }
+.dark .charge-success-actions__orders { color: #fff; background: #111c30; border-color: #34425c; }
+.charge-success-actions__new { color: #fff; background: linear-gradient(110deg, #3978f7, #245ce6); border: 0; box-shadow: 0 12px 26px rgba(37, 99, 235, 0.24); }
+
+@media (max-width: 600px) {
+  .charge-success-backdrop { padding: 12px 10px; }
+  .charge-success-screen { width: min(385px, calc(100vw - 20px)); }
+  .charge-success-nav { grid-template-columns: 42px 1fr 42px; margin-bottom: 14px; }
+  .charge-success-nav button { width: 42px; height: 42px; border-radius: 13px; }
+  .charge-success-nav button:first-child { border-radius: 50%; }
+  .charge-success-nav button svg { width: 21px; height: 21px; }
+  .charge-success-nav h1 { font-size: 22px; }
+  .charge-success-card { padding: 20px 16px 18px; border-radius: 22px; }
+  .charge-success-check { width: 122px; height: 108px; }
+  .charge-success-check__halo { width: 94px; height: 94px; }
+  .charge-success-check__circle { width: 70px; height: 70px; }
+  .charge-success-check__circle svg { width: 39px; height: 39px; }
+  .charge-success-hero h2 { font-size: 25px; }
+  .charge-success-hero p { font-size: 13px; }
+  .charge-review-gate { margin-top: 10px; }
+  .charge-review-gate__button,
+  .charge-review-gate__submitted { min-height: 44px; font-size: 12px; border-radius: 12px; }
+  .charge-detail-row { min-height: 66px; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .charge-detail-row__label { gap: 7px; font-size: 12px; }
+  .charge-detail-icon { flex-basis: 32px; width: 32px; height: 32px; border-radius: 10px; }
+  .charge-detail-icon svg { width: 17px; height: 17px; }
+  .charge-detail-row__value { font-size: 13px; }
+  .charge-order-number { gap: 5px; }
+  .charge-order-number svg { width: 16px; height: 16px; }
+  .charge-order-number strong { font-size: 13px; }
+  .charge-total-card { min-height: 80px; margin-top: 14px; padding: 11px 13px; }
+  .charge-total-card strong { font-size: 21px; }
+  .charge-order-status { margin-top: 13px; padding: 13px 0; }
+  .charge-order-status__heading { gap: 7px; }
+  .charge-order-status__heading > strong { font-size: 13px; }
+  .charge-order-status__badge { padding: 4px 7px; font-size: 10px; }
+  .charge-order-status p { margin: 7px 39px 0 0; font-size: 10px; }
+  .charge-success-actions { gap: 9px; margin-top: 17px; grid-template-columns: 1fr 1.35fr; }
+  .charge-success-actions button { height: 53px; gap: 6px; font-size: 13px; }
+  .charge-success-actions button svg { width: 18px; height: 18px; }
+}
+
+@media (max-width: 350px) {
+  .charge-success-card { padding-inline: 11px; }
+  .charge-detail-row { gap: 6px; }
+  .charge-detail-row__label { font-size: 11px; }
+  .charge-detail-row__value { font-size: 12px; }
+  .charge-total-wallet { transform: scale(0.86); transform-origin: left center; }
+}
+
+@media (max-width: 600px), (max-height: 760px) {
+  .charge-success-backdrop {
+    padding: 6px 8px;
+  }
+
+  .charge-success-screen {
+    height: auto;
+    max-height: none;
+    width: min(385px, calc(100vw - 20px));
+  }
+
+  .charge-success-nav {
+    grid-template-columns: 42px 1fr 42px;
+    margin-bottom: 8px;
+  }
+
+  .charge-success-nav button {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .charge-success-nav button:first-child {
+    border-radius: 50%;
+  }
+
+  .charge-success-nav button svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .charge-success-nav h1 {
+    font-size: clamp(18px, 3.2dvh, 21px);
+  }
+
+  .charge-success-card {
+    padding: clamp(8px, 1.7dvh, 14px) 12px clamp(8px, 1.6dvh, 12px);
+    border-radius: 22px;
+  }
+
+  .charge-success-hero {
+    padding-bottom: clamp(6px, 1.45dvh, 10px);
+  }
+
+  .charge-success-check {
+    width: clamp(76px, 12dvh, 98px);
+    height: clamp(58px, 10.5dvh, 78px);
+  }
+
+  .charge-success-check__halo {
+    width: clamp(58px, 9dvh, 76px);
+    height: clamp(58px, 9dvh, 76px);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.035);
+  }
+
+  .charge-success-check__circle {
+    width: clamp(46px, 7.2dvh, 58px);
+    height: clamp(46px, 7.2dvh, 58px);
+  }
+
+  .charge-success-check__circle svg {
+    width: clamp(27px, 4.8dvh, 34px);
+    height: clamp(27px, 4.8dvh, 34px);
+  }
+
+  .spark {
+    width: 4px;
+    height: 4px;
+  }
+
+  .charge-success-hero h2 {
+    margin-top: 0;
+    font-size: clamp(18px, 3.35dvh, 24px);
+  }
+
+  .charge-success-hero p {
+    margin-top: 2px;
+    font-size: clamp(10px, 1.85dvh, 12px);
+  }
+
+  .charge-review-gate {
+    margin-top: clamp(5px, 1.25dvh, 8px);
+  }
+
+  .charge-review-gate--status {
+    margin: clamp(6px, 1.35dvh, 9px) 34px 0 0;
+  }
+
+  .charge-review-gate__button,
+  .charge-review-gate__submitted {
+    min-height: clamp(36px, 6.2dvh, 44px);
+    padding: 7px 10px;
+    font-size: clamp(10px, 1.8dvh, 12px);
+  }
+
+  .charge-review-gate__stars {
+    font-size: clamp(12px, 2dvh, 15px);
+    letter-spacing: 0.5px;
+  }
+
+  .charge-detail-row {
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .charge-detail-row__label {
+    gap: 6px;
+    font-size: clamp(10px, 1.75dvh, 12px);
+  }
+
+  .charge-detail-icon {
+    flex-basis: clamp(26px, 4.7dvh, 32px);
+    width: clamp(26px, 4.7dvh, 32px);
+    height: clamp(26px, 4.7dvh, 32px);
+    border-radius: 9px;
+  }
+
+  .charge-detail-icon svg {
+    width: clamp(14px, 2.7dvh, 17px);
+    height: clamp(14px, 2.7dvh, 17px);
+  }
+
+  .charge-detail-row__value {
+    font-size: clamp(11px, 1.95dvh, 13px);
+  }
+
+  .charge-order-number {
+    gap: 5px;
+  }
+
+  .charge-order-number svg {
+    width: clamp(14px, 2.6dvh, 16px);
+    height: clamp(14px, 2.6dvh, 16px);
+  }
+
+  .charge-order-number strong {
+    font-size: clamp(11px, 1.95dvh, 13px);
+  }
+
+  .charge-total-card {
+    min-height: clamp(48px, 8.3dvh, 62px);
+    margin-top: clamp(5px, 1.25dvh, 8px);
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .charge-total-card span {
+    font-size: clamp(10px, 1.75dvh, 12px);
+  }
+
+  .charge-total-card strong {
+    margin-top: 3px;
+    font-size: clamp(16px, 2.85dvh, 20px);
+  }
+
+  .charge-total-wallet {
+    width: clamp(54px, 9dvh, 66px);
+    height: clamp(42px, 7.3dvh, 52px);
+  }
+
+  .charge-total-wallet__body {
+    width: clamp(44px, 7.4dvh, 54px);
+    height: clamp(33px, 5.9dvh, 40px);
+  }
+
+  .charge-total-wallet__body svg {
+    width: clamp(19px, 3.6dvh, 24px);
+    height: clamp(19px, 3.6dvh, 24px);
+  }
+
+  .charge-total-wallet__coin {
+    width: clamp(18px, 3.3dvh, 23px);
+    height: clamp(18px, 3.3dvh, 23px);
+  }
+
+  .charge-total-wallet__check {
+    width: clamp(18px, 3.4dvh, 22px);
+    height: clamp(18px, 3.4dvh, 22px);
+  }
+
+  .charge-order-status {
+    margin-top: clamp(5px, 1.25dvh, 8px);
+    padding: clamp(6px, 1.35dvh, 9px) 0;
+  }
+
+  .charge-order-status__heading {
+    gap: 6px;
+  }
+
+  .charge-order-status__heading > strong {
+    font-size: clamp(11px, 1.95dvh, 13px);
+  }
+
+  .charge-order-status__badge {
+    padding: 3px 7px;
+    font-size: clamp(9px, 1.55dvh, 10px);
+  }
+
+  .charge-order-status p {
+    margin: 4px 34px 0 0;
+    font-size: clamp(9px, 1.55dvh, 10px);
+    line-height: 1.45;
+  }
+
+  .charge-success-actions {
+    gap: 8px;
+    margin-top: clamp(6px, 1.45dvh, 10px);
+  }
+
+  .charge-success-actions button {
+    height: clamp(40px, 6.9dvh, 48px);
+    gap: 6px;
+    border-radius: 11px;
+    font-size: clamp(11px, 1.95dvh, 13px);
+  }
+
+  .charge-success-actions button svg {
+    width: clamp(15px, 2.75dvh, 18px);
+    height: clamp(15px, 2.75dvh, 18px);
+  }
+}
+
+@keyframes charge-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-height: 620px) {
+  .charge-success-backdrop {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .charge-success-screen {
+    height: auto;
+    max-height: none;
+  }
+
+  .charge-success-nav {
+    grid-template-columns: 38px 1fr 38px;
+    margin-bottom: 6px;
+  }
+
+  .charge-success-nav button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .charge-success-card {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .charge-success-check {
+    height: 50px;
+  }
+
+  .charge-success-hero p {
+    display: none;
+  }
+
+  .charge-order-status p {
+    display: none;
+  }
+}

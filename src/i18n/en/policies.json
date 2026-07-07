@@ -1,0 +1,336 @@
+{
+  "agreement": {
+    "accept": "I agree to",
+    "terms": "the terms and conditions",
+    "title": "Terms and Conditions",
+    "subtitle": "Site policy and digital transactions center",
+    "close": "Close",
+    "closeWindow": "Close window",
+    "tabs": {
+      "privacy": "Privacy",
+      "refund": "Refund",
+      "orders": "Orders"
+    },
+    "notice": "Please read the following terms before continuing. Continuing means you accept Winnie Fun policies for digital services.",
+    "more": "More",
+    "understood": "Understood",
+    "sections": [
+      {
+        "title": "Privacy Policy",
+        "text": "We use account, contact, and order data to provide the service, secure payments, track orders, and improve the user experience. Personal data is not sold and is shared only when needed to provide the service or comply with requirements."
+      },
+      {
+        "title": "Refund and Cancellation Policy",
+        "text": "Cancellation or refund may be requested before an order is fulfilled or a digital service is delivered. After top-up or product activation, refunds may only be available when there is a clear fulfillment error or provider failure."
+      },
+      {
+        "title": "Top-up and Orders Policy",
+        "text": "Digital orders are processed after payment and required data are confirmed. Delivery time depends on the service type and provider, and users are responsible for verifying account details before sending an order."
+      }
+    ]
+  },
+  "articles": [
+    {
+      "slug": "privacy-policy",
+      "path": "/privacy-policy",
+      "label": "Privacy Policy",
+      "badge": "Data protection",
+      "title": "Winnie Fun Privacy Policy",
+      "updated": "June 17, 2026",
+      "intro": "We respect customer privacy and handle data clearly and responsibly. This policy explains the information we need to provide digital top-up services, how we use and protect it, and the choices available to users.",
+      "highlights": ["Minimal data where possible", "Service-related use", "Technical and organizational protection"],
+      "sections": [
+        {
+          "heading": "What data do we collect?",
+          "body": [
+            "We may request basic data such as name, email, phone number, account details, country, and order history so we can create accounts, complete orders, provide support, and send important service notices.",
+            "For payments, we may receive reference data from the payment provider such as transaction status and reference number. We do not aim to store full bank card details inside our platform."
+          ],
+          "bullets": ["Account and contact data", "Order and service details", "Payment references and transaction status", "Technical data such as device type and security logs"]
+        },
+        {
+          "heading": "How do we use data?",
+          "body": [
+            "We use data to provide Winnie Fun services such as game top-ups, software services, digital cards, subscriptions, order tracking, wallet management, experience improvements, and support replies.",
+            "We may use aggregated non-personal data to understand service performance and improve platform quality without identifying a specific user."
+          ]
+        },
+        {
+          "heading": "Data sharing",
+          "body": ["We do not sell user data. We may share only what is necessary with payment providers, digital service providers, hosting and security providers, or competent authorities when legally required or necessary to protect the platform and users."]
+        },
+        {
+          "heading": "User rights",
+          "body": ["You may request access, correction, or deletion of your data where allowed by law and the nature of the service. Some records may need to be retained for accounting, anti-fraud, dispute-resolution, or legal obligations."],
+          "bullets": ["Request access to data", "Correct inaccurate data", "Request deletion of eligible data", "Object to unnecessary marketing messages"]
+        },
+        {
+          "heading": "Security and retention",
+          "body": [
+            "We apply suitable security measures such as limiting access, monitoring sensitive operations, and relying on trusted infrastructure providers. No digital platform can guarantee absolute security.",
+            "We keep data for as long as needed to provide the service, resolve disputes, comply with legal requirements, and improve support quality."
+          ]
+        }
+      ],
+      "closing": "For privacy requests, contact us at Support.winniefun@gmail.com. We will try to respond as soon as possible depending on the nature of the request."
+    },
+    {
+      "slug": "terms-and-conditions",
+      "path": "/terms-and-conditions",
+      "label": "Terms and Conditions",
+      "badge": "Platform use",
+      "title": "Terms and Conditions",
+      "updated": "June 17, 2026",
+      "intro": "By using Winnie Fun, you agree to these terms governing account creation, order fulfillment, payments, wallet use, and the limits of digital services available on the platform.",
+      "highlights": ["Responsible account", "Clear digital orders", "Fair and safe use"],
+      "sections": [
+        {
+          "heading": "Acceptance of terms",
+          "body": [
+            "These terms apply to all users, visitors, customers, and sub-agents. If you use the platform on behalf of another party or account, you confirm that you have authority to do so.",
+            "We may update these terms when needed, and continued use after an update means acceptance of the new version."
+          ]
+        },
+        {
+          "heading": "Account and user responsibility",
+          "body": [
+            "Users must provide accurate and current data, keep login details confidential, and avoid sharing accounts in a way that may cause misuse or order disputes.",
+            "Activity performed through an account is the account holder’s responsibility unless unauthorized access is proven and reported in a timely manner."
+          ],
+          "bullets": ["Use real details", "Protect your password and verification codes", "Report suspicious activity to support"]
+        },
+        {
+          "heading": "Orders and digital services",
+          "body": [
+            "Winnie Fun services include games, software, digital cards, and subscriptions. Some services are instant, while others require review or processing time depending on the provider and product type.",
+            "Users must verify player IDs, email addresses, account numbers, countries, and all required data before confirming an order. Incorrect data may result in delivery to the wrong account."
+          ]
+        },
+        {
+          "heading": "Payment and wallet",
+          "body": [
+            "The platform may provide multiple payment methods or wallet balance. An order is not considered confirmed until payment succeeds or the required balance is deducted.",
+            "Some operations may be subject to security review or additional verification, especially when fraud signals, mismatched details, or unusual amounts appear."
+          ]
+        },
+        {
+          "heading": "Prohibited use",
+          "body": ["The platform may not be used for illegal, fraudulent, rights-infringing activity or attempts to abuse offers or payment systems. We may suspend an account or cancel service when a clear violation exists."],
+          "bullets": ["Misusing payment methods", "Attempting chargebacks after receiving a valid service", "Using fake details", "Selling an account or using it in ways that harm the platform or customers"]
+        }
+      ],
+      "closing": "These terms protect customers, the platform, and service providers. If you have questions before ordering, contact support to avoid confusion."
+    },
+    {
+      "slug": "aml-policy",
+      "path": "/aml-policy",
+      "label": "Anti-Money Laundering Policy",
+      "badge": "Compliance and security",
+      "title": "Anti-Money Laundering and Prohibited Financing Policy",
+      "updated": "June 17, 2026",
+      "intro": "Winnie Fun handles digital products and services that could be misused. We therefore apply controls for monitoring transactions, verifying identity when needed, and reducing activity that may relate to money laundering or fraud.",
+      "highlights": ["Transaction review", "Verification when needed", "Suspicious activity rejection"],
+      "sections": [
+        {
+          "heading": "Policy purpose",
+          "body": [
+            "This policy aims to prevent the use of Winnie Fun services to hide unlawful fund sources, finance prohibited activity, or pass fraudulent operations through digital products.",
+            "We cooperate with payment providers and competent authorities when required by applicable laws and regulations."
+          ]
+        },
+        {
+          "heading": "Transaction monitoring",
+          "body": [
+            "Operations may be reviewed based on value, frequency, user country, payment method, account data mismatch, or any unusual pattern compared with normal use.",
+            "Review does not imply accusation; it is a protective measure for the platform, customers, and service providers."
+          ],
+          "bullets": ["Repeated operations in a short period", "High or unusual amounts", "Clear mismatch between payment and account data", "Attempts to execute on multiple accounts abnormally"]
+        },
+        {
+          "heading": "Identity verification",
+          "body": ["We may request additional verification data or documents before completing some operations. Refusing required information or submitting inaccurate data may lead to order or account suspension."]
+        },
+        {
+          "heading": "Actions on suspicion",
+          "body": [
+            "When strong suspicious indicators exist, we may delay fulfillment, cancel the operation, restrict the account, request more information, or take suitable action based on the case.",
+            "We may keep transaction and review records for compliance, dispute resolution, and platform protection."
+          ]
+        },
+        {
+          "heading": "User commitment",
+          "body": ["Users must use payment methods they own or are authorized to use, avoid passing funds or requests for unknown parties, and avoid splitting transactions to evade review."]
+        }
+      ],
+      "closing": "An AML policy protects serious users and preserves the reliability of Winnie Fun services in the digital market."
+    },
+    {
+      "slug": "replacement-cancellation-policy",
+      "path": "/replacement-cancellation-policy",
+      "label": "Replacement and Cancellation Policy",
+      "badge": "Orders and refunds",
+      "title": "Replacement and Cancellation Policy",
+      "updated": "June 17, 2026",
+      "intro": "Because most Winnie Fun services are digital and delivered to accounts or electronic codes, cancellation or replacement depends on order status, data accuracy, and the product or provider type.",
+      "highlights": ["Review may be possible before fulfillment", "Restrictions after delivery", "Fair problem resolution comes first"],
+      "sections": [
+        {
+          "heading": "Canceling before fulfillment",
+          "body": [
+            "Cancellation can be requested if fulfillment has not started and no code or account top-up has been sent. Once processing begins, cancellation may not be available if the provider has started the operation.",
+            "We recommend carefully reviewing order details before payment, especially player ID, country, card type, top-up amount, and account data."
+          ]
+        },
+        {
+          "heading": "After service delivery",
+          "body": [
+            "After top-up, digital-code delivery, or subscription activation, orders are usually not cancellable or replaceable because the product is outside the platform’s control and may be used.",
+            "If an error by Winnie Fun or the provider is proven, we will work to fix the issue or compensate the customer suitably based on the case."
+          ]
+        },
+        {
+          "heading": "Customer data errors",
+          "body": ["If a customer enters incorrect data and the order is fulfilled accordingly, refund or replacement may not be possible. We will help investigate where possible, but recovery from an incorrect account cannot be guaranteed."],
+          "bullets": ["Incorrect player ID", "Wrong country or server", "Incorrect email or account number", "Product selected for the wrong account type"]
+        },
+        {
+          "heading": "Refund and compensation method",
+          "body": [
+            "When a refund is accepted, compensation may be made to the Winnie Fun wallet or the original payment method if available through the payment provider. Timing depends on the payment method, bank, or provider.",
+            "Payment-provider or external processing fees may be deducted if they are non-refundable."
+          ]
+        },
+        {
+          "heading": "How to submit a request",
+          "body": ["To request cancellation or replacement, contact support as soon as possible and include the order number, requested service, reason, and any images or messages explaining the issue."]
+        }
+      ],
+      "closing": "Our goal is fair and clear handling. The earlier and more complete the review request is, the better the chance of a fast resolution."
+    },
+    {
+      "slug": "contact-methods",
+      "path": "/contact-methods",
+      "label": "Contact Methods",
+      "badge": "Support",
+      "title": "Contact Winnie Fun",
+      "updated": "June 17, 2026",
+      "intro": "Fast and clear support is an essential part of the digital top-up experience. This page explains the right channels to contact us and the details that help us solve your request accurately.",
+      "highlights": ["Order support", "Account follow-up", "Partnership inquiries"],
+      "sections": [
+        {
+          "heading": "Official email",
+          "body": ["You can contact us at Support.winniefun@gmail.com. Use this email for important requests such as payment problems, order reviews, legal inquiries, or privacy requests."]
+        },
+        {
+          "heading": "What details should you include?",
+          "body": ["To help you quickly, send clear and direct details. Missing order numbers or account details may delay review."],
+          "bullets": ["Order number if available", "Email or phone linked to the account", "Service or product name", "Short issue description", "Images or receipts when needed"]
+        },
+        {
+          "heading": "Response times",
+          "body": [
+            "We try to respond as quickly as possible depending on request volume and issue type. Payment problems and pending orders receive higher priority than general inquiries.",
+            "Some cases require review with an external provider and may take longer until a confirmed result is available."
+          ]
+        },
+        {
+          "heading": "Safety when contacting us",
+          "body": [
+            "We will not ask you to share your password or verification codes. Do not send full card data or sensitive information through messages.",
+            "If you receive a message claiming to be from Winnie Fun and requesting sensitive data, ignore it and contact us through the official email to verify."
+          ]
+        },
+        {
+          "heading": "Partnerships and agents",
+          "body": ["Partnership, sub-agent, or affiliate marketing requests can be sent to the official email with country, audience type, marketing channels, and expected order volume."]
+        }
+      ],
+      "closing": "Write your message clearly and we will stay with you step by step until we reach a suitable solution."
+    },
+    {
+      "slug": "suggestions-complaints",
+      "path": "/suggestions-complaints",
+      "label": "Suggestions and Complaints",
+      "badge": "Experience improvement",
+      "title": "Suggestions and Complaints Policy",
+      "updated": "June 17, 2026",
+      "intro": "We receive suggestions and complaints as an important way to improve Winnie Fun services. Our goal is to hear users clearly, review each case fairly, and respond with practical action where possible.",
+      "highlights": ["Organized intake", "Fair review", "Continuous improvement"],
+      "sections": [
+        {
+          "heading": "What is the difference between a suggestion and a complaint?",
+          "body": ["A suggestion is an idea to improve a service, add a product, or enhance the experience. A complaint is an objection to an issue that occurred, such as delayed orders, execution errors, or unsatisfactory support."]
+        },
+        {
+          "heading": "How to submit suggestions and complaints",
+          "body": [
+            "You can submit suggestions and complaints through the official email and state the subject clearly, such as a complaint about order number X or a suggestion to add a new service.",
+            "Please include the following information to help us process the complaint quickly and easily:"
+          ],
+          "email": "Support.winniefun@gmail.com",
+          "bullets": ["Full name", "Mobile number", "Order number", "Complaint summary", "Any supporting documents or evidence", "Complainant contact details: mobile number / email"]
+        },
+        {
+          "heading": "Review process",
+          "body": [
+            "We review complaints based on order details, payment logs, fulfillment status, support messages, and provider responses if available. We may request additional details before a final decision.",
+            "Winnie store will study the complaint and respond as soon as possible, up to a maximum of 3 business days from receipt.",
+            "Suggestions are collected and categorized, and may enter the platform roadmap or upcoming services list when suitable and requested by enough users."
+          ]
+        },
+        {
+          "heading": "Response and escalation",
+          "body": ["We will try to explain the reason for the decision and proposed action. If you are not satisfied, you may request a second review and add any new information missing from the first request."]
+        },
+        {
+          "heading": "Communication rules",
+          "body": ["Clear and respectful criticism is welcome. Messages containing abuse, threats, or misleading information may delay review or lead to stopping communication through the used channel."]
+        }
+      ],
+      "closing": "Every useful note helps us build a clearer, faster, and more reliable digital top-up experience."
+    },
+    {
+      "slug": "affiliate-marketing",
+      "path": "/affiliate-marketing",
+      "label": "Affiliate Marketing",
+      "badge": "Sub-agent",
+      "title": "Affiliate Marketing and Sub-Agent Program Guide",
+      "updated": "June 17, 2026",
+      "intro": "The Winnie Fun affiliate and sub-agent program is for people or organizations that can bring real customers to digital top-up services while following transparency and platform rules.",
+      "highlights": ["Suitable for agents", "Clear commissions", "Responsible marketing"],
+      "sections": [
+        {
+          "heading": "Program idea",
+          "body": [
+            "The program allows a partner to promote Winnie Fun services such as game top-ups, software, digital cards, and subscriptions in exchange for commission or benefits determined by agreement, activity size, and customer quality.",
+            "A sub-agent is not a Winnie Fun employee, but an independent marketing partner or distributor who follows brand, pricing, and compliance rules."
+          ]
+        },
+        {
+          "heading": "Acceptance requirements",
+          "body": ["We may request information about marketing channels, target country, audience size, previous experience, and order collection methods. We reserve the right to accept or reject requests based on platform fit."],
+          "bullets": ["A real marketing channel or customer base", "No misleading customers", "Respect for payment and anti-fraud policies", "Ability to provide initial support to referred customers"]
+        },
+        {
+          "heading": "Marketing rules",
+          "body": [
+            "Marketing materials must be accurate and must not promise unconfirmed prices or delivery times. Using Winnie Fun in deceptive campaigns, fake pages, or unapproved offers is prohibited.",
+            "Agents may not use spam messages or target minors or categories that may not legally receive the service."
+          ]
+        },
+        {
+          "heading": "Commissions and settlements",
+          "body": [
+            "Commission is determined by service type, order volume, cancellation rate, and customer quality. Settlement may be periodic after reviewing completed operations and confirming there are no payment disputes or fraudulent orders.",
+            "Canceled, refunded, or disputed orders may not count toward final commission."
+          ]
+        },
+        {
+          "heading": "Suspending or changing the program",
+          "body": ["Winnie Fun may change commission rates, acceptance conditions, or suspend a sub-agent account when rules are violated, the brand is misused, customers are misled, or suspicious activity exists."]
+        }
+      ],
+      "closing": "To join as a sub-agent, send a brief about your activity and marketing channels to Support.winniefun@gmail.com. We will review the request based on fit and quality."
+    }
+  ]
+}

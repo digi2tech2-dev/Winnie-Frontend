@@ -1,51 +1,115 @@
 import { useMemo, useState } from "react";
+import { CheckCheck, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import EmptyState from "../components/EmptyState";
 import { iconMap } from "../components/icons";
-import { notifications as defaultNotifications } from "../data/catalog";
 import { useToast } from "../components/ToastProvider";
 
 const filters = ["all", "orders", "wallet", "offers", "account"];
-const filterLabels = {
-  all: "الكل",
-  orders: "الطلبات",
-  wallet: "المحفظة",
-  offers: "العروض",
-  account: "الحساب",
-};
 
-export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount }) {
+export default function NotificationsPage({
+  actionPending = "",
+  error = "",
+  items,
+  loading = false,
+  onDeleteNotification,
+  onMarkAllAsRead,
+  onMarkAsRead,
+  onOpenNotification,
+  readOnly = false,
+  unreadCount,
+}) {
   const [filter, setFilter] = useState("all");
-  const [localItems, setLocalItems] = useState(defaultNotifications);
+  const [localItems, setLocalItems] = useState([]);
   const { showToast } = useToast();
-  const notificationItems = items || localItems;
+  const { t } = useTranslation("notifications");
+  const notificationItems = items ?? localItems;
   const unreadTotal = unreadCount ?? notificationItems.filter((item) => item.unread).length;
+  const actionInFlight = Boolean(actionPending);
 
   const visible = useMemo(
     () => notificationItems.filter((item) => filter === "all" || item.type === filter),
     [filter, notificationItems],
   );
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    if (readOnly) {
+      showToast({
+        type: "info",
+        title: t("readOnlyTitle"),
+        message: t("readOnlyMessage"),
+      });
+      return;
+    }
+
     if (!unreadTotal) {
       showToast({
         type: "info",
-        title: "كل الإشعارات مقروءة",
-        message: "لا توجد إشعارات جديدة حالياً.",
+        title: t("allReadTitle"),
+        message: t("allReadMessage"),
       });
       return;
     }
 
     if (onMarkAllAsRead) {
-      onMarkAllAsRead();
+      try {
+        await onMarkAllAsRead();
+      } catch (requestError) {
+        showToast({
+          type: "error",
+          title: t("updateFailedTitle"),
+          message: requestError.userMessage || requestError.message || t("common:errors.tryAgain"),
+        });
+        return;
+      }
     } else {
       setLocalItems((currentItems) => currentItems.map((item) => ({ ...item, unread: false })));
     }
 
     showToast({
       type: "success",
-      title: "تمت قراءة الإشعارات",
-      message: "تم تعليم كل الإشعارات كمقروءة.",
+      title: t("allMarkedTitle"),
+      message: t("allMarkedMessage"),
     });
+  };
+
+  const markOneAsRead = async (item) => {
+    if (!item.unread || readOnly || !onMarkAsRead) return;
+
+    try {
+      await onMarkAsRead(item.id);
+      showToast({
+        type: "success",
+        title: t("updatedTitle"),
+        message: t("updatedMessage"),
+      });
+    } catch (requestError) {
+      showToast({
+        type: "error",
+        title: t("updateOneFailedTitle"),
+        message: requestError.userMessage || requestError.message || t("common:errors.tryAgain"),
+      });
+    }
+  };
+
+  const removeNotification = async (item) => {
+    if (readOnly || !onDeleteNotification) return;
+    if (!window.confirm(t("confirmDelete"))) return;
+
+    try {
+      await onDeleteNotification(item.id);
+      showToast({
+        type: "success",
+        title: t("deletedTitle"),
+        message: t("deletedMessage"),
+      });
+    } catch (requestError) {
+      showToast({
+        type: "error",
+        title: t("deleteFailedTitle"),
+        message: requestError.userMessage || requestError.message || t("common:errors.tryAgain"),
+      });
+    }
   };
 
   return (
@@ -53,20 +117,22 @@ export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount 
       <section className="glass-panel rounded-lg p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-royal dark:text-pulse">صندوق التنبيهات</p>
-            <h1 className="mt-2 text-3xl font-black">الإشعارات</h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">تنبيهات مصنفة للطلبات والمحفظة والعروض ونشاط الحساب.</p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-royal dark:text-pulse">{t("eyebrow")}</p>
+            <h1 className="mt-2 text-3xl font-black">{t("title")}</h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{t("description")}</p>
           </div>
           <button
             type="button"
             onClick={markAllAsRead}
+            disabled={loading || actionInFlight || !unreadTotal}
+            aria-busy={actionPending === "read-all"}
             className={`interactive-ring h-11 rounded-lg border px-4 text-sm font-black transition ${
               unreadTotal
                 ? "border-slate-200 text-slate-700 hover:border-royal/35 hover:bg-royal/5 dark:border-white/10 dark:text-white"
                 : "border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/35"
             }`}
           >
-            تعليم الكل كمقروء
+            {t("markAll")}
           </button>
         </div>
       </section>
@@ -79,17 +145,36 @@ export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount 
             onClick={() => setFilter(item)}
             className={`h-10 rounded-lg px-4 text-sm font-black transition ${filter === item ? "bg-gradient-to-r from-royal to-pulse text-white shadow-glow" : "border border-slate-200 bg-white/70 text-slate-600 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"}`}
           >
-            {filterLabels[item]}
+            {t(`filters.${item}`)}
           </button>
         ))}
       </div>
 
-      {visible.length ? (
+      {loading ? (
+        <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+          {t("loading")}
+        </div>
+      ) : error ? (
+        <EmptyState title={t("loadErrorTitle")} description={error} />
+      ) : visible.length ? (
         <section className="grid gap-3">
           {visible.map((item) => {
             const Icon = iconMap[item.level === "success" ? "CheckCircle2" : item.level === "warning" ? "AlertTriangle" : "Bell"];
             return (
-              <article key={item.id} className="glass-panel rounded-lg p-4">
+              <article
+                key={item.id}
+                className={`glass-panel rounded-lg p-4 ${onOpenNotification ? "cursor-pointer transition hover:border-royal/35" : ""}`}
+                onClick={() => onOpenNotification?.(item)}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (onOpenNotification && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    onOpenNotification(item);
+                  }
+                }}
+                role={onOpenNotification ? "link" : undefined}
+                tabIndex={onOpenNotification ? 0 : undefined}
+              >
                 <div className="flex gap-4">
                   <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
                     <Icon className="h-6 w-6" />
@@ -101,14 +186,42 @@ export default function NotificationsPage({ items, onMarkAllAsRead, unreadCount 
                     </div>
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.message}</p>
                   </div>
-                  <span className="text-xs font-bold text-slate-400">{item.time}</span>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <span className="text-xs font-bold text-slate-400">{item.time}</span>
+                    {!readOnly && (onMarkAsRead || onDeleteNotification) && (
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        {item.unread && onMarkAsRead && (
+                          <button
+                            type="button"
+                            onClick={(event) => { event.stopPropagation(); void markOneAsRead(item); }}
+                            disabled={actionInFlight}
+                            className="interactive-ring inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-2 text-xs font-black text-slate-600 transition hover:border-royal/35 hover:bg-royal/5 disabled:cursor-not-allowed disabled:opacity-55 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                          >
+                            <CheckCheck className="h-3.5 w-3.5" />
+                            {actionPending === `read:${item.id}` ? "..." : t("read")}
+                          </button>
+                        )}
+                        {onDeleteNotification && (
+                          <button
+                            type="button"
+                            onClick={(event) => { event.stopPropagation(); void removeNotification(item); }}
+                            disabled={actionInFlight}
+                            className="interactive-ring inline-flex h-8 items-center gap-1 rounded-lg border border-red-100 px-2 text-xs font-black text-red-500 transition hover:border-red-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-55 dark:border-red-400/20 dark:text-red-200 dark:hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {actionPending === `delete:${item.id}` ? "..." : t("delete")}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </article>
             );
           })}
         </section>
       ) : (
-        <EmptyState title="لا توجد إشعارات" description="هذا القسم لا يحتوي على إشعارات حالياً." />
+        <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       )}
     </div>
   );

@@ -1,233 +1,277 @@
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { getInitialReviews, getReviewTimestamp, persistReviews, REVIEW_CREATED_EVENT } from "../../utils/customerReviews";
+import { BadgeCheck, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { getHomepageReviews, getReviewStats, subscribeToCustomerReviews } from "../../utils/customerReviews";
+import "./CustomerReviews.css";
 
-function formatArabicDuration(value, forms) {
-  if (value === 1) return `منذ ${forms.one}`;
-  if (value === 2) return `منذ ${forms.two}`;
-  if (value <= 10) return `منذ ${value} ${forms.few}`;
-  return `منذ ${value} ${forms.many}`;
+function getVisibleCount() {
+  if (typeof window === "undefined") return 3;
+  if (window.matchMedia("(max-width: 639px)").matches) return 1;
+  if (window.matchMedia("(max-width: 1023px)").matches) return 2;
+  return 3;
 }
 
-function formatReviewElapsedTime(createdAt, now) {
-  const elapsedSeconds = Math.max(0, Math.floor((now - createdAt) / 1000));
-
-  if (elapsedSeconds < 5) return "الآن";
-  if (elapsedSeconds < 60) {
-    return formatArabicDuration(elapsedSeconds, {
-      one: "ثانية",
-      two: "ثانيتين",
-      few: "ثوانٍ",
-      many: "ثانية",
-    });
-  }
-
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  if (elapsedMinutes < 60) {
-    return formatArabicDuration(elapsedMinutes, {
-      one: "دقيقة",
-      two: "دقيقتين",
-      few: "دقائق",
-      many: "دقيقة",
-    });
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return formatArabicDuration(elapsedHours, {
-      one: "ساعة",
-      two: "ساعتين",
-      few: "ساعات",
-      many: "ساعة",
-    });
-  }
-
-  const elapsedDays = Math.floor(elapsedHours / 24);
-  if (elapsedDays < 7) {
-    return formatArabicDuration(elapsedDays, {
-      one: "يوم",
-      two: "يومين",
-      few: "أيام",
-      many: "يوم",
-    });
-  }
-
-  const elapsedWeeks = Math.floor(elapsedDays / 7);
-  if (elapsedWeeks < 5) {
-    return formatArabicDuration(elapsedWeeks, {
-      one: "أسبوع",
-      two: "أسبوعين",
-      few: "أسابيع",
-      many: "أسبوع",
-    });
-  }
-
-  if (elapsedDays < 365) {
-    const elapsedMonths = Math.max(1, Math.floor(elapsedDays / 30));
-    return formatArabicDuration(elapsedMonths, {
-      one: "شهر",
-      two: "شهرين",
-      few: "أشهر",
-      many: "شهر",
-    });
-  }
-
-  return formatArabicDuration(Math.floor(elapsedDays / 365), {
-    one: "سنة",
-    two: "سنتين",
-    few: "سنوات",
-    many: "سنة",
-  });
+function getInitials(name = "") {
+  return String(name || "WF")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
-function formatExactReviewDate(createdAt) {
-  return new Intl.DateTimeFormat("ar-EG", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(createdAt);
+function formatReviewDate(value, locale) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 export default function CustomerReviews() {
-  const [reviews, setReviews] = useState(getInitialReviews);
-  const [now, setNow] = useState(Date.now);
-
-  const averageRating = useMemo(() => {
-    if (!reviews.length) return "0.0";
-    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return (total / reviews.length).toFixed(1);
-  }, [reviews]);
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language?.startsWith("ar");
+  const locale = isArabic ? "ar-EG-u-nu-latn" : "en-US";
+  const [reviews, setReviews] = useState([]);
+  const [stats, setStats] = useState({ averageRating: 0, totalReviews: 0 });
+  const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(getVisibleCount);
+  const touchStartX = useRef(null);
+  const canSlide = reviews.length > visibleCount;
+  const maxIndex = Math.max(0, reviews.length - visibleCount);
+  const averageLabel = stats.totalReviews ? stats.averageRating.toFixed(1) : "0.0";
+  const text = isArabic ? {
+    title: "⭐ تقييمات العملاء",
+    subtitle: "شاهد آراء العملاء الذين اشتروا من Winnie Fun.",
+    previous: "التقييم السابق",
+    next: "التقييم التالي",
+    dots: "صفحات التقييمات",
+    showPage: "عرض صفحة التقييمات",
+    empty: "ستظهر تقييمات العملاء الموثقة هنا بعد عمليات الشراء المكتملة.",
+  } : {
+    title: "⭐ Customer Reviews",
+    subtitle: "See what customers who purchased from Winnie Fun are saying.",
+    previous: "Previous review",
+    next: "Next review",
+    dots: "Review carousel pages",
+    showPage: "Show review page",
+    empty: "Verified customer reviews will appear here after completed purchases.",
+  };
 
   useEffect(() => {
-    persistReviews(reviews);
-  }, [reviews]);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => setNow(Date.now()), 30 * 1000);
-    return () => window.clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    const syncReviews = () => setReviews(getInitialReviews());
-    const handleReviewCreated = (event) => {
-      const review = event.detail;
-      if (!review?.id) {
-        syncReviews();
-        return;
-      }
-
-      setReviews((items) => [review, ...items.filter((item) => item.id !== review.id)]);
+    let cancelled = false;
+    const syncReviews = (nextReviews = getHomepageReviews()) => {
+      if (cancelled) return;
+      setReviews(nextReviews.filter(isApprovedReview));
+      setStats(getReviewStats());
+      setActiveIndex(0);
     };
 
-    window.addEventListener("storage", syncReviews);
-    window.addEventListener(REVIEW_CREATED_EVENT, handleReviewCreated);
+    const loadingTimer = window.setTimeout(() => {
+      syncReviews();
+      setLoading(false);
+    }, 420);
+
+    const unsubscribe = subscribeToCustomerReviews((nextReviews) => {
+      syncReviews(nextReviews);
+      if (!cancelled) {
+        setLoading(false);
+      }
+    });
 
     return () => {
-      window.removeEventListener("storage", syncReviews);
-      window.removeEventListener(REVIEW_CREATED_EVENT, handleReviewCreated);
+      cancelled = true;
+      window.clearTimeout(loadingTimer);
+      unsubscribe();
     };
   }, []);
 
-  return (
-    <section className="reviews-section relative mx-auto max-w-[980px] overflow-hidden rounded-[30px] border border-slate-200/80 bg-[linear-gradient(135deg,#FFFFFF_0%,#F8FCFF_52%,#F5F3FF_100%)] p-4 shadow-[0_24px_70px_rgba(14,165,233,0.12)] backdrop-blur-2xl dark:border-[#263044] dark:bg-[linear-gradient(135deg,#0B1020_0%,#111827_58%,#151A2C_100%)] dark:shadow-[0_0_28px_rgba(15,23,42,0.55)] sm:p-5 lg:p-6">
-      <div className="relative z-10">
-        <div className="mb-5 text-center">
-          <span className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-3 py-1 text-[11px] font-black text-[#7C3AED] shadow-[0_10px_24px_rgba(124,58,237,0.10)] dark:border-[#4C1D95]/60 dark:bg-[#1E1B3A] dark:text-[#D8B4FE]">
-            <Star className="h-3.5 w-3.5 fill-current" />
-            تقييمات العملاء
-          </span>
-          <h2 className="mt-3 text-2xl font-black tracking-normal text-slate-950 dark:text-white sm:text-3xl">
-            آراء عملائنا
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-xs font-semibold leading-6 text-slate-500 dark:text-[#B8C2D6] sm:text-sm">
-            تجارب العملاء بعد الشراء تظهر هنا مباشرة.
-          </p>
+  useEffect(() => {
+    const handleResize = () => setVisibleCount(getVisibleCount());
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-          <div className="mx-auto mt-4 grid max-w-[360px] grid-cols-2 gap-2">
-            <div className="rounded-[18px] border border-slate-200 bg-white px-3 py-2.5 text-center shadow-[0_12px_28px_rgba(14,165,233,0.08)] dark:border-[#2B3650] dark:bg-[#111827]">
-              <p dir="ltr" className="text-xl font-black text-slate-950 dark:text-white">{averageRating}</p>
-              <p className="text-[11px] font-bold text-slate-500 dark:text-[#AAB6CC]">متوسط التقييم</p>
-            </div>
-            <div className="rounded-[18px] border border-slate-200 bg-white px-3 py-2.5 text-center shadow-[0_12px_28px_rgba(14,165,233,0.08)] dark:border-[#2B3650] dark:bg-[#111827]">
-              <p dir="ltr" className="text-xl font-black text-slate-950 dark:text-white">{reviews.length}</p>
-              <p className="text-[11px] font-bold text-slate-500 dark:text-[#AAB6CC]">تقييم منشور</p>
-            </div>
+  useEffect(() => {
+    setActiveIndex((index) => Math.min(index, maxIndex));
+  }, [maxIndex]);
+
+  useEffect(() => {
+    if (!canSlide) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((index) => (index >= maxIndex ? 0 : index + 1));
+    }, 5200);
+
+    return () => window.clearInterval(intervalId);
+  }, [canSlide, maxIndex]);
+
+  const dots = useMemo(() => Array.from({ length: maxIndex + 1 }, (_, index) => index), [maxIndex]);
+
+  const move = (direction) => {
+    if (!canSlide) return;
+    setActiveIndex((index) => {
+      if (direction > 0) return index >= maxIndex ? 0 : index + 1;
+      return index <= 0 ? maxIndex : index - 1;
+    });
+  };
+
+  const handleTouchStart = (event) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (event) => {
+    const startX = touchStartX.current;
+    touchStartX.current = null;
+    if (startX === null) return;
+
+    const endX = event.changedTouches[0]?.clientX ?? startX;
+    const delta = endX - startX;
+    if (Math.abs(delta) < 42) return;
+
+    move(delta < 0 ? 1 : -1);
+  };
+
+  return (
+    <section className="wf-reviews-section" aria-labelledby="customer-reviews-title" dir={isArabic ? "rtl" : "ltr"}>
+      <motion.div
+        className="wf-reviews-shell"
+        initial={{ opacity: 0, y: 22 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.42, ease: "easeOut" }}
+      >
+        <div className="wf-reviews-topline">
+          <div>
+            <h2 id="customer-reviews-title">{text.title}</h2>
+            <p>{text.subtitle}</p>
+          </div>
+          <div
+            className="wf-reviews-stats"
+            aria-label={isArabic ? `${averageLabel} من 5` : `${averageLabel} out of 5`}
+          >
+            <strong><Star /> {averageLabel} / 5</strong>
           </div>
         </div>
 
-        <div className="reviews-grid grid max-h-[430px] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
-          {reviews.map((review, index) => (
-            <ReviewCard key={review.id} review={review} index={index} now={now} />
-          ))}
-        </div>
-      </div>
+        {loading ? (
+          <div className="wf-reviews-grid">
+            {[1, 2, 3].map((item) => <ReviewSkeleton key={item} />)}
+          </div>
+        ) : reviews.length ? (
+          <div className="wf-reviews-carousel" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            {canSlide && (
+              <button type="button" className="wf-reviews-nav wf-reviews-nav--prev" onClick={() => move(-1)} aria-label={text.previous}>
+                <ChevronLeft />
+              </button>
+            )}
+
+            <div className="wf-reviews-viewport">
+              <div
+                className="wf-reviews-track"
+                style={{
+                  "--wf-review-visible": visibleCount,
+                  transform: `translateX(calc(${activeIndex} * (-100% / var(--wf-review-visible))))`,
+                }}
+              >
+                {reviews.map((review) => <ReviewCard key={review.id} review={review} isArabic={isArabic} locale={locale} />)}
+              </div>
+            </div>
+
+            {canSlide && (
+              <button type="button" className="wf-reviews-nav wf-reviews-nav--next" onClick={() => move(1)} aria-label={text.next}>
+                <ChevronRight />
+              </button>
+            )}
+
+            {canSlide && (
+              <div className="wf-reviews-dots" aria-label={text.dots}>
+                {dots.map((index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={index === activeIndex ? "is-active" : ""}
+                    onClick={() => setActiveIndex(index)}
+                    aria-label={`${text.showPage} ${index + 1}`}
+                    aria-current={index === activeIndex}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="wf-reviews-empty">{text.empty}</div>
+        )}
+      </motion.div>
     </section>
   );
 }
 
-function ReviewCard({ review, index, now }) {
-  const createdAt = getReviewTimestamp(review.createdAt);
-  const timeLabel = createdAt ? formatReviewElapsedTime(createdAt, now) : review.timeLabel || "الآن";
+function isApprovedReview(review = {}) {
+  if (typeof review.approved === "boolean") return review.approved;
+  if (typeof review.isApproved === "boolean") return review.isApproved;
+
+  const status = String(review.moderationStatus || review.approvalStatus || review.status || "").toUpperCase();
+  return !status || status === "APPROVED" || status === "PUBLISHED";
+}
+
+function ReviewCard({ review, isArabic, locale }) {
+  const hasAvatar = Boolean(review.reviewer.avatar);
+  const reviewerName = isArabic ? (review.reviewer.nameAr || review.reviewer.name) : review.reviewer.name;
+  const message = isArabic ? (review.messageAr || review.message) : review.message;
+  const verifiedText = isArabic ? "مشتري موثّق" : "Verified Buyer";
+  const emptyMessage = isArabic ? "لم يكتب العميل رسالة." : "No written message provided.";
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-30px" }}
-      transition={{ duration: 0.28, delay: Math.min(index * 0.04, 0.2) }}
-      className="review-card relative overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3.5 shadow-[0_14px_34px_rgba(14,165,233,0.09)] backdrop-blur transition hover:-translate-y-1 hover:border-[#C4B5FD] hover:shadow-[0_18px_44px_rgba(124,58,237,0.12)] dark:border-[#2B3650] dark:bg-[#111827] dark:shadow-[0_0_18px_rgba(15,23,42,0.38)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#172033]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <ReviewAvatar review={review} />
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-black text-slate-950 dark:text-white">{review.name}</h3>
-            <p
-              className="mt-0.5 text-[11px] font-bold text-slate-500 dark:text-[#AAB6CC]"
-              title={createdAt ? formatExactReviewDate(createdAt) : undefined}
-            >
-              {timeLabel}
-            </p>
-          </div>
+    <article className="wf-review-card">
+      <div className="wf-review-card__header">
+        <div className="wf-review-avatar">
+          {hasAvatar ? (
+            <img src={review.reviewer.avatar} alt="" loading="lazy" />
+          ) : (
+            <span>{getInitials(reviewerName)}</span>
+          )}
         </div>
-        <div dir="ltr" className="flex shrink-0 items-center gap-0.5">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-              key={star}
-              className={`h-3.5 w-3.5 ${
-                star <= review.rating ? "fill-[#F59E0B] text-[#F59E0B] dark:fill-[#FBBF24] dark:text-[#FBBF24]" : "text-slate-300 dark:text-[#526078]"
-              }`}
-            />
-          ))}
+        <div className="wf-review-card__identity">
+          <h3>{reviewerName}</h3>
+          <span><BadgeCheck /> {verifiedText}</span>
         </div>
       </div>
-      <p className="relative mt-3 rounded-2xl border border-sky-100/80 bg-sky-50/75 px-3 py-2.5 text-xs font-semibold leading-6 text-slate-700 dark:border-[#2B3650] dark:bg-[#0B1220] dark:text-[#E5E7EB]">
-        “{review.message}”
-      </p>
-    </motion.article>
+      <StarRating rating={review.rating} isArabic={isArabic} />
+      <p className="wf-review-card__message">{message || emptyMessage}</p>
+      <time dateTime={review.createdAt || undefined}>{formatReviewDate(review.createdAt, locale) || review.dateLabel}</time>
+    </article>
   );
 }
 
-function ReviewAvatar({ review, compact = false }) {
-  const sizeClass = compact ? "h-9 w-9 rounded-xl" : "h-10 w-10 rounded-2xl";
-  const initial = String(review.avatarInitial || review.name?.slice(0, 1) || "W").slice(0, 1);
-
-  if (review.avatarUrl) {
-    return (
-      <span className={`${sizeClass} shrink-0 overflow-hidden border border-white/70 bg-white shadow-[0_12px_24px_rgba(124,58,237,0.18)] dark:border-white/10 dark:bg-[#0B1220]`}>
-        <img
-          src={review.avatarUrl}
-          alt=""
-          className="h-full w-full object-cover"
-          style={{ objectPosition: "72% 27%" }}
-        />
-      </span>
-    );
-  }
-
+function StarRating({ rating, isArabic }) {
+  const value = Math.min(5, Math.max(1, Math.round(rating || 0)));
   return (
-    <span className={`grid ${sizeClass} shrink-0 place-items-center bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] text-sm font-black text-white shadow-[0_12px_24px_rgba(124,58,237,0.20)] dark:shadow-[0_12px_24px_rgba(56,189,248,0.13)]`}>
-      {initial}
-    </span>
+    <div className="wf-review-stars" aria-label={isArabic ? `${value} من 5 نجوم` : `${value} out of 5 stars`}>
+      {"★".repeat(value)}{"☆".repeat(5 - value)}
+    </div>
+  );
+}
+
+function ReviewSkeleton() {
+  return (
+    <div className="wf-review-card wf-review-card--skeleton" aria-hidden="true">
+      <div className="wf-review-card__header">
+        <span className="wf-skeleton wf-skeleton--avatar" />
+        <div>
+          <span className="wf-skeleton wf-skeleton--line" />
+          <span className="wf-skeleton wf-skeleton--pill" />
+        </div>
+      </div>
+      <span className="wf-skeleton wf-skeleton--stars" />
+      <span className="wf-skeleton wf-skeleton--copy" />
+      <span className="wf-skeleton wf-skeleton--copy short" />
+    </div>
   );
 }

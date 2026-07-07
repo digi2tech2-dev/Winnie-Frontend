@@ -1,0 +1,52 @@
+{
+  "public": {
+    "catalogLoadError": "تعذر تحميل الكتالوج العام.",
+    "catalogEmptyTitle": "تعذر تحميل الكتالوج",
+    "categoriesTitle": "الأقسام",
+    "categoriesDescription": "الأقسام النشطة من الخادم تظهر هنا.",
+    "categoriesLoadError": "تعذر تحميل الأقسام.",
+    "categoriesEmptyTitle": "لا توجد أقسام بعد",
+    "categoriesEmptyDescription": "الأقسام النشطة من الخادم ستظهر هنا عند توفرها.",
+    "productsInCategoryDescription": "المنتجات النشطة في هذا القسم تظهر هنا.",
+    "categoryNotFoundTitle": "القسم غير موجود",
+    "categoryNotFoundDescription": "هذا القسم غير متاح حاليًا.",
+    "backToCategories": "العودة للأقسام",
+    "searchCategory": "بحث داخل القسم",
+    "searchCategoryPlaceholder": "ابحث في {{category}}",
+    "noProductsFound": "لا توجد منتجات مطابقة",
+    "noProductsYet": "لا توجد منتجات متاحة بعد",
+    "clearSearchDescription": "امسح البحث لعرض كل المنتجات المحملة.",
+    "categoryEmptyDescription": "هذا القسم لا يحتوي على منتجات نشطة بعد.",
+    "clearSearch": "مسح البحث"
+  },
+  "showcase": {
+    "categories": "الأقسام",
+    "products": "المنتجات",
+    "viewAll": "عرض الكل",
+    "noCategories": "لا توجد أقسام متاحة بعد.",
+    "noProducts": "لا توجد منتجات متاحة بعد.",
+    "catalog": "الكتالوج",
+    "priceUnavailable": "السعر غير متاح",
+    "recentlyAdded": "أضيف حديثًا",
+    "bestSelling": "الأكثر مبيعًا"
+  },
+  "slider": {
+    "label": "عروض Winnie Fun",
+    "slideAlt": "عرض Winnie Fun رقم {{number}}"
+  },
+  "dashboard": {
+    "eyebrow": "لوحة العميل",
+    "welcome": "مرحبًا بعودتك، {{name}}",
+    "loadingDescription": "جار تحميل بيانات حسابك من الخادم...",
+    "description": "لوحتك تستخدم بيانات المحفظة والكتالوج والطلبات من الخادم للقراءة فقط.",
+    "partialError": "تعذر تحميل بعض بيانات اللوحة: {{error}}",
+    "currentBalance": "الرصيد الحالي",
+    "recentTransactions": "آخر المعاملات",
+    "recentOrders": "آخر الطلبات",
+    "productsLoaded": "المنتجات المحملة",
+    "categoriesLoaded": "الأقسام المحملة",
+    "customerCatalog": "كتالوج العميل",
+    "completeProfileTitle": "أكمل ملفك الشخصي",
+    "completeProfileDescription": "أضف صورة لحسابك عشان يظهر ملفك بشكل أفضل داخل Winnie Fun."
+  }
+}

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -40,7 +40,7 @@ export default function AdminHeader({ onOpenSidebar, unreadNotificationCount = 0
     <header dir="ltr" className="admin-header site-header-warm fixed inset-x-0 top-0 z-[70] border-b border-sky-100 bg-white/90 px-4 py-3.5 shadow-[0_14px_36px_rgba(14,165,233,0.10)] backdrop-blur-2xl dark:border-[rgba(255,255,255,0.08)] dark:bg-[rgba(10,15,29,0.95)] dark:shadow-[0_0_18px_rgba(139,92,246,0.18)] lg:px-8">
       <div className="mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
         <Link to="/admin/user/dashboard" className="flex min-w-0 items-center gap-0.5 text-left sm:gap-1.5">
-          <img src="/logo.png" alt="Winnie Fun logo" className="h-11 w-11 shrink-0 object-contain sm:h-16 sm:w-16" />
+          <img src="/logo.png" alt="Winnie Fun" className="h-11 w-11 shrink-0 object-contain sm:h-16 sm:w-16" />
           <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_18px_rgba(139,92,246,0.25)] sm:-ml-1">
             <span className="block truncate text-2xl font-black italic tracking-wide text-slate-950 dark:text-white sm:text-4xl">
               innie
@@ -95,11 +95,15 @@ export default function AdminHeader({ onOpenSidebar, unreadNotificationCount = 0
           <button
             type="button"
             onClick={onOpenSidebar}
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-transparent bg-transparent text-slate-700 transition hover:bg-[#EFFBFF] dark:border-[rgba(255,255,255,0.08)] dark:bg-[#111827] dark:text-[#C4C9D4] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335] xl:hidden"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200/80 bg-white/85 text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:border-white/10 dark:bg-[#0D1324] dark:text-slate-300 dark:hover:border-violet-400/45 dark:hover:bg-[#171F33] dark:hover:text-white sm:h-11 sm:w-11 xl:hidden"
             aria-label="فتح القائمة"
             title="فتح القائمة"
           >
-            <Menu className="h-7 w-7 stroke-[1.8]" />
+            <span className="flex flex-col items-end gap-1" aria-hidden="true">
+              <span className="h-0.5 w-4.5 rounded-full bg-current" />
+              <span className="h-0.5 w-3.5 rounded-full bg-current" />
+              <span className="h-0.5 w-2.5 rounded-full bg-current" />
+            </span>
           </button>
         </div>
       </div>
