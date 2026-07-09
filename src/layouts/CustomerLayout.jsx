@@ -5,6 +5,7 @@ import BackButton from "../components/BackButton";
 import CustomerBottomNav from "../components/CustomerBottomNav";
 import CustomerHeader from "../components/CustomerHeader";
 import DashboardSidebar from "../components/DashboardSidebar";
+import IdentityVerificationRequiredModal from "../components/IdentityVerificationRequiredModal";
 import SiteFooter from "../components/SiteFooter";
 import { getCustomerCatalog } from "../api/catalog";
 import {
@@ -33,7 +34,7 @@ const customerPages = [
 ];
 
 export default function CustomerLayout() {
-  const { token } = useAuth();
+  const { isLoading: authLoading, refreshCurrentUser, token, user } = useAuth();
   const { language } = useLanguage();
   const { t } = useTranslation("common");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,10 +45,14 @@ export default function CustomerLayout() {
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [notificationsError, setNotificationsError] = useState("");
   const [notificationAction, setNotificationAction] = useState("");
+  const [identityPromptDismissed, setIdentityPromptDismissed] = useState(false);
+  const [identityPromptForced, setIdentityPromptForced] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isAboutPage = location.pathname === "/customer/about";
   const usesFullFooter = location.pathname === "/customer/dashboard";
+  const identityVerificationRequired = user?.identityVerificationRequired === true;
+  const showIdentityPrompt = identityVerificationRequired && !authLoading && (!identityPromptDismissed || identityPromptForced);
 
   const refreshWallet = useCallback(async () => {
     if (!token) {
@@ -154,6 +159,25 @@ export default function CustomerLayout() {
       cancelled = true;
     };
   }, [t, token]);
+
+  useEffect(() => {
+    if (identityVerificationRequired) {
+      setIdentityPromptDismissed(false);
+      return;
+    }
+    setIdentityPromptDismissed(false);
+    setIdentityPromptForced(false);
+  }, [identityVerificationRequired, user?.id]);
+
+  useEffect(() => {
+    const handleIdentityHold = () => {
+      setIdentityPromptDismissed(false);
+      setIdentityPromptForced(true);
+      void refreshCurrentUser?.();
+    };
+    window.addEventListener("winnie:identity-verification-required", handleIdentityHold);
+    return () => window.removeEventListener("winnie:identity-verification-required", handleIdentityHold);
+  }, [refreshCurrentUser]);
 
   const runNotificationAction = useCallback(async (actionKey, action) => {
     if (!token) {
@@ -287,6 +311,14 @@ export default function CustomerLayout() {
           <CustomerBottomNav />
         </div>
       </div>
+      <IdentityVerificationRequiredModal
+        open={showIdentityPrompt}
+        reason={user?.identityVerificationReason || ""}
+        onClose={() => {
+          setIdentityPromptDismissed(true);
+          setIdentityPromptForced(false);
+        }}
+      />
     </div>
   );
 }

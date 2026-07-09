@@ -9,6 +9,7 @@ export class ApiError extends Error {
     this.code = options.code || "API_ERROR";
     this.details = options.details || null;
     this.fieldErrors = options.fieldErrors || {};
+    this.support = options.support || null;
     this.userMessage = options.userMessage || message || DEFAULT_ERROR_MESSAGE;
     this.payload = options.payload || null;
   }
@@ -52,6 +53,10 @@ export function getFriendlyAuthMessage({ status, code, message, errors } = {}) {
 
   if (normalizedCode === "PAYMENT_RISK_LIMIT_REACHED") {
     return safeMessage || "Online top-up is temporarily limited for your account. Please use manual deposit or contact support.";
+  }
+
+  if (normalizedCode === "IDENTITY_VERIFICATION_REQUIRED") {
+    return safeMessage || "Please contact support to verify your identity before continuing.";
   }
 
   if (normalizedCode === "PAYMENT_CURRENCY_CONVERSION_UNAVAILABLE") {
@@ -110,6 +115,7 @@ export function createApiError({ response, payload }) {
   const code = payload?.code || (status ? `HTTP_${status}` : "API_ERROR");
   const errors = payload?.errors;
   const details = payload?.details || errors || null;
+  const support = payload?.support || null;
   const message = payload?.message || response?.statusText || DEFAULT_ERROR_MESSAGE;
   const fieldErrors = normalizeFieldErrors(errors);
   const userMessage = getFriendlyAuthMessage({ status, code, message, errors });
@@ -119,6 +125,7 @@ export function createApiError({ response, payload }) {
     code,
     details,
     fieldErrors,
+    support,
     payload,
     userMessage,
   });

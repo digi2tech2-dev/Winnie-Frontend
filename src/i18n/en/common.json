@@ -144,6 +144,16 @@
     "defaultTitle": "Nothing here yet",
     "defaultDescription": "New data will appear here when it becomes available."
   },
+  "identityVerification": {
+    "requiredTitle": "Identity verification required",
+    "requiredMessage": "To protect your account and continue purchases or top-ups, please contact support to verify your identity.",
+    "contactSupportWhatsApp": "Contact on WhatsApp",
+    "adminToggle": "Require identity verification",
+    "adminHelp": "Enable this if the user must contact support to verify identity before purchases or top-ups.",
+    "enabled": "Verification required",
+    "disabled": "No verification hold",
+    "close": "Close"
+  },
   "errors": {
     "tryAgain": "Please try again.",
     "loginRequired": "Login required",

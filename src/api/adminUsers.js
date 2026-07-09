@@ -52,6 +52,10 @@ export function normalizeAdminUser(user = {}) {
     groupName: group?.name || "Unassigned",
     groupPercentage: group?.percentage ?? null,
     isSubAgent: user.isSubAgent === true,
+    identityVerificationRequired: user.identityVerificationRequired === true,
+    identityVerificationReason: user.identityVerificationReason || "",
+    identityVerificationRequestedAt: user.identityVerificationRequestedAt || null,
+    identityVerificationClearedAt: user.identityVerificationClearedAt || null,
     name: user.name || user.username || "Winnie user",
     phone: user.phone || "",
     rejectedAt: user.rejectedAt || null,
@@ -136,6 +140,22 @@ export async function updateAdminUserCurrency(token, id, currency, reason = "Adm
       currency: String(currency || "").trim().toUpperCase(),
       reason,
     },
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
+export async function updateUserIdentityVerification(token, id, { required, reason } = {}) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/identity-verification`, {
+    body: compactObject({
+      required,
+      reason,
+    }),
     method: "PATCH",
     token,
   });

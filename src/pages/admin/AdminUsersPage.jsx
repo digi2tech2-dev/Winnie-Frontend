@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { approveUser, getAdminUsers, rejectUser } from "../../api/adminUsers";
+import { approveUser, getAdminUsers, rejectUser, updateUserIdentityVerification } from "../../api/adminUsers";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 
@@ -206,6 +206,27 @@ export default function AdminUsersPage() {
     } catch (requestError) {
       const message = getErrorMessage(requestError, "فشلت مراجعة المستخدم.");
       showToast({ type: "error", title: "فشل الإجراء", message });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleIdentityVerificationUpdate = async (user, required, reason) => {
+    if (!token || !user?.id) return;
+    const key = `identity:${user.id}`;
+    setActionKey(key);
+
+    try {
+      const result = await updateUserIdentityVerification(token, user.id, { required, reason });
+      showToast({
+        type: required ? "warning" : "success",
+        title: result.message || (required ? "تم تفعيل طلب التحقق" : "تم إلغاء طلب التحقق"),
+      });
+      setUsers((current) => current.map((item) => (item.id === user.id ? result.user : item)));
+      await loadUsers();
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, "تعذر تحديث طلب تأكيد الهوية.");
+      showToast({ type: "error", title: "فشل تحديث التحقق", message });
     } finally {
       setActionKey("");
     }
@@ -402,6 +423,7 @@ export default function AdminUsersPage() {
             onCopy={copyUserId}
             onOpenWallet={() => openUserWallet(selectedUser.id)}
             onReject={() => requestUserReview(selectedUser, "reject")}
+            onUpdateIdentityVerification={handleIdentityVerificationUpdate}
           />
         )}
       </AnimatePresence>
@@ -461,8 +483,14 @@ function StatusBadge({ status, label }) {
   );
 }
 
-function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onReject }) {
+function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onReject, onUpdateIdentityVerification }) {
   const canReview = user.status === "PENDING";
+  const [identityReason, setIdentityReason] = useState(user.identityVerificationReason || "");
+
+  useEffect(() => {
+    setIdentityReason(user.identityVerificationReason || "");
+  }, [user.id, user.identityVerificationReason]);
+
   return (
     <div className="admin-user-drawer-layer">
       <button type="button" className="admin-user-drawer-backdrop" onClick={onClose} aria-label="إغلاق تفاصيل المستخدم" />
@@ -513,6 +541,53 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
               <InfoItem label="وكيل فرعي" value={user.isSubAgent ? "نعم" : "لا"} />
               <InfoItem label="حالة الوكيل الفرعي" value={user.subAgentStatus || "-"} />
               <InfoItem label="صلاحية المشرف" value={user.role === "SUPERVISOR" ? "مشرف" : "ليس مشرفًا"} />
+            </div>
+          </DrawerSection>
+
+          <DrawerSection icon={ShieldAlert} title="طلب تأكيد الهوية">
+            <div className="rounded-3xl border border-amber-200/70 bg-amber-50/70 p-4 dark:border-amber-400/20 dark:bg-amber-400/10">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-950 dark:text-white">طلب تأكيد الهوية</p>
+                  <p className="mt-1 text-xs font-bold leading-6 text-slate-600 dark:text-slate-300">
+                    فعّل هذا الخيار إذا كان المستخدم يحتاج إلى التواصل مع الدعم لتأكيد الهوية قبل الشراء أو الشحن.
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-black ${user.identityVerificationRequired ? "bg-amber-500 text-white" : "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"}`}>
+                  {user.identityVerificationRequired ? "مطلوب التحقق" : "لا يوجد طلب تحقق"}
+                </span>
+              </div>
+              <label className="mt-4 block">
+                <span className="text-xs font-black text-slate-500 dark:text-slate-400">سبب الطلب</span>
+                <textarea
+                  value={identityReason}
+                  onChange={(event) => setIdentityReason(event.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/15 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                  placeholder="Payment gateway requested identity confirmation"
+                />
+              </label>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => onUpdateIdentityVerification(user, true, identityReason)}
+                  disabled={busy}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>تفعيل طلب التحقق</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onUpdateIdentityVerification(user, false, identityReason)}
+                  disabled={busy}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>إلغاء طلب التحقق</span>
+                </button>
+              </div>
             </div>
           </DrawerSection>
 

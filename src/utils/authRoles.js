@@ -78,5 +78,7 @@ export function normalizeUser(rawUser) {
     tier: rawUser.tier || group?.name || getRoleLabel(rawUser.role),
     group,
     walletBalance: rawUser.walletBalance ?? 0,
+    identityVerificationRequired: rawUser.identityVerificationRequired === true,
+    identityVerificationReason: rawUser.identityVerificationReason || "",
   };
 }

@@ -115,6 +115,11 @@ export async function apiRequest(endpoint, options = {}) {
           response: payload,
         });
       }
+      if (payload?.code === "IDENTITY_VERIFICATION_REQUIRED" && typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("winnie:identity-verification-required", {
+          detail: { support: payload.support || null, message: payload.message || "" },
+        }));
+      }
       throw createApiError({ response, payload });
     }
 
