@@ -351,7 +351,7 @@ function filterLoadedOrders(orders, filters) {
 function getDateBounds(filters) {
   if (filters.datePreset === "all") return {};
 
-  if (filters.datePreset === "custom") {
+  if (filters.dateFrom || filters.dateTo) {
     return {
       from: filters.dateFrom ? new Date(`${filters.dateFrom}T00:00:00`).toISOString() : undefined,
       to: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`).toISOString() : undefined,
@@ -364,7 +364,7 @@ function getDateBounds(filters) {
 
   if (filters.datePreset === "last7") start.setDate(start.getDate() - 6);
   if (filters.datePreset === "last30") start.setDate(start.getDate() - 29);
-  if (filters.datePreset === "month") start = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (filters.datePreset === "month" || filters.datePreset === "thisMonth") start = new Date(now.getFullYear(), now.getMonth(), 1);
 
   return { from: start.toISOString(), to: end.toISOString() };
 }

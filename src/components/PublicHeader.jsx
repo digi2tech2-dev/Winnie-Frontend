@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Building2, CircleUserRound, Home, Languages, LayoutGrid, LogIn, Menu, Search, UserPlus, X } from "lucide-react";
+import { Building2, CircleUserRound, Home, Languages, LayoutGrid, LogIn, Menu, Moon, SunMedium, UserPlus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getPublicCatalog } from "../api/catalog";
 import { useLanguage } from "../context/LanguageContext";
@@ -11,6 +11,7 @@ import GoogleMark from "./GoogleMark";
 import HeaderSearchOverlay from "./HeaderSearchOverlay";
 import ProductPurchaseModal from "./ProductPurchaseModal";
 import ThemeToggle from "./ThemeToggle";
+import { BrandName } from "./Brand";
 
 const purchaseLinks = [
   {
@@ -62,6 +63,7 @@ export default function PublicHeader() {
   const [searchProducts, setSearchProducts] = useState([]);
   const [purchaseItem, setPurchaseItem] = useState(null);
   const { language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const { t } = useTranslation("common");
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,6 +71,8 @@ export default function PublicHeader() {
   const nextLanguage = language === "ar" ? "en" : "ar";
   const isLoginPage = location.pathname === "/login";
   const isAuthPage = isLoginPage || location.pathname === "/register";
+  const isDarkTheme = theme === "dark";
+  const switchTheme = () => setTheme(isDarkTheme ? "light" : "dark");
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +93,13 @@ export default function PublicHeader() {
     };
   }, []);
 
+  useEffect(() => {
+    const openSearchFromPage = () => setSearchOpen(true);
+
+    window.addEventListener("winnie-open-search", openSearchFromPage);
+    return () => window.removeEventListener("winnie-open-search", openSearchFromPage);
+  }, []);
+
   const confirmPurchase = () => {
     setPurchaseItem(null);
     navigate("/login", { state: { from: "/customer/dashboard" } });
@@ -96,38 +107,33 @@ export default function PublicHeader() {
 
   return (
     <>
-      <header dir="ltr" className="site-header-warm fixed inset-x-0 top-0 z-[70] overflow-hidden border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-4 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
+      <header dir="ltr" className="winnie-mobile-topbar site-header-warm fixed inset-x-0 top-0 z-[70] overflow-hidden border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-4 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
         <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
         <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-400/10" />
-        <div className="relative mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
-          <Link to="/" className="flex min-w-0 items-center gap-0.5 sm:gap-1">
-            <span className="grid h-11 w-11 shrink-0 place-items-center sm:h-14 sm:w-14">
-              <img src="/logo.png" alt={t("app.logoAlt")} className="h-10 w-10 object-contain sm:h-[52px] sm:w-[52px]" />
+        <div className="winnie-mobile-topbar-shell relative mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
+          <Link to="/" className="primary-header-brand winnie-mobile-brand flex min-w-0 items-center gap-0.5 sm:gap-1">
+            <span className="grid h-12 w-12 shrink-0 place-items-center sm:h-[60px] sm:w-[60px]">
+              <img src="/logo.png" alt={t("app.logoAlt")} className="h-12 w-12 object-contain sm:h-[60px] sm:w-[60px]" />
             </span>
             <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_16px_rgba(139,92,246,0.25)]">
-              <span className="block truncate text-xl font-black italic tracking-wide text-slate-950 dark:text-white sm:text-3xl">
-                innie
-              </span>
-              <span className="mt-0.5 block text-[8px] font-black uppercase tracking-[0.3em] text-[#A855F7] sm:text-[11px] sm:tracking-[0.34em]">
-                Fun
-              </span>
+              <BrandName size="adminHeader" />
             </span>
           </Link>
 
-          <div className="mx-auto" />
-
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {!isAuthPage && (
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                aria-label={t("search.open")}
-                title={t("actions.search")}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 hover:text-[#6D28D9] dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#C084FC] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]"
-              >
-                <Search className="h-5 w-5" />
-              </button>
-            )}
+          <div className="winnie-mobile-left-actions ml-auto flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={switchTheme}
+              aria-label={isDarkTheme ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الغامق"}
+              title={isDarkTheme ? "الوضع الفاتح" : "الوضع الغامق"}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 hover:text-[#6D28D9] dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#C084FC] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]"
+            >
+              {isDarkTheme ? (
+                <SunMedium className="h-6 w-6 stroke-[1.9] text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.48)]" />
+              ) : (
+                <Moon className="h-6 w-6 stroke-[1.9] text-violet-700 drop-shadow-[0_0_10px_rgba(124,58,237,0.22)]" />
+              )}
+            </button>
 
             <button
               type="button"
@@ -144,7 +150,9 @@ export default function PublicHeader() {
                 EN
               </span>
             </button>
+          </div>
 
+          <div className="winnie-mobile-right-actions flex items-center gap-2 sm:gap-3">
             {!isAuthPage && (
               <Link
                 to="/login"
@@ -240,13 +248,14 @@ function PublicPurchaseSidebar({ open, onClose }) {
       >
         <div className="rounded-[22px] border border-[#CDEBFF] bg-[linear-gradient(135deg,#E0F2FE_0%,#FFFFFF_46%,#F5F3FF_100%)] p-2.5 shadow-[0_14px_32px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#0D1324,#1A1024)] dark:shadow-none">
           <div className="flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white shadow-[0_10px_22px_rgba(14,165,233,0.12)] ring-1 ring-[#BAE6FD] dark:bg-[#111827] dark:shadow-none dark:ring-0">
-                <img src="/logo.png" alt="" className="h-8 w-8 object-contain" />
-              </span>
-              <div>
-                <p className="text-xs font-black text-[#0284C7] dark:text-[#38BDF8]">Winnie Fun</p>
-                <h2 className="mt-0.5 text-lg font-black text-slate-950 dark:text-white">{t("sidebar.menu")}</h2>
+            <div className="min-w-0 flex-1 text-center">
+              <div dir="ltr" className="mx-auto flex min-w-0 w-fit items-center justify-center gap-1 text-left">
+                <span className="grid h-11 w-11 shrink-0 place-items-center">
+                  <img src="/logo.png" alt={t("app.logoAlt")} className="h-10 w-10 object-contain" />
+                </span>
+                <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_16px_rgba(139,92,246,0.22)]">
+                  <BrandName size="compact" />
+                </span>
               </div>
             </div>
             <button

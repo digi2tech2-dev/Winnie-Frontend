@@ -1,4 +1,5 @@
 import { useLocation } from "react-router-dom";
+import { BrandLockup } from "../../components/Brand";
 import { iconMap } from "../../components/icons";
 import { adminStats, adminTables, notifications, orders, walletTransactions } from "../../data/catalog";
 
@@ -88,7 +89,7 @@ const tableData = {
     rows: [
       ["من نحن", "متاح", "/admin/user/about", "معروض بنسخة المستخدم"],
       ["الروابط المهمة", "متاحة", "الفوتر", "مرتبطة حسب المسار الحالي"],
-      ["هوية ويني فن", "نشطة", "كل الصفحات", "الشعار والألوان الأساسية"],
+      [<span key="brand-identity" className="inline-flex items-center gap-1.5">هوية <BrandLockup fullName={false} logoClassName="h-5 w-5" nameSize="inline" /></span>, "نشطة", "كل الصفحات", "الشعار والألوان الأساسية"],
     ],
   },
 };
@@ -162,9 +163,9 @@ export default function AdminToolsPage() {
             </thead>
             <tbody>
               {table.rows.map((row, rowIndex) => (
-                <tr key={row.join("-")}>
+                <tr key={rowIndex}>
                   {row.map((cell, cellIndex) => (
-                    <td key={cell}>
+                    <td key={cellIndex}>
                       {cellIndex === 0 && <span className={`admin-tools-row-dot admin-tools-row-dot-${statTones[rowIndex % statTones.length]}`} />}
                       {cell}
                     </td>

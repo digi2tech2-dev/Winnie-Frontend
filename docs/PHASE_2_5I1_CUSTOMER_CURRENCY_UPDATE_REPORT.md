@@ -1,65 +1,24 @@
 # Phase 2.5I.1 Customer Currency Update Report
 
-## Files changed
+## Superseded behavior
 
-- `src/api/currencies.js`
-- `src/pages/customer/CustomerSettings.jsx`
-- `src/pages/ProfilePage.jsx`
-- `src/pages/SettingsPage.jsx`
-- `docs/PHASE_2_5I1_CUSTOMER_CURRENCY_UPDATE_REPORT.md`
+Customer self-service currency changes are disabled. The earlier customer update flow documented here is no longer a supported product contract.
 
-## Route added
+## Current contract
 
-- Backend route consumed: `PATCH /api/me/currency`
+- `PATCH /api/me/currency` rejects every customer request with
+  `CUSTOMER_CURRENCY_CHANGE_DISABLED`.
+- `PATCH /api/users/me` rejects both `currency` and `walletCurrency`.
+- Customer profile and settings screens display the assigned currency as read-only.
+- Customer frontend code contains no currency mutation API call.
+- Admin currency assignment remains available through
+  `PATCH /api/admin/users/:id/currency`.
+- Rejected requests do not change balances, credit fields, or wallet ledger entries.
 
-## Request/response shape
+The customer-facing message is:
 
-Request:
+> عملة الحساب يحددها المسؤول
 
-```json
-{
-  "currency": "EGP"
-}
-```
+## Verification
 
-Response:
-
-```json
-{
-  "success": true,
-  "message": "Currency updated.",
-  "data": {
-    "user": {},
-    "currency": "EGP"
-  }
-}
-```
-
-## Validation behavior
-
-The UI loads active currencies from `GET /api/currencies/active`, allows selecting only those codes, disables save while loading/submitting, and relies on backend validation for final acceptance.
-
-## Frontend behavior
-
-- Added `updateMyCurrency(currency, token)` in `src/api/currencies.js`.
-- Customer settings now submits currency changes to `PATCH /api/me/currency`.
-- After backend success, the auth context refetches the current user/session.
-- The UI does not locally persist currency as source of truth.
-- Save is disabled when the selected currency matches the current backend user currency.
-
-## Tests/checks run
-
-- `npm.cmd run lint`: passed.
-- `npm.cmd run build`: passed.
-- `git diff --check`: passed.
-
-## Remaining warnings
-
-- Profile remains a read-only display surface and links users to settings conceptually through helper copy.
-- Exchange-rate editing and admin currency behavior remain unchanged.
-- Vite printed the existing large chunk-size warning.
-- Git printed the existing malformed `safe.directory` warning and LF-to-CRLF notices.
-
-## Completion status
-
-Phase 2.5I.1 frontend implementation is complete.
+Backend coverage checks rejection, unchanged user/wallet state, no ledger entry, and profile payload aliases. Existing admin coverage verifies that an administrator can still change currency without changing wallet balance.

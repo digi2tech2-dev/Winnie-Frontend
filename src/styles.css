@@ -9,6 +9,8 @@
 
   html {
     scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   .dark {
@@ -40,6 +42,631 @@
 
   body {
     font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* Unified date-range filters */
+.unified-date-filter,
+.unified-date-filter > div {
+  width: 100%;
+}
+
+.unified-date-filter .admin-date-trigger {
+  height: 48px;
+  min-width: 0;
+  width: 100%;
+}
+
+.unified-date-filter .admin-date-trigger-icon {
+  border-radius: 13px;
+  height: 36px;
+  width: 36px;
+}
+
+html.dark .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.58), rgba(12, 74, 110, 0.48)) !important;
+  border-color: rgba(192, 132, 252, 0.25) !important;
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+html.dark .admin-date-trigger:hover {
+  background: linear-gradient(135deg, rgba(107, 33, 168, 0.68), rgba(3, 105, 161, 0.54)) !important;
+  border-color: rgba(125, 211, 252, 0.38) !important;
+}
+
+html.dark .admin-date-trigger-icon,
+html.dark .admin-date-preset-active,
+html.dark .admin-calendar-day-selected::before {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6 52%, #38bdf8) !important;
+  box-shadow: 0 10px 26px rgba(139, 92, 246, 0.28) !important;
+}
+
+html.dark .admin-date-popover {
+  background:
+    radial-gradient(circle at 5% 0%, rgba(236, 72, 153, 0.15), transparent 38%),
+    radial-gradient(circle at 100% 8%, rgba(56, 189, 248, 0.15), transparent 40%),
+    linear-gradient(145deg, rgba(9, 18, 40, 0.98), rgba(24, 16, 52, 0.98)) !important;
+  border-color: rgba(192, 132, 252, 0.24) !important;
+  box-shadow: 0 26px 76px rgba(2, 6, 23, 0.64), 0 0 34px rgba(139, 92, 246, 0.12) !important;
+}
+
+html.dark .admin-date-popover::before {
+  background: rgba(9, 16, 36, 0.42) !important;
+  border-color: rgba(125, 211, 252, 0.08) !important;
+}
+
+html.dark .admin-date-presets,
+html.dark .admin-calendar-card {
+  background: rgba(10, 20, 44, 0.76) !important;
+  border-color: rgba(192, 132, 252, 0.18) !important;
+}
+
+html.dark .admin-date-preset {
+  color: #cbd5e1 !important;
+}
+
+html.dark .admin-date-preset:hover,
+html.dark .admin-calendar-day:hover:not(:disabled)::before,
+html.dark .admin-calendar-day-range::before {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.17), rgba(56, 189, 248, 0.16)) !important;
+  border-color: rgba(192, 132, 252, 0.24) !important;
+}
+
+html.dark .admin-date-preset-active,
+html.dark .admin-calendar-day-selected {
+  color: #ffffff !important;
+}
+
+html.dark .admin-date-nav {
+  background: rgba(20, 28, 58, 0.86) !important;
+  border-color: rgba(125, 211, 252, 0.18) !important;
+  color: #c4b5fd !important;
+}
+
+html.dark .admin-calendar-heading p {
+  color: #f8fafc !important;
+}
+
+html.dark .admin-calendar-heading span {
+  color: #7dd3fc !important;
+}
+
+html.dark .admin-calendar-day {
+  color: #e2e8f0 !important;
+}
+
+html.dark .admin-calendar-day-muted,
+html.dark .admin-calendar-day:disabled {
+  color: #64748b !important;
+}
+
+@media (max-width: 640px) {
+  .unified-date-filter .admin-date-popover {
+    bottom: auto;
+    left: 3vw;
+    max-height: 88dvh;
+    overflow-y: auto;
+    position: fixed;
+    right: 3vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 94vw;
+    z-index: 1000;
+  }
+}
+
+/* Admin dashboard mobile polish: pastel theme, compact date filter, two cards per row */
+.admin-dashboard-main .admin-dashboard {
+  --dashboard-gold: #7DD3FC;
+  --dashboard-gold-soft: rgba(244, 114, 182, 0.18);
+  --dashboard-card: #101426;
+  --dashboard-card-strong: #151936;
+  --dashboard-line: rgba(186, 230, 253, 0.18);
+}
+
+.admin-dashboard-main .admin-dashboard-top,
+.admin-dashboard-main .admin-panel {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(125, 211, 252, 0.13), transparent 28rem),
+    radial-gradient(circle at 92% 8%, rgba(244, 114, 182, 0.13), transparent 28rem),
+    linear-gradient(145deg, rgba(16, 20, 38, 0.98), rgba(12, 16, 30, 0.98)) !important;
+  border-color: rgba(186, 230, 253, 0.16) !important;
+}
+
+.admin-dashboard-main .admin-dashboard-kicker,
+.admin-dashboard-main .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-toolbar-button,
+.admin-dashboard-main .admin-panel-heading-icon,
+.admin-dashboard-main .admin-metric-live {
+  color: #BAE6FD !important;
+}
+
+.admin-dashboard-main .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-toolbar-button,
+.admin-dashboard-main .admin-panel-heading-icon,
+.admin-dashboard-main .admin-metric-live {
+  background: rgba(125, 211, 252, 0.10) !important;
+  border-color: rgba(186, 230, 253, 0.20) !important;
+}
+
+.admin-dashboard-main .admin-metric-card {
+  background:
+    radial-gradient(circle at 0% 0%, var(--metric-wash), transparent 58%),
+    linear-gradient(145deg, rgba(23, 28, 54, 0.98), rgba(12, 16, 30, 0.98)) !important;
+  border-color: rgba(186, 230, 253, 0.16) !important;
+}
+
+.admin-dashboard-main .admin-metric-card::after {
+  background: linear-gradient(90deg, var(--metric-accent), rgba(186, 230, 253, 0.92)) !important;
+}
+
+.admin-dashboard-main .admin-metric-card--orders { --metric-accent: #7DD3FC; --metric-wash: rgba(125, 211, 252, 0.16); }
+.admin-dashboard-main .admin-metric-card--pending { --metric-accent: #F9A8D4; --metric-wash: rgba(249, 168, 212, 0.15); }
+.admin-dashboard-main .admin-metric-card--completed { --metric-accent: #A7F3D0; --metric-wash: rgba(167, 243, 208, 0.12); }
+.admin-dashboard-main .admin-metric-card--failed { --metric-accent: #FDA4AF; --metric-wash: rgba(253, 164, 175, 0.13); }
+.admin-dashboard-main .admin-metric-card--users { --metric-accent: #BAE6FD; --metric-wash: rgba(186, 230, 253, 0.14); }
+.admin-dashboard-main .admin-metric-card--wallets { --metric-accent: #F0ABFC; --metric-wash: rgba(240, 171, 252, 0.14); }
+.admin-dashboard-main .admin-metric-card--review { --metric-accent: #FBCFE8; --metric-wash: rgba(251, 207, 232, 0.14); }
+.admin-dashboard-main .admin-metric-card--products { --metric-accent: #C4B5FD; --metric-wash: rgba(196, 181, 253, 0.13); }
+.admin-dashboard-main .admin-metric-card--deposits { --metric-accent: #67E8F9; --metric-wash: rgba(103, 232, 249, 0.13); }
+.admin-dashboard-main .admin-metric-card--requests { --metric-accent: #FB7185; --metric-wash: rgba(251, 113, 133, 0.13); }
+
+.admin-dashboard-main .admin-metric-icon {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: color-mix(in srgb, var(--metric-accent) 35%, transparent) !important;
+}
+
+.admin-dashboard-main .admin-metric-rail {
+  background: linear-gradient(90deg, transparent, rgba(186, 230, 253, 0.18));
+}
+
+.admin-dashboard-main .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(251, 207, 232, 0.95), rgba(224, 242, 254, 0.92)) !important;
+  border-color: rgba(125, 211, 252, 0.34) !important;
+  box-shadow: 0 16px 38px rgba(14, 165, 233, 0.10), 0 14px 34px rgba(244, 114, 182, 0.10) !important;
+}
+
+.admin-dashboard-main .admin-date-trigger-icon,
+.admin-dashboard-main .admin-date-preset-active,
+.admin-dashboard-main .admin-calendar-day-selected::before {
+  background: linear-gradient(135deg, #EC4899, #8B5CF6 52%, #38BDF8) !important;
+  box-shadow: 0 12px 28px rgba(236, 72, 153, 0.22) !important;
+}
+
+.admin-dashboard-main .admin-date-popover {
+  background: rgba(248, 250, 255, 0.90) !important;
+  border-color: rgba(125, 211, 252, 0.28) !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18), 0 18px 50px rgba(244, 114, 182, 0.10) !important;
+}
+
+.admin-dashboard-main .admin-date-popover::before,
+.admin-dashboard-main .admin-date-presets,
+.admin-dashboard-main .admin-calendar-card,
+.admin-dashboard-main .admin-date-nav {
+  border-color: rgba(125, 211, 252, 0.22) !important;
+}
+
+.admin-dashboard-main .admin-date-preset:hover,
+.admin-dashboard-main .admin-calendar-day:hover:not(:disabled)::before,
+.admin-dashboard-main .admin-calendar-day-range::before {
+  background: rgba(251, 207, 232, 0.62) !important;
+}
+
+html.dark .admin-dashboard-main .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.58), rgba(12, 74, 110, 0.44)) !important;
+  border-color: rgba(186, 230, 253, 0.20) !important;
+}
+
+html.dark .admin-dashboard-main .admin-date-popover::before {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(244, 114, 182, 0.14), transparent 52%),
+    radial-gradient(circle at 100% 12%, rgba(56, 189, 248, 0.14), transparent 52%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.90), rgba(24, 16, 48, 0.82)) !important;
+}
+
+@media (max-width: 560px) {
+  .admin-dashboard-main .admin-period-panel .admin-panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-dashboard-main .admin-period-panel .admin-panel-heading > .relative {
+    width: 100%;
+  }
+
+  .admin-dashboard-main .admin-date-trigger {
+    border-radius: 18px;
+    height: 50px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-dashboard-main .admin-date-trigger-icon {
+    border-radius: 14px;
+    height: 34px;
+    width: 34px;
+  }
+
+  .admin-dashboard-main .admin-date-popover {
+    border-radius: 22px;
+    left: 10px;
+    max-height: calc(100vh - 122px);
+    overflow-y: auto;
+    padding: 10px;
+    position: fixed;
+    right: 10px;
+    top: 92px;
+    transform: none;
+    width: auto;
+    z-index: 190;
+  }
+
+  .admin-dashboard-main .admin-date-presets {
+    border-radius: 18px;
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .admin-dashboard-main .admin-date-preset {
+    border-radius: 14px;
+    font-size: 11px;
+    height: 31px;
+    padding-inline: 7px;
+  }
+
+  .admin-dashboard-main .admin-calendar-card {
+    border-radius: 18px;
+    padding: 8px;
+  }
+
+  .admin-dashboard-main .admin-calendar-grid {
+    gap: 3px;
+  }
+
+  .admin-dashboard-main .admin-calendar-day {
+    font-size: 11px;
+    height: 30px;
+  }
+
+  .admin-dashboard-main .admin-metrics-grid,
+  .admin-dashboard-main .admin-overview-grid {
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-main .admin-metric-card {
+    border-radius: 16px !important;
+    min-height: 150px;
+    padding: 11px !important;
+  }
+
+  .admin-dashboard-main .admin-metric-top {
+    gap: 7px;
+  }
+
+  .admin-dashboard-main .admin-metric-icon {
+    border-radius: 12px !important;
+    height: 34px !important;
+    width: 34px !important;
+  }
+
+  .admin-dashboard-main .admin-metric-icon svg {
+    height: 17px !important;
+    width: 17px !important;
+  }
+
+  .admin-dashboard-main .admin-metric-label {
+    font-size: 10.5px;
+    line-height: 1.45;
+  }
+
+  .admin-dashboard-main .admin-metric-value {
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.15;
+    margin-top: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-dashboard-main .admin-metric-description {
+    font-size: 9.5px;
+    line-height: 1.55;
+    margin-top: 7px;
+    min-height: 32px;
+  }
+
+  .admin-dashboard-main .admin-metric-footer {
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  .admin-dashboard-main .admin-metric-live,
+  .admin-dashboard-main .admin-metric-footer .inline-flex {
+    border-radius: 9px;
+    font-size: 9px;
+    height: 22px;
+    padding-inline: 6px;
+  }
+
+  .admin-dashboard-main .admin-metric-card::after {
+    bottom: 10px;
+    height: 3px;
+    left: 11px;
+    width: 58px;
+  }
+}
+
+/* Admin dashboard light background + mobile overview polish */
+html:not(.dark) .admin-dashboard-main {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.16), transparent 28rem),
+    radial-gradient(circle at 92% 10%, rgba(244, 114, 182, 0.15), transparent 30rem),
+    linear-gradient(180deg, #F8FCFF 0%, #FFF7FB 48%, #EEF8FF 100%) !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-dashboard {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(125, 211, 252, 0.18), transparent 32rem),
+    radial-gradient(circle at 100% 8%, rgba(249, 168, 212, 0.18), transparent 32rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.94)) !important;
+  border-color: rgba(125, 211, 252, 0.18) !important;
+  box-shadow: 0 22px 58px rgba(15, 23, 42, 0.08) !important;
+  color: #172033 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-dashboard-top,
+html:not(.dark) .admin-dashboard-main .admin-panel {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(125, 211, 252, 0.16), transparent 26rem),
+    radial-gradient(circle at 96% 8%, rgba(244, 114, 182, 0.13), transparent 26rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 255, 0.94)) !important;
+  border-color: rgba(125, 211, 252, 0.18) !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07) !important;
+  color: #172033 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-panel-title,
+html:not(.dark) .admin-dashboard-main .admin-panel h2,
+html:not(.dark) .admin-dashboard-main .admin-panel h3,
+html:not(.dark) .admin-dashboard-main .admin-panel p,
+html:not(.dark) .admin-dashboard-main .admin-dashboard-top h1 {
+  color: #172033 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-dashboard-refresh,
+html:not(.dark) .admin-dashboard-main .admin-metric-description,
+html:not(.dark) .admin-dashboard-main .admin-metric-label {
+  color: #64748B !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-dashboard-kicker,
+html:not(.dark) .admin-dashboard-main .admin-dashboard-live-pill,
+html:not(.dark) .admin-dashboard-main .admin-toolbar-button,
+html:not(.dark) .admin-dashboard-main .admin-panel-heading-icon,
+html:not(.dark) .admin-dashboard-main .admin-metric-live {
+  color: #0E7490 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-dashboard-live-pill,
+html:not(.dark) .admin-dashboard-main .admin-toolbar-button,
+html:not(.dark) .admin-dashboard-main .admin-panel-heading-icon,
+html:not(.dark) .admin-dashboard-main .admin-metric-live {
+  background: rgba(224, 242, 254, 0.78) !important;
+  border-color: rgba(56, 189, 248, 0.22) !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-metric-card {
+  background:
+    radial-gradient(circle at 0% 0%, var(--metric-wash), transparent 60%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 255, 0.94)) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06) !important;
+  color: #172033 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-metric-value {
+  color: #111827 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-order-card,
+html:not(.dark) .admin-dashboard-main .admin-alert-row {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(125, 211, 252, 0.18) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055) !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-orders-count {
+  background: rgba(251, 207, 232, 0.70) !important;
+  border-color: rgba(244, 114, 182, 0.22) !important;
+  color: #BE185D !important;
+}
+
+html.dark .admin-dashboard-main {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.14), transparent 30rem),
+    radial-gradient(circle at 92% 8%, rgba(236, 72, 153, 0.14), transparent 32rem),
+    radial-gradient(circle at 48% 28%, rgba(139, 92, 246, 0.12), transparent 34rem),
+    linear-gradient(180deg, #10172A 0%, #111827 44%, #17122B 100%) !important;
+}
+
+html.dark .admin-dashboard-main .admin-dashboard {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.12), transparent 30rem),
+    radial-gradient(circle at 100% 8%, rgba(244, 114, 182, 0.13), transparent 32rem),
+    linear-gradient(145deg, rgba(20, 28, 52, 0.96), rgba(23, 18, 43, 0.94)) !important;
+  border-color: rgba(186, 230, 253, 0.14) !important;
+  box-shadow: 0 22px 58px rgba(2, 6, 23, 0.24) !important;
+}
+
+html.dark .admin-dashboard-main .admin-dashboard-top,
+html.dark .admin-dashboard-main .admin-panel {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.11), transparent 26rem),
+    radial-gradient(circle at 96% 8%, rgba(244, 114, 182, 0.12), transparent 26rem),
+    linear-gradient(145deg, rgba(22, 30, 54, 0.94), rgba(25, 20, 48, 0.92)) !important;
+  border-color: rgba(186, 230, 253, 0.14) !important;
+}
+
+html.dark .admin-dashboard-main .admin-metric-card {
+  background:
+    radial-gradient(circle at 0% 0%, var(--metric-wash), transparent 60%),
+    linear-gradient(145deg, rgba(24, 32, 58, 0.96), rgba(22, 18, 42, 0.94)) !important;
+  border-color: rgba(186, 230, 253, 0.14) !important;
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard-main .admin-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-dashboard-main .admin-orders-panel,
+  .admin-dashboard-main .admin-overview-grid > .admin-panel {
+    border-radius: 16px !important;
+  }
+
+  .admin-dashboard-main .admin-overview-grid .admin-panel-heading {
+    gap: 8px !important;
+  }
+
+  .admin-dashboard-main .admin-overview-grid .admin-panel-title {
+    font-size: 13px !important;
+  }
+
+  .admin-dashboard-main .admin-orders-count {
+    border-radius: 999px !important;
+    font-size: 9px !important;
+    height: 21px !important;
+    padding-inline: 7px !important;
+  }
+
+  .admin-dashboard-main .admin-orders-list,
+  .admin-dashboard-main .admin-compact-list {
+    gap: 7px !important;
+    margin-top: 10px !important;
+  }
+
+  .admin-dashboard-main .admin-order-card {
+    border-radius: 13px !important;
+    gap: 7px !important;
+    grid-template-columns: 30px minmax(0, 1fr) 30px !important;
+    padding: 7px !important;
+  }
+
+  .admin-dashboard-main .admin-order-orb,
+  .admin-dashboard-main .admin-action-icon-button {
+    border-radius: 10px !important;
+    height: 30px !important;
+    width: 30px !important;
+  }
+
+  .admin-dashboard-main .admin-order-card h3,
+  .admin-dashboard-main .admin-order-card .text-sm {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  .admin-dashboard-main .admin-order-card .text-xs,
+  .admin-dashboard-main .admin-order-card .text-\[11px\] {
+    font-size: 9px !important;
+  }
+
+  .admin-dashboard-main .admin-order-product,
+  .admin-dashboard-main .admin-status-badge {
+    border-radius: 9px !important;
+    font-size: 8.5px !important;
+    padding: 3px 5px !important;
+  }
+
+  .admin-dashboard-main .admin-alert-row {
+    border-radius: 13px !important;
+    gap: 8px !important;
+    min-height: 42px !important;
+    padding: 8px !important;
+  }
+
+  .admin-dashboard-main .admin-alert-icon {
+    border-radius: 10px !important;
+    height: 28px !important;
+    width: 28px !important;
+  }
+}
+
+/* Compact admin dashboard hero */
+.admin-dashboard-main .admin-dashboard-top {
+  min-height: 0 !important;
+  padding: 12px 14px !important;
+}
+
+.admin-dashboard-main .admin-dashboard-top h1 {
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+  margin-top: 2px !important;
+}
+
+.admin-dashboard-main .admin-dashboard-kicker {
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+
+.admin-dashboard-main .admin-dashboard-refresh {
+  font-size: 10px !important;
+  line-height: 1.4 !important;
+  margin-top: 3px !important;
+}
+
+.admin-dashboard-main .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-toolbar-button {
+  border-radius: 10px !important;
+  font-size: 10px !important;
+  gap: 5px !important;
+  height: 30px !important;
+  min-width: 0 !important;
+  padding-inline: 9px !important;
+}
+
+.admin-dashboard-main .admin-dashboard-live-pill svg,
+.admin-dashboard-main .admin-toolbar-button svg {
+  height: 13px !important;
+  width: 13px !important;
+}
+
+.admin-dashboard-main .admin-top-actions {
+  gap: 6px !important;
+}
+
+.admin-dashboard-main .admin-dashboard-top::after {
+  left: 14px !important;
+  right: 14px !important;
+}
+
+@media (max-width: 560px) {
+  .admin-dashboard-main .admin-dashboard-top {
+    border-radius: 16px !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .admin-dashboard-main .admin-dashboard-top h1 {
+    font-size: 16px !important;
+  }
+
+  .admin-dashboard-main .admin-dashboard-kicker,
+  .admin-dashboard-main .admin-dashboard-refresh {
+    font-size: 9px !important;
+  }
+
+  .admin-dashboard-main .admin-dashboard-live-pill,
+  .admin-dashboard-main .admin-toolbar-button {
+    flex: 0 0 auto !important;
+    height: 27px !important;
+    padding-inline: 7px !important;
   }
 }
 
@@ -131,6 +758,45 @@
 
   .gradient-text {
     @apply bg-gradient-to-r from-royal via-pulse to-aqua bg-clip-text text-transparent;
+  }
+
+  .winnie-brand-name {
+    display: inline-block;
+    background-image: linear-gradient(100deg, #8b5cf6 0%, #ec4899 34%, #38bdf8 68%, #a855f7 100%);
+    background-size: 260% 100%;
+    background-position: 0% 50%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+      0 0 14px rgba(236, 72, 153, 0.22),
+      0 0 24px rgba(56, 189, 248, 0.18);
+    animation: winnie-brand-colors 4.8s ease-in-out infinite;
+  }
+
+  .winnie-brand-fun {
+    background-image: linear-gradient(100deg, #a855f7 0%, #f472b6 42%, #38bdf8 78%, #8b5cf6 100%);
+    animation-duration: 5.6s;
+  }
+
+  @keyframes winnie-brand-colors {
+    0%,
+    100% {
+      background-position: 0% 50%;
+      filter: saturate(1.05);
+    }
+
+    50% {
+      background-position: 100% 50%;
+      filter: saturate(1.28);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .winnie-brand-name {
+      animation: none;
+    }
   }
 
   .page-frame {
@@ -259,6 +925,232 @@ html.dark .site-header-warm {
   background: linear-gradient(135deg, rgba(18, 15, 10, 0.96) 0%, rgba(23, 32, 22, 0.95) 54%, rgba(11, 31, 26, 0.95) 100%) !important;
   border-color: rgba(251, 191, 36, 0.16) !important;
   box-shadow: 0 0 22px rgba(251, 191, 36, 0.12), 0 18px 50px rgba(0, 0, 0, 0.32) !important;
+}
+
+@media (max-width: 639px) {
+  .winnie-mobile-topbar.site-header-warm {
+    overflow: visible !important;
+    padding: 10px 12px 6px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html.dark .winnie-mobile-topbar.site-header-warm {
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .winnie-mobile-topbar > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .winnie-mobile-topbar-shell {
+    display: grid !important;
+    min-height: 64px;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px !important;
+    padding: 8px 9px !important;
+    border: 1px solid rgba(125, 211, 252, 0.46);
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 78% 18%, rgba(244, 114, 182, 0.14), transparent 34%),
+      radial-gradient(circle at 15% 20%, rgba(34, 211, 238, 0.16), transparent 36%),
+      linear-gradient(105deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 255, 0.9) 52%, rgba(245, 243, 255, 0.94));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 10px 26px rgba(76, 29, 149, 0.10),
+      0 0 0 1px rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(22px);
+  }
+
+  html.dark .winnie-mobile-topbar-shell {
+    border-color: rgba(125, 211, 252, 0.24);
+    background:
+      radial-gradient(circle at 78% 18%, rgba(168, 85, 247, 0.14), transparent 36%),
+      radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.13), transparent 38%),
+      linear-gradient(105deg, rgba(15, 23, 42, 0.86), rgba(10, 15, 29, 0.9) 54%, rgba(30, 17, 44, 0.86));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 12px 30px rgba(0, 0, 0, 0.24),
+      0 0 18px rgba(56, 189, 248, 0.09) !important;
+  }
+
+  .winnie-mobile-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    z-index: 2;
+    gap: 0 !important;
+  }
+
+  .winnie-mobile-left-actions,
+  .winnie-mobile-right-actions {
+    grid-row: 1;
+    min-width: 0;
+    gap: 6px !important;
+    margin-left: 0 !important;
+  }
+
+  .winnie-mobile-left-actions {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .winnie-mobile-right-actions {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .winnie-mobile-brand img,
+  .winnie-mobile-brand > span:first-child {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .winnie-mobile-brand .winnie-brand-name {
+    max-width: 62px;
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+  }
+
+  .winnie-mobile-brand .winnie-brand-fun {
+    margin-top: 1px !important;
+    font-size: 0.42rem !important;
+    letter-spacing: 0.2em !important;
+  }
+
+  .primary-header-brand .winnie-brand-name {
+    max-width: 70px;
+    font-size: 1.25rem !important;
+  }
+
+  .primary-header-brand img,
+  .primary-header-brand > span:first-child {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .primary-header-brand .winnie-brand-fun {
+    font-size: 0.5rem !important;
+  }
+
+  .winnie-mobile-left-actions > button,
+  .winnie-mobile-left-actions > a,
+  .winnie-mobile-left-actions > div,
+  .winnie-mobile-right-actions > button,
+  .winnie-mobile-right-actions > a,
+  .winnie-mobile-right-actions > div {
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .winnie-mobile-left-actions > button,
+  .winnie-mobile-left-actions > a,
+  .winnie-mobile-left-actions > div > button,
+    .winnie-mobile-right-actions > button,
+    .winnie-mobile-right-actions > a,
+    .winnie-mobile-right-actions > div > button {
+    display: grid !important;
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    place-items: center !important;
+    padding: 0 !important;
+    border: 1px solid rgba(125, 211, 252, 0.72) !important;
+    border-radius: 9999px !important;
+    background: rgba(255, 255, 255, 0.74) !important;
+    color: #0e7490 !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 8px 18px rgba(14, 165, 233, 0.12) !important;
+    backdrop-filter: blur(14px);
+  }
+
+  .winnie-mobile-left-actions > .hidden,
+  .winnie-mobile-right-actions > .hidden {
+    display: none !important;
+  }
+
+  html.dark .winnie-mobile-left-actions > button,
+  html.dark .winnie-mobile-left-actions > a,
+  html.dark .winnie-mobile-left-actions > div > button,
+  html.dark .winnie-mobile-right-actions > button,
+  html.dark .winnie-mobile-right-actions > a,
+  html.dark .winnie-mobile-right-actions > div > button {
+    border-color: rgba(56, 189, 248, 0.28) !important;
+    background: rgba(15, 23, 42, 0.72) !important;
+    color: #bae6fd !important;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.12) !important;
+  }
+
+  .winnie-mobile-left-actions svg,
+  .winnie-mobile-right-actions svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .winnie-mobile-right-actions > a img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .customer-notifications-popover {
+    position: fixed !important;
+    top: 86px !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-height: min(72dvh, 520px);
+    border-radius: 24px !important;
+    z-index: 95 !important;
+  }
+
+  .customer-notifications-popover > div:nth-child(2) {
+    max-height: min(46dvh, 340px) !important;
+  }
+}
+
+.profile-hero-back {
+  pointer-events: auto;
+}
+
+.profile-hero-back > button {
+  min-width: 96px;
+  justify-content: center;
+}
+
+.profile-hero-back > button span {
+  display: inline !important;
+}
+
+html:not(.dark) .customer-profile-page {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 42%, #f5f3ff 100%) !important;
+}
+
+html:not(.dark) .customer-profile-hero {
+  background:
+    radial-gradient(circle at 18% 5%, rgba(14, 165, 233, 0.22), transparent 32%),
+    radial-gradient(circle at 88% 18%, rgba(236, 72, 153, 0.18), transparent 34%),
+    linear-gradient(135deg, #edfaff 0%, #f5f3ff 48%, #fff1f8 100%) !important;
+}
+
+html:not(.dark) .profile-hero-back > button {
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  color: #6d28d9 !important;
+  box-shadow: 0 12px 28px rgba(76, 29, 149, 0.12) !important;
+}
+
+html.dark .profile-hero-back > button {
+  border-color: rgba(168, 85, 247, 0.24) !important;
+  background: rgba(12, 18, 34, 0.86) !important;
+  color: #d8b4fe !important;
 }
 
 html.dark h1[class],
@@ -2368,16 +3260,18 @@ html.dark .admin-app-shell::before {
 }
 
 @media (min-width: 1280px) {
+  .customer-app-shell,
   .admin-app-shell {
-    --admin-sidebar-width: 284px;
-    --admin-content-gutter: clamp(1rem, 2.6vw, 2rem);
+    --dashboard-sidebar-width: 284px;
+    --dashboard-content-gutter: clamp(1.25rem, 2.6vw, 2.5rem);
   }
 
+  .customer-app-content,
   .admin-app-content {
-    flex: 0 0 calc(100vw - var(--admin-sidebar-width));
-    margin-right: var(--admin-sidebar-width);
-    max-width: calc(100vw - var(--admin-sidebar-width));
-    width: calc(100vw - var(--admin-sidebar-width));
+    flex: 0 0 calc(100vw - var(--dashboard-sidebar-width));
+    margin-right: var(--dashboard-sidebar-width);
+    max-width: calc(100vw - var(--dashboard-sidebar-width));
+    width: calc(100vw - var(--dashboard-sidebar-width));
   }
 
   .admin-control-sidebar {
@@ -2386,14 +3280,19 @@ html.dark .admin-app-shell::before {
     top: 0;
   }
 
+  .customer-app-content .customer-header,
   .admin-app-content .admin-header {
     left: 0;
-    right: var(--admin-sidebar-width);
+    right: var(--dashboard-sidebar-width);
+  }
+
+  .customer-app-content .customer-header > div {
+    max-width: min(1160px, calc(100vw - var(--dashboard-sidebar-width) - (var(--dashboard-content-gutter) * 2)));
   }
 
   .admin-app-content .admin-header > div,
   .admin-app-main {
-    max-width: min(1120px, calc(100vw - var(--admin-sidebar-width) - (var(--admin-content-gutter) * 2)));
+    max-width: min(1120px, calc(100vw - var(--dashboard-sidebar-width) - (var(--dashboard-content-gutter) * 2)));
   }
 }
 
@@ -5444,4 +6343,665 @@ html:not(.dark) .admin-tools-mode .admin-products-menu button {
 html:not(.dark) .admin-tools-mode .admin-products-menu button:hover {
   background: rgba(124, 58, 237, 0.08) !important;
   color: #111827 !important;
+}
+
+html:not(.dark) .admin-tools-mode .admin-products-filter-popover {
+  background: linear-gradient(145deg, #ffffff, #f4f7ff) !important;
+  border-color: rgba(124, 58, 237, 0.16) !important;
+  box-shadow: 0 16px 34px rgba(76, 29, 149, 0.08) !important;
+}
+
+html:not(.dark) .admin-tools-mode .admin-products-search-icon {
+  border-color: rgba(124, 58, 237, 0.24) !important;
+  background: linear-gradient(145deg, rgba(219, 39, 119, 0.10), rgba(56, 189, 248, 0.13)) !important;
+  color: #7c3aed !important;
+}
+
+html:not(.dark) .admin-tools-mode .admin-products-table-heading {
+  background: linear-gradient(180deg, #f4f1ff, #eef7ff) !important;
+  color: #475569 !important;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.12) !important;
+}
+
+html:not(.dark) .admin-tools-mode .admin-products-section > div.divide-y {
+  border-color: rgba(124, 58, 237, 0.10) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-page-shell {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.10), transparent 28rem),
+    radial-gradient(circle at 92% 10%, rgba(236, 72, 153, 0.11), transparent 30rem),
+    linear-gradient(145deg, #081126 0%, #0b1430 48%, #11102d 100%) !important;
+  border: 1px solid rgba(139, 92, 246, 0.16) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-section,
+html.dark .admin-tools-mode .admin-products-panel {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.08), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.08), transparent 34%),
+    linear-gradient(145deg, rgba(12, 24, 53, 0.98), rgba(19, 18, 53, 0.98)) !important;
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 20px 46px rgba(2, 6, 23, 0.30) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-panel-table,
+html.dark .admin-tools-mode .admin-products-filter-popover {
+  background: rgba(7, 16, 38, 0.82) !important;
+  border-color: rgba(96, 165, 250, 0.16) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-panel-input,
+html.dark .admin-tools-mode .admin-products-panel-filter {
+  background: rgba(8, 18, 43, 0.92) !important;
+  border-color: rgba(96, 165, 250, 0.20) !important;
+  color: #e8ecff !important;
+}
+
+html.dark .admin-tools-mode .admin-products-panel-input::placeholder {
+  color: #8995b4 !important;
+}
+
+html.dark .admin-tools-mode .admin-products-search-icon {
+  background: linear-gradient(145deg, rgba(236, 72, 153, 0.16), rgba(56, 189, 248, 0.16)) !important;
+  border-color: rgba(192, 132, 252, 0.30) !important;
+  color: #e9d5ff !important;
+}
+
+html.dark .admin-tools-mode .admin-products-table-heading {
+  background: linear-gradient(180deg, rgba(28, 30, 72, 0.96), rgba(12, 28, 58, 0.96)) !important;
+  color: #b9c5df !important;
+}
+
+html.dark .admin-tools-mode .admin-products-row,
+html.dark .admin-tools-mode .admin-products-mobile-card {
+  background: rgba(10, 21, 48, 0.64) !important;
+  border-color: rgba(96, 165, 250, 0.13) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-row:hover {
+  background: rgba(28, 38, 77, 0.72) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-meta {
+  background: linear-gradient(145deg, rgba(17, 31, 64, 0.94), rgba(27, 24, 65, 0.94)) !important;
+  border-color: rgba(139, 92, 246, 0.18) !important;
+}
+
+html.dark .admin-tools-mode .admin-products-menu {
+  background: linear-gradient(145deg, #101d3d, #1c1740) !important;
+  border-color: rgba(192, 132, 252, 0.22) !important;
+}
+
+.admin-dashboard-main .admin-dashboard {
+  --dashboard-gold: #E8C66A;
+  --dashboard-gold-soft: rgba(232, 198, 106, 0.18);
+  --dashboard-card: #121212;
+  --dashboard-card-strong: #191919;
+  --dashboard-line: rgba(232, 198, 106, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 280px),
+    linear-gradient(135deg, #030403 0%, #090A08 48%, #030303 100%) !important;
+  border: 1px solid rgba(232, 198, 106, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  color: #F7F1DF;
+  font-family: "Noto Kufi Arabic", "IBM Plex Sans Arabic", "Tajawal", "Cairo", "Segoe UI", Tahoma, Arial, sans-serif;
+  padding: 22px;
+}
+
+.admin-dashboard-main .admin-dashboard [dir="ltr"] {
+  font-family: "Space Grotesk", "Inter", "SF Pro Display", "Segoe UI", Arial, sans-serif;
+}
+
+.admin-dashboard-main .admin-dashboard-top {
+  align-items: center;
+  background:
+    linear-gradient(90deg, rgba(232, 198, 106, 0.09), transparent 36%),
+    linear-gradient(180deg, #171717 0%, #0F0F0F 100%) !important;
+  border: 1px solid rgba(232, 198, 106, 0.18) !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px rgba(0, 0, 0, 0.26) !important;
+  min-height: 128px;
+  overflow: hidden;
+  padding: 28px !important;
+}
+
+.admin-dashboard-main .admin-dashboard-top::after {
+  background: linear-gradient(90deg, transparent, rgba(232, 198, 106, 0.42), transparent);
+  bottom: 0;
+  content: "";
+  height: 1px;
+  left: 28px;
+  position: absolute;
+  right: 28px;
+}
+
+.admin-dashboard-main .admin-dashboard-kicker {
+  color: rgba(232, 198, 106, 0.74) !important;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.admin-dashboard-main .admin-dashboard-top h1 {
+  color: #FFF9EA !important;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 6px 0 0;
+}
+
+.admin-dashboard-main .admin-dashboard-refresh {
+  color: rgba(247, 241, 223, 0.64) !important;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.admin-dashboard-main .admin-top-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.admin-dashboard-main .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-toolbar-button {
+  background: rgba(232, 198, 106, 0.09) !important;
+  border: 1px solid rgba(232, 198, 106, 0.22) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  color: #F5D77F !important;
+}
+
+.admin-dashboard-main .admin-dashboard-live-pill {
+  align-items: center;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+}
+
+.admin-dashboard-main .admin-toolbar-button {
+  height: 42px;
+  min-width: 112px;
+}
+
+.admin-dashboard-main .admin-toolbar-button:hover {
+  background: rgba(232, 198, 106, 0.15) !important;
+}
+
+.admin-dashboard-main .admin-metrics-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-dashboard-main .admin-metric-card {
+  --metric-accent: var(--dashboard-gold);
+  --metric-wash: rgba(232, 198, 106, 0.14);
+  background:
+    linear-gradient(90deg, var(--metric-wash), transparent 36%),
+    linear-gradient(180deg, var(--dashboard-card-strong) 0%, var(--dashboard-card) 100%) !important;
+  border: 1px solid var(--dashboard-line) !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 18px 34px rgba(0, 0, 0, 0.28) !important;
+  color: #FFF7E2;
+  display: flex;
+  flex-direction: column;
+  min-height: 212px;
+  padding: 20px !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.admin-dashboard-main .admin-metric-card:hover {
+  border-color: rgba(232, 198, 106, 0.34) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 24px 46px rgba(0, 0, 0, 0.34) !important;
+  transform: translateY(-2px);
+}
+
+.admin-dashboard-main .admin-metric-card::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 34%) !important;
+  opacity: 1 !important;
+}
+
+.admin-dashboard-main .admin-metric-card::after {
+  background: linear-gradient(90deg, var(--metric-accent), rgba(255, 234, 166, 0.95)) !important;
+  border-radius: 999px;
+  bottom: 20px;
+  height: 4px;
+  left: 20px;
+  opacity: 1;
+  right: auto;
+  top: auto;
+  width: 92px;
+}
+
+.admin-dashboard-main .admin-metric-card--orders { --metric-accent: #E8C66A; --metric-wash: rgba(232, 198, 106, 0.14); }
+.admin-dashboard-main .admin-metric-card--pending { --metric-accent: #F59E0B; --metric-wash: rgba(245, 158, 11, 0.13); }
+.admin-dashboard-main .admin-metric-card--completed { --metric-accent: #34D399; --metric-wash: rgba(52, 211, 153, 0.11); }
+.admin-dashboard-main .admin-metric-card--failed { --metric-accent: #FB7185; --metric-wash: rgba(251, 113, 133, 0.11); }
+.admin-dashboard-main .admin-metric-card--users { --metric-accent: #67E8F9; --metric-wash: rgba(103, 232, 249, 0.10); }
+.admin-dashboard-main .admin-metric-card--wallets { --metric-accent: #E8C66A; --metric-wash: rgba(232, 198, 106, 0.16); }
+.admin-dashboard-main .admin-metric-card--review { --metric-accent: #FBBF24; --metric-wash: rgba(251, 191, 36, 0.12); }
+.admin-dashboard-main .admin-metric-card--products { --metric-accent: #A78BFA; --metric-wash: rgba(167, 139, 250, 0.11); }
+.admin-dashboard-main .admin-metric-card--deposits { --metric-accent: #38BDF8; --metric-wash: rgba(56, 189, 248, 0.10); }
+.admin-dashboard-main .admin-metric-card--requests { --metric-accent: #F472B6; --metric-wash: rgba(244, 114, 182, 0.11); }
+
+.admin-dashboard-main .admin-metric-top {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.admin-dashboard-main .admin-metric-label {
+  color: rgba(247, 241, 223, 0.64) !important;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.65;
+  min-width: 0;
+  order: -1;
+  text-align: right;
+  white-space: normal;
+}
+
+.admin-dashboard-main .admin-metric-icon {
+  background: rgba(232, 198, 106, 0.10) !important;
+  border: 1px solid rgba(232, 198, 106, 0.18) !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  color: var(--metric-accent) !important;
+  height: 48px !important;
+  width: 48px !important;
+}
+
+.admin-dashboard-main .admin-metric-icon svg {
+  height: 23px !important;
+  width: 23px !important;
+}
+
+.admin-dashboard-main .admin-metric-value {
+  color: #FFF9EA !important;
+  font-size: 33px !important;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 22px;
+  text-align: right;
+}
+
+.admin-dashboard-main .admin-metric-description {
+  color: rgba(247, 241, 223, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.75;
+  margin: 12px 0 0;
+  min-height: 42px;
+}
+
+.admin-dashboard-main .admin-metric-footer {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-bottom: 14px;
+}
+
+.admin-dashboard-main .admin-metric-live {
+  align-items: center;
+  background: rgba(232, 198, 106, 0.10);
+  border: 1px solid rgba(232, 198, 106, 0.18);
+  border-radius: 8px;
+  color: #F5D77F;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  height: 26px;
+  padding: 0 10px;
+}
+
+.admin-dashboard-main .admin-metric-live.is-unavailable {
+  background: rgba(251, 113, 133, 0.10);
+  border-color: rgba(251, 113, 133, 0.20);
+  color: #FDA4AF;
+}
+
+.admin-dashboard-main .admin-metric-rail {
+  background: linear-gradient(90deg, transparent, rgba(232, 198, 106, 0.14));
+  border-radius: 999px;
+  flex: 1;
+  height: 1px;
+}
+
+.admin-dashboard-main .admin-panel {
+  background: linear-gradient(180deg, rgba(25, 25, 25, 0.96), rgba(14, 14, 14, 0.96)) !important;
+  border: 1px solid rgba(232, 198, 106, 0.14) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.24) !important;
+  color: #F7F1DF;
+}
+
+.admin-dashboard-main .admin-panel-title,
+.admin-dashboard-main .admin-panel h2,
+.admin-dashboard-main .admin-panel h3,
+.admin-dashboard-main .admin-panel p {
+  color: #F7F1DF;
+}
+
+.admin-dashboard-main .admin-panel-heading-icon {
+  background: rgba(232, 198, 106, 0.14) !important;
+  color: #F5D77F !important;
+}
+
+.admin-dashboard-main .admin-orders-count,
+.admin-dashboard-main .admin-status-badge {
+  border-radius: 8px !important;
+}
+
+.admin-dashboard-main .admin-overview-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+}
+
+@media (max-width: 1300px) {
+  .admin-dashboard-main .admin-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-dashboard-main .admin-dashboard {
+    padding: 14px;
+  }
+
+  .admin-dashboard-main .admin-dashboard-top {
+    align-items: stretch;
+    min-height: 0;
+    padding: 20px !important;
+  }
+
+  .admin-dashboard-main .admin-top-actions {
+    justify-content: stretch;
+  }
+
+  .admin-dashboard-main .admin-dashboard-live-pill,
+  .admin-dashboard-main .admin-toolbar-button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .admin-dashboard-main .admin-metrics-grid,
+  .admin-dashboard-main .admin-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-main .admin-metric-card {
+    min-height: 196px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-dashboard-main .admin-dashboard {
+    padding: 10px;
+  }
+
+  .admin-dashboard-main .admin-dashboard-top h1 {
+    font-size: 26px;
+  }
+
+  .admin-dashboard-main .admin-metrics-grid,
+  .admin-dashboard-main .admin-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-main .admin-metric-value {
+    font-size: 29px !important;
+  }
+}
+
+/* Final admin dashboard overrides */
+.admin-dashboard-main .admin-dashboard {
+  --dashboard-gold: #7DD3FC;
+  --dashboard-gold-soft: rgba(244, 114, 182, 0.18);
+  --dashboard-card: #101426;
+  --dashboard-card-strong: #151936;
+  --dashboard-line: rgba(186, 230, 253, 0.18);
+}
+
+.admin-dashboard-main .admin-dashboard-top,
+.admin-dashboard-main .admin-panel {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(125, 211, 252, 0.13), transparent 28rem),
+    radial-gradient(circle at 92% 8%, rgba(244, 114, 182, 0.13), transparent 28rem),
+    linear-gradient(145deg, rgba(16, 20, 38, 0.98), rgba(12, 16, 30, 0.98)) !important;
+  border-color: rgba(186, 230, 253, 0.16) !important;
+}
+
+.admin-dashboard-main .admin-dashboard-kicker,
+.admin-dashboard-main .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-toolbar-button,
+.admin-dashboard-main .admin-panel-heading-icon,
+.admin-dashboard-main .admin-metric-live {
+  color: #BAE6FD !important;
+}
+
+.admin-dashboard-main .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-toolbar-button,
+.admin-dashboard-main .admin-panel-heading-icon,
+.admin-dashboard-main .admin-metric-live {
+  background: rgba(125, 211, 252, 0.10) !important;
+  border-color: rgba(186, 230, 253, 0.20) !important;
+}
+
+.admin-dashboard-main .admin-metric-card {
+  background:
+    radial-gradient(circle at 0% 0%, var(--metric-wash), transparent 58%),
+    linear-gradient(145deg, rgba(23, 28, 54, 0.98), rgba(12, 16, 30, 0.98)) !important;
+  border-color: rgba(186, 230, 253, 0.16) !important;
+}
+
+.admin-dashboard-main .admin-metric-card::after {
+  background: linear-gradient(90deg, var(--metric-accent), rgba(186, 230, 253, 0.92)) !important;
+}
+
+.admin-dashboard-main .admin-metric-card--orders { --metric-accent: #7DD3FC; --metric-wash: rgba(125, 211, 252, 0.16); }
+.admin-dashboard-main .admin-metric-card--pending { --metric-accent: #F9A8D4; --metric-wash: rgba(249, 168, 212, 0.15); }
+.admin-dashboard-main .admin-metric-card--completed { --metric-accent: #A7F3D0; --metric-wash: rgba(167, 243, 208, 0.12); }
+.admin-dashboard-main .admin-metric-card--failed { --metric-accent: #FDA4AF; --metric-wash: rgba(253, 164, 175, 0.13); }
+.admin-dashboard-main .admin-metric-card--users { --metric-accent: #BAE6FD; --metric-wash: rgba(186, 230, 253, 0.14); }
+.admin-dashboard-main .admin-metric-card--wallets { --metric-accent: #F0ABFC; --metric-wash: rgba(240, 171, 252, 0.14); }
+.admin-dashboard-main .admin-metric-card--review { --metric-accent: #FBCFE8; --metric-wash: rgba(251, 207, 232, 0.14); }
+.admin-dashboard-main .admin-metric-card--products { --metric-accent: #C4B5FD; --metric-wash: rgba(196, 181, 253, 0.13); }
+.admin-dashboard-main .admin-metric-card--deposits { --metric-accent: #67E8F9; --metric-wash: rgba(103, 232, 249, 0.13); }
+.admin-dashboard-main .admin-metric-card--requests { --metric-accent: #FB7185; --metric-wash: rgba(251, 113, 133, 0.13); }
+
+.admin-dashboard-main .admin-metric-icon {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(186, 230, 253, 0.18) !important;
+}
+
+.admin-dashboard-main .admin-metric-rail {
+  background: linear-gradient(90deg, transparent, rgba(186, 230, 253, 0.18));
+}
+
+.admin-dashboard-main .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(251, 207, 232, 0.95), rgba(224, 242, 254, 0.92)) !important;
+  border-color: rgba(125, 211, 252, 0.34) !important;
+  box-shadow: 0 16px 38px rgba(14, 165, 233, 0.10), 0 14px 34px rgba(244, 114, 182, 0.10) !important;
+}
+
+.admin-dashboard-main .admin-date-trigger-icon,
+.admin-dashboard-main .admin-date-preset-active,
+.admin-dashboard-main .admin-calendar-day-selected::before {
+  background: linear-gradient(135deg, #EC4899, #8B5CF6 52%, #38BDF8) !important;
+  box-shadow: 0 12px 28px rgba(236, 72, 153, 0.22) !important;
+}
+
+.admin-dashboard-main .admin-date-popover {
+  background: rgba(248, 250, 255, 0.90) !important;
+  border-color: rgba(125, 211, 252, 0.28) !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18), 0 18px 50px rgba(244, 114, 182, 0.10) !important;
+}
+
+.admin-dashboard-main .admin-date-popover::before,
+.admin-dashboard-main .admin-date-presets,
+.admin-dashboard-main .admin-calendar-card,
+.admin-dashboard-main .admin-date-nav {
+  border-color: rgba(125, 211, 252, 0.22) !important;
+}
+
+.admin-dashboard-main .admin-date-preset:hover,
+.admin-dashboard-main .admin-calendar-day:hover:not(:disabled)::before,
+.admin-dashboard-main .admin-calendar-day-range::before {
+  background: rgba(251, 207, 232, 0.62) !important;
+}
+
+html.dark .admin-dashboard-main .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.58), rgba(12, 74, 110, 0.44)) !important;
+  border-color: rgba(186, 230, 253, 0.20) !important;
+}
+
+html.dark .admin-dashboard-main .admin-date-popover::before {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(244, 114, 182, 0.14), transparent 52%),
+    radial-gradient(circle at 100% 12%, rgba(56, 189, 248, 0.14), transparent 52%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.90), rgba(24, 16, 48, 0.82)) !important;
+}
+
+@media (max-width: 560px) {
+  .admin-dashboard-main .admin-period-panel .admin-panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-dashboard-main .admin-period-panel .admin-panel-heading > .relative {
+    width: 100%;
+  }
+
+  .admin-dashboard-main .admin-date-trigger {
+    border-radius: 18px;
+    height: 50px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-dashboard-main .admin-date-trigger-icon {
+    border-radius: 14px;
+    height: 34px;
+    width: 34px;
+  }
+
+  .admin-dashboard-main .admin-date-popover {
+    border-radius: 22px;
+    left: 10px;
+    max-height: calc(100vh - 122px);
+    overflow-y: auto;
+    padding: 10px;
+    position: fixed;
+    right: 10px;
+    top: 92px;
+    transform: none;
+    width: auto;
+    z-index: 190;
+  }
+
+  .admin-dashboard-main .admin-date-presets {
+    border-radius: 18px;
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .admin-dashboard-main .admin-date-preset {
+    border-radius: 14px;
+    font-size: 11px;
+    height: 31px;
+    padding-inline: 7px;
+  }
+
+  .admin-dashboard-main .admin-calendar-card {
+    border-radius: 18px;
+    padding: 8px;
+  }
+
+  .admin-dashboard-main .admin-calendar-grid {
+    gap: 3px;
+  }
+
+  .admin-dashboard-main .admin-calendar-day {
+    font-size: 11px;
+    height: 30px;
+  }
+
+  .admin-dashboard-main .admin-metrics-grid,
+  .admin-dashboard-main .admin-overview-grid {
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-main .admin-metric-card {
+    border-radius: 16px !important;
+    min-height: 150px;
+    padding: 11px !important;
+  }
+
+  .admin-dashboard-main .admin-metric-top {
+    gap: 7px;
+  }
+
+  .admin-dashboard-main .admin-metric-icon {
+    border-radius: 12px !important;
+    height: 34px !important;
+    width: 34px !important;
+  }
+
+  .admin-dashboard-main .admin-metric-icon svg {
+    height: 17px !important;
+    width: 17px !important;
+  }
+
+  .admin-dashboard-main .admin-metric-label {
+    font-size: 10.5px;
+    line-height: 1.45;
+  }
+
+  .admin-dashboard-main .admin-metric-value {
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.15;
+    margin-top: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-dashboard-main .admin-metric-description {
+    font-size: 9.5px;
+    line-height: 1.55;
+    margin-top: 7px;
+    min-height: 32px;
+  }
+
+  .admin-dashboard-main .admin-metric-footer {
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  .admin-dashboard-main .admin-metric-live,
+  .admin-dashboard-main .admin-metric-footer .inline-flex {
+    border-radius: 9px;
+    font-size: 9px;
+    height: 22px;
+    padding-inline: 6px;
+  }
+
+  .admin-dashboard-main .admin-metric-card::after {
+    bottom: 10px;
+    height: 3px;
+    left: 11px;
+    width: 58px;
+  }
 }

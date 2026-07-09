@@ -38,9 +38,12 @@ function isBetween(date, start, end) {
   return time >= start.getTime() && time <= end.getTime();
 }
 
-export default function DateRangePicker({ value, onChange }) {
+export default function DateRangePicker({ allowAll = false, value, onChange }) {
   const [open, setOpen] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date(value.start.getFullYear(), value.start.getMonth(), 1));
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const initialDate = value.start || today;
+    return new Date(initialDate.getFullYear(), initialDate.getMonth(), 1);
+  });
   const [draftStart, setDraftStart] = useState(value.start);
   const [draftEnd, setDraftEnd] = useState(value.end);
   const [startTooltipVisible, setStartTooltipVisible] = useState(false);
@@ -76,7 +79,9 @@ export default function DateRangePicker({ value, onChange }) {
 
   const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
 
-  const triggerLabel = value.start && value.end
+  const triggerLabel = value.preset === "all"
+    ? "كل الفترات"
+    : value.start && value.end
     ? `${triggerDateFormatter.format(value.start)} — ${triggerDateFormatter.format(value.end)}`
     : "اختر الفترة الزمنية";
 
@@ -89,6 +94,14 @@ export default function DateRangePicker({ value, onChange }) {
   };
 
   const applyPreset = (presetId) => {
+    if (presetId === "all") {
+      setDraftStart(null);
+      setDraftEnd(null);
+      onChange({ start: null, end: null, key: "all", label: "كل الفترات", preset: "all" });
+      setOpen(false);
+      return;
+    }
+
     if (presetId === "custom") {
       setOpen(true);
       return;
@@ -119,13 +132,6 @@ export default function DateRangePicker({ value, onChange }) {
       return;
     }
 
-    if (day < draftStart) {
-      setDraftStart(day);
-      setDraftEnd(null);
-      showStartTooltip();
-      return;
-    }
-
     setStartTooltipVisible(false);
     applyCustomRange(draftStart, day);
   };
@@ -144,7 +150,7 @@ export default function DateRangePicker({ value, onChange }) {
         </span>
         <span className="min-w-0 flex-1 text-right">
           <span className="block truncate text-[11px] font-black uppercase tracking-[0.14em] text-[#D97706] dark:text-[#FBBF24]">
-            Date range
+            الفترة الزمنية
           </span>
           <span dir="ltr" className="mt-0.5 block truncate text-sm font-black text-[#111827] dark:text-[#FFF7ED]">
             {triggerLabel}
@@ -159,7 +165,7 @@ export default function DateRangePicker({ value, onChange }) {
 
           <div className="relative z-10 grid gap-4">
             <div className="admin-date-presets">
-              {datePresets.map((preset) => (
+              {(allowAll ? [{ id: "all", label: "كل الفترات" }, ...datePresets] : datePresets).map((preset) => (
                 <button
                   key={preset.id}
                   type="button"
@@ -201,7 +207,7 @@ export default function DateRangePicker({ value, onChange }) {
                 {startTooltipVisible && (
                   <div className="admin-date-start-tooltip">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Start Date Selected
+                    تم تحديد تاريخ البداية
                   </div>
                 )}
                 <MonthCalendar

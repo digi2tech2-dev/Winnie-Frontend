@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Eye,
   ReceiptText,
@@ -17,6 +18,7 @@ import {
   getAdminPayments,
 } from "../../api/adminPayments";
 import EmptyState from "../../components/EmptyState";
+import DateFilterPicker from "../../components/DateFilterPicker";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
@@ -29,6 +31,7 @@ const initialFilters = {
   gateway: "all",
   credited: "all",
   dateFrom: "",
+  datePreset: "all",
   dateTo: "",
   userId: "",
 };
@@ -113,8 +116,7 @@ function countActiveFilters(filters) {
     filters.status !== "all",
     filters.gateway !== "all",
     filters.credited !== "all",
-    filters.dateFrom,
-    filters.dateTo,
+    filters.datePreset !== "all" || filters.dateFrom || filters.dateTo,
     filters.userId.trim(),
   ].filter(Boolean).length;
 }
@@ -438,9 +440,19 @@ function Stat({ icon: Icon, label, value, tone }) {
 }
 
 function Filters({ activeCount, filters, onApply, onChange, onReset }) {
+  const [isOpen, setIsOpen] = useState(true);
+  const updateDateRange = (range) => {
+    Object.entries(range).forEach(([key, value]) => onChange(key, value));
+  };
+
   return (
-    <section className="overflow-hidden rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
-      <div className="flex min-h-14 items-center gap-2 border-b border-slate-100 px-4 dark:border-white/10">
+    <section className="overflow-visible rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="flex min-h-14 w-full items-center gap-2 px-4 text-right transition hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+        aria-expanded={isOpen}
+      >
         <SlidersHorizontal className="h-4 w-4 text-violet-500" />
         <b className="flex-1 text-xs dark:text-white">الفلاتر</b>
         {activeCount > 0 && (
@@ -448,8 +460,11 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
             {activeCount} مفعّلة
           </span>
         )}
-      </div>
-      <form onSubmit={onApply} className="grid gap-2.5 p-4 lg:grid-cols-[1fr_150px_180px_130px_140px_140px_auto]">
+        <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      <div className={`grid transition-[grid-template-rows] duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className={isOpen ? "overflow-visible" : "overflow-hidden"}>
+      <form onSubmit={onApply} className="grid gap-2.5 border-t border-slate-100 p-4 dark:border-white/10 lg:grid-cols-[1fr_150px_180px_130px_300px_auto]">
         <label className="relative">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
           <input
@@ -482,17 +497,11 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
           <option value="true">أُضيف الرصيد</option>
           <option value="false">لم يُضف الرصيد</option>
         </select>
-        <input
-          type="date"
-          value={filters.dateFrom}
-          onChange={(event) => onChange("dateFrom", event.target.value)}
-          className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white"
-        />
-        <input
-          type="date"
-          value={filters.dateTo}
-          onChange={(event) => onChange("dateTo", event.target.value)}
-          className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white"
+        <DateFilterPicker
+          from={filters.dateFrom}
+          preset={filters.datePreset}
+          to={filters.dateTo}
+          onChange={updateDateRange}
         />
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-none">
           <button type="submit" className="h-11 rounded-2xl bg-violet-600 px-5 text-[10px] font-black text-white">تصفية</button>
@@ -501,6 +510,8 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
           </button>
         </div>
       </form>
+        </div>
+      </div>
     </section>
   );
 }

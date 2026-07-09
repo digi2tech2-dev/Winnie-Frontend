@@ -292,14 +292,14 @@ export default function ProfilePage({ basePath = "/customer" }) {
   return (
     <div
       dir="rtl"
-      className="-mx-4 -mt-6 min-h-[calc(100vh-120px)] overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
+      className="customer-profile-page -mx-4 -mt-6 min-h-[calc(100vh-120px)] overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
     >
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={changeAvatar} />
-      <section className="relative min-h-[390px] overflow-hidden bg-[linear-gradient(135deg,#BAF1FF_0%,#E8E0FF_48%,#FFC2DC_100%)] px-4 pb-7 pt-4 dark:bg-[linear-gradient(135deg,#070A1E_0%,#111827_48%,#24133D_100%)] sm:min-h-[460px] sm:px-8 sm:pb-8 sm:pt-7">
+      <section className="customer-profile-hero relative min-h-[390px] overflow-hidden bg-[linear-gradient(135deg,#BAF1FF_0%,#E8E0FF_48%,#FFC2DC_100%)] px-4 pb-7 pt-5 dark:bg-[linear-gradient(135deg,#070A1E_0%,#111827_48%,#24133D_100%)] sm:min-h-[460px] sm:px-8 sm:pb-8 sm:pt-7">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.06)_58%,rgba(248,252,255,0)_100%),linear-gradient(90deg,rgba(125,211,252,0.34)_0%,rgba(255,255,255,0)_42%,rgba(244,114,182,0.34)_100%)] dark:bg-[linear-gradient(180deg,rgba(139,92,246,0.24)_0%,rgba(56,189,248,0.08)_58%,rgba(5,8,22,0)_100%),linear-gradient(90deg,rgba(56,189,248,0.18)_0%,rgba(5,8,22,0)_44%,rgba(168,85,247,0.24)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,rgba(248,252,255,0)_0%,rgba(248,252,255,1)_100%)] dark:bg-[linear-gradient(180deg,rgba(5,8,22,0)_0%,rgba(5,8,22,0.94)_100%)]" />
         <BackButton
-          className="absolute right-4 top-4 z-20 mb-0 sm:right-8 sm:top-7"
+          className="profile-hero-back absolute right-4 top-5 z-20 mb-0 sm:right-8 sm:top-7"
           fallbackPath={`${basePath}/dashboard`}
           hiddenPaths={[`${basePath}/dashboard`]}
         />

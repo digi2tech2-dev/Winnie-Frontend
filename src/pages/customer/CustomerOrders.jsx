@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
+  ChevronDown,
   Filter,
   PackageCheck,
   RotateCcw,
@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { getCustomerOrders } from "../../api/orders";
 import EmptyState from "../../components/EmptyState";
+import DateFilterPicker from "../../components/DateFilterPicker";
 import { useAuth } from "../../context/AuthContext";
 
 const pageSize = 20;
@@ -30,33 +31,10 @@ const initialFilters = {
   query: "",
   status: "all",
   dateFrom: "",
+  datePreset: "all",
   dateTo: "",
   sort: "newest",
 };
-
-function openDatePicker(event) {
-  const input = event.currentTarget;
-
-  if (typeof input.showPicker !== "function") {
-    input.focus();
-    return;
-  }
-
-  try {
-    input.showPicker();
-  } catch {
-    input.focus();
-  }
-}
-
-function blockDateTyping(event) {
-  if (["Tab", "Escape", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
-  event.preventDefault();
-
-  if (event.key === "Enter" || event.key === " ") {
-    openDatePicker(event);
-  }
-}
 
 export default function CustomerOrders({ basePath = "/customer" }) {
   const { token } = useAuth();
@@ -67,6 +45,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
   const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -153,6 +132,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
   }, [filters, orders]);
 
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (key === "datePreset") return false;
     if (key === "sort") return value !== initialFilters.sort;
     return value !== initialFilters[key] && value !== "";
   }).length;
@@ -187,15 +167,28 @@ export default function CustomerOrders({ basePath = "/customer" }) {
         </div>
       </section>
 
-      <section className="rounded-[24px] border border-[#C4B5FD]/55 bg-[linear-gradient(135deg,#FFFFFF_0%,#F8FCFF_48%,#F5F3FF_100%)] p-4 shadow-[0_18px_45px_rgba(124,58,237,0.10)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#0B1220_0%,#111827_100%)] dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]">
-        <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-slate-200">
+      <section className="overflow-visible rounded-[24px] border border-[#C4B5FD]/55 bg-[linear-gradient(135deg,#FFFFFF_0%,#F8FCFF_48%,#F5F3FF_100%)] shadow-[0_18px_45px_rgba(124,58,237,0.10)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#0B1220_0%,#111827_100%)] dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((open) => !open)}
+          className="flex min-h-16 w-full items-center gap-2 px-4 text-right text-sm font-black text-slate-900 transition hover:bg-violet-50/50 dark:text-slate-200 dark:hover:bg-white/[0.04]"
+          aria-expanded={filtersOpen}
+        >
           <span className="grid h-9 w-9 place-items-center rounded-2xl bg-[linear-gradient(135deg,#38BDF8,#8B5CF6)] text-white shadow-[0_12px_28px_rgba(56,189,248,0.22)]">
             <SlidersHorizontal className="h-5 w-5" />
           </span>
-          {t("list.searchFilter")}
-        </div>
+          <span className="flex-1">{t("list.searchFilter")}</span>
+          {activeFiltersCount > 0 ? (
+            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-violet-500 px-1.5 text-[10px] text-white">
+              {activeFiltersCount}
+            </span>
+          ) : null}
+          <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+        </button>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className={`grid transition-[grid-template-rows] duration-300 ${filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          <div className={filtersOpen ? "overflow-visible" : "overflow-hidden"}>
+        <div className="grid grid-cols-2 gap-3 border-t border-violet-100/80 p-4 dark:border-white/10">
           <label className="relative col-span-2">
             <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B5CF6] dark:text-slate-400" />
             <input
@@ -216,6 +209,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
 
           <DateRangeFilter
             from={filters.dateFrom}
+            preset={filters.datePreset}
             to={filters.dateTo}
             onChange={updateFilter}
           />
@@ -226,6 +220,8 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             <option value="price-high">{t("list.highestPrice")}</option>
             <option value="price-low">{t("list.lowestPrice")}</option>
           </FilterSelect>
+        </div>
+          </div>
         </div>
       </section>
 
@@ -318,50 +314,18 @@ export default function CustomerOrders({ basePath = "/customer" }) {
   );
 }
 
-function DateRangeFilter({ from, to, onChange }) {
-  const { t } = useTranslation("orders");
-
+function DateRangeFilter({ from, preset, to, onChange }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 flex items-center gap-2 text-xs font-black text-slate-700 dark:text-slate-400">
-        <span className="grid h-7 w-7 place-items-center rounded-xl bg-[linear-gradient(135deg,#22D3EE,#7C3AED,#EC4899)] text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)]">
-          <CalendarDays className="h-4 w-4" />
-        </span>
-        {t("list.date")}
-      </span>
-      <span className="grid grid-cols-2 gap-2 rounded-2xl border border-[#D8B4FE]/70 bg-white p-1.5 shadow-[0_12px_28px_rgba(124,58,237,0.10)] transition focus-within:border-[#8B5CF6]/80 focus-within:ring-4 focus-within:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-white/[0.065] dark:shadow-none">
-        <span className="min-w-0">
-          <span className="mb-1 block px-2 text-[10px] font-black text-[#8B5CF6] dark:text-[#C084FC]">{t("list.from")}</span>
-          <input
-            type="date"
-            value={from}
-            onChange={(event) => onChange("dateFrom", event.target.value)}
-            onPointerDown={openDatePicker}
-            onFocus={openDatePicker}
-            onKeyDown={blockDateTyping}
-            onPaste={(event) => event.preventDefault()}
-            inputMode="none"
-            className="h-9 w-full rounded-xl border border-transparent bg-[#F8FCFF] px-2 text-xs font-black text-slate-900 outline-none transition hover:border-[#C4B5FD] focus:border-[#8B5CF6]/60 dark:bg-[#0B1220] dark:text-white"
-            aria-label={t("list.startDate")}
-          />
-        </span>
-        <span className="min-w-0">
-          <span className="mb-1 block px-2 text-[10px] font-black text-[#EC4899] dark:text-[#F0ABFC]">{t("list.to")}</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(event) => onChange("dateTo", event.target.value)}
-            onPointerDown={openDatePicker}
-            onFocus={openDatePicker}
-            onKeyDown={blockDateTyping}
-            onPaste={(event) => event.preventDefault()}
-            inputMode="none"
-            className="h-9 w-full rounded-xl border border-transparent bg-[#FDF7FF] px-2 text-xs font-black text-slate-900 outline-none transition hover:border-[#F0ABFC] focus:border-[#EC4899]/60 dark:bg-[#0B1220] dark:text-white"
-            aria-label={t("list.endDate")}
-          />
-        </span>
-      </span>
-    </label>
+    <DateFilterPicker
+      from={from}
+      preset={preset}
+      to={to}
+      onChange={(range) => {
+        onChange("dateFrom", range.dateFrom);
+        onChange("datePreset", range.datePreset);
+        onChange("dateTo", range.dateTo);
+      }}
+    />
   );
 }
 

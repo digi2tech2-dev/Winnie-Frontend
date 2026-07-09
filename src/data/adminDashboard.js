@@ -92,9 +92,9 @@ export const preciseCurrencyFormatter = new Intl.NumberFormat("ar-EG-u-nu-latn",
 export const datePresets = [
   { id: "today", label: "اليوم" },
   { id: "yesterday", label: "أمس" },
+  { id: "thisMonth", label: "هذا الشهر" },
   { id: "last7", label: "آخر 7 أيام" },
   { id: "last30", label: "آخر 30 يوم" },
-  { id: "thisMonth", label: "هذا الشهر" },
   { id: "lastMonth", label: "الشهر السابق" },
   { id: "thisYear", label: "هذا العام" },
   { id: "custom", label: "مدة مخصصة" },
@@ -114,8 +114,8 @@ export function getPresetRange(presetId) {
     thisYear: { start: startOfYear(today), end: today },
   };
 
-  const preset = datePresets.find((item) => item.id === presetId) || datePresets[2];
-  const range = ranges[preset.id] || ranges.last7;
+  const preset = datePresets.find((item) => item.id === presetId) || datePresets.find((item) => item.id === "thisMonth");
+  const range = ranges[preset.id] || ranges.thisMonth;
 
   return {
     ...range,

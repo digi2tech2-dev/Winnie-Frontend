@@ -1,12 +1,12 @@
 {
   "appearanceDescription": "اختر الشكل الأنسب لك.",
   "appearanceTitle": "المظهر",
-  "currencyDescription": "اختر العملة المستخدمة في عرض الأسعار والأرصدة.",
+  "currencyDescription": "عملة حسابك المعيّنة موضحة أدناه.",
   "currencyTitle": "العملة",
   "dailyOffers": "العروض اليومية",
   "dark": "داكن",
   "darkNote": "مريح للعين",
-  "description": "تحكم في اللغة، العملة، المظهر، الإشعارات، وأمان الحساب.",
+  "description": "تحكم في اللغة، المظهر، الإشعارات، وأمان الحساب.",
   "eyebrow": "إعدادات متقدمة",
   "languageDescription": "اختر اللغة المستخدمة في الصفحات العامة وصفحات المستخدم.",
   "languageTitle": "اللغة",
@@ -50,6 +50,7 @@
   "noCurrencies": "لا توجد عملات نشطة متاحة للتحديث الذاتي.",
   "selectDifferentCurrency": "اختر عملة نشطة مختلفة لتفعيل الحفظ.",
   "currencyBackendNote": "سيتم حفظ العملة عبر الخادم وتحديث الجلسة.",
+  "adminManagedCurrency": "عملة الحساب يحددها المسؤول.",
   "languageOptions": {
     "arNote": "لغة الواجهة العربية",
     "enNote": "لغة الواجهة الإنجليزية"

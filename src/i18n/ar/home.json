@@ -32,7 +32,9 @@
   },
   "slider": {
     "label": "عروض Winnie Fun",
-    "slideAlt": "عرض Winnie Fun رقم {{number}}"
+    "slideAlt": "عرض Winnie Fun رقم {{number}}",
+    "searchAction": "فتح البحث عن المنتجات",
+    "searchPlaceholder": "ابحث عن منتج.."
   },
   "dashboard": {
     "eyebrow": "لوحة العميل",
@@ -46,7 +48,9 @@
     "productsLoaded": "المنتجات المحملة",
     "categoriesLoaded": "الأقسام المحملة",
     "customerCatalog": "كتالوج العميل",
-    "completeProfileTitle": "أكمل ملفك الشخصي",
-    "completeProfileDescription": "أضف صورة لحسابك عشان يظهر ملفك بشكل أفضل داخل Winnie Fun."
+    "completeProfileTitle": "أكمل الملف الشخصي",
+    "completeProfileDescription": "أضف صورة لحسابك.",
+    "completeProfileAction": "إضافة صورة",
+    "dismissCompleteProfile": "تجاهل"
   }
 }

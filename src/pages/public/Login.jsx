@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { BrandLockup } from "../../components/Brand";
 import GoogleMark from "../../components/GoogleMark";
 import PolicyAgreement, { PoliciesModal } from "../../components/PolicyAgreement";
 import { useToast } from "../../components/ToastProvider";
@@ -19,7 +20,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { isLoading, login, loginWithGoogle, user } = useAuth();
   const { showToast } = useToast();
-  const { t } = useTranslation("auth");
+  const { i18n, t } = useTranslation("auth");
+  const isArabic = i18n.language?.startsWith("ar");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -125,10 +127,10 @@ export default function Login() {
           <span className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22D3EE,#2563EB,#7C3AED,#EC4899,#F97316,#FACC15,#22C55E,#06B6D4)]" />
 
           <div className="flex flex-col items-center text-center">
-            <span className="grid h-16 w-16 place-items-center rounded-2xl border border-white/75 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-white/10 dark:bg-white/10 dark:shadow-[0_18px_46px_rgba(0,0,0,0.28)]">
-              <img src="/logo.png" alt="Winnie Fun" className="h-12 w-12 object-contain" />
-            </span>
-            <h1 className="mt-5 text-3xl font-black text-slate-950 dark:text-white">{t("login.title")}</h1>
+            <h1 className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-3xl font-black text-slate-950 dark:text-white">
+              <span>{isArabic ? "تسجيل الدخول إلى" : "Login to"}</span>
+              <BrandLockup fullName={false} logoClassName="h-10 w-10" nameSize="inline" />
+            </h1>
             <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-300">{t("login.subtitle")}</p>
           </div>
 
@@ -173,7 +175,7 @@ export default function Login() {
           </form>
 
           <p className="mt-7 text-center text-sm font-bold text-slate-500 dark:text-slate-300">
-            {t("login.newUser")}{" "}
+            {isArabic ? "جديد في" : "New to"} <BrandLockup fullName={false} logoClassName="h-5 w-5" nameSize="inline" />{" "}
             <Link to="/register" className="font-black text-royal dark:text-pulse">
               {t("login.createAccount")}
             </Link>

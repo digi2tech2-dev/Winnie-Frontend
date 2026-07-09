@@ -437,7 +437,7 @@ export default function ProductsManagementPage() {
             <ProductFilters filters={draftFilters} onChange={updateFilter} onSearch={applyFilters} onReset={resetFilters} mainCategories={mainCategories} subCategories={subCategories} activeCount={activeFiltersCount} />
 
             {productsLoading ? <ProductCardsSkeleton /> : filteredProducts.length ? (
-              <div className="relative w-full max-w-full rounded-xl border border-[#142654] bg-[#02091d] md:overflow-x-auto">
+              <div className="admin-products-panel-table relative w-full max-w-full rounded-xl border border-[#142654] bg-[#02091d] md:overflow-x-auto">
                 <table className="hidden w-full min-w-[900px] table-fixed text-right md:table">
                   <thead><tr><ProductTh className="w-[28%]">المنتج</ProductTh><ProductTh>القسم الفرعي</ProductTh><ProductTh>السعر</ProductTh><ProductTh>المخزون</ProductTh><ProductTh>الحالة</ProductTh><ProductTh className="w-36">الإجراءات</ProductTh></tr></thead>
                   <tbody>{filteredProducts.map((product) => (
@@ -490,7 +490,7 @@ export default function ProductsManagementPage() {
 }
 
 function ProductTh({ children, className = "" }) {
-  return <th className={`bg-[#060e29] px-4 py-3 text-[10px] font-black text-slate-400 ${className}`}>{children}</th>;
+  return <th className={`admin-products-table-heading bg-[#060e29] px-4 py-3 text-[10px] font-black text-slate-400 ${className}`}>{children}</th>;
 }
 
 function filterProducts(products, filters) {

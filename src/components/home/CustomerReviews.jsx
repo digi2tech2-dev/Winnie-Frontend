@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { BadgeCheck, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BrandLockup } from "../Brand";
 import { getHomepageReviews, getReviewStats, subscribeToCustomerReviews } from "../../utils/customerReviews";
 import "./CustomerReviews.css";
 
@@ -48,7 +49,8 @@ export default function CustomerReviews() {
   const averageLabel = stats.totalReviews ? stats.averageRating.toFixed(1) : "0.0";
   const text = isArabic ? {
     title: "⭐ تقييمات العملاء",
-    subtitle: "شاهد آراء العملاء الذين اشتروا من Winnie Fun.",
+    subtitleStart: "شاهد آراء العملاء الذين اشتروا من",
+    subtitleEnd: ".",
     previous: "التقييم السابق",
     next: "التقييم التالي",
     dots: "صفحات التقييمات",
@@ -56,7 +58,8 @@ export default function CustomerReviews() {
     empty: "ستظهر تقييمات العملاء الموثقة هنا بعد عمليات الشراء المكتملة.",
   } : {
     title: "⭐ Customer Reviews",
-    subtitle: "See what customers who purchased from Winnie Fun are saying.",
+    subtitleStart: "See what customers who purchased from",
+    subtitleEnd: "are saying.",
     previous: "Previous review",
     next: "Next review",
     dots: "Review carousel pages",
@@ -150,7 +153,9 @@ export default function CustomerReviews() {
         <div className="wf-reviews-topline">
           <div>
             <h2 id="customer-reviews-title">{text.title}</h2>
-            <p>{text.subtitle}</p>
+            <p>
+              {text.subtitleStart} <BrandLockup fullName={false} logoClassName="h-5 w-5" nameSize="inline" /> {text.subtitleEnd}
+            </p>
           </div>
           <div
             className="wf-reviews-stats"

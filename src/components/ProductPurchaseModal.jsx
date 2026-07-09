@@ -1,21 +1,15 @@
 import { motion } from "framer-motion";
 import {
-  Box,
-  Check,
   CircleUserRound,
   Loader2,
   ShieldCheck,
-  ShoppingBag,
-  ShoppingCart,
-  Sparkles,
-  Star,
-  WalletCards,
   X,
+  Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { iconMap } from "./icons";
+import { useAuth } from "../context/AuthContext";
 import "./ProductPurchaseModal.css";
 
 export default function ProductPurchaseModal({
@@ -27,6 +21,7 @@ export default function ProductPurchaseModal({
   submitting = false,
 }) {
   const { t, i18n } = useTranslation("products");
+  const { user } = useAuth();
   const isArabic = i18n.language?.startsWith("ar");
   const orderFields = getProductOrderFields(product);
   const packages = Array.isArray(product.packages) ? product.packages : [];
@@ -44,12 +39,13 @@ export default function ProductPurchaseModal({
   const unitPrice = selectedPackage?.price || product.displayPriceLabel || product.price || t("purchase.pricedByBackend");
   const total = calculateTotal(unitPrice, quantity);
   const displayTotal = formatPurchaseTotalLabel(total);
+  const walletBalance = Number(user?.walletBalance ?? 245.5);
+  const balanceLabel = formatPlainAmount(walletBalance);
   const displayError = localError || submitError;
   const hasOrderFields = orderFields.length > 0;
-  const ProductIcon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
-  const description = product.description || (isArabic
-    ? `استمتع بأفضل تجربة مع منتج ${product.name}، جودة عالية وسرعة في التنفيذ.`
-    : `Enjoy a fast and reliable ${product.name} purchase experience.`);
+  const showFallbackAccountInput = !hasOrderFields;
+  const productTitle = product.name || (isArabic ? "المنتج" : "Product");
+  const productImage = getProductImage(product);
 
   useEffect(() => {
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -134,8 +130,10 @@ export default function ProductPurchaseModal({
         transition={{ duration: 0.24, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="buy-modal__top-glow" />
-
+        <span className="buy-modal__aura buy-modal__aura--pink" aria-hidden="true" />
+        <span className="buy-modal__aura buy-modal__aura--cyan" aria-hidden="true" />
+        <span className="buy-modal__spark buy-modal__spark--one" aria-hidden="true" />
+        <span className="buy-modal__spark buy-modal__spark--two" aria-hidden="true" />
         <header className="buy-modal__header">
           <button
             className="buy-modal__close"
@@ -148,45 +146,49 @@ export default function ProductPurchaseModal({
           </button>
 
           <h2 id="purchase-modal-title" className="buy-modal__title" dir={isArabic ? "rtl" : "ltr"}>
-            <Sparkles aria-hidden="true" />
-            <span className="buy-modal__title-text">{isArabic ? "شراء المنتج" : "Purchase product"}</span>
-            <Sparkles aria-hidden="true" />
+            <span dir="auto" title={productTitle}>{productTitle}</span>
+            <Zap aria-hidden="true" />
           </h2>
 
-          <span className="buy-modal__bag" aria-hidden="true">
-            <ShoppingBag />
+          <span className="buy-modal__status" aria-hidden="true">
+            <span className="buy-modal__status-dot" />
+            <span>{isArabic ? "متاح" : "Available"}</span>
+            <Zap />
           </span>
         </header>
 
-        <section className="buy-product" dir={isArabic ? "rtl" : "ltr"}>
-          <div className="buy-product__details">
-            <span className="buy-product__badge">
-              {isArabic ? "الأكثر مبيعًا" : "Best seller"} <span>🔥</span>
-            </span>
-
-            <h3>{product.name}</h3>
-
-            <div className="buy-product__rating" dir="ltr" aria-label="4.9 out of 5">
-              {[1, 2, 3, 4, 5].map((item) => <Star key={item} />)}
-              <span>(4.9)</span>
-            </div>
-
-            <p className="buy-product__description">{description}</p>
-
-            <p className="buy-product__secure">
-              <ShieldCheck />
-              <span>{isArabic ? "منتج أصلي وآمن 100%" : "100% genuine and secure product"}</span>
-            </p>
+        <section className="buy-hero" dir={isArabic ? "rtl" : "ltr"}>
+          <div className="buy-balance-card">
+            <span>{isArabic ? "رصيدك الحالي" : "Current balance"}</span>
+            <strong dir="ltr">
+              <span className="buy-w-coin">W</span>
+              {balanceLabel}
+            </strong>
           </div>
 
-          <div className="buy-product__image-frame">
-            {product.image ? (
-              <img src={product.image} alt={product.name} />
-            ) : (
-              <span className="buy-product__image-fallback">
-                <ProductIcon />
-              </span>
-            )}
+          <div className="buy-hero__image-wrap" aria-hidden="true">
+            <img className="buy-hero__image" src={productImage} alt="" />
+          </div>
+        </section>
+
+        <section className="buy-summary" dir={isArabic ? "rtl" : "ltr"}>
+          <div className="buy-summary__item buy-summary__item--quantity">
+            <span>{isArabic ? "الكمية" : "Quantity"}</span>
+            <div className="buy-quantity" dir="ltr">
+              <span className="buy-w-coin">W</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formatQuantityInput(quantity)}
+                onChange={(event) => changeQuantity(event.target.value)}
+                aria-label={t("purchase.quantity")}
+              />
+            </div>
+          </div>
+
+          <div className="buy-summary__item buy-summary__item--total">
+            <span>{isArabic ? "الإجمالي" : "Total"}</span>
+            <strong dir="ltr">{displayTotal}</strong>
           </div>
         </section>
 
@@ -207,18 +209,6 @@ export default function ProductPurchaseModal({
         )}
 
         <div className="buy-fields">
-          <PurchaseRow icon={Box} label={t("purchase.quantity")}>
-            <div className="buy-quantity" dir="ltr">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={formatQuantityInput(quantity)}
-                onChange={(event) => changeQuantity(event.target.value)}
-                aria-label={t("purchase.quantity")}
-              />
-            </div>
-          </PurchaseRow>
-
           {hasOrderFields ? orderFields.map((field) => (
             <PurchaseRow
               key={field.key}
@@ -231,7 +221,7 @@ export default function ProductPurchaseModal({
                 onChange={(value) => changeOrderField(field.key, value)}
               />
             </PurchaseRow>
-          )) : requireAccountId ? (
+          )) : showFallbackAccountInput ? (
             <PurchaseRow icon={CircleUserRound} label={t("purchase.accountPlayerId")}>
               <input
                 className="buy-account-input"
@@ -244,50 +234,26 @@ export default function ProductPurchaseModal({
               />
             </PurchaseRow>
           ) : null}
-
-          <PurchaseTotalCard label={isArabic ? "المبلغ الإجمالي" : "Total amount"} total={displayTotal} />
         </div>
 
         {displayError && <p className="buy-modal__error">{displayError}</p>}
 
         <div className="buy-actions">
-          <button className="buy-actions__cancel" type="button" onClick={onClose} disabled={submitting}>
-            <span>{t("common:actions.cancel")}</span>
-            <X />
-          </button>
-
           <button className="buy-actions__submit" type="submit" disabled={submitting}>
-            {submitting ? <Loader2 className="is-spinning" /> : <ShoppingCart />}
-            <span>{submitting ? t("purchase.creatingOrder") : t("purchase.buyNow")}</span>
+            <span>{submitting ? t("purchase.creatingOrder") : isArabic ? "تأكيد الشحن" : "Confirm charge"}</span>
+            {submitting ? <Loader2 className="is-spinning" /> : <Zap />}
           </button>
         </div>
+
+        <p className="buy-modal__secure">
+          <ShieldCheck />
+          <span>{isArabic ? "عملية آمنة وسريعة 100%" : "100% secure and fast process"}</span>
+        </p>
       </motion.form>
     </motion.div>
   );
 
   return typeof document === "undefined" ? modal : createPortal(modal, document.body);
-}
-
-function PurchaseTotalCard({ label, total }) {
-  return (
-    <section className="buy-total-card" aria-label={label}>
-      <div className="buy-total-card__copy">
-        <span>{label}</span>
-        <strong dir="ltr">{total}</strong>
-      </div>
-
-      <div className="buy-total-card__wallet" aria-hidden="true">
-        <span className="buy-total-card__coin buy-total-card__coin--one" />
-        <span className="buy-total-card__coin buy-total-card__coin--two" />
-        <span className="buy-total-card__body">
-          <WalletCards />
-        </span>
-        <span className="buy-total-card__check">
-          <Check />
-        </span>
-      </div>
-    </section>
-  );
 }
 
 function PurchaseRow({ children, icon: Icon, label }) {
@@ -374,6 +340,16 @@ function getInputType(type) {
   return ["email", "number", "tel", "url", "date"].includes(type) ? type : "text";
 }
 
+function getProductImage(product = {}) {
+  return product.image
+    || product.imageUrl
+    || product.imageURL
+    || product.thumbnail
+    || product.coverImage
+    || product.productImage
+    || "/winnie-wallet-charge-hero.png";
+}
+
 function calculateTotal(price, quantity) {
   const text = String(price);
   const dollarMatch = text.match(/(?:\$\s*([\d.]+)|([\d.]+)\s*\$)/);
@@ -398,6 +374,13 @@ function formatPurchaseTotalLabel(total) {
 function formatQuantityInput(value) {
   const digits = String(value ?? "").replace(/[^\d]/g, "");
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function formatPlainAmount(value) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value) || 0);
 }
 
 function formatAmount(value) {

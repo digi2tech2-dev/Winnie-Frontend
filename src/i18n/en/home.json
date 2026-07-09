@@ -32,7 +32,9 @@
   },
   "slider": {
     "label": "Winnie Fun offers",
-    "slideAlt": "Winnie Fun offer {{number}}"
+    "slideAlt": "Winnie Fun offer {{number}}",
+    "searchAction": "Open product search",
+    "searchPlaceholder": "Search for a product"
   },
   "dashboard": {
     "eyebrow": "Customer dashboard",
@@ -47,6 +49,8 @@
     "categoriesLoaded": "Categories loaded",
     "customerCatalog": "Customer catalog",
     "completeProfileTitle": "Complete your profile",
-    "completeProfileDescription": "Add an account photo so your Winnie Fun profile looks complete."
+    "completeProfileDescription": "Add an account photo so your Winnie Fun profile looks complete.",
+    "completeProfileAction": "Add photo",
+    "dismissCompleteProfile": "Dismiss"
   }
 }

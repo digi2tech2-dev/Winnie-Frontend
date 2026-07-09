@@ -286,7 +286,7 @@ export function AuthProvider({ children }) {
         ok: true,
         authenticated: false,
         user: nextUser,
-        message: result.message || "Registration successful. Please verify your email and wait for admin approval.",
+        message: result.message || "Registration successful. Please verify your email to activate your account.",
       };
     } catch (error) {
       const failure = mapAuthFailure(error, "Registration failed. Please try again.");

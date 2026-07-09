@@ -1,12 +1,12 @@
 {
   "appearanceDescription": "Use the theme that feels most comfortable for you.",
   "appearanceTitle": "Appearance",
-  "currencyDescription": "Select the currency used to display prices and balances.",
+  "currencyDescription": "Your assigned account currency is shown below.",
   "currencyTitle": "Currency",
   "dailyOffers": "Daily offers",
   "dark": "Dark",
   "darkNote": "Easy on the eyes",
-  "description": "Manage your language, currency, appearance, notifications and account security.",
+  "description": "Manage your language, appearance, notifications and account security.",
   "eyebrow": "Advanced settings",
   "languageDescription": "Choose the language used across customer and public pages.",
   "languageTitle": "Language",
@@ -50,6 +50,7 @@
   "noCurrencies": "No active currencies are available for self-service updates.",
   "selectDifferentCurrency": "Select a different active currency to enable saving.",
   "currencyBackendNote": "Currency will be saved through the backend and your session will be refreshed.",
+  "adminManagedCurrency": "Account currency is set by an administrator.",
   "languageOptions": {
     "arNote": "Arabic interface",
     "enNote": "English interface"

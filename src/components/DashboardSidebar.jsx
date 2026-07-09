@@ -1,12 +1,11 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Copy, Languages, Moon, Sun, X } from "lucide-react";
+import { Copy, Languages, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
 import { iconMap } from "./icons";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { useTheme } from "../context/ThemeContext";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
@@ -53,7 +52,6 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
   const { user, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation("common");
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const LogOutIcon = iconMap.LogOut;
@@ -62,7 +60,6 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
   const ChevronDownIcon = iconMap.ChevronDown;
   const CrownIcon = iconMap.Crown;
   const SparklesIcon = iconMap.Sparkles;
-  const isDark = theme === "dark";
   const accountPrefix = variant === "admin" ? "/admin/user" : "/customer";
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(getStoredProfileAvatar);
   const [adminUserNavOpen, setAdminUserNavOpen] = useState(() =>
@@ -88,7 +85,6 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
   const userSectionTitle = adminToolsOpen ? "الرجوع لصلاحيات المستخدم" : "فتح صفحات المستخدم";
   const UserSectionIcon = adminToolsOpen ? iconMap.UserCog : UserIcon;
   const sidebarText = variant === "admin" ? sidebarCopy.ar : {
-    appearance: t("theme.appearance"),
     defaultUser: t("app.defaultUser"),
     language: t("language.label"),
     member: t("app.member"),
@@ -320,17 +316,6 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
           </button>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="mt-2.5 flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#DDD6FE] bg-[#F5F3FF] text-xs font-black text-[#8B5CF6] transition hover:border-[#C4B5FD] hover:bg-[#EEF8FF] hover:shadow-[0_12px_28px_rgba(14,165,233,0.16)] dark:border-[rgba(255,255,255,0.08)] dark:bg-[#0D1324] dark:text-[#A78BFA] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#1A2335] dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(139,92,246,0.20)]"
-          aria-label={variant === "admin" ? "تغيير مظهر الواجهة" : t("theme.appearance")}
-          title={variant === "admin" ? "تغيير مظهر الواجهة" : t("theme.appearance")}
-        >
-          {isDark ? <Moon className="h-4.5 w-4.5" /> : <Sun className="h-4.5 w-4.5" />}
-          {sidebarText.appearance}
-        </button>
 
         {variant === "customer" && (
           <div className="mt-2 flex h-10 w-full shrink-0 items-center justify-between gap-2 rounded-2xl border border-sky-100 bg-white/90 px-2.5 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]">
@@ -669,14 +654,12 @@ function isAdminToolsPath(pathname) {
 
 const sidebarCopy = {
   ar: {
-    appearance: "تغيير مظهر الواجهة",
     defaultUser: "مستخدم ويني",
     language: "اللغة",
     member: "عضو مميز",
     walletBalance: "رصيد المحفظة",
   },
   en: {
-    appearance: "Appearance",
     defaultUser: "Winnie user",
     language: "Language",
     member: "Premium member",

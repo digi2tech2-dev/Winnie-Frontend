@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Filter,
   HandCoins,
@@ -70,6 +71,7 @@ export default function AdminSubAgentsPage() {
   const [selected, setSelected] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [actionKey, setActionKey] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
   const loadRequests = useCallback(async () => {
     if (!token) {
@@ -178,12 +180,20 @@ export default function AdminSubAgentsPage() {
 
       {tab === "requests" ? (
         <>
-          <section className="rounded-[23px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
-            <div className="mb-3 flex items-center gap-2">
+          <section className="overflow-hidden rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              className="flex min-h-14 w-full items-center gap-2 px-4 text-right transition hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+              aria-expanded={filtersOpen}
+            >
               <Filter className="h-4 w-4 text-violet-500" />
-              <h2 className="text-xs font-black dark:text-white">الفلاتر</h2>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+              <h2 className="flex-1 text-xs font-black dark:text-white">الفلاتر</h2>
+              <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+            </button>
+            <div className={`grid transition-[grid-template-rows] duration-300 ${filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+              <div className="overflow-hidden">
+            <div className="grid gap-2 border-t border-slate-100 p-4 dark:border-white/10 sm:grid-cols-[1fr_1fr_auto]">
               <select value={requestType} onChange={(event) => setRequestType(event.target.value)} className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white">
                 {requestTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
@@ -194,6 +204,8 @@ export default function AdminSubAgentsPage() {
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 تطبيق
               </button>
+            </div>
+              </div>
             </div>
           </section>
 

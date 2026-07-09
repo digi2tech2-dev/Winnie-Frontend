@@ -3,18 +3,24 @@ import {
   AlertTriangle,
   Boxes,
   Clock3,
+  DollarSign,
   ExternalLink,
   PackageCheck,
   PackageOpen,
+  ReceiptText,
   RefreshCw,
   Server,
+  TrendingUp,
   Truck,
   Users,
+  WalletCards,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAdminDashboardData } from "../../api/adminDashboard";
+import { approveDeposit, rejectDeposit } from "../../api/adminDeposits";
+import { markAdminOrderManualSuccess, refundAdminOrder } from "../../api/adminOrders";
 import { normalizeApiError } from "../../api/errors";
 import {
   DashboardPanel,
@@ -22,42 +28,50 @@ import {
   MetricCard,
   PanelHeading,
 } from "../../components/admin/dashboard/DashboardPieces";
+import DateRangePicker from "../../components/admin/dashboard/DateRangePicker";
 import { useToast } from "../../components/ToastProvider";
 import {
+  analyticsDaily,
   compactDateFormatter,
+  currencyFormatter,
+  getPresetRange,
+  getPreviousRange,
+  getRangeDays,
+  isWithinRange,
   numberFormatter,
 } from "../../data/adminDashboard";
 import { useAuth } from "../../context/AuthContext";
 
-const metricTones = {
-  completed: "bg-teal-500/12 text-teal-700 dark:text-teal-300",
-  failed: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
-  orders: "bg-violet-500/12 text-violet-700 dark:text-violet-300",
-  pending: "bg-amber-500/12 text-amber-700 dark:text-amber-300",
-  products: "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300",
-  providers: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
-  requests: "bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300",
-  users: "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300",
-};
-
 const orderStatusStyles = {
-  canceled: "border-slate-500/25 bg-slate-500/10 text-slate-600 dark:text-slate-300",
-  completed: "border-emerald-500/25 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
-  failed: "border-rose-500/25 bg-rose-500/12 text-rose-700 dark:text-rose-300",
-  manual_review: "border-sky-500/25 bg-sky-500/12 text-sky-700 dark:text-sky-300",
-  partial: "border-amber-500/25 bg-amber-500/12 text-amber-700 dark:text-amber-300",
   pending: "border-amber-500/25 bg-amber-500/12 text-amber-700 dark:text-amber-300",
   processing: "border-sky-500/25 bg-sky-500/12 text-sky-700 dark:text-sky-300",
+  manual_review: "border-violet-500/25 bg-violet-500/12 text-violet-700 dark:text-violet-300",
+  completed: "border-emerald-500/25 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  failed: "border-rose-500/25 bg-rose-500/12 text-rose-700 dark:text-rose-300",
+  canceled: "border-slate-500/25 bg-slate-500/12 text-slate-700 dark:text-slate-300",
+  partial: "border-orange-500/25 bg-orange-500/12 text-orange-700 dark:text-orange-300",
 };
 
 const orderStatusLabels = {
-  canceled: "ملغي",
-  completed: "مكتمل",
-  failed: "فشل",
-  manual_review: "مراجعة يدوية",
-  partial: "مكتمل جزئيًا",
   pending: "قيد الانتظار",
   processing: "قيد التنفيذ",
+  manual_review: "مراجعة يدوية",
+  completed: "مكتمل",
+  failed: "مرفوض",
+  canceled: "ملغي",
+  partial: "مكتمل جزئيًا",
+};
+
+const depositStatusStyles = {
+  APPROVED: "border-emerald-500/25 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  PENDING: "border-amber-500/25 bg-amber-500/12 text-amber-700 dark:text-amber-300",
+  REJECTED: "border-rose-500/25 bg-rose-500/12 text-rose-700 dark:text-rose-300",
+};
+
+const depositStatusLabels = {
+  APPROVED: "مقبول",
+  PENDING: "قيد الانتظار",
+  REJECTED: "مرفوض",
 };
 
 function formatCount(value) {
@@ -65,96 +79,109 @@ function formatCount(value) {
   return numberFormatter.format(value);
 }
 
-function chunkItems(items, size) {
-  return items.reduce((groups, item, index) => {
-    if (index % size === 0) groups.push([]);
-    groups[groups.length - 1].push(item);
-    return groups;
-  }, []);
-}
-
 function buildMetrics(values = {}) {
   return [
     {
+      accent: "admin-metric-card--orders",
+      description: "كل الطلبات المسجلة داخل المنصة",
       icon: PackageOpen,
       id: "total-orders",
       label: "إجمالي الطلبات",
       rawValue: values.totalOrders,
-      tone: metricTones.orders,
+      tone: "admin-metric-tone-orders",
     },
     {
+      accent: "admin-metric-card--pending",
+      description: "طلبات تحتاج متابعة من فريق التشغيل",
       icon: Clock3,
       id: "pending-orders",
       inverse: true,
       label: "طلبات قيد الانتظار أو التنفيذ",
       rawValue: values.pendingOrders,
-      tone: metricTones.pending,
+      tone: "admin-metric-tone-pending",
     },
     {
+      accent: "admin-metric-card--completed",
+      description: "طلبات تم تنفيذها بنجاح",
       icon: PackageCheck,
       id: "completed-orders",
       label: "الطلبات المكتملة",
       rawValue: values.completedOrders,
-      tone: metricTones.completed,
+      tone: "admin-metric-tone-completed",
     },
     {
+      accent: "admin-metric-card--failed",
+      description: "طلبات لم تكتمل وتحتاج مراجعة",
       icon: XCircle,
       id: "failed-orders",
       inverse: true,
       label: "الطلبات الفاشلة",
       rawValue: values.failedOrders,
-      tone: metricTones.failed,
+      tone: "admin-metric-tone-failed",
     },
     {
+      accent: "admin-metric-card--users",
+      description: "كل الحسابات المسجلة في النظام",
       icon: Users,
       id: "total-users",
       label: "إجمالي المستخدمين",
       rawValue: values.totalUsers,
-      tone: metricTones.users,
+      tone: "admin-metric-tone-users",
     },
     {
+      accent: "admin-metric-card--wallets",
+      description: "إجمالي أرصدة العملاء الحالية كما هي مخزنة في قاعدة البيانات",
+      icon: WalletCards,
+      id: "total-wallet-balances",
+      label: "إجمالي أرصدة المحافظ",
+      rawValue: values.totalWalletBalances,
+      valueLabel: values.totalWalletBalancesLabel,
+      tone: "admin-metric-tone-wallets",
+    },
+    {
+      accent: "admin-metric-card--review",
+      description: "حسابات جديدة ما زالت بانتظار القرار",
       icon: AlertTriangle,
       id: "pending-users",
       inverse: true,
       label: "مستخدمون بانتظار المراجعة",
       rawValue: values.pendingUsers,
-      tone: metricTones.pending,
+      tone: "admin-metric-tone-review",
     },
     {
+      accent: "admin-metric-card--products",
+      description: "المنتجات المتاحة للإدارة والبيع",
       icon: Boxes,
       id: "total-products",
       label: "إجمالي المنتجات",
       rawValue: values.totalProducts,
-      tone: metricTones.products,
+      tone: "admin-metric-tone-products",
     },
     {
+      accent: "admin-metric-card--deposits",
+      description: "إيداعات بانتظار الاعتماد أو الرفض",
       icon: Truck,
       id: "pending-deposits",
       inverse: true,
       label: "إيداعات قيد الانتظار",
       rawValue: values.pendingDeposits,
-      tone: metricTones.pending,
+      tone: "admin-metric-tone-deposits",
     },
     {
+      accent: "admin-metric-card--requests",
+      description: "طلبات المجموعات والوكلاء المفتوحة",
       icon: Activity,
       id: "pending-requests",
       inverse: true,
       label: "طلبات المجموعات والوكلاء المعلقة",
       rawValue: values.pendingGroupRequests,
-      tone: metricTones.requests,
-    },
-    {
-      icon: Server,
-      id: "providers",
-      label: "الموردون",
-      rawValue: values.providersCount,
-      tone: metricTones.providers,
+      tone: "admin-metric-tone-requests",
     },
   ].map((metric) => ({
     ...metric,
     change: null,
     unavailable: metric.rawValue === null || metric.rawValue === undefined,
-    value: formatCount(metric.rawValue),
+    value: metric.valueLabel || formatCount(metric.rawValue),
   }));
 }
 
@@ -164,6 +191,139 @@ function formatRefreshTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getPercentChange(current, previous) {
+  if (!previous) return current ? 100 : 0;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function sumAnalyticsRows(rows = []) {
+  return rows.reduce(
+    (summary, row) => {
+      const completionRatio = row.orders ? row.completedOrders / row.orders : 0;
+      const completedRevenue = row.revenue * completionRatio;
+      const completedProfit = row.profit * completionRatio;
+
+      summary.revenue += completedRevenue;
+      summary.profit += completedProfit;
+      summary.orders += row.orders;
+      summary.completedOrders += row.completedOrders;
+      summary.pendingOrders += row.pendingOrders;
+      summary.manualPending += row.manualPending;
+      summary.users += row.users;
+      summary.products += row.products;
+      summary.walletBalances += row.walletBalances;
+      summary.balances += row.balances;
+      return summary;
+    },
+    {
+      balances: 0,
+      completedOrders: 0,
+      manualPending: 0,
+      orders: 0,
+      pendingOrders: 0,
+      products: 0,
+      profit: 0,
+      revenue: 0,
+      users: 0,
+      walletBalances: 0,
+    },
+  );
+}
+
+function buildPeriodMetrics(range) {
+  const currentRows = analyticsDaily.filter((item) => isWithinRange(item.date, range));
+  const previousRange = getPreviousRange(range);
+  const previousRows = analyticsDaily.filter((item) => isWithinRange(item.date, previousRange));
+  const current = sumAnalyticsRows(currentRows);
+  const previous = sumAnalyticsRows(previousRows);
+  const days = getRangeDays(range);
+
+  return [
+    {
+      accent: "admin-metric-card--wallets",
+      change: getPercentChange(current.revenue, previous.revenue),
+      description: "الإيرادات من الطلبات المكتملة داخل الفترة المحددة",
+      icon: DollarSign,
+      id: "period-revenue",
+      label: "إجمالي الإيرادات (USD)",
+      tone: "admin-metric-tone-wallets",
+      value: currencyFormatter.format(Math.round(current.revenue)),
+    },
+    {
+      accent: "admin-metric-card--completed",
+      change: getPercentChange(current.profit, previous.profit),
+      description: "الأرباح من الطلبات المكتملة داخل الفترة المحددة",
+      icon: TrendingUp,
+      id: "period-profit",
+      label: "صافي الأرباح (USD)",
+      tone: "admin-metric-tone-completed",
+      value: currencyFormatter.format(Math.round(current.profit)),
+    },
+    {
+      accent: "admin-metric-card--orders",
+      change: getPercentChange(current.completedOrders, previous.completedOrders),
+      description: `طلبات مكتملة خلال ${numberFormatter.format(days)} يوم`,
+      icon: PackageCheck,
+      id: "period-completed-orders",
+      label: "الطلبات المكتملة في الفترة",
+      tone: "admin-metric-tone-orders",
+      value: numberFormatter.format(current.completedOrders),
+    },
+    {
+      accent: "admin-metric-card--pending",
+      change: getPercentChange(current.pendingOrders, previous.pendingOrders),
+      description: "طلبات ما زالت تحتاج متابعة داخل نفس الفترة",
+      icon: Clock3,
+      id: "period-pending-orders",
+      inverse: true,
+      label: "طلبات قيد المتابعة",
+      tone: "admin-metric-tone-pending",
+      value: numberFormatter.format(current.pendingOrders),
+    },
+    {
+      accent: "admin-metric-card--users",
+      change: getPercentChange(current.users, previous.users),
+      description: "حسابات ونشاط مستخدمين مسجل داخل الفترة",
+      icon: Users,
+      id: "period-users",
+      label: "نشاط المستخدمين",
+      tone: "admin-metric-tone-users",
+      value: numberFormatter.format(current.users),
+    },
+    {
+      accent: "admin-metric-card--products",
+      change: getPercentChange(current.products, previous.products),
+      description: "منتجات أضيفت أو تحركت داخل الفترة المحددة",
+      icon: Boxes,
+      id: "period-products",
+      label: "حركة المنتجات",
+      tone: "admin-metric-tone-products",
+      value: numberFormatter.format(current.products),
+    },
+    {
+      accent: "admin-metric-card--deposits",
+      change: getPercentChange(current.manualPending, previous.manualPending),
+      description: "طلبات يدوية أو تحويلات تحتاج اعتمادًا",
+      icon: Truck,
+      id: "period-manual-pending",
+      inverse: true,
+      label: "عمليات يدوية معلقة",
+      tone: "admin-metric-tone-deposits",
+      value: numberFormatter.format(current.manualPending),
+    },
+    {
+      accent: "admin-metric-card--requests",
+      change: getPercentChange(current.walletBalances, previous.walletBalances),
+      description: "حركة أرصدة المحافظ اليومية داخل الفترة",
+      icon: WalletCards,
+      id: "period-wallet-volume",
+      label: "حركة المحافظ",
+      tone: "admin-metric-tone-requests",
+      value: currencyFormatter.format(Math.round(current.walletBalances)),
+    },
+  ];
 }
 
 function getOperationalAlerts(metrics = {}, failures = []) {
@@ -196,6 +356,8 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [depositActionKey, setDepositActionKey] = useState("");
+  const [selectedRange, setSelectedRange] = useState(() => getPresetRange("thisMonth"));
 
   const loadDashboard = useCallback(async ({ notify = false } = {}) => {
     if (!token) {
@@ -243,8 +405,81 @@ export default function AdminDashboardPage() {
     loadDashboard();
   }, [loadDashboard]);
 
+  const approvePurchaseOrder = useCallback(async (order) => {
+    if (!token || !order?.id) return;
+    const key = `approve:${order.id}`;
+    setDepositActionKey(key);
+
+    try {
+      const result = await markAdminOrderManualSuccess(token, order.id);
+      showToast({
+        type: "success",
+        title: result.message || "تم قبول طلب الشراء",
+      });
+      await loadDashboard();
+    } catch (approveError) {
+      const normalized = normalizeApiError(approveError, "فشل قبول طلب الشراء.");
+      showToast({
+        type: "error",
+        title: "فشل قبول الطلب",
+        message: normalized.userMessage || normalized.message,
+      });
+    } finally {
+      setDepositActionKey("");
+    }
+  }, [loadDashboard, showToast, token]);
+
+  const rejectPurchaseOrder = useCallback(async (order) => {
+    if (!token || !order?.id) return;
+    const key = `reject:${order.id}`;
+    setDepositActionKey(key);
+
+    try {
+      const result = await refundAdminOrder(token, order.id);
+      showToast({
+        type: "success",
+        title: result.message || "تم رفض طلب الشراء وإرجاع قيمته",
+      });
+      await loadDashboard();
+    } catch (rejectError) {
+      const normalized = normalizeApiError(rejectError, "فشل رفض طلب الشراء.");
+      showToast({
+        type: "error",
+        title: "فشل رفض الطلب",
+        message: normalized.userMessage || normalized.message,
+      });
+    } finally {
+      setDepositActionKey("");
+    }
+  }, [loadDashboard, showToast, token]);
+
+  const reviewManualDeposit = useCallback(async (deposit, action) => {
+    if (!token || !deposit?.id) return;
+    const key = `${action}-deposit:${deposit.id}`;
+    setDepositActionKey(key);
+
+    try {
+      const handler = action === "approve" ? approveDeposit : rejectDeposit;
+      const result = await handler(token, deposit.id);
+      showToast({
+        type: "success",
+        title: result.message || (action === "approve" ? "تم قبول طلب إضافة الرصيد" : "تم رفض طلب إضافة الرصيد"),
+      });
+      await loadDashboard();
+    } catch (reviewError) {
+      const normalized = normalizeApiError(reviewError, "فشل تحديث طلب إضافة الرصيد.");
+      showToast({
+        type: "error",
+        title: action === "approve" ? "فشل قبول الطلب" : "فشل رفض الطلب",
+        message: normalized.userMessage || normalized.message,
+      });
+    } finally {
+      setDepositActionKey("");
+    }
+  }, [loadDashboard, showToast, token]);
+
   const metrics = useMemo(() => buildMetrics(dashboard?.metrics || {}), [dashboard]);
-  const metricColumns = useMemo(() => chunkItems(metrics, 2), [metrics]);
+  const periodMetrics = useMemo(() => buildPeriodMetrics(selectedRange), [selectedRange]);
   const alerts = useMemo(
     () => getOperationalAlerts(dashboard?.metrics || {}, dashboard?.failures || []),
     [dashboard],
@@ -253,14 +488,18 @@ export default function AdminDashboardPage() {
   return (
     <div dir="rtl" className="admin-dashboard space-y-3">
       <section className="admin-dashboard-top">
-        <div className="min-w-0">
-          <p className="text-xs font-black tracking-[0.08em] text-slate-500 dark:text-slate-400">مركز إدارة المنصة</p>
-          <h1 className="mt-1 text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">لوحة الإدارة</h1>
-          <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
+        <div className="admin-dashboard-hero-copy min-w-0">
+          <p className="admin-dashboard-kicker">مركز إدارة المنصة</p>
+          <h1>لوحة الإدارة</h1>
+          <p className="admin-dashboard-refresh">
             آخر تحديث {formatRefreshTime(dashboard?.refreshedAt)}
           </p>
         </div>
         <div className="admin-top-actions">
+          <span className="admin-dashboard-live-pill">
+            <Activity className="h-4 w-4" />
+            بيانات مباشرة
+          </span>
           <button
             type="button"
             onClick={() => loadDashboard({ notify: true })}
@@ -280,6 +519,19 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      <DashboardPanel className="admin-period-panel">
+        <PanelHeading
+          icon={Activity}
+          title="تحليلات الفترة"
+          action={<DateRangePicker value={selectedRange} onChange={setSelectedRange} />}
+        />
+        <section className="admin-metrics-grid mt-3">
+          {periodMetrics.map((metric) => (
+            <MetricCard key={metric.id} metric={metric} rangeKey={selectedRange.key} />
+          ))}
+        </section>
+      </DashboardPanel>
+
       {loading ? (
         <DashboardPanel>
           <PanelHeading icon={RefreshCw} title="جارٍ تحميل بيانات لوحة التحكم" />
@@ -287,89 +539,386 @@ export default function AdminDashboardPage() {
         </DashboardPanel>
       ) : (
         <>
+          <section className="admin-metrics-grid">
+            {metrics.map((metric) => (
+              <MetricCard key={metric.id} metric={metric} rangeKey={dashboard?.refreshedAt || "live"} />
+            ))}
+          </section>
+
           <section className="admin-overview-grid">
-            <div className="admin-metrics-columns">
-              {metricColumns.map((column, columnIndex) => (
-                <div key={`metric-column-${columnIndex}`} className="admin-metric-column">
-                  {column.map((metric) => (
-                    <MetricCard key={metric.id} metric={metric} rangeKey={dashboard?.refreshedAt || "live"} />
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            <RecentOrdersPanel orders={dashboard?.recentOrders || []} />
-          </section>
-
-          <section className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
+            <RecentOrdersPanel
+              actionKey={depositActionKey}
+              onApprove={approvePurchaseOrder}
+              onReject={rejectPurchaseOrder}
+              orders={dashboard?.recentOrders || []}
+            />
             <OperationalAlertsPanel alerts={alerts} />
-            <UnavailableMetricsPanel />
           </section>
 
-          {dashboard?.failures?.length ? <PartialFailuresPanel failures={dashboard.failures} /> : null}
+          <ManualDepositsPanel
+            actionKey={depositActionKey}
+            deposits={dashboard?.recentDeposits || []}
+            onApprove={(deposit) => reviewManualDeposit(deposit, "approve")}
+            onReject={(deposit) => reviewManualDeposit(deposit, "reject")}
+          />
+
+          <ProvidersBalancesPanel providers={dashboard?.providers || []} />
         </>
       )}
     </div>
   );
 }
 
-function RecentOrdersPanel({ orders }) {
+function ProvidersBalancesPanel({ providers }) {
+  const sortedProviders = useMemo(
+    () => [...providers].sort((left, right) => Number(right.isActive || right.active) - Number(left.isActive || left.active)),
+    [providers],
+  );
+
   return (
-    <DashboardPanel className="admin-orders-panel">
+    <DashboardPanel>
       <PanelHeading
-        icon={PackageOpen}
-        title="أحدث الطلبات"
-        action={<span className="admin-orders-count">{numberFormatter.format(orders.length)} latest</span>}
+        icon={Server}
+        title="أرصدة الموردين"
+        action={<span className="rounded-full bg-teal-500/12 px-3 py-1 text-[11px] font-black text-teal-700 dark:text-teal-300">{numberFormatter.format(providers.length)} مورد</span>}
       />
-      {orders.length ? (
-        <div className="admin-orders-list">
-          {orders.map((order) => (
-            <article key={order.id} className="admin-order-card">
-              <div className="admin-order-orb">
-                <PackageOpen className="h-4.5 w-4.5" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p dir="ltr" className="truncate text-right text-xs font-black text-slate-400 dark:text-slate-500">{order.displayId || order.id}</p>
-                    <h3 className="mt-0.5 truncate text-sm font-black text-slate-950 dark:text-white">{order.username || order.userEmail || "عميل"}</h3>
-                  </div>
-                  <p dir="ltr" className="shrink-0 text-sm font-black text-slate-950 dark:text-white">{order.amountLabel}</p>
-                </div>
-
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="admin-order-product">{order.product}</span>
-                  <OrderStatusBadge status={order.status} label={order.statusLabel} />
-                  <span className="text-[11px] font-black text-slate-400 dark:text-slate-500">
-                    {order.createdAt ? compactDateFormatter.format(new Date(order.createdAt)) : order.createdAtLabel}
-                  </span>
-                </div>
-              </div>
-
-              <div className="admin-order-actions">
-                <Link
-                  to="/admin/tools/orders"
-                  className="admin-action-icon-button grid shrink-0 place-items-center border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                  aria-label="فتح صفحة الطلبات"
-                  title="فتح صفحة الطلبات"
-                >
-                  <ExternalLink className="admin-action-icon" />
-                </Link>
-              </div>
-            </article>
+      {sortedProviders.length ? (
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {sortedProviders.map((provider, index) => (
+            <ProviderBalanceCard key={provider.id || provider.slug || provider.name} provider={provider} index={index} />
           ))}
         </div>
       ) : (
-        <EmptyStateInline text="لا توجد طلبات حتى الآن." />
+        <EmptyStateInline text="لا توجد موردون لعرض أرصدتهم." />
       )}
     </DashboardPanel>
   );
 }
 
+function ProviderBalanceCard({ provider, index }) {
+  const active = provider.isActive !== false && provider.active !== false;
+  const hasError = provider.balanceStatus === "error";
+  const palette = [
+    "from-teal-500/18 via-sky-500/10 to-violet-500/12 text-teal-700 dark:text-teal-200",
+    "from-violet-500/18 via-fuchsia-500/10 to-sky-500/12 text-violet-700 dark:text-violet-200",
+    "from-emerald-500/18 via-teal-500/10 to-cyan-500/12 text-emerald-700 dark:text-emerald-200",
+    "from-amber-500/18 via-orange-500/10 to-rose-500/12 text-amber-700 dark:text-amber-200",
+  ][index % 4];
+  const statusClass = hasError
+    ? "border-rose-500/25 bg-rose-500/12 text-rose-700 dark:text-rose-300"
+    : active
+      ? "border-emerald-500/25 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
+      : "border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-300";
+
+  return (
+    <article className={`relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br ${palette} p-4 shadow-[0_16px_36px_rgba(15,23,42,0.07)] dark:border-white/10`}>
+      <div className="pointer-events-none absolute -left-10 -top-12 h-28 w-28 rounded-full bg-white/40 blur-2xl dark:bg-white/5" />
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-slate-950 dark:text-white">{provider.name || provider.displayName || "مورد"}</p>
+          <p dir="ltr" className="mt-1 truncate text-right text-[11px] font-bold text-slate-500 dark:text-slate-400">{provider.code || provider.slug || provider.id}</p>
+        </div>
+        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black ${statusClass}`}>
+          {hasError ? "تعذر الرصيد" : active ? "نشط" : "غير نشط"}
+        </span>
+      </div>
+
+      <div className="relative mt-4 rounded-xl border border-white/60 bg-white/70 px-3 py-3 text-right shadow-inner dark:border-white/10 dark:bg-slate-950/30">
+        <p className="text-[11px] font-black text-slate-500 dark:text-slate-400">الرصيد الحالي</p>
+        <p dir="ltr" className={`mt-1 text-right text-xl font-black ${hasError ? "text-rose-700 dark:text-rose-300" : "text-slate-950 dark:text-white"}`}>
+          {provider.balanceLabel || "غير متاح"}
+        </p>
+        {provider.balanceError ? (
+          <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-rose-700 dark:text-rose-300">{provider.balanceError}</p>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
+  const [receiptOrder, setReceiptOrder] = useState(null);
+
+  return (
+    <>
+      <DashboardPanel className="admin-orders-panel">
+        <PanelHeading
+          icon={PackageOpen}
+          title="أحدث طلبات الشراء"
+          action={<span className="admin-orders-count">{numberFormatter.format(orders.length)} طلب</span>}
+        />
+        {orders.length ? (
+          <div className="admin-orders-list">
+            {orders.map((order) => {
+              const reviewable = ["pending", "processing", "manual_review"].includes(order.status);
+              const busy = actionKey.endsWith(`:${order.id}`);
+              const approving = actionKey === `approve:${order.id}`;
+              const rejecting = actionKey === `reject:${order.id}`;
+
+              return (
+              <article key={order.id} className="admin-order-card">
+                <div className="admin-order-orb">
+                  <PackageOpen className="h-4.5 w-4.5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p dir="ltr" className="truncate text-right text-xs font-black text-slate-400 dark:text-slate-500">{order.displayId || order.id}</p>
+                      <h3 className="mt-0.5 truncate text-sm font-black text-slate-950 dark:text-white">{order.username || order.userEmail || "عميل"}</h3>
+                    </div>
+                    <p dir="ltr" className="shrink-0 text-sm font-black text-slate-950 dark:text-white">{order.amountLabel}</p>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="admin-order-product">{order.product || "منتج"}</span>
+                    <OrderStatusBadge status={order.status} label={order.statusLabel} />
+                    <span className="text-[11px] font-black text-slate-400 dark:text-slate-500">
+                      {order.createdAt ? compactDateFormatter.format(new Date(order.createdAt)) : order.createdAtLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="admin-order-actions">
+                  <button
+                    type="button"
+                    onClick={() => setReceiptOrder(order)}
+                    className="admin-action-icon-button grid shrink-0 place-items-center border border-sky-500/25 bg-sky-500/10 text-sky-700 transition hover:bg-sky-500/15 dark:text-sky-300"
+                    aria-label="عرض إيصال طلب الشراء"
+                    title="عرض الإيصال"
+                  >
+                    <ReceiptText className="admin-action-icon" />
+                  </button>
+                  {reviewable ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onApprove(order)}
+                        disabled={busy}
+                        className="admin-action-icon-button grid shrink-0 place-items-center border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-55 dark:text-emerald-300"
+                        aria-label="قبول طلب الشراء"
+                        title="قبول الطلب"
+                      >
+                        <PackageCheck className={`admin-action-icon ${approving ? "animate-pulse" : ""}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onReject(order)}
+                        disabled={busy}
+                        className="admin-action-icon-button grid shrink-0 place-items-center border border-rose-500/25 bg-rose-500/10 text-rose-700 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-55 dark:text-rose-300"
+                        aria-label="رفض طلب الشراء"
+                        title="رفض الطلب"
+                      >
+                        <XCircle className={`admin-action-icon ${rejecting ? "animate-pulse" : ""}`} />
+                      </button>
+                    </>
+                  ) : null}
+                  <Link
+                    to="/admin/tools/orders"
+                    className="admin-action-icon-button grid shrink-0 place-items-center border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                    aria-label="فتح صفحة طلبات الشراء"
+                    title="فتح صفحة طلبات الشراء"
+                  >
+                    <ExternalLink className="admin-action-icon" />
+                  </Link>
+                </div>
+              </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyStateInline text="لا توجد طلبات شراء حتى الآن." />
+        )}
+      </DashboardPanel>
+
+      {receiptOrder ? (
+        <div
+          className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/80 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => event.target === event.currentTarget && setReceiptOrder(null)}
+        >
+          <section className="w-full max-w-lg overflow-hidden rounded-[24px] bg-white p-4 shadow-2xl dark:bg-[#111827]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black text-violet-600 dark:text-violet-300">WINNIE FUN</p>
+                <h3 className="mt-1 text-base font-black text-slate-950 dark:text-white">إيصال طلب الشراء</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceiptOrder(null)}
+                className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10 dark:text-white"
+                aria-label="إغلاق الإيصال"
+                title="إغلاق"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="my-4 border-t border-dashed border-slate-200 dark:border-white/10" />
+            <div className="grid grid-cols-2 gap-2">
+              <ReceiptField label="رقم الطلب" value={receiptOrder.displayId || receiptOrder.id} dir="ltr" />
+              <ReceiptField label="الحالة" value={orderStatusLabels[receiptOrder.status] || receiptOrder.statusLabel} />
+              <ReceiptField label="العميل" value={receiptOrder.username || receiptOrder.userEmail || "-"} />
+              <ReceiptField label="المنتج" value={receiptOrder.product || "-"} />
+              <ReceiptField label="الكمية" value={numberFormatter.format(receiptOrder.quantity || 1)} />
+              <ReceiptField label="الإجمالي" value={receiptOrder.amountLabel || "-"} dir="ltr" />
+              <ReceiptField label="معرّف اللاعب/الحساب" value={receiptOrder.playerId || "-"} dir="ltr" />
+              <ReceiptField label="التاريخ" value={receiptOrder.createdAtLabel || "-"} />
+            </div>
+            {receiptOrder.submittedFields?.length ? (
+              <div className="mt-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-950/40">
+                <p className="mb-2 text-[10px] font-black text-slate-400">بيانات الطلب</p>
+                {receiptOrder.submittedFields.map((field) => (
+                  <div key={field.key} className="flex items-start justify-between gap-3 py-1 text-xs">
+                    <span className="font-bold text-slate-500 dark:text-slate-400">{field.label}</span>
+                    <span dir="ltr" className="break-all text-right font-black text-slate-900 dark:text-white">{field.valueLabel}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function ReceiptField({ dir, label, value }) {
+  return (
+    <div className="min-w-0 rounded-xl bg-slate-50 p-3 dark:bg-slate-950/40">
+      <p className="text-[9px] font-black text-slate-400">{label}</p>
+      <p dir={dir} className="mt-1 break-words text-xs font-black text-slate-900 dark:text-white">{value}</p>
+    </div>
+  );
+}
+
+function ManualDepositsPanel({ actionKey, deposits, onApprove, onReject }) {
+  const [receiptDeposit, setReceiptDeposit] = useState(null);
+
+  return (
+    <>
+      <DashboardPanel className="admin-orders-panel">
+        <PanelHeading
+          icon={WalletCards}
+          title="طلبات إضافة الرصيد اليدوي"
+          action={
+            <Link to="/admin/tools/balance-requests" className="admin-orders-count transition hover:text-violet-600 dark:hover:text-violet-300">
+              عرض الكل
+            </Link>
+          }
+        />
+        {deposits.length ? (
+          <div className="admin-orders-list mt-3">
+            {deposits.map((deposit) => {
+              const pending = deposit.status === "PENDING";
+              const busy = actionKey.endsWith(`deposit:${deposit.id}`);
+              const approving = actionKey === `approve-deposit:${deposit.id}`;
+              const rejecting = actionKey === `reject-deposit:${deposit.id}`;
+
+              return (
+                <article key={deposit.id} className="admin-order-card">
+                  <div className="admin-order-orb">
+                    <WalletCards className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p dir="ltr" className="truncate text-right text-xs font-black text-slate-400 dark:text-slate-500">{deposit.id}</p>
+                        <h3 className="mt-0.5 truncate text-sm font-black text-slate-950 dark:text-white">
+                          {deposit.user?.name || deposit.user?.email || "عميل"}
+                        </h3>
+                      </div>
+                      <p dir="ltr" className="shrink-0 text-sm font-black text-slate-950 dark:text-white">{deposit.amountLabel}</p>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="admin-order-product">{deposit.paymentMethodId || "شحن يدوي"}</span>
+                      <DepositStatusBadge status={deposit.status} label={deposit.statusLabel} />
+                      <span className="text-[11px] font-black text-slate-400 dark:text-slate-500">
+                        {deposit.createdAt ? compactDateFormatter.format(new Date(deposit.createdAt)) : deposit.createdAtLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="admin-order-actions">
+                    {deposit.receiptUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setReceiptDeposit(deposit)}
+                        className="admin-action-icon-button grid shrink-0 place-items-center border border-sky-500/25 bg-sky-500/10 text-sky-700 transition hover:bg-sky-500/15 dark:text-sky-300"
+                        aria-label="عرض إيصال إضافة الرصيد"
+                        title="عرض الإيصال"
+                      >
+                        <ReceiptText className="admin-action-icon" />
+                      </button>
+                    ) : null}
+                    {pending ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onApprove(deposit)}
+                          disabled={busy}
+                          className="admin-action-icon-button grid shrink-0 place-items-center border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 transition hover:bg-emerald-500/15 disabled:opacity-50 dark:text-emerald-300"
+                          aria-label="قبول طلب إضافة الرصيد"
+                          title="قبول الطلب"
+                        >
+                          <PackageCheck className={`admin-action-icon ${approving ? "animate-pulse" : ""}`} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onReject(deposit)}
+                          disabled={busy}
+                          className="admin-action-icon-button grid shrink-0 place-items-center border border-rose-500/25 bg-rose-500/10 text-rose-700 transition hover:bg-rose-500/15 disabled:opacity-50 dark:text-rose-300"
+                          aria-label="رفض طلب إضافة الرصيد"
+                          title="رفض الطلب"
+                        >
+                          <XCircle className={`admin-action-icon ${rejecting ? "animate-pulse" : ""}`} />
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyStateInline text="لا توجد طلبات إضافة رصيد يدوي حتى الآن." />
+        )}
+      </DashboardPanel>
+
+      {receiptDeposit ? (
+        <div
+          className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/80 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => event.target === event.currentTarget && setReceiptDeposit(null)}
+        >
+          <section className="w-full max-w-[860px] overflow-hidden rounded-[24px] bg-white p-3 shadow-2xl dark:bg-[#111827]">
+            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+              <h3 className="text-sm font-black text-slate-950 dark:text-white">إيصال طلب إضافة الرصيد</h3>
+              <button
+                type="button"
+                onClick={() => setReceiptDeposit(null)}
+                className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10 dark:text-white"
+                aria-label="إغلاق الإيصال"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            <img src={receiptDeposit.receiptUrl} alt="إيصال طلب إضافة الرصيد" className="max-h-[78vh] w-full rounded-2xl object-contain" />
+          </section>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function DepositStatusBadge({ status, label }) {
+  return (
+    <span className={`admin-status-badge inline-flex items-center gap-1 rounded-md border font-black ${depositStatusStyles[status] || depositStatusStyles.PENDING}`}>
+      <span className="admin-status-dot rounded-full bg-current" />
+      {depositStatusLabels[status] || label || status}
+    </span>
+  );
+}
+
 function OrderStatusBadge({ status, label }) {
   return (
-    <span className={`admin-status-badge inline-flex items-center gap-1 rounded-md border font-black ${orderStatusStyles[status] || orderStatusStyles.manual_review}`}>
+    <span className={`admin-status-badge inline-flex items-center gap-1 rounded-md border font-black ${orderStatusStyles[status] || orderStatusStyles.pending}`}>
       <span className="admin-status-dot rounded-full bg-current" />
       {orderStatusLabels[status] || label || status}
     </span>
@@ -398,18 +947,6 @@ function OperationalAlertsPanel({ alerts }) {
             </div>
           </article>
         ))}
-      </div>
-    </DashboardPanel>
-  );
-}
-
-function UnavailableMetricsPanel() {
-  return (
-    <DashboardPanel>
-      <PanelHeading icon={Activity} title="مؤشرات غير متاحة" />
-      <div className="space-y-2 text-sm font-bold leading-6 text-slate-600 dark:text-slate-300">
-        <p>لا تُعرض هنا الإيرادات والأرباح وإجماليات المحافظ وأرصدة الموردين والرسوم وسجل النشاط.</p>
-        <p>تحتاج هذه البيانات إلى تحليلات موثوقة ومخصصة من الخادم قبل عرضها في لوحة التحكم.</p>
       </div>
     </DashboardPanel>
   );

@@ -26,6 +26,24 @@ const statusMeta = {
   REJECTED: ["مرفوض", "bg-rose-500/10 text-rose-700 dark:text-rose-300"],
 };
 
+const reviewedNoticeMeta = {
+  APPROVED: {
+    className: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    icon: CheckCircle2,
+    text: "تم قبول طلب إضافة الرصيد بالفعل، وأي تحديث للرصيد تم تنفيذه من الخادم.",
+  },
+  REJECTED: {
+    className: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+    icon: ShieldX,
+    text: "تم رفض طلب إضافة الرصيد بالفعل، ولا يمكن تنفيذ إجراء قبول أو رفض عليه مرة أخرى.",
+  },
+  DEFAULT: {
+    className: "border-slate-300 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-300",
+    icon: AlertTriangle,
+    text: "تمت مراجعة هذا الطلب بالفعل. حالة المحفظة المعروضة مأخوذة من بيانات الخادم فقط.",
+  },
+};
+
 function getErrorMessage(error, fallback) {
   return error?.userMessage || error?.message || fallback;
 }
@@ -71,9 +89,9 @@ export default function AdminBalanceRequestsPage() {
       setPagination(result.pagination);
       setSummary(result.summary);
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "تعذر تحميل طلبات الإيداع.");
+      const message = getErrorMessage(requestError, "تعذر تحميل طلبات إضافة الرصيد.");
       setError(message);
-      showToast({ type: "error", title: "لم يتم تحميل طلبات الإيداع", message });
+      showToast({ type: "error", title: "لم يتم تحميل طلبات إضافة الرصيد", message });
     } finally {
       setLoading(false);
     }
@@ -95,9 +113,9 @@ export default function AdminBalanceRequestsPage() {
       action,
       adminNotes,
       id: request.id,
-      title: action === "approve" ? "قبول طلب الإيداع" : "رفض طلب الإيداع",
-      message: `هل تريد ${action === "approve" ? "قبول" : "رفض"} مبلغ ${request.amountLabel} للمستخدم ${request.user?.name || "هذا المستخدم"}؟ يتولى الخادم وحده إضافة الرصيد للمحفظة.`,
-      confirmLabel: action === "approve" ? "قبول الإيداع" : "رفض الإيداع",
+      title: action === "approve" ? "قبول طلب إضافة الرصيد" : "رفض طلب إضافة الرصيد",
+      message: `هل تريد ${action === "approve" ? "قبول" : "رفض"} طلب إضافة رصيد بقيمة ${request.amountLabel} للمستخدم ${request.user?.name || "هذا المستخدم"}؟ يتولى الخادم وحده تحديث رصيد المحفظة.`,
+      confirmLabel: action === "approve" ? "قبول الطلب" : "رفض الطلب",
       tone: action === "approve" ? "success" : "danger",
     });
   };
@@ -114,13 +132,13 @@ export default function AdminBalanceRequestsPage() {
 
       showToast({
         type: confirmation.action === "approve" ? "success" : "warning",
-        title: result.message || (confirmation.action === "approve" ? "تم قبول الإيداع" : "تم رفض الإيداع"),
+        title: result.message || (confirmation.action === "approve" ? "تم قبول طلب إضافة الرصيد" : "تم رفض طلب إضافة الرصيد"),
       });
       setConfirmation(null);
       setSelected(null);
       await loadRequests();
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "فشلت مراجعة طلب الإيداع.");
+      const message = getErrorMessage(requestError, "فشلت مراجعة طلب إضافة الرصيد.");
       showToast({ type: "error", title: "فشل الإجراء", message });
     } finally {
       setActionKey("");
@@ -130,7 +148,7 @@ export default function AdminBalanceRequestsPage() {
   return (
     <div dir="rtl" className="space-y-4">
       <Header onRefresh={loadRequests} refreshing={loading} />
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
         <Stat icon={ReceiptText} label="إجمالي الطلبات" value={counts.total} tone="violet" />
         <Stat icon={Clock3} label="بانتظار المراجعة" value={counts.pending} tone="sky" />
         <Stat icon={CheckCircle2} label="الطلبات المقبولة" value={counts.approved} tone="emerald" />
@@ -188,12 +206,12 @@ export default function AdminBalanceRequestsPage() {
           {requests.map((request) => <RequestCard key={request.id} request={request} onDetails={() => setSelected(request)} />)}
         </div>
       ) : (
-        <EmptyState icon={ReceiptText} title="لا توجد طلبات إيداع" description="ستظهر هنا طلبات الإيداع اليدوي التي يرسلها العملاء." />
+        <EmptyState icon={ReceiptText} title="لا توجد طلبات إضافة رصيد" description="ستظهر هنا طلبات إضافة الرصيد اليدوية التي يرسلها العملاء." />
       )}
 
       <RequestDetails
         actionKey={actionKey}
-        request={selected}
+        request={confirmation ? null : selected}
         onClose={() => setSelected(null)}
         onReview={requestReview}
       />
@@ -215,8 +233,8 @@ function Header({ onRefresh, refreshing }) {
     <section className="flex flex-col gap-4 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 sm:flex-row sm:items-center dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><WalletCards className="h-5 w-5" /></span>
       <div className="min-w-0 flex-1">
-        <h1 className="text-xl font-black leading-tight dark:text-white sm:text-2xl">مراجعة الإيداعات اليدوية</h1>
-        <p className="mt-1 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">قبول طلبات الإيداع أو رفضها بأمان من خلال الخادم</p>
+        <h1 className="text-xl font-black leading-tight dark:text-white sm:text-2xl">طلبات إضافة الرصيد</h1>
+        <p className="mt-1 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">قبول طلبات إضافة الرصيد أو رفضها بأمان من خلال الخادم</p>
       </div>
       <button
         type="button"
@@ -239,10 +257,12 @@ function Stat({ icon: Icon, label, value, tone }) {
     violet: "bg-violet-500/10 text-violet-600",
   }[tone];
   return (
-    <article className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#111827]">
-      <Icon className={`h-9 w-9 rounded-xl p-2.5 ${style}`} />
-      <b className="mt-2 block text-2xl dark:text-white">{Number(value || 0).toLocaleString("ar-EG-u-nu-latn")}</b>
-      <p className="text-xs font-black text-slate-400">{label}</p>
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
+      <div className="flex items-center gap-2">
+        <Icon className={`h-8 w-8 shrink-0 rounded-xl p-2 sm:h-9 sm:w-9 sm:p-2.5 ${style}`} />
+        <b className="block text-xl leading-none dark:text-white sm:text-2xl">{Number(value || 0).toLocaleString("ar-EG-u-nu-latn")}</b>
+      </div>
+      <p className="mt-2 text-[10px] font-black leading-4 text-slate-400 sm:text-xs">{label}</p>
     </article>
   );
 }
@@ -254,24 +274,27 @@ function Badge({ status }) {
 
 function RequestCard({ request, onDetails }) {
   return (
-    <article className="rounded-[23px] border border-slate-200 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
+    <article className="rounded-[20px] border border-slate-200 bg-white p-3 shadow-[0_12px_28px_rgba(15,23,42,0.045)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="truncate text-base font-black dark:text-white">{request.user?.name || "مستخدم غير معروف"}</h2>
-          <p dir="ltr" className="truncate text-right text-xs text-slate-400">{request.user?.email || request.user?.id || "-"}</p>
+          <h2 className="truncate text-sm font-black dark:text-white sm:text-base">{request.user?.name || "مستخدم غير معروف"}</h2>
+          <p dir="ltr" className="mt-0.5 truncate text-right text-[10px] font-bold text-slate-400 sm:text-xs">{request.user?.email || request.user?.id || "-"}</p>
         </div>
         <Badge status={request.status} />
       </div>
-      <p dir="ltr" className="mt-3 text-right text-2xl font-black text-violet-700 dark:text-violet-300">{request.amountLabel}</p>
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Info label="تاريخ الإنشاء" value={request.createdAtLabel} />
-        <Info label="طريقة الدفع" value={request.paymentMethodId || "-"} />
-        <Info label="المبلغ بالدولار" value={request.amountUsdLabel} />
-        <Info label="تاريخ المراجعة" value={request.reviewedAtLabel || "لم تتم المراجعة"} />
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[9px] font-black text-slate-400">المبلغ</p>
+          <p dir="ltr" className="mt-1 truncate text-right text-xl font-black text-violet-700 dark:text-violet-300 sm:text-2xl">{request.amountLabel}</p>
+        </div>
+        <div className="min-w-0 text-left">
+          <p className="text-[9px] font-black text-slate-400">تاريخ الإنشاء</p>
+          <p className="mt-1 truncate text-[10px] font-black text-slate-600 dark:text-slate-300">{request.createdAtLabel}</p>
+        </div>
       </div>
       <button onClick={onDetails} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-violet-500/10 text-sm font-black text-violet-700 dark:text-violet-300">
         <Eye className="h-4 w-4" />
-        التفاصيل
+        عرض التفاصيل
       </button>
     </article>
   );
@@ -299,50 +322,72 @@ function RequestDetails({ actionKey, request, onClose, onReview }) {
 
   const canReview = request.status === "PENDING";
   const busy = Boolean(actionKey);
+  const reviewStatus = statusMeta[request.status]?.[0] || request.statusLabel;
+  const reviewedNotice = reviewedNoticeMeta[request.status] || reviewedNoticeMeta.DEFAULT;
+  const ReviewedNoticeIcon = reviewedNotice.icon;
 
   return createPortal(
-    <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4">
-      <section className="flex h-[100dvh] max-h-[100dvh] w-full max-w-[760px] flex-col rounded-t-[28px] bg-white shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:rounded-[28px] dark:bg-[#111827]">
-        <header className="flex shrink-0 items-center gap-3 border-b p-4 dark:border-white/10">
-          <ReceiptText className="h-5 w-5 text-violet-500" />
+    <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-slate-950/60 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="flex h-[100dvh] max-h-[100dvh] w-full max-w-[920px] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:rounded-[28px] dark:bg-[#111827]">
+        <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827] sm:p-5">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-300">
+            <ReceiptText className="h-5 w-5" />
+          </span>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-black dark:text-white">طلب إيداع {request.id}</h2>
-            <p className="truncate text-xs text-slate-400">{request.user?.name || "مستخدم غير معروف"} - {request.user?.email || request.user?.id || "-"}</p>
+            <h2 className="break-words text-base font-black leading-6 dark:text-white sm:text-lg">تفاصيل طلب إضافة الرصيد</h2>
+            <p dir="ltr" className="mt-0.5 break-all text-right text-xs font-bold leading-5 text-slate-400">ID: {request.id}</p>
           </div>
-          <button onClick={onClose}><X className="h-4 w-4" /></button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
+            aria-label="إغلاق تفاصيل طلب إضافة الرصيد"
+            title="إغلاق"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-2">
-            <Info label="المبلغ المطلوب" value={request.amountLabel} />
-            <Info label="القيمة المكافئة بالدولار" value={request.amountUsdLabel} />
-            <Info label="العملة" value={request.currency} />
-            <Info label="الحالة" value={statusMeta[request.status]?.[0] || request.statusLabel} />
-            <Info label="طريقة الدفع" value={request.paymentMethodId || "-"} />
-            <Info label="تاريخ الإنشاء" value={request.createdAtLabel} />
-            <Info label="تاريخ المراجعة" value={request.reviewedAtLabel || "-"} />
-            <Info label="راجعه" value={request.reviewedBy?.name || "-"} />
-          </div>
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-[#0B1220]/70">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black text-slate-400">المستخدم</p>
+                <h3 className="mt-1 break-words text-lg font-black text-slate-950 dark:text-white">{request.user?.name || "مستخدم غير معروف"}</h3>
+                <p dir="ltr" className="mt-0.5 break-all text-right text-xs font-bold leading-5 text-slate-500 dark:text-slate-300">{request.user?.email || request.user?.id || "-"}</p>
+              </div>
+              <Badge status={request.status} />
+            </div>
+          </section>
 
-          <section className="mt-3 rounded-2xl border border-slate-200 p-3 dark:border-white/10">
+          <section className="rounded-2xl border border-slate-200 p-3 dark:border-white/10 sm:p-4">
+            <h3 className="text-sm font-black dark:text-white">بيانات طلب إضافة الرصيد</h3>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <DetailInfo label="المبلغ المطلوب" value={request.amountLabel} emphasis />
+              <DetailInfo label="القيمة المكافئة بالدولار" value={request.amountUsdLabel} emphasis />
+              <DetailInfo label="العملة" value={request.currency} />
+              <DetailInfo label="الحالة" value={reviewStatus} />
+              <DetailInfo label="طريقة الدفع" value={request.paymentMethodId || "-"} />
+              <DetailInfo label="سعر الصرف" value={request.exchangeRate ? String(request.exchangeRate) : "-"} dir="ltr" />
+              <DetailInfo label="تاريخ الإنشاء" value={request.createdAtLabel} />
+              <DetailInfo label="تاريخ المراجعة" value={request.reviewedAtLabel || "-"} />
+              <DetailInfo label="راجعه" value={request.reviewedBy?.name || request.reviewedBy?.email || "-"} />
+              <DetailInfo label="معرّف المستخدم" value={request.user?.id || "-"} dir="ltr" />
+              <DetailInfo label="معرّف الطلب" value={request.id} dir="ltr" />
+              <DetailInfo label="الإيصال" value={request.receiptImage || "-"} dir="ltr" />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 p-3 dark:border-white/10 sm:p-4">
             <h3 className="text-sm font-black dark:text-white">ملاحظات العميل والإيصال</h3>
-            <p className="mt-2 rounded-xl bg-slate-50 p-3 text-sm font-bold leading-6 text-slate-600 dark:bg-[#0B1220] dark:text-slate-300">
+            <p className="mt-2 whitespace-pre-wrap break-words rounded-xl bg-slate-50 p-3 text-sm font-bold leading-7 text-slate-600 dark:bg-[#0B1220] dark:text-slate-300">
               {request.notes || "لا توجد ملاحظات من العميل."}
             </p>
             {request.receiptUrl ? (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <a
-                  href={request.receiptUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 text-sm font-black text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300"
-                >
-                  <Eye className="h-4 w-4" />
-                  فتح الإيصال
-                </a>
+              <div className="mt-3">
                 <button
                   type="button"
                   onClick={() => setReceiptOpen(true)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-white sm:w-auto sm:px-5"
                 >
                   <ReceiptText className="h-4 w-4" />
                   معاينة الصورة
@@ -353,19 +398,19 @@ function RequestDetails({ actionKey, request, onClose, onReview }) {
             )}
           </section>
 
-          <section className="mt-3 rounded-2xl border border-slate-200 p-3 dark:border-white/10">
+          <section className="rounded-2xl border border-slate-200 p-3 dark:border-white/10 sm:p-4">
             <h3 className="text-sm font-black dark:text-white">ملاحظة الإدارة</h3>
             <textarea
               value={adminNotes}
               onChange={(event) => setAdminNotes(event.target.value)}
               disabled={!canReview || busy}
               placeholder="ملاحظة اختيارية عند القبول أو الرفض"
-              className="mt-2 min-h-24 w-full rounded-2xl bg-slate-50 p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-300 disabled:opacity-70 dark:bg-[#0B1220] dark:text-white"
+              className="mt-2 min-h-28 w-full resize-y rounded-2xl bg-slate-50 p-3 text-sm font-bold leading-7 outline-none focus:ring-2 focus:ring-violet-300 disabled:opacity-70 dark:bg-[#0B1220] dark:text-white"
             />
           </section>
 
           {canReview ? (
-            <div className="sticky bottom-0 z-10 -mx-4 mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 bg-white p-4 shadow-[0_-12px_28px_rgba(15,23,42,0.10)] sm:-mx-5 sm:p-5 dark:border-white/10 dark:bg-[#111827]">
+            <div className="sticky bottom-0 z-10 -mx-4 mt-3 grid grid-cols-1 gap-2 border-t border-slate-200 bg-white p-4 shadow-[0_-12px_28px_rgba(15,23,42,0.10)] sm:-mx-5 sm:grid-cols-2 sm:p-5 dark:border-white/10 dark:bg-[#111827]">
               <button
                 onClick={() => onReview(request, "reject", adminNotes)}
                 disabled={busy}
@@ -378,26 +423,41 @@ function RequestDetails({ actionKey, request, onClose, onReview }) {
                 disabled={busy}
                 className="h-11 rounded-xl bg-emerald-600 text-sm font-black text-white disabled:opacity-60"
               >
-                اعتماد الطلب في الخادم
+                قبول الطلب في الخادم
               </button>
             </div>
           ) : (
-            <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm font-bold text-slate-500 dark:bg-[#0B1220] dark:text-slate-300">
-              تمت مراجعة هذا الطلب بالفعل. حالة المحفظة المعروضة مأخوذة من بيانات الخادم فقط.
-            </p>
+            <div className={`mt-3 flex items-start gap-2 rounded-xl border p-3 text-sm font-bold leading-6 ${reviewedNotice.className}`}>
+              <ReviewedNoticeIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{reviewedNotice.text}</p>
+            </div>
           )}
         </div>
       </section>
 
       {receiptOpen && (
         <div className="fixed inset-0 z-[1010] grid place-items-center bg-slate-950/80 p-4" onClick={() => setReceiptOpen(false)}>
-          <div className="max-h-[85vh] max-w-[720px] overflow-hidden rounded-[24px] bg-white p-2">
-            <img src={request.receiptUrl} alt="إيصال الإيداع" className="max-h-[80vh] w-full object-contain" />
+          <div className="max-h-[85vh] w-full max-w-[860px] overflow-hidden rounded-[24px] bg-white p-2 dark:bg-[#111827]">
+            <img src={request.receiptUrl} alt="إيصال طلب إضافة الرصيد" className="max-h-[80vh] w-full object-contain" />
           </div>
         </div>
       )}
     </div>,
     document.body,
+  );
+}
+
+function DetailInfo({ dir, emphasis = false, label, value }) {
+  return (
+    <div className="min-w-0 rounded-xl bg-slate-50 p-3 dark:bg-[#0B1220]">
+      <p className="text-[10px] font-black text-slate-400">{label}</p>
+      <p
+        dir={dir}
+        className={`mt-1 break-words text-sm font-black leading-6 dark:text-white ${dir === "ltr" ? "text-right" : ""} ${emphasis ? "text-violet-700 dark:text-violet-300" : "text-slate-800"}`}
+      >
+        {value || "-"}
+      </p>
+    </div>
   );
 }
 

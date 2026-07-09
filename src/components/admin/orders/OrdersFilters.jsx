@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  CalendarDays,
   ChevronDown,
   Filter,
   RotateCcw,
@@ -9,6 +8,7 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
+import DateFilterPicker from "../../DateFilterPicker";
 
 const statusOptions = [
   ["all", "كل الحالات"],
@@ -24,9 +24,12 @@ const statusOptions = [
 export default function OrdersFilters({ filters, onChange, onApply, onReset, activeCount = 0 }) {
   const [isOpen, setIsOpen] = useState(true);
   const update = (key) => (event) => onChange(key, event.target.value);
+  const updateDateRange = (range) => {
+    Object.entries(range).forEach(([key, value]) => onChange(key, value));
+  };
 
   return (
-    <section className="overflow-hidden rounded-[24px] border border-slate-200/90 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.12)]">
+    <section className="overflow-visible rounded-[24px] border border-slate-200/90 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.12)]">
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
@@ -59,7 +62,7 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
         id="orders-filters-content"
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
       >
-        <div className="overflow-hidden">
+        <div className={isOpen ? "overflow-visible" : "overflow-hidden"}>
           <form onSubmit={onApply} className="border-t border-slate-100 px-4 pb-4 pt-4 sm:px-5 sm:pb-5 dark:border-white/[0.07]">
             <div className="grid gap-3 lg:grid-cols-[1fr_260px]">
               <label className="relative block">
@@ -102,16 +105,12 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
                 </select>
               </FilterField>
 
-              <FilterField label="التاريخ" icon={CalendarDays}>
-                <select value={filters.datePreset} onChange={update("datePreset")} className={fieldClassName}>
-                  <option value="all">كل الفترات</option>
-                  <option value="today">اليوم</option>
-                  <option value="last7">آخر 7 أيام</option>
-                  <option value="last30">آخر 30 يومًا</option>
-                  <option value="month">هذا الشهر</option>
-                  <option value="custom">فترة مخصصة</option>
-                </select>
-              </FilterField>
+              <DateFilterPicker
+                from={filters.dateFrom}
+                to={filters.dateTo}
+                preset={filters.datePreset === "month" ? "thisMonth" : filters.datePreset}
+                onChange={updateDateRange}
+              />
 
               <FilterField label="ترتيب الصفحة" icon={SlidersHorizontal}>
                 <select value={filters.sort} onChange={update("sort")} className={fieldClassName}>
@@ -120,17 +119,6 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
                 </select>
               </FilterField>
             </div>
-
-            {filters.datePreset === "custom" && (
-              <div className="mt-3 grid gap-3 rounded-2xl border border-violet-200/70 bg-violet-50/55 p-3 sm:grid-cols-2 dark:border-violet-400/15 dark:bg-violet-500/[0.06]">
-                <FilterField label="من" icon={CalendarDays}>
-                  <input type="date" value={filters.dateFrom} onChange={update("dateFrom")} className={fieldClassName} />
-                </FilterField>
-                <FilterField label="إلى" icon={CalendarDays}>
-                  <input type="date" value={filters.dateTo} min={filters.dateFrom || undefined} onChange={update("dateTo")} className={fieldClassName} />
-                </FilterField>
-              </div>
-            )}
 
             <div className="mt-4 grid grid-cols-2 gap-2.5 sm:flex sm:justify-end">
               <button

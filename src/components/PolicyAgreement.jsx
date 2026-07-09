@@ -1,6 +1,7 @@
 import { FileText, PackageCheck, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { BrandName } from "./Brand";
 
 const policyIcons = [ShieldCheck, RotateCcw, PackageCheck];
 const policyPaths = [
@@ -55,7 +56,7 @@ export function PoliciesModal({ onClose }) {
                 <img src="/logo.png" alt="Winnie Fun" className="h-12 w-12 object-contain drop-shadow-[0_6px_12px_rgba(76,29,149,0.22)] dark:brightness-110 dark:drop-shadow-[0_0_14px_rgba(192,132,252,0.50)]" />
               </span>
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#BAF1FF]">Winnie Fun</p>
+                <BrandName size="tiny" />
                 <h2 id="policies-title" className="mt-1 text-2xl font-black">
                   {t("agreement.title")}
                 </h2>

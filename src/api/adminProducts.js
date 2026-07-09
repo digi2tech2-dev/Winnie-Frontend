@@ -314,16 +314,31 @@ export function buildAdminProductPayload(form = {}, options = {}) {
   const orderFields = includeOrderFields && fieldsSource !== undefined ? buildOrderFields(fieldsSource) : undefined;
   const dynamicFields = includeDynamicFields && fieldsSource !== undefined ? buildDynamicFields(fieldsSource) : undefined;
   const image = toPayloadImage(form.image);
+  const linkType = String(form.linkType || "").toLowerCase();
+  const pricingMode = form.pricingMode || (linkType === "automatic" ? "sync" : linkType === "manual" ? "manual" : undefined);
+  const syncPriceWithProvider = typeof form.syncPriceWithProvider === "boolean"
+    ? form.syncPriceWithProvider
+    : typeof form.syncPriceFromProvider === "boolean"
+      ? form.syncPriceFromProvider
+      : undefined;
 
   return compactObject({
     name: firstNonEmpty(form.nameAr, form.name, form.nameEn, form.title),
+    nameEn: firstNonEmpty(form.nameEn),
     description: form.description,
     category,
     image,
     basePrice: priceValue === undefined ? undefined : Math.max(0, toNumber(priceValue, 0)),
+    finalPrice: priceValue === undefined ? undefined : Math.max(0, toNumber(priceValue, 0)),
+    originalPrice: form.originalPrice === undefined ? undefined : Math.max(0, toNumber(form.originalPrice, 0)),
+    discountPercentage: form.discountPercentage === undefined ? undefined : Math.min(100, Math.max(0, toNumber(form.discountPercentage, 0))),
+    profitMargin: form.profitMargin === undefined ? undefined : toNumber(form.profitMargin, 0),
+    supplierPrice: form.supplierPrice === undefined ? undefined : Math.max(0, toNumber(form.supplierPrice, 0)),
     minQty: minQty === undefined ? undefined : Math.max(1, toNumber(minQty, 1)),
     maxQty: maxQty === undefined ? undefined : Math.max(Math.max(1, toNumber(minQty, 1)), toNumber(maxQty, Math.max(1, toNumber(minQty, 1)))),
     displayOrder: form.displayOrder === undefined ? undefined : toNumber(form.displayOrder, 0),
+    pricingMode,
+    syncPriceWithProvider,
     isActive,
     visibleInStore: includeVisibility ? visibleInStore : undefined,
     isPaused: includePaused ? isPaused : undefined,
@@ -343,8 +358,8 @@ export function buildAdminProductUpdatePayload(form = {}, previousProduct = null
   const nextPayload = buildAdminProductPayload(form, {
     includeDynamicFields: false,
     includeOrderFields: true,
-    includePaused: false,
-    includeVisibility: false,
+    includePaused: true,
+    includeVisibility: true,
   });
 
   if (!previousProduct) {
@@ -355,8 +370,8 @@ export function buildAdminProductUpdatePayload(form = {}, previousProduct = null
   const previousPayload = buildAdminProductPayload(previousProduct, {
     includeDynamicFields: false,
     includeOrderFields: true,
-    includePaused: false,
-    includeVisibility: false,
+    includePaused: true,
+    includeVisibility: true,
   });
 
   const diffPayload = Object.entries(nextPayload).reduce((payload, [key, value]) => {

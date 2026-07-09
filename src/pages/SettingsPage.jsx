@@ -8,8 +8,6 @@ const languageOptions = [
   { value: "en", label: "English", noteKey: "languageOptions.enNote" },
 ];
 
-const defaultCurrencyOptions = ["USD", "EUR", "AED", "EGP"];
-
 const defaultPreferences = {
   orderUpdates: true,
   walletAlerts: true,
@@ -23,15 +21,12 @@ export default function SettingsPage({
   theme,
   language,
   currency,
-  currencyDisabled = false,
   currencyNote = "",
-  currencyOptions = defaultCurrencyOptions,
   isSaving = false,
   languageLocked = false,
   saveDisabled = false,
   onThemeChange,
   onLanguageChange,
-  onCurrencyChange,
   onSave,
 }) {
   const { clearToasts, showToast } = useToast();
@@ -76,7 +71,6 @@ export default function SettingsPage({
 
   const reset = () => {
     if (!languageLocked) onLanguageChange("ar");
-    onCurrencyChange("USD");
     onThemeChange("light");
     setPreferences(defaultPreferences);
     showToast({ type: "info", title: t("resetTitle"), message: t("resetMessage") });
@@ -111,19 +105,10 @@ export default function SettingsPage({
         </SettingsPanel>
 
         <SettingsPanel icon={WalletCards} title={t("currencyTitle")} description={t("currencyDescription")}>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {currencyOptions.map((option) => (
-              <ChoiceCard
-                key={option}
-                active={currency === option}
-                disabled={currencyDisabled}
-                title={option}
-                onClick={() => onCurrencyChange(option)}
-                compact
-              />
-            ))}
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-400/20 dark:bg-violet-500/10">
+            <strong dir="ltr" className="block text-base font-black text-violet-800 dark:text-violet-200">{currency}</strong>
+            <span className="mt-1 block text-xs font-bold text-slate-500 dark:text-slate-400">{currencyNote}</span>
           </div>
-          {currencyNote && <p className="text-[10px] font-bold leading-5 text-slate-500 dark:text-slate-400">{currencyNote}</p>}
         </SettingsPanel>
 
         <SettingsPanel icon={Moon} title={t("appearanceTitle")} description={t("appearanceDescription")}>

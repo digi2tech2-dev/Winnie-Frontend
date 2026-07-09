@@ -108,23 +108,23 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
             aria-label={t("search.dialogLabel")}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="border-b border-sky-100/90 p-3 dark:border-white/10 sm:p-4">
+            <div className="border-b border-sky-100/90 p-2.5 dark:border-white/10 sm:p-3">
               <div className="flex items-center gap-2">
                 <label className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B5CF6]" />
+                  <Search className="pointer-events-none absolute right-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[#8B5CF6]" />
                   <input
                     ref={inputRef}
                     type="search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder={t("search.placeholder")}
-                    className="h-14 w-full rounded-2xl border border-sky-100 bg-[#F8FCFF] pl-4 pr-12 text-base font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#A855F7]/70 focus:ring-4 focus:ring-[#EDE9FE] dark:border-white/10 dark:bg-[#0D1324] dark:text-white dark:placeholder:text-[#8A94A7] dark:focus:border-[#8B5CF6]/70 dark:focus:ring-[#8B5CF6]/18"
+                    className="h-11 w-full rounded-xl border border-sky-100 bg-[#F8FCFF] pl-3 pr-10 text-sm font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#A855F7]/70 focus:ring-4 focus:ring-[#EDE9FE] dark:border-white/10 dark:bg-[#0D1324] dark:text-white dark:placeholder:text-[#8A94A7] dark:focus:border-[#8B5CF6]/70 dark:focus:ring-[#8B5CF6]/18"
                   />
                 </label>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-sky-100 bg-white text-slate-500 transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] hover:text-[#7C3AED] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#1A2335] dark:hover:text-white"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-sky-100 bg-white text-slate-500 transition hover:border-[#C4B5FD] hover:bg-[#F5F3FF] hover:text-[#7C3AED] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#1A2335] dark:hover:text-white"
                   aria-label={t("search.close")}
                   title={t("actions.close")}
                 >
@@ -144,7 +144,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
               </div>
 
               {shownProducts.length ? (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {shownProducts.map((product) => (
                     <SearchProductCard
                       key={product.id || `${product.groupId}-${product.name}`}
@@ -183,17 +183,17 @@ function SearchProductCard({ product, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group min-w-0 overflow-hidden rounded-2xl border border-sky-100 bg-white text-right shadow-[0_14px_34px_rgba(14,165,233,0.10)] transition hover:-translate-y-1 hover:border-[#C4B5FD] hover:shadow-[0_18px_44px_rgba(124,58,237,0.16)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.14)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
+      className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-sky-100 bg-white p-2 text-right shadow-[0_8px_20px_rgba(14,165,233,0.08)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:shadow-[0_12px_28px_rgba(124,58,237,0.12)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_14px_rgba(139,92,246,0.10)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
     >
-      <span className={`relative grid aspect-[4/3] place-items-center overflow-hidden bg-gradient-to-br ${tone}`}>
+      <span className={`relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-gradient-to-br ${tone}`}>
         <span className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.38),transparent_32%),linear-gradient(180deg,transparent,rgba(2,6,23,0.34))]" />
-        <Icon className="relative h-10 w-10 text-white drop-shadow-xl transition group-hover:scale-110 sm:h-12 sm:w-12" />
+        <Icon className="relative h-5 w-5 text-white drop-shadow-lg transition group-hover:scale-110" />
       </span>
-      <span className="block p-3">
-        <span className="block truncate text-sm font-black text-slate-950 dark:text-white">{product.name}</span>
-        <span className="mt-1 block truncate text-xs font-bold text-slate-500 dark:text-[#8A94A7]">{product.groupTitle}</span>
+      <span className="block min-w-0 flex-1">
+        <span className="block truncate text-xs font-black leading-5 text-slate-950 dark:text-white">{product.name}</span>
+        <span className="block truncate text-[10px] font-bold leading-4 text-slate-500 dark:text-[#8A94A7]">{product.groupTitle}</span>
         {product.price ? (
-          <span dir="ltr" className="mt-2 block text-sm font-black text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
+          <span dir="ltr" className="block text-[11px] font-black leading-4 text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
         ) : null}
       </span>
     </button>

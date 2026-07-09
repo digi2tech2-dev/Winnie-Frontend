@@ -45,7 +45,7 @@
     "nameHelper": "Saved through the backend profile route.",
     "usernameHelper": "Optional account username saved by the backend.",
     "emailHelper": "Email is not updated from this profile form.",
-    "currencyHelper": "Change your active currency from Settings.",
+    "currencyHelper": "Account currency is set by an administrator.",
     "saveChanges": "Save changes",
     "saving": "Saving...",
     "changePassword": "Change password",

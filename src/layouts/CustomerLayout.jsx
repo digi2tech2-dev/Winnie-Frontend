@@ -233,7 +233,7 @@ export default function CustomerLayout() {
   }, [t]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
+    <div className="customer-app-shell min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
       <div dir="ltr" className="flex min-h-screen flex-row-reverse">
         <DashboardSidebar
           items={customerNavItems}
@@ -242,7 +242,7 @@ export default function CustomerLayout() {
           walletBalance={walletSummary?.balanceLabel || "$0.00"}
           variant="customer"
         />
-        <div dir={language === "ar" ? "rtl" : "ltr"} className="min-w-0 flex-1">
+        <div dir={language === "ar" ? "rtl" : "ltr"} className="customer-app-content min-w-0 flex-1">
           <CustomerHeader
             notificationItems={notificationItems}
             notificationsLoading={notificationsLoading}
@@ -257,7 +257,7 @@ export default function CustomerLayout() {
             className={
               isAboutPage
                 ? "pb-28 pt-[84px] sm:pt-[92px] xl:pb-12"
-                : "mx-auto max-w-[1160px] px-4 pb-28 pt-[90px] sm:px-6 sm:pt-[98px] lg:px-8 xl:pb-12"
+                : "customer-app-main mx-auto max-w-[1160px] px-4 pb-28 pt-[90px] sm:px-6 sm:pt-[98px] lg:px-8 xl:pb-12"
             }
           >
             <BackButton

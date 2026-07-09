@@ -1,12 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, ChevronLeft, Menu, Search } from "lucide-react";
+import { Bell, ChevronLeft, Menu, Moon, SunMedium } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { resolveBackendAssetUrl } from "../api/adapters";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import HeaderSearchOverlay from "./HeaderSearchOverlay";
 import { iconMap } from "./icons";
 import { getNotificationIconName } from "../utils/notificationNavigation";
+import { BrandName } from "./Brand";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
@@ -33,6 +35,7 @@ export default function CustomerHeader({
   unreadNotificationCount = 0,
 }) {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -87,6 +90,13 @@ export default function CustomerHeader({
   }, []);
 
   useEffect(() => {
+    const openSearchFromPage = () => setSearchOpen(true);
+
+    window.addEventListener("winnie-open-search", openSearchFromPage);
+    return () => window.removeEventListener("winnie-open-search", openSearchFromPage);
+  }, []);
+
+  useEffect(() => {
     if (!notificationsOpen) return undefined;
 
     const closeOnOutsideClick = (event) => {
@@ -113,34 +123,35 @@ export default function CustomerHeader({
     closeNotifications();
     navigate("/customer/notifications");
   };
+  const isDarkTheme = theme === "dark";
+  const switchTheme = () => setTheme(isDarkTheme ? "light" : "dark");
 
   return (
     <>
-      <header dir="ltr" className="site-header-warm fixed inset-x-0 top-0 z-[70] overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
+      <header dir="ltr" className="customer-header winnie-mobile-topbar site-header-warm fixed inset-x-0 top-0 z-[70] overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
         <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
         <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-400/10" />
-        <div className="relative mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
-          <Link to="/customer/dashboard" className="flex min-w-0 items-center gap-0.5 text-left sm:gap-1.5">
-            <img src="/logo.png" alt={t("app.logoAlt")} className="h-10 w-10 shrink-0 object-contain sm:h-[52px] sm:w-[52px]" />
+        <div className="winnie-mobile-topbar-shell relative mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
+          <Link to="/customer/dashboard" className="primary-header-brand winnie-mobile-brand flex min-w-0 items-center gap-0.5 text-left sm:gap-1.5">
+            <img src="/logo.png" alt={t("app.logoAlt")} className="h-12 w-12 shrink-0 object-contain sm:h-[60px] sm:w-[60px]" />
             <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_18px_rgba(139,92,246,0.25)] sm:-ml-1">
-              <span className="block truncate text-2xl font-black italic tracking-wide text-slate-950 dark:text-white sm:text-3xl">
-                innie
-              </span>
-              <span className="mt-0.5 block text-[9px] font-black uppercase tracking-[0.3em] text-[#A855F7] sm:text-[11px] sm:tracking-[0.34em]">
-                Fun
-              </span>
+              <BrandName size="adminHeader" />
             </span>
           </Link>
 
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="winnie-mobile-left-actions ml-auto flex items-center gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={() => setSearchOpen(true)}
+              onClick={switchTheme}
               className="grid h-11 w-11 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A] sm:h-12 sm:w-12"
-              aria-label={t("search.open")}
-              title={t("actions.search")}
+              aria-label={isDarkTheme ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الغامق"}
+              title={isDarkTheme ? "الوضع الفاتح" : "الوضع الغامق"}
             >
-              <Search className="h-6 w-6 stroke-[1.8]" />
+              {isDarkTheme ? (
+                <SunMedium className="h-6 w-6 stroke-[1.9] text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.48)]" />
+              ) : (
+                <Moon className="h-6 w-6 stroke-[1.9] text-violet-700 drop-shadow-[0_0_10px_rgba(124,58,237,0.22)]" />
+              )}
             </button>
 
             <div ref={notificationsRef} className="relative">
@@ -162,7 +173,7 @@ export default function CustomerHeader({
               </button>
 
               {notificationsOpen ? (
-                <div dir="rtl" role="dialog" aria-label={t("nav.notifications")} className="absolute -right-14 top-[calc(100%+12px)] z-[90] w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-violet-200/80 bg-white/95 text-right shadow-[0_28px_80px_rgba(76,29,149,0.28),0_0_0_1px_rgba(255,255,255,0.65)] backdrop-blur-2xl dark:border-violet-400/20 dark:bg-[linear-gradient(160deg,rgba(15,18,38,0.98),rgba(7,11,25,0.98))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_35px_rgba(139,92,246,0.14)] sm:right-0">
+                <div dir="rtl" role="dialog" aria-label={t("nav.notifications")} className="customer-notifications-popover absolute -right-14 top-[calc(100%+12px)] z-[90] w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-violet-200/80 bg-white/95 text-right shadow-[0_28px_80px_rgba(76,29,149,0.28),0_0_0_1px_rgba(255,255,255,0.65)] backdrop-blur-2xl dark:border-violet-400/20 dark:bg-[linear-gradient(160deg,rgba(15,18,38,0.98),rgba(7,11,25,0.98))] dark:shadow-[0_30px_90px_rgba(0,0,0,0.58),0_0_35px_rgba(139,92,246,0.14)] sm:right-0">
                   <div className="relative flex items-center justify-between overflow-hidden border-b border-violet-100 bg-[linear-gradient(135deg,rgba(245,243,255,0.96),rgba(240,249,255,0.9))] px-4 py-4 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(124,58,237,0.16),rgba(14,165,233,0.08))]">
                     <span aria-hidden="true" className="absolute -left-8 -top-12 h-24 w-24 rounded-full bg-sky-400/20 blur-2xl" />
                     <div className="relative flex items-center gap-3">
@@ -205,7 +216,9 @@ export default function CustomerHeader({
                 </div>
               ) : null}
             </div>
+          </div>
 
+          <div className="winnie-mobile-right-actions flex items-center gap-2 sm:gap-3">
             <Link
               to="/customer/profile"
               className="relative block h-11 w-11 overflow-hidden rounded-full border-2 border-[#C4B5FD]/72 bg-white shadow-[0_12px_28px_rgba(14,165,233,0.16)] transition hover:-translate-y-0.5 hover:border-[#8B5CF6] dark:border-[#A855F7]/72 dark:bg-[#151827] dark:shadow-[0_0_24px_rgba(168,85,247,0.30)] sm:h-12 sm:w-12"

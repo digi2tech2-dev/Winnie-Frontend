@@ -1,5 +1,10 @@
 # Frontend to Backend Handoff
 
+> Current contract update: customer account currency is read-only and may only
+> be changed through admin controls. Normal email/password registration remains
+> pending until email verification; successful verification activates the
+> account immediately without a separate admin approval step.
+
 ## Arabic Summary
 
 هذه المنصة هي واجهة أمامية لمنصة شحن محفظة وخدمات رقمية ومنتجات إلكترونية. المستخدم يسجل الدخول، يشحن رصيده بطرق دفع مختلفة منها Visa/Mastercard/Apple Pay، يشتري منتجات رقمية من أقسام متعددة، ويتابع الطلبات والمعاملات والإشعارات. توجد لوحة أدمن لإدارة المستخدمين، المجموعات، المنتجات، الموردين، طرق الدفع، طلبات الرصيد، الطلبات، العملات، المشرفين، وطلبات الوكيل الفرعي.
