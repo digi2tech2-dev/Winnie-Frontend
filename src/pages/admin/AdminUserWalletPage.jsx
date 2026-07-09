@@ -31,10 +31,9 @@ import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
 const pageSize = 20;
-const adjustmentReasons = { ADD: "شحن يدوي", DEDUCT: "خصم إداري" };
 const creditChangeReason = "عميل موثوق";
 const groupChangeReason = "ترقية لعميل مميز";
-const defaultAdjustmentForm = { amount: "" };
+const defaultAdjustmentForm = { amount: "", reason: "" };
 const defaultCreditForm = { creditLimit: "" };
 const defaultGroupForm = { groupId: "" };
 const defaultFormErrors = { account: "", adjustment: "" };
@@ -225,19 +224,27 @@ export default function AdminUserWalletPage() {
       return;
     }
 
+    const reason = adjustmentForm.reason.trim();
+    if (!reason) {
+      const message = "يجب كتابة سبب التعديل قبل تنفيذ العملية";
+      setFormErrors((current) => ({ ...current, adjustment: message }));
+      showToast({ type: "error", title: "سبب التعديل مطلوب", message });
+      return;
+    }
+
     const balanceBefore = Number(wallet?.balance || 0);
     const balanceAfter = type === "DEDUCT" ? balanceBefore - amount : balanceBefore + amount;
-    setWalletConfirmation({ type, amount, balanceBefore, balanceAfter });
+    setWalletConfirmation({ type, amount, reason, balanceBefore, balanceAfter });
   };
 
   const confirmWalletAdjustment = async () => {
     if (!walletConfirmation || !token || !id) return;
 
-    const { type, amount } = walletConfirmation;
+    const { type, amount, reason } = walletConfirmation;
 
     setActionKey(`wallet:${type}`);
     try {
-      const result = await adjustAdminUserWallet(token, id, { type, amount, reason: adjustmentReasons[type] });
+      const result = await adjustAdminUserWallet(token, id, { type, amount, reason });
       showToast({
         type: "success",
         title: type === "DEDUCT" ? "تم خصم الرصيد" : "تمت زيادة الرصيد",
@@ -248,7 +255,12 @@ export default function AdminUserWalletPage() {
       setFormErrors((current) => ({ ...current, adjustment: "" }));
       await load();
     } catch (requestError) {
-      const message = buildAdminActionError(requestError, type === "DEDUCT" ? "خصم الرصيد" : "زيادة الرصيد");
+      const missingReason = requestError?.code === "ADJUSTMENT_REASON_REQUIRED" ||
+        requestError?.fieldErrors?.reason ||
+        /reason/i.test(String(requestError?.message || requestError?.userMessage || ""));
+      const message = missingReason
+        ? "يجب كتابة سبب التعديل قبل تنفيذ العملية"
+        : buildAdminActionError(requestError, type === "DEDUCT" ? "خصم الرصيد" : "زيادة الرصيد");
       setFormErrors((current) => ({ ...current, adjustment: message }));
       showToast({
         type: "error",
@@ -389,6 +401,18 @@ export default function AdminUserWalletPage() {
                   setFormErrors((current) => ({ ...current, adjustment: "" }));
                 }}
                 placeholder="0.00"
+              />
+            </FormField>
+            <FormField label="سبب التعديل">
+              <textarea
+                value={adjustmentForm.reason}
+                onChange={(event) => {
+                  setAdjustmentForm((current) => ({ ...current, reason: event.target.value }));
+                  setFormErrors((current) => ({ ...current, adjustment: "" }));
+                }}
+                maxLength={500}
+                placeholder="اكتب سبب الزيادة أو الخصم"
+                rows={3}
               />
             </FormField>
           </div>
@@ -688,7 +712,7 @@ function FormField({ label, children }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[10px] font-black text-slate-500 dark:text-slate-300">{label}</span>
-      <span className="block [&>input]:h-12 [&>input]:w-full [&>input]:rounded-xl [&>input]:border [&>input]:border-slate-200 [&>input]:bg-white [&>input]:px-3.5 [&>input]:text-base [&>input]:font-black [&>input]:text-slate-950 [&>input]:outline-none [&>input]:transition [&>input]:focus:border-violet-400 [&>input]:focus:ring-4 [&>input]:focus:ring-violet-500/10 [&>input]:dark:border-white/10 [&>input]:dark:bg-[#111827] [&>input]:dark:text-white [&>select]:h-12 [&>select]:w-full [&>select]:rounded-xl [&>select]:border [&>select]:border-slate-200 [&>select]:bg-white [&>select]:px-3.5 [&>select]:text-sm [&>select]:font-black [&>select]:text-slate-950 [&>select]:outline-none [&>select]:transition [&>select]:focus:border-violet-400 [&>select]:focus:ring-4 [&>select]:focus:ring-violet-500/10 [&>select]:dark:border-white/10 [&>select]:dark:bg-[#111827] [&>select]:dark:text-white">
+      <span className="block [&>input]:h-12 [&>input]:w-full [&>input]:rounded-xl [&>input]:border [&>input]:border-slate-200 [&>input]:bg-white [&>input]:px-3.5 [&>input]:text-base [&>input]:font-black [&>input]:text-slate-950 [&>input]:outline-none [&>input]:transition [&>input]:focus:border-violet-400 [&>input]:focus:ring-4 [&>input]:focus:ring-violet-500/10 [&>input]:dark:border-white/10 [&>input]:dark:bg-[#111827] [&>input]:dark:text-white [&>select]:h-12 [&>select]:w-full [&>select]:rounded-xl [&>select]:border [&>select]:border-slate-200 [&>select]:bg-white [&>select]:px-3.5 [&>select]:text-sm [&>select]:font-black [&>select]:text-slate-950 [&>select]:outline-none [&>select]:transition [&>select]:focus:border-violet-400 [&>select]:focus:ring-4 [&>select]:focus:ring-violet-500/10 [&>select]:dark:border-white/10 [&>select]:dark:bg-[#111827] [&>select]:dark:text-white [&>textarea]:min-h-24 [&>textarea]:w-full [&>textarea]:resize-y [&>textarea]:rounded-xl [&>textarea]:border [&>textarea]:border-slate-200 [&>textarea]:bg-white [&>textarea]:px-3.5 [&>textarea]:py-3 [&>textarea]:text-sm [&>textarea]:font-bold [&>textarea]:leading-6 [&>textarea]:text-slate-950 [&>textarea]:outline-none [&>textarea]:transition [&>textarea]:focus:border-violet-400 [&>textarea]:focus:ring-4 [&>textarea]:focus:ring-violet-500/10 [&>textarea]:dark:border-white/10 [&>textarea]:dark:bg-[#111827] [&>textarea]:dark:text-white">
         {children}
       </span>
     </label>

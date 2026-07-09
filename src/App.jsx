@@ -39,6 +39,7 @@ const CustomerSubAgent = lazy(() => import("./pages/customer/CustomerSubAgent"))
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminOrdersPage = lazy(() => import("./pages/admin/AdminOrdersPage"));
 const AdminPaymentsPage = lazy(() => import("./pages/admin/AdminPaymentsPage"));
+const AdminWalletAdjustmentsPage = lazy(() => import("./pages/admin/AdminWalletAdjustmentsPage"));
 const ProductsManagementPage = lazy(() => import("./pages/admin/ProductsManagementPage"));
 const GroupsManagementPage = lazy(() => import("./pages/admin/GroupsManagementPage"));
 const SuppliersManagementPage = lazy(() => import("./pages/admin/SuppliersManagementPage"));
@@ -166,6 +167,7 @@ export default function App() {
               <Route path="users/:id/wallet" element={<Animated><AdminUserWalletPage /></Animated>} />
               <Route path="orders" element={<Animated><AdminOrdersPage /></Animated>} />
               <Route path="payments" element={<Animated><AdminPaymentsPage /></Animated>} />
+              <Route path="admin-wallet-adjustments" element={<Animated><AdminWalletAdjustmentsPage /></Animated>} />
               <Route path="products" element={<Animated><ProductsManagementPage /></Animated>} />
               <Route path="groups" element={<Animated><GroupsManagementPage /></Animated>} />
               <Route path="suppliers" element={<Animated><SuppliersManagementPage /></Animated>} />

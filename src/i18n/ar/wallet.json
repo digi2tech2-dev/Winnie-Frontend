@@ -72,6 +72,23 @@
     "secureChargeShort": "مبلغ الدفع الآمن",
     "requestedAmountShort": "المبلغ المطلوب"
   },
+  "adminAdjustments": {
+    "title": "الشحن الإداري",
+    "englishTitle": "Admin Wallet Adjustments",
+    "subtitle": "كل عمليات الإضافة والخصم اليدوية التي تمت بواسطة الإدارة",
+    "reasonLabel": "سبب التعديل",
+    "reasonPlaceholder": "اكتب سبب الزيادة أو الخصم",
+    "reasonRequired": "يجب كتابة سبب التعديل قبل تنفيذ العملية",
+    "add": "إضافة",
+    "deduct": "خصم",
+    "totalAdded": "إجمالي الإضافات",
+    "totalDeducted": "إجمالي الخصومات",
+    "net": "صافي التعديلات",
+    "operationCount": "عدد العمليات",
+    "balanceBefore": "الرصيد قبل",
+    "balanceAfter": "الرصيد بعد",
+    "adminActor": "الأدمن المسؤول"
+  },
   "transactions": {
     "title": "معاملات المحفظة",
     "description": "سجل الخادم لحركات حسابك.",

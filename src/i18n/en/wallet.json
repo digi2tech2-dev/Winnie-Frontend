@@ -72,6 +72,23 @@
     "secureChargeShort": "Secure checkout charge",
     "requestedAmountShort": "Requested amount"
   },
+  "adminAdjustments": {
+    "title": "Admin Wallet Adjustments",
+    "arabicTitle": "الشحن الإداري",
+    "subtitle": "All manual balance add/deduct operations performed by admins",
+    "reasonLabel": "Adjustment reason",
+    "reasonPlaceholder": "Write the reason for adding or deducting balance",
+    "reasonRequired": "Please enter a reason before applying the adjustment",
+    "add": "Add",
+    "deduct": "Deduct",
+    "totalAdded": "Total added",
+    "totalDeducted": "Total deducted",
+    "net": "Net adjustments",
+    "operationCount": "Operation count",
+    "balanceBefore": "Balance before",
+    "balanceAfter": "Balance after",
+    "adminActor": "Admin actor"
+  },
   "transactions": {
     "title": "Wallet transactions",
     "description": "Backend ledger history for your account.",
