@@ -82,6 +82,7 @@ export async function apiRequest(endpoint, options = {}) {
 
   const headers = new Headers(customHeaders || {});
   const requestOptions = {
+    cache: "no-store",
     method,
     headers,
     signal,

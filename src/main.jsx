@@ -7,8 +7,11 @@ import { ToastProvider } from "./components/ToastProvider.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { cleanupServiceWorkersAndCaches } from "./utils/disableServiceWorker.js";
 import "./i18n";
 import "./styles.css";
+
+void cleanupServiceWorkersAndCaches();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -27,9 +30,3 @@ createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </StrictMode>,
 );
-
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js");
-  });
-}

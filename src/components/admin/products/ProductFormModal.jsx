@@ -29,6 +29,9 @@ const emptyProduct = {
   max: 1,
   originalPrice: 0,
   finalPrice: 0,
+  supplierPrice: "",
+  supplierMin: 0,
+  supplierMax: 0,
   discountPercentage: 0,
   profitMargin: 0,
   status: "available",
@@ -253,56 +256,57 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     setError("");
     setForm((current) => ({
       ...current,
-      providerProductId: providerProduct.id,
-      providerProductExternalId: providerProduct.externalProductId || "",
-      providerProductMaxQty: providerProduct.maxQty ?? null,
-      providerProductMinQty: providerProduct.minQty ?? null,
-      providerProductName: providerProduct.name,
+      ...buildProviderProductSelectionPatch(providerProduct, current),
     }));
   };
 
   const submit = (event) => {
     event.preventDefault();
     if (saving) return;
-    if (!form.nameAr.trim() || !form.nameEn.trim()) {
+    const selectedProviderProduct = findSelectedProviderProduct(providerLink.providerProducts, form.providerProductId);
+    const effectiveForm = form.syncPriceFromProvider
+      ? applySupplierPriceSync(form, selectedProviderProduct)
+      : form;
+
+    if (!effectiveForm.nameAr.trim() || !effectiveForm.nameEn.trim()) {
       setActiveTab("basic");
       setError("أدخل اسم المنتج بالعربي والإنجليزي.");
       return;
     }
-    if (!form.mainCategoryId) {
+    if (!effectiveForm.mainCategoryId) {
       setActiveTab("basic");
       setError("اختر القسم الرئيسي للمنتج.");
       return;
     }
-    if (Number(form.finalPrice) <= 0) {
+    if (Number(effectiveForm.finalPrice) <= 0) {
       setActiveTab("pricing");
       setError("السعر النهائي يجب أن يكون أكبر من صفر.");
       return;
     }
-    if (Number(form.discountPercentage) < 0 || Number(form.discountPercentage) > 100) {
+    if (Number(effectiveForm.discountPercentage) < 0 || Number(effectiveForm.discountPercentage) > 100) {
       setActiveTab("pricing");
       setError("نسبة الخصم يجب أن تكون بين 0 و100.");
       return;
     }
-    if (Number(form.min) < 1 || Number(form.max) < Number(form.min)) {
+    if (Number(effectiveForm.min) < 1 || Number(effectiveForm.max) < Number(effectiveForm.min)) {
       setActiveTab("pricing");
       setError("تأكد أن حدود الطلب صحيحة وأن الحد الأقصى لا يقل عن الحد الأدنى.");
       return;
     }
-    if (form.linkType === "automatic" && !form.providerId) {
+    if (effectiveForm.linkType === "automatic" && !effectiveForm.providerId) {
       setActiveTab("pricing");
       setError("اختر المورد قبل حفظ الربط الآلي.");
       return;
     }
-    if (form.linkType === "automatic" && !form.providerProductId) {
+    if (effectiveForm.linkType === "automatic" && !effectiveForm.providerProductId) {
       setActiveTab("pricing");
       setError("اختر منتج المورد قبل حفظ الربط الآلي.");
       return;
     }
 
-    const numericOriginalPrice = Number(form.originalPrice) || 0;
-    const numericFinalPrice = Number(form.finalPrice) || 0;
-    const normalizedFields = form.extraFields.map((field, index) => ({
+    const numericOriginalPrice = Number(effectiveForm.originalPrice) || 0;
+    const numericFinalPrice = Number(effectiveForm.finalPrice) || 0;
+    const normalizedFields = effectiveForm.extraFields.map((field, index) => ({
       ...field,
       label: field.label.trim() || `حقل ${index + 1}`,
       key: makeFieldKey(field.key || field.label, index),
@@ -334,28 +338,28 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     }
 
     onSave({
-      ...form,
-      nameAr: form.nameAr.trim(),
-      nameEn: form.nameEn.trim(),
-      description: form.description.trim(),
-      image: form.image || "",
-      displayOrder: Math.max(1, Number(form.displayOrder) || 1),
-      min: Math.max(0, Number(form.min) || 0),
-      max: Math.max(0, Number(form.max) || 0),
-      supplierPrice: Number(form.supplierPrice) || 0,
-      supplierMin: Math.max(0, Number(form.supplierMin) || 0),
-      supplierMax: Math.max(0, Number(form.supplierMax) || 0),
-      originalPrice: numericOriginalPrice,
-      finalPrice: numericFinalPrice,
-      discountPercentage: Math.min(100, Math.max(0, Number(form.discountPercentage) || 0)),
-      profitMargin: numericOriginalPrice > 0 ? Number((((numericFinalPrice - numericOriginalPrice) / numericOriginalPrice) * 100).toFixed(2)) : Number(form.profitMargin) || 0,
-      clearProviderLink: Boolean(form.clearProviderLink),
+      ...effectiveForm,
+      nameAr: effectiveForm.nameAr.trim(),
+      nameEn: effectiveForm.nameEn.trim(),
+      description: effectiveForm.description.trim(),
+      image: effectiveForm.image || "",
+      displayOrder: Math.max(1, Number(effectiveForm.displayOrder) || 1),
+      min: Math.max(0, Number(effectiveForm.min) || 0),
+      max: Math.max(0, Number(effectiveForm.max) || 0),
+      supplierPrice: String(effectiveForm.supplierPrice ?? "").trim(),
+      supplierMin: Math.max(0, Number(effectiveForm.supplierMin) || 0),
+      supplierMax: Math.max(0, Number(effectiveForm.supplierMax) || 0),
+      originalPrice: String(effectiveForm.originalPrice ?? "").trim(),
+      finalPrice: String(effectiveForm.finalPrice ?? "").trim(),
+      discountPercentage: Math.min(100, Math.max(0, Number(effectiveForm.discountPercentage) || 0)),
+      profitMargin: numericOriginalPrice > 0 ? Number((((numericFinalPrice - numericOriginalPrice) / numericOriginalPrice) * 100).toFixed(2)) : Number(effectiveForm.profitMargin) || 0,
+      clearProviderLink: Boolean(effectiveForm.clearProviderLink),
       extraFields: normalizedFields,
-      providerId: form.providerId,
-      providerProductId: form.providerProductId,
-      syncLimits: Boolean(form.syncLimitsFromProvider),
-      syncName: Boolean(form.syncNameFromProvider),
-      syncPrice: Boolean(form.syncPriceFromProvider),
+      providerId: effectiveForm.providerId,
+      providerProductId: effectiveForm.providerProductId,
+      syncLimits: Boolean(effectiveForm.syncLimitsFromProvider),
+      syncName: Boolean(effectiveForm.syncNameFromProvider),
+      syncPrice: Boolean(effectiveForm.syncPriceFromProvider),
     });
   };
 
@@ -449,10 +453,61 @@ function mergeSelectedProductOption(products = [], selectedProductId = "", produ
       minQty: product?.providerProductMinQty ?? null,
       name: selectedName,
       priceLabel: "",
+      rawPrice: product?.supplierPrice || product?.providerPrice || "",
+      supplierPrice: product?.supplierPrice || product?.providerPrice || "",
       providerName: product?.providerName || "",
     },
     ...products,
   ];
+}
+
+function getSupplierPrice(providerProduct) {
+  return String(
+    providerProduct?.supplierPrice
+    ?? providerProduct?.rawPrice
+    ?? providerProduct?.price
+    ?? "",
+  ).trim();
+}
+
+function applySupplierPriceSync(draft, providerProduct) {
+  const supplierPrice = getSupplierPrice(providerProduct) || String(draft?.supplierPrice ?? "").trim();
+  if (!supplierPrice) return draft;
+
+  return {
+    ...draft,
+    supplierPrice,
+    originalPrice: supplierPrice,
+    finalPrice: supplierPrice,
+    basePrice: supplierPrice,
+  };
+}
+
+function buildProviderProductSelectionPatch(providerProduct, current) {
+  const supplierPrice = getSupplierPrice(providerProduct);
+  const patch = {
+    providerProductId: providerProduct.id,
+    providerProductExternalId: providerProduct.externalProductId || "",
+    providerProductMaxQty: providerProduct.maxQty ?? null,
+    providerProductMinQty: providerProduct.minQty ?? null,
+    providerProductName: providerProduct.name,
+    supplierPrice,
+    supplierMin: providerProduct.minQty ?? 0,
+    supplierMax: providerProduct.maxQty ?? 0,
+  };
+
+  if (current.syncLimitsFromProvider) {
+    patch.min = providerProduct.minQty ?? current.min;
+    patch.max = providerProduct.maxQty ?? current.max;
+  }
+
+  return current.syncPriceFromProvider
+    ? applySupplierPriceSync(patch, providerProduct)
+    : patch;
+}
+
+function findSelectedProviderProduct(products = [], providerProductId = "") {
+  return products.find((product) => product.id === providerProductId) || null;
 }
 
 function makeFieldKey(label, index) {

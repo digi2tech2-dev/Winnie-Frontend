@@ -10,6 +10,7 @@ import {
   buildAdminCategoryLookup,
   createAdminProduct,
   deleteAdminProduct,
+  getAdminProduct,
   getAdminProductProviderOptions,
   getAdminProductProviderProductOptions,
   getAdminProducts,
@@ -129,6 +130,34 @@ export default function ProductsManagementPage() {
   const openCategoryForm = (type, category = null) => setCategoryModal({ open: true, type, category });
   const closeCategoryForm = () => setCategoryModal({ open: false, type: "main", category: null });
   const closeProductForm = () => setProductModal({ open: false, product: null });
+  const openNewProductForm = () => setProductModal({ open: true, product: null });
+  const applyProductToState = (nextProduct) => {
+    if (!nextProduct?.id) return;
+    setProducts((current) => (
+      current.some((product) => product.id === nextProduct.id)
+        ? current.map((product) => (product.id === nextProduct.id ? nextProduct : product))
+        : [nextProduct, ...current]
+    ));
+  };
+
+  const openProductForm = async (product) => {
+    if (!token || actionId || !product?.id) return;
+
+    setActionId(`product-edit:${product.id}`);
+    try {
+      const result = await getAdminProduct(token, product.id, categoryLookup);
+      applyProductToState(result.product);
+      setProductModal({ open: true, product: result.product });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "تعذر تحميل المنتج",
+        message: error.userMessage || "تعذر تحميل أحدث بيانات المنتج من الخادم.",
+      });
+    } finally {
+      setActionId("");
+    }
+  };
 
   const saveCategory = async (values) => {
     if (!token || saving) return;
@@ -146,13 +175,13 @@ export default function ProductsManagementPage() {
         ? await updateAdminCategory(token, categoryModal.category.id, payload)
         : await createAdminCategory(token, payload);
 
+      await loadCatalog({ silent: true });
       closeCategoryForm();
       showToast({
         type: "success",
         title: editing ? "تم تحديث القسم" : "تم إنشاء القسم",
         message: result.message || result.category.name,
       });
-      await loadCatalog({ silent: true });
     } catch (error) {
       showToast({
         type: "error",
@@ -188,8 +217,9 @@ export default function ProductsManagementPage() {
     const savedProduct = result.product;
 
     try {
+      let finalProduct = savedProduct;
       if (values.linkType === "automatic") {
-        await linkAdminProductProvider(token, savedProduct.id, {
+        const linkResult = await linkAdminProductProvider(token, savedProduct.id, {
           fulfillmentMode: "AUTO",
           mode: "automatic",
           providerId: values.providerId,
@@ -198,24 +228,23 @@ export default function ProductsManagementPage() {
           syncName: values.syncName,
           syncPrice: values.syncPrice,
         }, categoryLookup);
+        finalProduct = linkResult.product;
       } else if (editing && values.clearProviderLink) {
-        await unlinkAdminProductProvider(token, savedProduct.id, categoryLookup);
+        const unlinkResult = await unlinkAdminProductProvider(token, savedProduct.id, categoryLookup);
+        finalProduct = unlinkResult.product;
       }
 
-      setProducts((current) => (
-        editing
-          ? current.map((product) => (product.id === savedProduct.id ? savedProduct : product))
-          : [savedProduct, ...current.filter((product) => product.id !== savedProduct.id)]
-      ));
+      applyProductToState(finalProduct);
+      await loadCatalog({ silent: true });
       closeProductForm();
       showToast({
         type: "success",
         title: values.linkType === "automatic" ? "تم ربط المنتج" : editing ? "تم تحديث المنتج" : "تم إنشاء المنتج",
-        message: result.message || savedProduct.name,
+        message: result.message || finalProduct.name,
       });
-      await loadCatalog({ silent: true });
     } catch {
       closeProductForm();
+      await loadCatalog({ silent: true });
       showToast({
         type: "warning",
         title: "فشل ربط المورد",
@@ -223,7 +252,6 @@ export default function ProductsManagementPage() {
           ? "تم حفظ المنتج لكن فشل ربط المورد. افتح التعديل وحاول الربط مرة أخرى."
           : "تم حفظ المنتج لكن فشل إلغاء ربط المورد. افتح التعديل وحاول مجددًا.",
       });
-      await loadCatalog({ silent: true });
     } finally {
       setSaving("");
     }
@@ -239,13 +267,18 @@ export default function ProductsManagementPage() {
     try {
       if (kind === "product") {
         await deleteAdminProduct(token, item.id, categoryLookup);
+        setProducts((current) => current.filter((product) => product.id !== item.id));
       } else if (kind === "provider-sync") {
         const result = await syncAdminProductProvider(token, item.id, categoryLookup);
+        applyProductToState(result.product);
+        await loadCatalog({ silent: true });
+        setConfirm({ open: false, kind: "", item: null });
         showToast({
           type: "success",
           title: "تمت مزامنة سعر المورد",
           message: result.message || result.product.name,
         });
+        return;
       } else if (kind === "main") {
         const children = subCategories.filter((category) => category.parentId === item.id);
         for (const child of children) {
@@ -256,6 +289,7 @@ export default function ProductsManagementPage() {
         await deleteAdminCategory(token, item.id);
       }
 
+      await loadCatalog({ silent: true });
       setConfirm({ open: false, kind: "", item: null });
       if (kind !== "provider-sync") {
         showToast({
@@ -264,7 +298,6 @@ export default function ProductsManagementPage() {
           message: `تم حذف ${item.name || item.nameAr} من كتالوج الخادم.`,
         });
       }
-      await loadCatalog({ silent: true });
     } catch (error) {
       showToast({
         type: "error",
@@ -282,12 +315,13 @@ export default function ProductsManagementPage() {
     setActionId(`product:${product.id}`);
     try {
       const result = await toggleAdminProduct(token, product.id, categoryLookup);
+      applyProductToState(result.product);
+      await loadCatalog({ silent: true });
       showToast({
         type: result.product.isActive ? "success" : "warning",
         title: result.product.isActive ? "تم تفعيل المنتج" : "تم تعطيل المنتج",
         message: result.message || result.product.name,
       });
-      await loadCatalog({ silent: true });
     } catch (error) {
       showToast({
         type: "error",
@@ -389,13 +423,14 @@ export default function ProductsManagementPage() {
         providerId: providerLink.providerId,
         providerProductId: providerLink.providerProductId,
       }, categoryLookup);
+      applyProductToState(result.product);
       setProviderLink(emptyProviderLinkState);
+      await loadCatalog({ silent: true });
       showToast({
         type: "success",
         title: "تم ربط المنتج",
         message: result.message || "تم تحديث ربط المنتج بالمورد.",
       });
-      await loadCatalog({ silent: true });
     } catch (error) {
       setProviderLink((current) => ({
         ...current,
@@ -431,7 +466,7 @@ export default function ProductsManagementPage() {
             <div className="relative flex min-w-0 items-center gap-2 px-1 py-1 sm:gap-3 sm:px-2">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-fuchsia-500/60 bg-violet-500/10 text-fuchsia-300 shadow-[0_0_18px_rgba(192,38,211,0.22)]"><LayoutGrid className="h-5 w-5" /></span>
               <h2 className="min-w-0 flex-1 text-xl font-black text-white sm:text-2xl">المنتجات</h2>
-              <button type="button" onClick={() => setProductModal({ open: true, product: null })} disabled={saving === "product"} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-fuchsia-400/80 bg-gradient-to-l from-violet-600/35 to-blue-600/30 px-2.5 text-[10px] font-black text-white shadow-[0_0_16px_rgba(192,38,211,0.28)] transition hover:border-fuchsia-300 hover:shadow-[0_0_24px_rgba(192,38,211,0.4)] disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-xs"><PackagePlus className="h-4 w-4" />إضافة منتج</button>
+              <button type="button" onClick={openNewProductForm} disabled={saving === "product"} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-fuchsia-400/80 bg-gradient-to-l from-violet-600/35 to-blue-600/30 px-2.5 text-[10px] font-black text-white shadow-[0_0_16px_rgba(192,38,211,0.28)] transition hover:border-fuchsia-300 hover:shadow-[0_0_24px_rgba(192,38,211,0.4)] disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-xs"><PackagePlus className="h-4 w-4" />إضافة منتج</button>
             </div>
 
             <ProductFilters filters={draftFilters} onChange={updateFilter} onSearch={applyFilters} onReset={resetFilters} mainCategories={mainCategories} subCategories={subCategories} activeCount={activeFiltersCount} />
@@ -441,11 +476,11 @@ export default function ProductsManagementPage() {
                 <table className="hidden w-full min-w-[900px] table-fixed text-right md:table">
                   <thead><tr><ProductTh className="w-[28%]">المنتج</ProductTh><ProductTh>القسم الفرعي</ProductTh><ProductTh>السعر</ProductTh><ProductTh>المخزون</ProductTh><ProductTh>الحالة</ProductTh><ProductTh className="w-36">الإجراءات</ProductTh></tr></thead>
                   <tbody>{filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} mainCategory={mainById[product.mainCategoryId]} subCategory={subById[product.subCategoryId]} provider={{ name: product.providerName || (product.isProviderLinked ? "مرتبط بمورد" : "منتج يدوي") }} onEdit={(item) => setProductModal({ open: true, product: item })} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
+                    <ProductCard key={product.id} product={product} mainCategory={mainById[product.mainCategoryId]} subCategory={subById[product.subCategoryId]} provider={{ name: product.providerName || (product.isProviderLinked ? "مرتبط بمورد" : "منتج يدوي") }} onEdit={openProductForm} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
                   ))}</tbody>
                 </table>
                 <div className="divide-y divide-[#142654] md:hidden">{filteredProducts.map((product) => (
-                  <ProductMobileCard key={product.id} product={product} subCategory={subById[product.subCategoryId]} onEdit={(item) => setProductModal({ open: true, product: item })} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
+                  <ProductMobileCard key={product.id} product={product} subCategory={subById[product.subCategoryId]} onEdit={openProductForm} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
                 ))}</div>
               </div>
             ) : (

@@ -42,9 +42,9 @@ This is a wallet-based digital services platform. Users can browse digital produ
 | Validation | Inline component-level validation. Mostly required fields, email format, password match/length, numeric amount checks. |
 | Styling/UI | Tailwind CSS utility classes in JSX, global `src/styles.css`, `lucide-react` icons. |
 | Storage | `localStorage` for mock sessions, preferences, avatar, admin-managed payment data, sub-agent request, reviews; `sessionStorage` for admin tools unlock. |
-| Environment variables | No custom `VITE_*` variables found. `import.meta.env.PROD` only used for service worker registration. |
+| Environment variables | No custom `VITE_*` variables found. |
 | Build commands | `npm run dev`, `npm run build`, `npm run lint`, `npm run preview`. |
-| Service worker | `src/main.jsx` registers `/sw.js` only in production. |
+| Service worker | Disabled. `src/main.jsx` unregisters old workers and clears Cache Storage without clearing auth storage. |
 
 Important package scripts from `package.json`:
 
@@ -62,7 +62,7 @@ Important package scripts from `package.json`:
 | Folder/file | What it contains | Backend relevance |
 | --- | --- | --- |
 | `src/App.jsx` | Full route tree, protected role routes, admin tools gate, legacy redirects. | Source of required frontend routes and access-control expectations. |
-| `src/main.jsx` | React root, providers, router, service worker registration. | Shows no API provider exists and no env API URL is configured. |
+| `src/main.jsx` | React root, providers, router, old service worker cleanup. | Shows no API provider exists and no env API URL is configured. |
 | `src/context/AuthContext.jsx` | Mock auth, localStorage session, Google mock login, logout. | Defines current user shape and role behavior that backend must replace. |
 | `src/components/auth/ProtectedRoute.jsx` | Role guard for `admin` and `customer`. | Backend must enforce same access server-side. |
 | `src/layouts/CustomerLayout.jsx` | Customer shell, nav, unread notifications, wallet display. | Needs wallet, notifications, profile data. |
@@ -1189,7 +1189,7 @@ interface AdminSettings {
 
 | Variable | Used by | Meaning |
 | --- | --- | --- |
-| `import.meta.env.PROD` | `src/main.jsx` | Registers service worker in production. |
+| `import.meta.env.PROD` | N/A | No production service worker registration remains. |
 
 No custom `VITE_API_URL`, gateway key, or auth env variable was found.
 
@@ -1779,7 +1779,7 @@ Important indexes:
 | File path | Why it matters | Backend feature |
 | --- | --- | --- |
 | `package.json` | Confirms Vite/React stack and scripts. | Build/deploy coordination. |
-| `src/main.jsx` | Shows providers, router, service worker, no API provider. | App bootstrap/env. |
+| `src/main.jsx` | Shows providers, router, old service worker cleanup, no API provider. | App bootstrap/env. |
 | `src/App.jsx` | Complete route map, protected routes, admin tools gate, legacy redirects. | Routing/access control/API scope. |
 | `src/context/AuthContext.jsx` | Mock login/register session behavior and user shape. | Auth/user session. |
 | `src/components/auth/ProtectedRoute.jsx` | Role guard logic. | Backend role enforcement. |

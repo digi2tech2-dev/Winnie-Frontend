@@ -1,30 +1,40 @@
-const CACHE_NAME = "winnie-fun-v2";
-const CORE_ASSETS = ["/", "/index.html", "/logo.png", "/hero-winnie-fun.png", "/manifest.webmanifest"];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)));
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))),
+    (async () => {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      } catch {
+        // Ignore cache cleanup errors.
+      }
+
+      try {
+        await self.registration.unregister();
+      } catch {
+        // Ignore unregister errors.
+      }
+
+      try {
+        const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        await Promise.all(
+          clients.map((client) => {
+            if ("navigate" in client) {
+              return client.navigate(client.url);
+            }
+            return undefined;
+          }),
+        );
+      } catch {
+        // Ignore client navigation errors.
+      }
+    })(),
   );
-  self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
-      });
-    }),
-  );
+self.addEventListener("fetch", () => {
+  // Intentionally do nothing. No caching.
 });

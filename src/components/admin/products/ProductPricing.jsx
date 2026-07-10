@@ -1,5 +1,6 @@
 import { AlertTriangle, Bot, CheckCircle2, Link2, RefreshCw, Search, UserRound } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { formatSupplierPrice } from "../../../api/adminProducts";
 import { Field, inputClassName, Section } from "./BasicProductInfo";
 
 const emptyProviderLink = {
@@ -161,8 +162,25 @@ export default function ProductPricing({
           )}
 
           <div className="grid gap-2 sm:grid-cols-3">
-            <CheckboxField checked={Boolean(value.syncPriceFromProvider)} label="مزامنة السعر من المورد" onChange={(checked) => onPatch({ syncPriceFromProvider: checked })} />
-            <CheckboxField checked={Boolean(value.syncLimitsFromProvider)} label="مزامنة حدود الطلب" onChange={(checked) => onPatch({ syncLimitsFromProvider: checked })} />
+            <CheckboxField checked={Boolean(value.syncPriceFromProvider)} label="مزامنة السعر من المورد" onChange={(checked) => {
+              const supplierPrice = checked ? getExactSupplierPrice(selectedProduct) : "";
+              onPatch({
+                syncPriceFromProvider: checked,
+                ...(supplierPrice ? {
+                  supplierPrice,
+                  originalPrice: supplierPrice,
+                  finalPrice: supplierPrice,
+                  basePrice: supplierPrice,
+                } : {}),
+              });
+            }} />
+            <CheckboxField checked={Boolean(value.syncLimitsFromProvider)} label="مزامنة حدود الطلب" onChange={(checked) => onPatch({
+              syncLimitsFromProvider: checked,
+              ...(checked && selectedProduct ? {
+                min: selectedProduct.minQty ?? value.min,
+                max: selectedProduct.maxQty ?? value.max,
+              } : {}),
+            })} />
             <CheckboxField checked={Boolean(value.syncNameFromProvider)} label="مزامنة اسم المنتج" onChange={(checked) => onPatch({ syncNameFromProvider: checked })} />
           </div>
         </div>
@@ -247,12 +265,25 @@ function SummaryItem({ label, value }) {
 function getCurrentProductSummary(value) {
   if (!value.providerProductId || !value.providerProductName) return null;
 
+  const supplierPrice = value.supplierPrice || value.providerPrice || value.rawPrice || "";
+
   return {
     id: value.providerProductId,
     externalProductId: value.providerProductExternalId || "",
     maxQty: value.providerProductMaxQty ?? null,
     minQty: value.providerProductMinQty ?? null,
     name: value.providerProductName,
-    priceLabel: "",
+    priceLabel: supplierPrice ? formatSupplierPrice(supplierPrice) : "",
+    rawPrice: supplierPrice,
+    supplierPrice,
   };
+}
+
+function getExactSupplierPrice(providerProduct) {
+  return String(
+    providerProduct?.supplierPrice
+    ?? providerProduct?.rawPrice
+    ?? providerProduct?.price
+    ?? "",
+  ).trim();
 }

@@ -103,7 +103,7 @@ export default function ProductProviderLinkModal({
                   >
                     <strong className="block truncate text-[11px] font-black text-slate-900 dark:text-white">{product.name}</strong>
                     <span className="mt-1 block text-[9px] font-bold text-slate-400">
-                      {product.providerName || selectedProvider?.name || "المورد"} | الكمية {product.minQty ?? "-"} - {product.maxQty ?? "-"}
+                      {product.providerName || selectedProvider?.name || "المورد"} | {product.externalProductId || "بدون معرف"} | الكمية {product.minQty ?? "-"} - {product.maxQty ?? "-"} | {product.priceLabel || "—"}
                     </span>
                   </button>
                 );
@@ -115,7 +115,7 @@ export default function ProductProviderLinkModal({
 
           {(selectedProvider || selectedProduct) && (
             <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-[10px] font-bold text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200">
-              {selectedProvider?.name || "المورد"} {selectedProduct ? `- ${selectedProduct.name}` : ""}
+              {selectedProvider?.name || "المورد"} {selectedProduct ? `- ${selectedProduct.name} | ${selectedProduct.externalProductId || "-"} | ${selectedProduct.minQty ?? "-"} - ${selectedProduct.maxQty ?? "-"} | ${selectedProduct.priceLabel || "—"}` : ""}
             </div>
           )}
         </div>
