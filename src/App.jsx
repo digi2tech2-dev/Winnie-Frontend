@@ -52,7 +52,6 @@ const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage")
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminUserWalletPage = lazy(() => import("./pages/admin/AdminUserWalletPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
-const AdminToolsPage = lazy(() => import("./pages/admin/AdminToolsPage"));
 
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
 
@@ -181,7 +180,7 @@ export default function App() {
               <Route path="currencies" element={<Animated><AdminCurrenciesPage /></Animated>} />
               <Route path="settings" element={<Animated><AdminSettingsPage /></Animated>} />
               <Route path="sub-agents" element={<Animated><AdminSubAgentsPage /></Animated>} />
-              <Route path="notifications" element={<Animated><AdminToolsPage /></Animated>} />
+              <Route path="notifications" element={<Animated><CustomerNotifications /></Animated>} />
             </Route>
 
             <Route path="dashboard" element={<LegacyAdminRedirect from="/admin/dashboard" to="/admin/tools/dashboard" />} />

@@ -113,7 +113,7 @@ export function MetricCard({ metric, rangeKey }) {
         </span>
         <p className="admin-metric-label">{metric.label}</p>
       </div>
-      <p dir="ltr" className="admin-metric-value">{metric.value}</p>
+      <p dir="ltr" className="admin-metric-value" title={metric.value}>{metric.value}</p>
       {metric.description ? <p className="admin-metric-description">{metric.description}</p> : null}
       <div className="admin-metric-footer">
         {showChange ? (

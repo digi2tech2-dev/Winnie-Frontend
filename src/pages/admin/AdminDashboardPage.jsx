@@ -31,14 +31,11 @@ import {
 import DateRangePicker from "../../components/admin/dashboard/DateRangePicker";
 import { useToast } from "../../components/ToastProvider";
 import {
-  analyticsDaily,
   compactDateFormatter,
-  currencyFormatter,
   getPresetRange,
-  getPreviousRange,
   getRangeDays,
-  isWithinRange,
   numberFormatter,
+  toDateInputValue,
 } from "../../data/adminDashboard";
 import { useAuth } from "../../context/AuthContext";
 
@@ -193,135 +190,125 @@ function formatRefreshTime(value) {
   }).format(new Date(value));
 }
 
-function getPercentChange(current, previous) {
-  if (!previous) return current ? 100 : 0;
-  return ((current - previous) / Math.abs(previous)) * 100;
+const missingMetricLabel = "\u2014";
+
+const dashboardUsdFormatter = new Intl.NumberFormat("ar-EG-u-nu-latn", {
+  currency: "USD",
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+  style: "currency",
+});
+
+function getSummaryValue(cards, key) {
+  const value = cards?.[key]?.value;
+  return value === null || value === undefined ? null : value;
 }
 
-function sumAnalyticsRows(rows = []) {
-  return rows.reduce(
-    (summary, row) => {
-      const completionRatio = row.orders ? row.completedOrders / row.orders : 0;
-      const completedRevenue = row.revenue * completionRatio;
-      const completedProfit = row.profit * completionRatio;
-
-      summary.revenue += completedRevenue;
-      summary.profit += completedProfit;
-      summary.orders += row.orders;
-      summary.completedOrders += row.completedOrders;
-      summary.pendingOrders += row.pendingOrders;
-      summary.manualPending += row.manualPending;
-      summary.users += row.users;
-      summary.products += row.products;
-      summary.walletBalances += row.walletBalances;
-      summary.balances += row.balances;
-      return summary;
-    },
-    {
-      balances: 0,
-      completedOrders: 0,
-      manualPending: 0,
-      orders: 0,
-      pendingOrders: 0,
-      products: 0,
-      profit: 0,
-      revenue: 0,
-      users: 0,
-      walletBalances: 0,
-    },
-  );
+function getSummaryChange(cards, key) {
+  const value = cards?.[key]?.changePercent;
+  return value === null || value === undefined ? null : value;
 }
 
-function buildPeriodMetrics(range) {
-  const currentRows = analyticsDaily.filter((item) => isWithinRange(item.date, range));
-  const previousRange = getPreviousRange(range);
-  const previousRows = analyticsDaily.filter((item) => isWithinRange(item.date, previousRange));
-  const current = sumAnalyticsRows(currentRows);
-  const previous = sumAnalyticsRows(previousRows);
+function formatSummaryValue(value, type = "count") {
+  if (value === null || value === undefined) return missingMetricLabel;
+  if (type === "currency") return dashboardUsdFormatter.format(Number(value) || 0);
+  return numberFormatter.format(Number(value) || 0);
+}
+
+function buildPeriodMetrics(range, summary) {
+  const cards = summary?.cards || {};
   const days = getRangeDays(range);
 
   return [
     {
       accent: "admin-metric-card--wallets",
-      change: getPercentChange(current.revenue, previous.revenue),
+      change: getSummaryChange(cards, "totalRevenueUsd"),
       description: "الإيرادات من الطلبات المكتملة داخل الفترة المحددة",
       icon: DollarSign,
       id: "period-revenue",
       label: "إجمالي الإيرادات (USD)",
       tone: "admin-metric-tone-wallets",
-      value: currencyFormatter.format(Math.round(current.revenue)),
+      unavailable: getSummaryValue(cards, "totalRevenueUsd") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "totalRevenueUsd"), "currency"),
     },
     {
       accent: "admin-metric-card--completed",
-      change: getPercentChange(current.profit, previous.profit),
+      change: getSummaryChange(cards, "netProfitUsd"),
       description: "الأرباح من الطلبات المكتملة داخل الفترة المحددة",
       icon: TrendingUp,
       id: "period-profit",
       label: "صافي الأرباح (USD)",
       tone: "admin-metric-tone-completed",
-      value: currencyFormatter.format(Math.round(current.profit)),
+      unavailable: getSummaryValue(cards, "netProfitUsd") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "netProfitUsd"), "currency"),
     },
     {
       accent: "admin-metric-card--orders",
-      change: getPercentChange(current.completedOrders, previous.completedOrders),
+      change: getSummaryChange(cards, "completedOrders"),
       description: `طلبات مكتملة خلال ${numberFormatter.format(days)} يوم`,
       icon: PackageCheck,
       id: "period-completed-orders",
       label: "الطلبات المكتملة في الفترة",
       tone: "admin-metric-tone-orders",
-      value: numberFormatter.format(current.completedOrders),
+      unavailable: getSummaryValue(cards, "completedOrders") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "completedOrders")),
     },
     {
       accent: "admin-metric-card--pending",
-      change: getPercentChange(current.pendingOrders, previous.pendingOrders),
+      change: getSummaryChange(cards, "followUpOrders"),
       description: "طلبات ما زالت تحتاج متابعة داخل نفس الفترة",
       icon: Clock3,
       id: "period-pending-orders",
       inverse: true,
       label: "طلبات قيد المتابعة",
       tone: "admin-metric-tone-pending",
-      value: numberFormatter.format(current.pendingOrders),
+      unavailable: getSummaryValue(cards, "followUpOrders") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "followUpOrders")),
     },
     {
       accent: "admin-metric-card--users",
-      change: getPercentChange(current.users, previous.users),
+      change: getSummaryChange(cards, "activeUsers"),
       description: "حسابات ونشاط مستخدمين مسجل داخل الفترة",
       icon: Users,
       id: "period-users",
       label: "نشاط المستخدمين",
       tone: "admin-metric-tone-users",
-      value: numberFormatter.format(current.users),
+      unavailable: getSummaryValue(cards, "activeUsers") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "activeUsers")),
     },
     {
       accent: "admin-metric-card--products",
-      change: getPercentChange(current.products, previous.products),
+      change: getSummaryChange(cards, "productMovement"),
       description: "منتجات أضيفت أو تحركت داخل الفترة المحددة",
       icon: Boxes,
       id: "period-products",
       label: "حركة المنتجات",
       tone: "admin-metric-tone-products",
-      value: numberFormatter.format(current.products),
+      unavailable: getSummaryValue(cards, "productMovement") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "productMovement")),
     },
     {
       accent: "admin-metric-card--deposits",
-      change: getPercentChange(current.manualPending, previous.manualPending),
+      change: getSummaryChange(cards, "pendingManualOperations"),
       description: "طلبات يدوية أو تحويلات تحتاج اعتمادًا",
       icon: Truck,
       id: "period-manual-pending",
       inverse: true,
       label: "عمليات يدوية معلقة",
       tone: "admin-metric-tone-deposits",
-      value: numberFormatter.format(current.manualPending),
+      unavailable: getSummaryValue(cards, "pendingManualOperations") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "pendingManualOperations")),
     },
     {
       accent: "admin-metric-card--requests",
-      change: getPercentChange(current.walletBalances, previous.walletBalances),
+      change: getSummaryChange(cards, "walletMovementUsd"),
       description: "حركة أرصدة المحافظ اليومية داخل الفترة",
       icon: WalletCards,
       id: "period-wallet-volume",
       label: "حركة المحافظ",
       tone: "admin-metric-tone-requests",
-      value: currencyFormatter.format(Math.round(current.walletBalances)),
+      unavailable: getSummaryValue(cards, "walletMovementUsd") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "walletMovementUsd"), "currency"),
     },
   ];
 }
@@ -369,9 +356,13 @@ export default function AdminDashboardPage() {
 
     setError("");
     setRefreshing(true);
+    setDashboard((current) => (current ? { ...current, periodSummary: null, refreshedAt: null } : null));
 
     try {
-      const result = await getAdminDashboardData(token);
+      const result = await getAdminDashboardData(token, {
+        from: toDateInputValue(selectedRange.start),
+        to: toDateInputValue(selectedRange.end),
+      });
       setDashboard(result);
 
       if (result.failures.length) {
@@ -399,7 +390,7 @@ export default function AdminDashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast, token]);
+  }, [selectedRange, showToast, token]);
 
   useEffect(() => {
     loadDashboard();
@@ -479,7 +470,10 @@ export default function AdminDashboardPage() {
   }, [loadDashboard, showToast, token]);
 
   const metrics = useMemo(() => buildMetrics(dashboard?.metrics || {}), [dashboard]);
-  const periodMetrics = useMemo(() => buildPeriodMetrics(selectedRange), [selectedRange]);
+  const periodMetrics = useMemo(
+    () => buildPeriodMetrics(selectedRange, dashboard?.periodSummary),
+    [dashboard?.periodSummary, selectedRange],
+  );
   const alerts = useMemo(
     () => getOperationalAlerts(dashboard?.metrics || {}, dashboard?.failures || []),
     [dashboard],

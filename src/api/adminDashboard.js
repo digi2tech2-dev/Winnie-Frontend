@@ -88,6 +88,19 @@ async function getAdminDashboardStats(token) {
   };
 }
 
+export async function getAdminDashboardSummary(token, range = {}) {
+  const response = await apiRequest("/admin/dashboard/summary", {
+    query: {
+      from: range.from,
+      to: range.to,
+      _: Date.now(),
+    },
+    token,
+  });
+
+  return response.data || null;
+}
+
 async function settle(name, label, promise) {
   try {
     return { label, name, ok: true, value: await promise };
@@ -145,8 +158,9 @@ async function getWalletBalancesSummary(token) {
   return summarizeWalletBalances(users);
 }
 
-export async function getAdminDashboardData(token) {
+export async function getAdminDashboardData(token, range = {}) {
   const results = await Promise.all([
+    settle("summary", "Dashboard period summary", getAdminDashboardSummary(token, range)),
     settle("stats", "Dashboard statistics", getAdminDashboardStats(token)),
     settle("recentOrders", "أحدث طلبات الشراء", getAdminOrders(token, { page: 1, limit: 8 })),
     settle("recentDeposits", "طلبات إضافة الرصيد اليدوي", getAdminDeposits(token, { page: 1, limit: 8 })),
@@ -173,6 +187,7 @@ export async function getAdminDashboardData(token) {
   const pendingDeposits = getSettledValue(results, "pendingDeposits");
   const pendingGroupRequests = getSettledValue(results, "pendingGroupRequests");
   const providers = getSettledValue(results, "providers");
+  const summary = getSettledValue(results, "summary");
 
   const providerItems = Array.isArray(providers?.providers) ? providers.providers : [];
   const providersWithBalances = providerItems.length ? await getProvidersWithBalances(token, providerItems) : [];
@@ -198,10 +213,11 @@ export async function getAdminDashboardData(token) {
         ? formatCurrency(getStatsWalletTotal(stats), getStatsWalletCurrency(stats), "ar-EG-u-nu-latn")
         : walletBalances?.label,
     },
+    periodSummary: summary,
     recentOrders: Array.isArray(recentOrders?.orders) ? recentOrders.orders : [],
     recentDeposits: Array.isArray(recentDeposits?.deposits) ? recentDeposits.deposits : [],
     providers: providersWithBalances,
-    refreshedAt: new Date().toISOString(),
+    refreshedAt: summary?.updatedAt || new Date().toISOString(),
     sources: {
       dashboardStats: Boolean(stats),
       providersCount: providers ? providerItems.length : null,

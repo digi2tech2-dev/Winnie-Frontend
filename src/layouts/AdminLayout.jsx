@@ -1,5 +1,12 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  deleteNotification,
+  getNotifications,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "../api/notifications";
 import { getWalletSummary } from "../api/wallet";
 import AdminHeader from "../components/AdminHeader";
 import BackButton from "../components/BackButton";
@@ -9,6 +16,7 @@ import CustomerBottomNav from "../components/CustomerBottomNav";
 import { useAuth } from "../context/AuthContext";
 import { adminNav } from "../data/navigation";
 import { useLanguage } from "../context/LanguageContext";
+import { getNotificationTarget } from "../utils/notificationNavigation";
 import i18n from "../i18n";
 
 export default function AdminLayout() {
@@ -21,8 +29,11 @@ export default function AdminLayout() {
   const isAdminToolsPage = location.pathname.startsWith("/admin/tools");
   const isAdminDashboardPage = location.pathname === "/admin/tools/dashboard";
   const isAdminUserHome = location.pathname === "/admin/user/dashboard";
-  const notificationItems = [];
-  const unreadNotificationCount = 0;
+  const [notificationItems, setNotificationItems] = useState([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState("");
+  const [notificationAction, setNotificationAction] = useState("");
 
   useEffect(() => {
     void i18n.changeLanguage("ar");
@@ -55,6 +66,83 @@ export default function AdminLayout() {
     void refreshWallet();
   }, [refreshWallet]);
 
+  const refreshNotifications = useCallback(async ({ showLoading = true } = {}) => {
+    if (!token) {
+      setNotificationItems([]);
+      setUnreadNotificationCount(0);
+      setNotificationsError("");
+      setNotificationsLoading(false);
+      return null;
+    }
+
+    if (showLoading) setNotificationsLoading(true);
+
+    const [notificationsResult, unreadResult] = await Promise.allSettled([
+      getNotifications(token, { page: 1, limit: 20 }),
+      getUnreadNotificationCount(token),
+    ]);
+
+    if (notificationsResult.status === "fulfilled") {
+      setNotificationItems(notificationsResult.value.notifications);
+      setUnreadNotificationCount(
+        unreadResult.status === "fulfilled"
+          ? unreadResult.value
+          : notificationsResult.value.unreadCount,
+      );
+      setNotificationsError("");
+    } else {
+      setNotificationItems([]);
+      setUnreadNotificationCount(unreadResult.status === "fulfilled" ? unreadResult.value : 0);
+      setNotificationsError(notificationsResult.reason?.userMessage || "تعذر تحميل الإشعارات.");
+    }
+
+    setNotificationsLoading(false);
+    return notificationsResult.status === "fulfilled" ? notificationsResult.value : null;
+  }, [token]);
+
+  useEffect(() => {
+    void refreshNotifications();
+  }, [refreshNotifications]);
+
+  const runNotificationAction = useCallback(async (actionKey, action) => {
+    if (!token) {
+      throw new Error("يلزم تسجيل الدخول.");
+    }
+
+    setNotificationAction(actionKey);
+    try {
+      const result = await action();
+      await refreshNotifications({ showLoading: false });
+      return result;
+    } finally {
+      setNotificationAction("");
+    }
+  }, [refreshNotifications, token]);
+
+  const handleMarkNotificationRead = useCallback((id) => (
+    runNotificationAction(`read:${id}`, () => markNotificationRead(token, id))
+  ), [runNotificationAction, token]);
+
+  const handleMarkAllNotificationsRead = useCallback(() => (
+    runNotificationAction("read-all", () => markAllNotificationsRead(token))
+  ), [runNotificationAction, token]);
+
+  const handleDeleteNotification = useCallback((id) => (
+    runNotificationAction(`delete:${id}`, () => deleteNotification(token, id))
+  ), [runNotificationAction, token]);
+
+  const handleOpenNotification = useCallback(async (notification, options = {}) => {
+    if (options.markRead !== false && notification?.unread && notification?.id) {
+      try {
+        await handleMarkNotificationRead(notification.id);
+      } catch {
+        // Navigation should still proceed if read-state update fails.
+      }
+    }
+
+    navigate(getNotificationTarget(notification, "/admin/user"));
+  }, [handleMarkNotificationRead, navigate]);
+
   const adminNavItems = useMemo(
     () =>
       adminNav.map((item) =>
@@ -66,8 +154,6 @@ export default function AdminLayout() {
       ),
     [unreadNotificationCount],
   );
-
-  const markAllNotificationsAsRead = () => undefined;
 
   return (
     <div dir="rtl" lang="ar" className={`admin-app-shell min-h-screen overflow-x-hidden text-slate-950 dark:text-[#C4C9D4] ${isAdminToolsPage ? "admin-tools-mode" : ""}`}>
@@ -88,10 +174,18 @@ export default function AdminLayout() {
             <BackButton fallbackPath="/admin/user/dashboard" hiddenPaths={["/", "/admin/user/dashboard", "/admin/user/profile", "/admin/tools/dashboard"]} />
             <Outlet
               context={{
-                markAllNotificationsAsRead,
                 navigate,
                 notifications: notificationItems,
+                notificationAction,
+                notificationActionsSupported: true,
+                notificationsError,
+                notificationsLoading,
+                onDeleteNotification: handleDeleteNotification,
+                onMarkAllNotificationsRead: handleMarkAllNotificationsRead,
+                onMarkNotificationRead: handleMarkNotificationRead,
+                onOpenNotification: handleOpenNotification,
                 onWalletRefresh: refreshWallet,
+                refreshNotifications,
                 unreadNotificationCount,
               }}
             />

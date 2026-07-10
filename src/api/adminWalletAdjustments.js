@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import { asArray, formatCurrency, formatDateTime, getItemId, normalizePagination, toNumber } from "./adapters";
+import { asArray, compactObject, formatCurrency, formatDateTime, getItemId, normalizePagination, toNumber } from "./adapters";
 
 function normalizePerson(person = {}) {
   const id = getItemId(person);
@@ -33,25 +33,86 @@ export function normalizeAdminWalletAdjustment(item = {}) {
   };
 }
 
+function normalizeCurrencyTotal(item = {}) {
+  const currency = String(item.currency || "USD").toUpperCase();
+  return {
+    currency,
+    count: toNumber(item.count, 0),
+    net: toNumber(item.net, 0),
+    totalAdded: toNumber(item.totalAdded ?? item.totalAdditions, 0),
+    totalAdditions: toNumber(item.totalAdditions ?? item.totalAdded, 0),
+    totalDeducted: toNumber(item.totalDeducted ?? item.totalDeductions, 0),
+    totalDeductions: toNumber(item.totalDeductions ?? item.totalDeducted, 0),
+  };
+}
+
+function normalizeAdjustmentSummary(summary = {}, adjustments = []) {
+  if (!summary || Object.keys(summary).length === 0) return null;
+
+  const totalsByCurrency = asArray(summary.totalsByCurrency).map(normalizeCurrencyTotal);
+  const currency = summary.currency ? String(summary.currency).toUpperCase() : "";
+  const mode = String(summary.mode || "").toLowerCase();
+  const singleCurrencyTotal = currency
+    ? (totalsByCurrency.find((item) => item.currency === currency) || normalizeCurrencyTotal({ ...summary, currency }))
+    : (mode !== "grouped" && totalsByCurrency.length === 1 ? totalsByCurrency[0] : null);
+
+  if (singleCurrencyTotal) {
+    return {
+      ...singleCurrencyTotal,
+      count: toNumber(summary.count, singleCurrencyTotal.count || adjustments.length),
+      currency: singleCurrencyTotal.currency,
+      mode: "single",
+      hasMixedCurrencies: false,
+      totalsByCurrency,
+    };
+  }
+
+  return {
+    count: toNumber(summary.count, adjustments.length),
+    currency: "",
+    hasMixedCurrencies: mode === "grouped" && totalsByCurrency.length > 0,
+    mode: "grouped",
+    net: summary.net == null ? null : toNumber(summary.net, 0),
+    totalAdded: summary.totalAdded == null ? null : toNumber(summary.totalAdded, 0),
+    totalAdditions: summary.totalAdditions == null ? null : toNumber(summary.totalAdditions, 0),
+    totalDeducted: summary.totalDeducted == null ? null : toNumber(summary.totalDeducted, 0),
+    totalDeductions: summary.totalDeductions == null ? null : toNumber(summary.totalDeductions, 0),
+    totalsByCurrency,
+  };
+}
+
+function buildAdjustmentQuery(query = {}) {
+  const currency = String(query.currency || "").trim().toUpperCase();
+  return compactObject({
+    ...query,
+    currency: /^[A-Z]{3}$/.test(currency) ? currency : undefined,
+  });
+}
+
+function normalizeAdjustmentResponse(response = {}) {
+  const root = response.raw && typeof response.raw === "object" ? response.raw : response;
+  const payload = response.data ?? root?.data ?? root ?? {};
+
+  return {
+    items: payload?.items ?? payload?.adjustments ?? payload?.data ?? root?.items ?? [],
+    pagination: payload?.pagination ?? response.pagination ?? root?.pagination ?? null,
+    summary: payload?.summary ?? root?.summary ?? response.summary ?? null,
+  };
+}
+
 export async function getAdminWalletAdjustments(token, query = {}) {
-  const response = await apiRequest("/admin/wallet-adjustments", { query, token });
-  const source = response.data?.items || response.data;
-  const adjustments = asArray(source).map(normalizeAdminWalletAdjustment);
-  const summary = response.summary || response.data?.summary || {};
+  const response = await apiRequest("/admin/wallet-adjustments", { query: buildAdjustmentQuery(query), token });
+  const payload = normalizeAdjustmentResponse(response);
+  const adjustments = asArray(payload.items).map(normalizeAdminWalletAdjustment);
 
   return {
     adjustments,
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(payload.pagination, {
       page: query.page,
       limit: query.limit,
       total: adjustments.length,
     }),
-    summary: {
-      count: toNumber(summary.count, adjustments.length),
-      net: toNumber(summary.net, 0),
-      totalAdded: toNumber(summary.totalAdded, 0),
-      totalDeducted: toNumber(summary.totalDeducted, 0),
-    },
+    summary: normalizeAdjustmentSummary(payload.summary, adjustments),
   };
 }
