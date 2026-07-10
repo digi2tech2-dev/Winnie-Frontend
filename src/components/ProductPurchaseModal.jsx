@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import { createCustomerOrderQuote } from "../api/orders";
 import "./ProductPurchaseModal.css";
 
 export default function ProductPurchaseModal({
@@ -19,6 +20,7 @@ export default function ProductPurchaseModal({
   requireAccountId = true,
   submitError = "",
   submitting = false,
+  token = "",
 }) {
   const { t, i18n } = useTranslation("products");
   const { user } = useAuth();
@@ -32,16 +34,19 @@ export default function ProductPurchaseModal({
   const [fieldValues, setFieldValues] = useState(() => createInitialFieldValues(orderFields));
   const [selectedPackageIndex, setSelectedPackageIndex] = useState(0);
   const [localError, setLocalError] = useState("");
+  const [quote, setQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
   const modalRef = useRef(null);
   const modalScale = useViewportFitScale(modalRef, 10, 0.45);
 
   const selectedPackage = packages[selectedPackageIndex] || null;
-  const unitPrice = selectedPackage?.price || product.displayPriceLabel || product.price || t("purchase.pricedByBackend");
-  const total = calculateTotal(unitPrice, quantity);
-  const displayTotal = formatPurchaseTotalLabel(total);
-  const walletBalance = Number(user?.walletBalance ?? 245.5);
+  const displayTotal = quote
+    ? formatCurrencyAmount(quote.chargedAmount ?? quote.payableAmount, quote.currency)
+    : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : "";
+  const walletBalance = Number(user?.walletBalance ?? quote?.walletBalance ?? 0);
   const balanceLabel = formatPlainAmount(walletBalance);
-  const displayError = localError || submitError;
+  const displayError = localError || submitError || quoteError;
   const hasOrderFields = orderFields.length > 0;
   const showFallbackAccountInput = !hasOrderFields;
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
@@ -60,6 +65,49 @@ export default function ProductPurchaseModal({
     };
   }, []);
 
+  useEffect(() => {
+    const productId = product?._id || product?.id || product?.productId;
+    const numericQuantity = Number(quantity);
+
+    if (!token || !productId || !Number.isInteger(numericQuantity) || numericQuantity < minQuantity || numericQuantity > maxQuantity) {
+      setQuote(null);
+      setQuoteLoading(false);
+      setQuoteError("");
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setQuoteLoading(true);
+      setQuoteError("");
+
+      createCustomerOrderQuote(token, {
+        productId,
+        quantity: numericQuantity,
+        values: {},
+      }, { signal: controller.signal })
+        .then((nextQuote) => {
+          setQuote(nextQuote);
+          if (nextQuote.hasEnoughBalance === false) {
+            setQuoteError(t("purchase.insufficientFunds"));
+          }
+        })
+        .catch((error) => {
+          if (error.name === "AbortError" || error.code === "REQUEST_CANCELLED") return;
+          setQuote(null);
+          setQuoteError(error.userMessage || t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setQuoteLoading(false);
+        });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [maxQuantity, minQuantity, product, quantity, t, token]);
+
   const changeQuantity = (value) => {
     setQuantity(String(value).replace(/[^\d]/g, ""));
     setLocalError("");
@@ -72,7 +120,7 @@ export default function ProductPurchaseModal({
 
   const submit = (event) => {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || quoteLoading) return;
 
     const numericQuantity = Number(quantity);
     if (!Number.isInteger(numericQuantity) || numericQuantity < minQuantity || numericQuantity > maxQuantity) {
@@ -97,6 +145,11 @@ export default function ProductPurchaseModal({
       return;
     }
 
+    if (!quote || quoteError) {
+      setLocalError(t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
+      return;
+    }
+
     setLocalError("");
     onConfirm({
       product,
@@ -105,6 +158,7 @@ export default function ProductPurchaseModal({
       orderFieldsValues: hasOrderFields ? fieldValues : {},
       selectedPackage,
       totalLabel: displayTotal,
+      quote,
     });
   };
 
@@ -239,8 +293,8 @@ export default function ProductPurchaseModal({
         {displayError && <p className="buy-modal__error">{displayError}</p>}
 
         <div className="buy-actions">
-          <button className="buy-actions__submit" type="submit" disabled={submitting}>
-            <span>{submitting ? t("purchase.creatingOrder") : isArabic ? "تأكيد الشحن" : "Confirm charge"}</span>
+          <button className="buy-actions__submit" type="submit" disabled={submitting || quoteLoading || Boolean(quoteError) || !quote}>
+            <span>{submitting ? t("purchase.creatingOrder") : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : isArabic ? "تأكيد الشحن" : "Confirm charge"}</span>
             {submitting ? <Loader2 className="is-spinning" /> : <Zap />}
           </button>
         </div>
@@ -383,11 +437,17 @@ function formatPlainAmount(value) {
   }).format(Number(value) || 0);
 }
 
-function formatAmount(value) {
+function formatCurrencyAmount(value, currency = "USD") {
   return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: String(currency || "USD").toUpperCase(),
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(Number(value) || 0);
+}
+
+function formatAmount(value) {
+  return formatPlainAmount(value);
 }
 
 function useViewportFitScale(ref, margin = 10, minScale = 0.45) {

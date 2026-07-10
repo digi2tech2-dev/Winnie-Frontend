@@ -74,9 +74,23 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
   const categoryValue = product.category?._id || product.category || "";
   const category = categoryLookup.get(String(categoryValue)) || categoryLookup.get(String(product.categorySlug || ""));
   const displayCurrency = String(product.displayCurrency || product.currency || DEFAULT_CURRENCY).toUpperCase();
-  const displayPrice = product.displayPrice ?? product.finalPrice ?? product.sellingPrice ?? product.price ?? product.basePrice;
+  const minQty = toNumber(product.minQty, 1);
+  const maxQty = toNumber(product.maxQty, 999);
+  const displayPrice = product.displayPrice ?? product.minTotalCustomerCurrency ?? product.finalPrice ?? product.sellingPrice ?? product.price ?? product.basePrice;
   const hasDisplayPrice = displayPrice !== undefined && displayPrice !== null && displayPrice !== "";
   const numericPrice = hasDisplayPrice ? toNumber(displayPrice, 0) : null;
+  const explicitPriceLabel = product.displayPriceLabel || product.minTotalDisplay || product.priceDisplay || "";
+  const minTotalValue = product.minTotalCustomerCurrency ?? product.minTotalPrice;
+  const hasMinTotal = minTotalValue !== undefined && minTotalValue !== null && minTotalValue !== "";
+  const displayPriceLabel = explicitPriceLabel || (
+    minQty > 1 && hasMinTotal
+      ? `${minQty.toLocaleString("en-US")} = ${formatCurrency(minTotalValue, displayCurrency)}`
+      : hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : ""
+  );
+  const hasDiscount = product.hasDiscount === true;
+  const discountPercentage = hasDiscount
+    ? Math.min(100, Math.max(0, toNumber(product.discountPercentage ?? product.discountPercent, 0)))
+    : 0;
   const name = product.name || product.title || "Untitled product";
   const categoryTitle = category?.title || product.categoryName || humanizeToken(categoryValue, "Catalog");
   const isPaused = product.isPaused === true || product.paused === true;
@@ -92,10 +106,14 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     categoryTitle,
     cover: product.cover || pickTone(`${id}${name}`),
     description: product.description || "",
-    discountPercentage: Math.min(100, Math.max(0, toNumber(product.discountPercentage ?? product.discountPercent, 0))),
+    discountPercentage,
+    discountPercent: discountPercentage,
+    hasDiscount,
     displayCurrency,
     displayPrice: numericPrice,
-    displayPriceLabel: hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : "",
+    displayPriceLabel,
+    finalPrice: product.finalPrice,
+    finalPriceUsd: product.finalPriceUsd || product.unitPriceUsd || product.finalPrice,
     icon: product.icon || pickIcon(`${name} ${categoryTitle}`),
     image: resolveBackendAssetUrl(
       product.image || product.imageUrl || product.imageURL || product.thumbnail || product.coverImage,
@@ -103,11 +121,17 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     isActive: product.isActive !== false,
     isPaused,
     isPurchasable: product.isPurchasable !== false && !isPaused && status !== "unavailable",
-    maxQty: toNumber(product.maxQty, 999),
-    minQty: toNumber(product.minQty, 1),
+    maxQty,
+    minQty,
+    minTotalCustomerCurrency: hasMinTotal ? toNumber(minTotalValue, 0) : null,
+    minTotalDisplay: product.minTotalDisplay || "",
+    minTotalUsd: product.minTotalUsd || null,
     name,
-    price: hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : "",
+    price: displayPriceLabel,
     priceValue: numericPrice,
+    priceDisplayMode: product.priceDisplayMode || (minQty > 1 ? "min_total" : "unit"),
+    unitPriceDisplay: product.unitPriceDisplay || "",
+    unitPriceUsd: product.unitPriceUsd || product.finalPrice,
     status,
     tone: product.tone || pickTone(`${name}${categoryTitle}`),
     visible: product.visibleInStore !== false,

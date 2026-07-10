@@ -106,6 +106,33 @@ export async function createCustomerOrder(token, payload, options = {}) {
   };
 }
 
+export function normalizeOrderQuote(quote = {}) {
+  const currency = String(quote.currency || DEFAULT_CURRENCY).toUpperCase();
+  const chargedAmount = toNumber(quote.chargedAmount ?? quote.payableAmount, 0);
+
+  return {
+    ...quote,
+    chargedAmount,
+    currency,
+    displayTotal: quote.displayTotal || formatCurrency(chargedAmount, currency),
+    hasEnoughBalance: quote.hasEnoughBalance !== false,
+    payableAmount: toNumber(quote.payableAmount ?? chargedAmount, chargedAmount),
+    quantity: toNumber(quote.quantity, 1),
+    walletBalance: toNumber(quote.walletBalance, 0),
+  };
+}
+
+export async function createCustomerOrderQuote(token, payload, options = {}) {
+  const response = await apiRequest("/orders/quote", {
+    method: "POST",
+    token,
+    body: payload,
+    signal: options.signal,
+  });
+
+  return normalizeOrderQuote(response.data || {});
+}
+
 export async function getCustomerOrders(token, query = {}) {
   const response = await apiRequest("/me/orders", {
     token,

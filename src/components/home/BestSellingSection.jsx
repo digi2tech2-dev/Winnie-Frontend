@@ -22,6 +22,8 @@ function getBestSellingScore(item = {}) {
 }
 
 function getDiscountPercentage(item = {}) {
+  if (item.hasDiscount !== true) return null;
+
   const percentage = Number(item.discountPercentage ?? item.discountPercent ?? item.discount);
   if (Number.isFinite(percentage) && percentage > 0) {
     return Math.round(percentage);
@@ -30,20 +32,6 @@ function getDiscountPercentage(item = {}) {
   const rate = Number(item.discountRate);
   if (Number.isFinite(rate) && rate > 0) {
     return Math.round(rate <= 1 ? rate * 100 : rate);
-  }
-
-  const originalPrice = Number(
-    item.priceBeforeDiscount
-      ?? item.compareAtPrice
-      ?? item.regularPrice
-      ?? item.oldPrice
-      ?? item.originalPrice
-      ?? item.listPrice
-      ?? item.basePrice,
-  );
-  const currentPrice = Number(item.displayPrice ?? item.finalPrice ?? item.sellingPrice ?? item.priceValue);
-  if (Number.isFinite(originalPrice) && Number.isFinite(currentPrice) && originalPrice > currentPrice) {
-    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
   }
 
   return null;

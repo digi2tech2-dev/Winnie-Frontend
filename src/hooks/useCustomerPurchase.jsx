@@ -278,6 +278,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
           requireAccountId={false}
           submitError={purchaseError}
           submitting={purchaseSubmitting}
+          token={token}
         />
       )}
       {purchaseReceipt && (
@@ -300,7 +301,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
         />
       )}
     </AnimatePresence>
-  ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, insufficientFundsPrompt, submitPurchase, t]);
+  ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, insufficientFundsPrompt, submitPurchase, t, token]);
 
   return {
     openPurchase,
