@@ -11,6 +11,8 @@ const emptyProviderLink = {
   providers: [],
 };
 
+const safeTrim = (value) => String(value ?? "").trim();
+
 export default function ProductPricing({
   onChange,
   onLinkModeChange,
@@ -265,14 +267,14 @@ function SummaryItem({ label, value }) {
 function getCurrentProductSummary(value) {
   if (!value.providerProductId || !value.providerProductName) return null;
 
-  const supplierPrice = value.supplierPrice || value.providerPrice || value.rawPrice || "";
+  const supplierPrice = safeTrim(value.supplierPrice || value.providerPrice || value.rawPrice);
 
   return {
-    id: value.providerProductId,
-    externalProductId: value.providerProductExternalId || "",
+    id: safeTrim(value.providerProductId),
+    externalProductId: safeTrim(value.providerProductExternalId),
     maxQty: value.providerProductMaxQty ?? null,
     minQty: value.providerProductMinQty ?? null,
-    name: value.providerProductName,
+    name: safeTrim(value.providerProductName),
     priceLabel: supplierPrice ? formatSupplierPrice(supplierPrice) : "",
     rawPrice: supplierPrice,
     supplierPrice,
@@ -280,10 +282,10 @@ function getCurrentProductSummary(value) {
 }
 
 function getExactSupplierPrice(providerProduct) {
-  return String(
+  return safeTrim(
     providerProduct?.supplierPrice
     ?? providerProduct?.rawPrice
     ?? providerProduct?.price
     ?? "",
-  ).trim();
+  );
 }

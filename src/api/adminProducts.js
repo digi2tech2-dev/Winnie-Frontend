@@ -11,6 +11,11 @@ import {
 } from "./adapters";
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "url", "email", "tel", "date"]);
+const safeTrim = (value) => String(value ?? "").trim();
+const optionalTrim = (value) => {
+  const trimmed = safeTrim(value);
+  return trimmed || undefined;
+};
 
 function isFileLike(value) {
   return typeof File !== "undefined" && value instanceof File;
@@ -23,8 +28,7 @@ function toId(value) {
 }
 
 function sanitizeFieldKey(value, fallback) {
-  const normalized = String(value || "")
-    .trim()
+  const normalized = safeTrim(value)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
@@ -52,7 +56,7 @@ function numberOrNull(value) {
 
 export function toDecimalString(value) {
   if (value === "" || value === null || value === undefined) return "";
-  return String(value).trim();
+  return safeTrim(value);
 }
 
 export function formatSupplierPrice(value, currency = DEFAULT_CURRENCY) {
@@ -62,7 +66,7 @@ export function formatSupplierPrice(value, currency = DEFAULT_CURRENCY) {
 }
 
 function firstNonEmpty(...values) {
-  return values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+  return values.find((value) => value !== undefined && value !== null && safeTrim(value) !== "");
 }
 
 function toPayloadId(value) {
@@ -72,7 +76,7 @@ function toPayloadId(value) {
 
 function toPayloadImage(value) {
   if (typeof value !== "string") return undefined;
-  const image = value.trim();
+  const image = safeTrim(value);
   if (!image || /^data:/i.test(image)) return undefined;
   return image;
 }
@@ -82,7 +86,7 @@ function hasOwn(value, key) {
 }
 
 function normalizeStatusValue(value) {
-  return String(value || "").trim().toLowerCase();
+  return safeTrim(value).toLowerCase();
 }
 
 function mapStatusToIsActive(value) {
@@ -97,7 +101,7 @@ function mapStatusToIsActive(value) {
 function normalizeExtraFields(fields = []) {
   return asArray(fields)
     .map((field, index) => {
-      const label = String(field.label || "").trim() || `Field ${index + 1}`;
+      const label = safeTrim(field.label) || `Field ${index + 1}`;
       const key = sanitizeFieldKey(field.key || field.name || label, `field_${index + 1}`);
       const type = FIELD_TYPES.has(field.type) ? field.type : "text";
       const options = parseOptions(field);
@@ -338,9 +342,9 @@ export function buildAdminProductPayload(form = {}, options = {}) {
       : undefined;
 
   return compactObject({
-    name: firstNonEmpty(form.nameAr, form.name, form.nameEn, form.title),
-    nameEn: firstNonEmpty(form.nameEn),
-    description: form.description,
+    name: optionalTrim(firstNonEmpty(form.nameAr, form.name, form.nameEn, form.title)),
+    nameEn: optionalTrim(form.nameEn),
+    description: optionalTrim(form.description),
     category,
     image,
     basePrice: priceValue === undefined ? undefined : toDecimalString(priceValue),
@@ -533,7 +537,7 @@ export async function deleteAdminProduct(token, id, categoryLookup = new Map()) 
 export function normalizeProductProviderOption(provider = {}) {
   const id = getItemId(provider);
   const supportedFeatures = Array.isArray(provider.supportedFeatures)
-    ? provider.supportedFeatures.map((feature) => String(feature || "").trim()).filter(Boolean)
+    ? provider.supportedFeatures.map((feature) => safeTrim(feature)).filter(Boolean)
     : [];
   const credentialConfigured = Boolean(provider.credentialConfigured || provider.credentialsConfigured || provider.hasCredential);
 
@@ -541,13 +545,13 @@ export function normalizeProductProviderOption(provider = {}) {
     id,
     _id: provider._id ?? id,
     authType: String(provider.authType || "NONE").toUpperCase(),
-    code: provider.code || provider.slug || id,
+    code: safeTrim(provider.code || provider.slug || id),
     credentialConfigured,
     credentialsConfigured: credentialConfigured,
     hasCredential: credentialConfigured,
     isActive: provider.isActive !== false,
-    name: provider.name || "Provider",
-    slug: provider.slug || "",
+    name: safeTrim(provider.name) || "Provider",
+    slug: safeTrim(provider.slug),
     supportedFeatures,
   };
 }
@@ -556,26 +560,26 @@ export function normalizeProductProviderProductOption(product = {}) {
   const id = getItemId(product);
   const currency = String(product.currency || DEFAULT_CURRENCY).toUpperCase();
   const rawPrice = firstNonEmpty(product.rawPrice, product.supplierPrice, product.price, product.providerPrice);
-  const externalProductId = product.externalProductId || product.externalId || "";
+  const externalProductId = safeTrim(product.externalProductId || product.externalId);
 
   return {
     id,
     _id: product._id ?? id,
-    category: product.category || product.categoryLabel || "",
-    categoryLabel: product.categoryLabel || product.category || "",
+    category: safeTrim(product.category || product.categoryLabel),
+    categoryLabel: safeTrim(product.categoryLabel || product.category),
     currency,
     externalId: externalProductId,
     externalProductId,
     isActive: product.isActive !== false,
     maxQty: product.maxQty ?? null,
     minQty: product.minQty ?? null,
-    name: product.name || "Provider product",
+    name: safeTrim(product.name) || "Provider product",
     rawPrice: toDecimalString(rawPrice),
     supplierPrice: toDecimalString(rawPrice),
     price: toDecimalString(rawPrice),
     priceLabel: formatSupplierPrice(rawPrice, currency),
-    providerProductId: product.providerProductId || id,
-    providerName: product.providerName || "",
+    providerProductId: safeTrim(product.providerProductId || id),
+    providerName: safeTrim(product.providerName),
   };
 }
 
@@ -618,8 +622,9 @@ export async function linkAdminProductProvider(token, productId, payload = {}, c
     body: compactObject({
       fulfillmentMode: requestedMode === "manual" ? "MANUAL" : payload.fulfillmentMode || "AUTO",
       mode: payload.mode || "automatic",
-      providerId: payload.providerId,
-      providerProductId: payload.providerProductId,
+      providerId: optionalTrim(payload.providerId),
+      providerProductId: optionalTrim(payload.providerProductId),
+      externalProductId: optionalTrim(payload.externalProductId),
       syncLimits: payload.syncLimits,
       syncName: payload.syncName,
       syncPrice: payload.syncPrice,

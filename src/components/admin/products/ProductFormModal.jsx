@@ -56,6 +56,12 @@ const emptyProviderLinkState = {
   providers: [],
 };
 
+const safeTrim = (value) => String(value ?? "").trim();
+const optionalTrim = (value) => {
+  const trimmed = safeTrim(value);
+  return trimmed || undefined;
+};
+
 export default function ProductFormModal({ open, product, mainCategories, subCategories, onClose, onSave, saving = false }) {
   if (!open) return null;
   return createPortal(
@@ -267,8 +273,12 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     const effectiveForm = form.syncPriceFromProvider
       ? applySupplierPriceSync(form, selectedProviderProduct)
       : form;
+    const nameAr = safeTrim(effectiveForm.nameAr);
+    const nameEn = safeTrim(effectiveForm.nameEn);
+    const description = safeTrim(effectiveForm.description);
+    const extraFields = Array.isArray(effectiveForm.extraFields) ? effectiveForm.extraFields : [];
 
-    if (!effectiveForm.nameAr.trim() || !effectiveForm.nameEn.trim()) {
+    if (!nameAr || !nameEn) {
       setActiveTab("basic");
       setError("أدخل اسم المنتج بالعربي والإنجليزي.");
       return;
@@ -306,9 +316,9 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
     const numericOriginalPrice = Number(effectiveForm.originalPrice) || 0;
     const numericFinalPrice = Number(effectiveForm.finalPrice) || 0;
-    const normalizedFields = effectiveForm.extraFields.map((field, index) => ({
+    const normalizedFields = extraFields.map((field, index) => ({
       ...field,
-      label: field.label.trim() || `حقل ${index + 1}`,
+      label: safeTrim(field.label) || `حقل ${index + 1}`,
       key: makeFieldKey(field.key || field.label, index),
       options: parseOptions(field),
     }));
@@ -339,24 +349,25 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
     onSave({
       ...effectiveForm,
-      nameAr: effectiveForm.nameAr.trim(),
-      nameEn: effectiveForm.nameEn.trim(),
-      description: effectiveForm.description.trim(),
-      image: effectiveForm.image || "",
+      nameAr,
+      nameEn,
+      description,
+      image: safeTrim(effectiveForm.image),
       displayOrder: Math.max(1, Number(effectiveForm.displayOrder) || 1),
       min: Math.max(0, Number(effectiveForm.min) || 0),
       max: Math.max(0, Number(effectiveForm.max) || 0),
-      supplierPrice: String(effectiveForm.supplierPrice ?? "").trim(),
+      supplierPrice: safeTrim(effectiveForm.supplierPrice),
       supplierMin: Math.max(0, Number(effectiveForm.supplierMin) || 0),
       supplierMax: Math.max(0, Number(effectiveForm.supplierMax) || 0),
-      originalPrice: String(effectiveForm.originalPrice ?? "").trim(),
-      finalPrice: String(effectiveForm.finalPrice ?? "").trim(),
+      originalPrice: safeTrim(effectiveForm.originalPrice),
+      finalPrice: safeTrim(effectiveForm.finalPrice),
       discountPercentage: Math.min(100, Math.max(0, Number(effectiveForm.discountPercentage) || 0)),
       profitMargin: numericOriginalPrice > 0 ? Number((((numericFinalPrice - numericOriginalPrice) / numericOriginalPrice) * 100).toFixed(2)) : Number(effectiveForm.profitMargin) || 0,
       clearProviderLink: Boolean(effectiveForm.clearProviderLink),
       extraFields: normalizedFields,
-      providerId: effectiveForm.providerId,
-      providerProductId: effectiveForm.providerProductId,
+      providerId: safeTrim(effectiveForm.providerId),
+      providerProductId: safeTrim(effectiveForm.providerProductId),
+      providerProductExternalId: optionalTrim(effectiveForm.providerProductExternalId),
       syncLimits: Boolean(effectiveForm.syncLimitsFromProvider),
       syncName: Boolean(effectiveForm.syncNameFromProvider),
       syncPrice: Boolean(effectiveForm.syncPriceFromProvider),
@@ -426,10 +437,18 @@ function buildInitialProductForm(product) {
     ...emptyProduct,
     ...product,
     clearProviderLink: false,
-    extraFields: (product?.extraFields || []).map(cloneExtraField),
+    description: safeTrim(product?.description),
+    image: safeTrim(product?.image),
+    nameAr: safeTrim(product?.nameAr || product?.name),
+    nameEn: safeTrim(product?.nameEn || product?.name),
+    extraFields: (Array.isArray(product?.extraFields) ? product.extraFields : []).map(cloneExtraField),
     linkType: providerLinked ? "automatic" : product?.linkType || "manual",
-    providerId: product?.providerId || "",
-    providerProductId: product?.providerProductId || "",
+    providerId: safeTrim(product?.providerId),
+    providerProductId: safeTrim(product?.providerProductId),
+    providerProductExternalId: optionalTrim(product?.providerProductExternalId),
+    supplierPrice: safeTrim(product?.supplierPrice),
+    originalPrice: safeTrim(product?.originalPrice),
+    finalPrice: safeTrim(product?.finalPrice),
     providerProductSearch: "",
     syncLimitsFromProvider: !providerLinked,
     syncNameFromProvider: false,
@@ -442,36 +461,36 @@ function mergeSelectedProductOption(products = [], selectedProductId = "", produ
     return products;
   }
 
-  const selectedName = product?.providerProductName || "";
+  const selectedName = safeTrim(product?.providerProductName);
   if (!selectedName) return products;
 
   return [
     {
-      id: selectedProductId,
-      externalProductId: product?.providerProductExternalId || "",
+      id: safeTrim(selectedProductId),
+      externalProductId: safeTrim(product?.providerProductExternalId),
       maxQty: product?.providerProductMaxQty ?? null,
       minQty: product?.providerProductMinQty ?? null,
       name: selectedName,
       priceLabel: "",
-      rawPrice: product?.supplierPrice || product?.providerPrice || "",
-      supplierPrice: product?.supplierPrice || product?.providerPrice || "",
-      providerName: product?.providerName || "",
+      rawPrice: safeTrim(product?.supplierPrice || product?.providerPrice),
+      supplierPrice: safeTrim(product?.supplierPrice || product?.providerPrice),
+      providerName: safeTrim(product?.providerName),
     },
     ...products,
   ];
 }
 
 function getSupplierPrice(providerProduct) {
-  return String(
+  return safeTrim(
     providerProduct?.supplierPrice
     ?? providerProduct?.rawPrice
     ?? providerProduct?.price
     ?? "",
-  ).trim();
+  );
 }
 
 function applySupplierPriceSync(draft, providerProduct) {
-  const supplierPrice = getSupplierPrice(providerProduct) || String(draft?.supplierPrice ?? "").trim();
+  const supplierPrice = getSupplierPrice(providerProduct) || safeTrim(draft?.supplierPrice);
   if (!supplierPrice) return draft;
 
   return {
@@ -486,19 +505,19 @@ function applySupplierPriceSync(draft, providerProduct) {
 function buildProviderProductSelectionPatch(providerProduct, current) {
   const supplierPrice = getSupplierPrice(providerProduct);
   const patch = {
-    providerProductId: providerProduct.id,
-    providerProductExternalId: providerProduct.externalProductId || "",
-    providerProductMaxQty: providerProduct.maxQty ?? null,
-    providerProductMinQty: providerProduct.minQty ?? null,
-    providerProductName: providerProduct.name,
+    providerProductId: safeTrim(providerProduct?.id),
+    providerProductExternalId: safeTrim(providerProduct?.externalProductId),
+    providerProductMaxQty: providerProduct?.maxQty ?? null,
+    providerProductMinQty: providerProduct?.minQty ?? null,
+    providerProductName: safeTrim(providerProduct?.name),
     supplierPrice,
-    supplierMin: providerProduct.minQty ?? 0,
-    supplierMax: providerProduct.maxQty ?? 0,
+    supplierMin: providerProduct?.minQty ?? 0,
+    supplierMax: providerProduct?.maxQty ?? 0,
   };
 
   if (current.syncLimitsFromProvider) {
-    patch.min = providerProduct.minQty ?? current.min;
-    patch.max = providerProduct.maxQty ?? current.max;
+    patch.min = providerProduct?.minQty ?? current.min;
+    patch.max = providerProduct?.maxQty ?? current.max;
   }
 
   return current.syncPriceFromProvider
@@ -511,7 +530,7 @@ function findSelectedProviderProduct(products = [], providerProductId = "") {
 }
 
 function makeFieldKey(label, index) {
-  const normalized = String(label || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^[^a-z]+/, "");
+  const normalized = safeTrim(label).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^[^a-z]+/, "");
   return normalized || `field_${index + 1}`;
 }
 

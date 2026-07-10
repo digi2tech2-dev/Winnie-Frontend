@@ -34,6 +34,11 @@ import { useAuth } from "../../context/AuthContext";
 
 const initialFilters = { query: "", mainCategoryId: "all", subCategoryId: "all", status: "all", linkType: "all", sort: "newest" };
 const productPageSize = 200;
+const safeTrim = (value) => String(value ?? "").trim();
+const optionalTrim = (value) => {
+  const trimmed = safeTrim(value);
+  return trimmed || undefined;
+};
 const emptyProviderLinkState = {
   error: "",
   loadingProducts: false,
@@ -222,8 +227,9 @@ export default function ProductsManagementPage() {
         const linkResult = await linkAdminProductProvider(token, savedProduct.id, {
           fulfillmentMode: "AUTO",
           mode: "automatic",
-          providerId: values.providerId,
-          providerProductId: values.providerProductId,
+          providerId: optionalTrim(values.providerId),
+          providerProductId: optionalTrim(values.providerProductId),
+          externalProductId: optionalTrim(values.providerProductExternalId || values.externalProductId),
           syncLimits: values.syncLimits,
           syncName: values.syncName,
           syncPrice: values.syncPrice,
@@ -420,8 +426,8 @@ export default function ProductsManagementPage() {
     setSaving("provider-link");
     try {
       const result = await linkAdminProductProvider(token, providerLink.product.id, {
-        providerId: providerLink.providerId,
-        providerProductId: providerLink.providerProductId,
+        providerId: optionalTrim(providerLink.providerId),
+        providerProductId: optionalTrim(providerLink.providerProductId),
       }, categoryLookup);
       applyProductToState(result.product);
       setProviderLink(emptyProviderLinkState);
@@ -529,7 +535,7 @@ function ProductTh({ children, className = "" }) {
 }
 
 function filterProducts(products, filters) {
-  const query = filters.query.trim().toLocaleLowerCase("ar");
+  const query = safeTrim(filters.query).toLocaleLowerCase("ar");
   return products.filter((product) => {
     const status = product.paused ? "paused" : product.status;
     return (!query || `${product.nameAr} ${product.nameEn}`.toLocaleLowerCase("ar").includes(query)) &&
@@ -547,7 +553,7 @@ function filterProducts(products, filters) {
 }
 
 function countActiveFilters(filters) {
-  return [filters.query.trim(), filters.mainCategoryId !== "all", filters.subCategoryId !== "all", filters.status !== "all", filters.linkType !== "all", filters.sort !== "newest"].filter(Boolean).length;
+  return [safeTrim(filters.query), filters.mainCategoryId !== "all", filters.subCategoryId !== "all", filters.status !== "all", filters.linkType !== "all", filters.sort !== "newest"].filter(Boolean).length;
 }
 
 function getConfirmTitle(kind) {
