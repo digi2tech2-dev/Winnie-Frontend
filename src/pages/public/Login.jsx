@@ -18,6 +18,7 @@ export default function Login() {
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { isLoading, login, loginWithGoogle, user } = useAuth();
   const { showToast } = useToast();
   const { i18n, t } = useTranslation("auth");
@@ -116,8 +117,12 @@ export default function Login() {
   const continueWithGoogle = () => {
     if (!ensurePolicyAgreement()) return;
 
+    setGoogleLoading(true);
     const result = loginWithGoogle();
-    showToast({ type: "info", title: t("common.googleLoginTitle"), message: result.message });
+    if (!result.ok) {
+      setGoogleLoading(false);
+      showToast({ type: "error", title: t("common.googleLoginTitle"), message: result.message });
+    }
   };
 
   return (
@@ -163,7 +168,8 @@ export default function Login() {
             <button
               type="button"
               onClick={continueWithGoogle}
-              className="group block w-full rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#071226]"
+              disabled={googleLoading || isLoading}
+              className="group block w-full rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:opacity-70 dark:focus-visible:ring-offset-[#071226]"
             >
               <span className="flex h-12 items-center justify-center gap-3 rounded-[15px] bg-white px-4 text-sm font-black text-slate-800 transition group-hover:bg-[#F8FCFF] dark:bg-[#111827] dark:text-white dark:group-hover:bg-[#0D1324]">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]">

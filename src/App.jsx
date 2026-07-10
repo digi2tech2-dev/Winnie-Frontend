@@ -17,6 +17,7 @@ const PublicCategories = lazy(() => import("./pages/public/PublicCategories"));
 const PublicCategoryProducts = lazy(() => import("./pages/public/PublicCategoryProducts"));
 const Login = lazy(() => import("./pages/public/Login"));
 const Register = lazy(() => import("./pages/public/Register"));
+const GoogleCallback = lazy(() => import("./pages/auth/GoogleCallback"));
 const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword"));
 const EmailVerified = lazy(() => import("./pages/public/EmailVerified"));
 const ImportantArticlePage = lazy(() => import("./pages/public/ImportantArticlePage"));
@@ -78,6 +79,9 @@ export default function App() {
             <Route path="best-selling" element={<Animated><CustomerBestSelling loginOnPurchase /></Animated>} />
             <Route path="login" element={<Animated><Login /></Animated>} />
             <Route path="register" element={<Animated><Register /></Animated>} />
+            <Route path="auth" element={<Animated><GoogleCallback /></Animated>} />
+            <Route path="auth/callback" element={<Animated><GoogleCallback /></Animated>} />
+            <Route path="auth/google/callback" element={<Animated><GoogleCallback /></Animated>} />
             <Route path="forgot-password" element={<Animated><ForgotPassword /></Animated>} />
             <Route path="email-verified" element={<Animated><EmailVerified /></Animated>} />
             <Route path="payment/success" element={<Animated><PaymentReturnPage variant="success" /></Animated>} />

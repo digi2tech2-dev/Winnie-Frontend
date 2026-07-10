@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { login as loginRequest, logoutLocalOnly, register as registerRequest } from "../api/auth";
+import { getGoogleLoginUrl, login as loginRequest, logoutLocalOnly, register as registerRequest } from "../api/auth";
 import { normalizeApiError } from "../api/errors";
 import { getCurrentUser } from "../api/me";
 import { getDefaultRouteForRole, isActiveUser, normalizeUser } from "../utils/authRoles";
@@ -297,10 +297,20 @@ export function AuthProvider({ children }) {
     }
   }, [persistAuth]);
 
-  const loginWithGoogle = useCallback(() => ({
-    ok: false,
-    message: "Google login is not configured in this frontend flow yet.",
-  }), []);
+  const loginWithGoogle = useCallback(() => {
+    const googleLoginUrl = getGoogleLoginUrl();
+
+    if (!googleLoginUrl) {
+      const message = "Google login is not configured. Missing API base URL.";
+      setAuthError(message);
+      return { ok: false, message };
+    }
+
+    setIsLoading(true);
+    setAuthError("");
+    window.location.assign(googleLoginUrl);
+    return { ok: true, redirectTo: googleLoginUrl };
+  }, []);
 
   const logout = useCallback(() => {
     clearAuth();

@@ -10,6 +10,7 @@ import {
   normalizePagination,
   toNumber,
 } from "./adapters";
+import { formatSupplierPrice, toDecimalString } from "./adminProducts";
 
 function toId(value) {
   if (!value) return "";
@@ -124,8 +125,8 @@ export function normalizeAdminProviderProduct(product = {}, index = 0) {
     min: toNumber(product.minQty ?? product.min, 1),
     minQty: toNumber(product.minQty ?? product.min, 1),
     name,
-    price: rawPrice === null ? null : toNumber(rawPrice, 0),
-    priceLabel: rawPrice === null ? "Not returned" : formatCurrency(rawPrice, currency, "ar-EG-u-nu-latn"),
+    price: toDecimalString(rawPrice),
+    priceLabel: rawPrice === null ? "Not returned" : formatSupplierPrice(rawPrice, currency),
     providerId,
     providerName: provider?.name || "",
     rawName: product.rawName || "",

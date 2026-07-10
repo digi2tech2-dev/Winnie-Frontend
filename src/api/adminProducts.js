@@ -50,6 +50,17 @@ function numberOrNull(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+export function toDecimalString(value) {
+  if (value === "" || value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+export function formatSupplierPrice(value, currency = DEFAULT_CURRENCY) {
+  const text = toDecimalString(value);
+  if (!text) return "—";
+  return `${String(currency || DEFAULT_CURRENCY).toUpperCase()} ${text}`;
+}
+
 function firstNonEmpty(...values) {
   return values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
 }
@@ -213,10 +224,13 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
   const isPaused = product.isPaused === true || product.paused === true;
   const backendStatus = String(product.status || "").toLowerCase();
   const productStatus = !isActive || backendStatus === "unavailable" ? "unavailable" : "available";
-  const priceValue = toNumber(product.finalPrice ?? product.basePrice ?? product.price, 0);
+  const priceValue = toDecimalString(firstNonEmpty(product.finalPrice, product.basePrice, product.price, 0));
   const provider = product.provider && typeof product.provider === "object" ? product.provider : null;
   const providerProduct = product.providerProduct && typeof product.providerProduct === "object" ? product.providerProduct : null;
   const isProviderLinked = Boolean(product.provider || product.providerProduct || product.isLinked || product.currentProviderName || product.currentProviderProductName);
+  const supplierPrice = toDecimalString(
+    firstNonEmpty(product.providerPrice, product.supplierPrice, providerProduct?.rawPrice, product.rawPrice),
+  );
 
   return {
     ...product,
@@ -243,7 +257,7 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     name: product.name || "Untitled product",
     nameAr: product.name || product.nameAr || "Untitled product",
     nameEn: product.nameEn || product.name || "Untitled product",
-    originalPrice: toNumber(product.providerPrice ?? product.basePrice ?? product.price, priceValue),
+    originalPrice: toDecimalString(firstNonEmpty(product.originalPrice, product.providerPrice, product.basePrice, product.price, priceValue)),
     paused: isPaused,
     providerId: toId(product.provider),
     providerName: provider?.name || product.currentProviderName || "",
@@ -258,7 +272,8 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     pricingMode: product.pricingMode || (isProviderLinked ? "sync" : "manual"),
     status: productStatus,
     subCategoryId: hasSubCategory ? categoryId : "",
-    supplierPrice: toNumber(product.providerPrice, 0),
+    supplierPrice,
+    supplierPriceLabel: formatSupplierPrice(supplierPrice),
     visible: visibleInStore,
     visibleInStore,
   };
@@ -328,12 +343,12 @@ export function buildAdminProductPayload(form = {}, options = {}) {
     description: form.description,
     category,
     image,
-    basePrice: priceValue === undefined ? undefined : Math.max(0, toNumber(priceValue, 0)),
-    finalPrice: priceValue === undefined ? undefined : Math.max(0, toNumber(priceValue, 0)),
-    originalPrice: form.originalPrice === undefined ? undefined : Math.max(0, toNumber(form.originalPrice, 0)),
+    basePrice: priceValue === undefined ? undefined : toDecimalString(priceValue),
+    finalPrice: priceValue === undefined ? undefined : toDecimalString(priceValue),
+    originalPrice: form.originalPrice === undefined ? undefined : toDecimalString(form.originalPrice),
     discountPercentage: form.discountPercentage === undefined ? undefined : Math.min(100, Math.max(0, toNumber(form.discountPercentage, 0))),
     profitMargin: form.profitMargin === undefined ? undefined : toNumber(form.profitMargin, 0),
-    supplierPrice: form.supplierPrice === undefined ? undefined : Math.max(0, toNumber(form.supplierPrice, 0)),
+    supplierPrice: form.supplierPrice === undefined ? undefined : toDecimalString(form.supplierPrice),
     minQty: minQty === undefined ? undefined : Math.max(1, toNumber(minQty, 1)),
     maxQty: maxQty === undefined ? undefined : Math.max(Math.max(1, toNumber(minQty, 1)), toNumber(maxQty, Math.max(1, toNumber(minQty, 1)))),
     displayOrder: form.displayOrder === undefined ? undefined : toNumber(form.displayOrder, 0),
@@ -540,7 +555,7 @@ export function normalizeProductProviderOption(provider = {}) {
 export function normalizeProductProviderProductOption(product = {}) {
   const id = getItemId(product);
   const currency = String(product.currency || DEFAULT_CURRENCY).toUpperCase();
-  const rawPrice = product.price ?? product.providerPrice ?? null;
+  const rawPrice = firstNonEmpty(product.rawPrice, product.supplierPrice, product.price, product.providerPrice);
   const externalProductId = product.externalProductId || product.externalId || "";
 
   return {
@@ -555,8 +570,10 @@ export function normalizeProductProviderProductOption(product = {}) {
     maxQty: product.maxQty ?? null,
     minQty: product.minQty ?? null,
     name: product.name || "Provider product",
-    price: rawPrice === null ? null : toNumber(rawPrice, 0),
-    priceLabel: rawPrice === null ? "" : formatCurrency(rawPrice, currency, "ar-EG-u-nu-latn"),
+    rawPrice: toDecimalString(rawPrice),
+    supplierPrice: toDecimalString(rawPrice),
+    price: toDecimalString(rawPrice),
+    priceLabel: formatSupplierPrice(rawPrice, currency),
     providerProductId: product.providerProductId || id,
     providerName: product.providerName || "",
   };

@@ -2,10 +2,12 @@ import { Eye, Lock, Mail } from "lucide-react";
 import Brand from "./Brand";
 import { useFeedback } from "./FeedbackProvider";
 import { useToast } from "./ToastProvider";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginCard({ onNavigate }) {
   const { showToast } = useToast();
   const { showFeedback } = useFeedback();
+  const { loginWithGoogle } = useAuth();
 
   const login = (method = "Email") => {
     showToast({
@@ -20,6 +22,17 @@ export default function LoginCard({ onNavigate }) {
       confirmLabel: "Open Dashboard",
       onConfirm: () => onNavigate?.("dashboard"),
     });
+  };
+
+  const continueWithGoogle = () => {
+    const result = loginWithGoogle();
+    if (!result.ok) {
+      showToast({
+        type: "error",
+        title: "Google login",
+        message: result.message,
+      });
+    }
   };
 
   return (
@@ -89,7 +102,7 @@ export default function LoginCard({ onNavigate }) {
 
         <button
           type="button"
-          onClick={() => login("Google")}
+          onClick={continueWithGoogle}
           className="interactive-ring flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-700 dark:border-white/10 dark:bg-[#151827] dark:text-[#F8F9FA]"
         >
           <span className="text-lg font-black text-blue-500">G</span>
