@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getCustomerPaymentMethods } from "../api/paymentMethods";
 import { getWalletSummary } from "../api/wallet";
+import AntiScamSafetyConfirmationModal from "../components/AntiScamSafetyConfirmationModal";
 import { useAuth } from "../context/AuthContext";
 
 export default function WalletPage({ basePath = "/customer" }) {
@@ -18,6 +19,7 @@ export default function WalletPage({ basePath = "/customer" }) {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
   const [paymentMethodsError, setPaymentMethodsError] = useState("");
+  const [pendingTopUpMethod, setPendingTopUpMethod] = useState(null);
   const insufficientFunds = location.state?.insufficientFunds || null;
   const groupSubtitle =
     paymentMethods.length > 0
@@ -29,7 +31,19 @@ export default function WalletPage({ basePath = "/customer" }) {
   };
 
   const addPaymentMethod = (method) => {
-    navigate(`${basePath}/wallet/top-up/${method.id}`);
+    setPendingTopUpMethod(method);
+  };
+
+  const continueTopUp = () => {
+    if (!pendingTopUpMethod) return;
+    const methodId = pendingTopUpMethod.id;
+    setPendingTopUpMethod(null);
+    navigate(`${basePath}/wallet/top-up/${methodId}`, {
+      state: {
+        antiScamConfirmed: true,
+        antiScamConfirmedAt: new Date().toISOString(),
+      },
+    });
   };
 
   useEffect(() => {
@@ -167,6 +181,13 @@ export default function WalletPage({ basePath = "/customer" }) {
 
         <SecurityPanel />
       </div>
+
+      {pendingTopUpMethod && (
+        <AntiScamSafetyConfirmationModal
+          onCancel={() => setPendingTopUpMethod(null)}
+          onConfirm={continueTopUp}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Copy, CreditCard, ExternalLink, Hash, Loader2, ReceiptText, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { createDepositRequest } from "../../api/deposits";
 import { getCustomerPaymentMethod } from "../../api/paymentMethods";
-import { createPaymentIntent, isPaymentCurrencyConversionError, isPaymentRiskLimitError } from "../../api/payments";
+import { createPaymentIntent, isAntiScamConfirmationRequiredError, isPaymentCurrencyConversionError, isPaymentRiskLimitError } from "../../api/payments";
 import { getWalletSummary, getWalletTransactions } from "../../api/wallet";
+import AntiScamSafetyConfirmationModal from "../../components/AntiScamSafetyConfirmationModal";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
@@ -25,9 +26,13 @@ function makeIdempotencyKey(prefix) {
 
 export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const { methodId } = useParams();
+  const location = useLocation();
   const { refreshCurrentUser, token, user } = useAuth();
   const { showToast } = useToast();
   const { t } = useTranslation("wallet");
+  const [antiScamConfirmed, setAntiScamConfirmed] = useState(location.state?.antiScamConfirmed === true);
+  const [antiScamConfirmedAt, setAntiScamConfirmedAt] = useState(location.state?.antiScamConfirmedAt || null);
+  const [antiScamModalOpen, setAntiScamModalOpen] = useState(location.state?.antiScamConfirmed !== true);
   const [method, setMethod] = useState(null);
   const [methodLoading, setMethodLoading] = useState(true);
   const [methodError, setMethodError] = useState("");
@@ -162,6 +167,12 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
     setRiskBlockedMessage("");
     setSuccessMessage("");
 
+    if (!antiScamConfirmed) {
+      setErrorMessage(t("antiScamRequiredError"));
+      setAntiScamModalOpen(true);
+      return;
+    }
+
     if (amountValue <= 0) {
       setErrorMessage(t("topUp.amountGreaterZero"));
       return;
@@ -202,6 +213,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         formData.append("paymentMethodId", method.id);
         formData.append("receipt", receiptFile);
         formData.append("notes", t("topUp.manualNotes", { method: method.title }));
+        formData.append("antiScamConfirmed", "true");
+        formData.append("termsAccepted", "true");
+        if (antiScamConfirmedAt) formData.append("antiScamConfirmedAt", antiScamConfirmedAt);
 
         const result = await createDepositRequest(token, formData);
         setAmount("");
@@ -227,6 +241,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         paymentMethodId: method.id,
         returnUrl,
         cancelUrl,
+        antiScamConfirmed: true,
+        termsAccepted: true,
+        antiScamConfirmedAt,
       }, {
         idempotencyKey: makeIdempotencyKey("payment"),
       });
@@ -270,7 +287,13 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
           message,
         });
       } else {
-        setErrorMessage(requestError.userMessage || t("topUp.requestFailed"));
+        if (isAntiScamConfirmationRequiredError(requestError)) {
+          setAntiScamConfirmed(false);
+          setAntiScamModalOpen(true);
+          setErrorMessage(t("antiScamRequiredError"));
+        } else {
+          setErrorMessage(requestError.userMessage || t("topUp.requestFailed"));
+        }
       }
     } finally {
       if (!shouldRedirect) setSubmitting(false);
@@ -466,6 +489,22 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
           </section>
         </form>
       </div>
+
+      {antiScamModalOpen && !antiScamConfirmed && (
+        <AntiScamSafetyConfirmationModal
+          onCancel={() => {
+            setAntiScamModalOpen(false);
+            setErrorMessage(t("antiScamRequiredError"));
+          }}
+          onConfirm={() => {
+            const confirmedAt = new Date().toISOString();
+            setAntiScamConfirmed(true);
+            setAntiScamConfirmedAt(confirmedAt);
+            setAntiScamModalOpen(false);
+            setErrorMessage("");
+          }}
+        />
+      )}
     </div>
   );
 }

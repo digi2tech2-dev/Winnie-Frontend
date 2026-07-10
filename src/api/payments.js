@@ -11,6 +11,7 @@ import {
 
 export const PAYMENT_RISK_LIMIT_REACHED_CODE = "PAYMENT_RISK_LIMIT_REACHED";
 export const PAYMENT_CURRENCY_CONVERSION_UNAVAILABLE_CODE = "PAYMENT_CURRENCY_CONVERSION_UNAVAILABLE";
+export const ANTI_SCAM_CONFIRMATION_REQUIRED_CODE = "ANTI_SCAM_CONFIRMATION_REQUIRED";
 
 export function isPaymentRiskLimitError(error) {
   return String(error?.code || "").toUpperCase() === PAYMENT_RISK_LIMIT_REACHED_CODE;
@@ -18,6 +19,10 @@ export function isPaymentRiskLimitError(error) {
 
 export function isPaymentCurrencyConversionError(error) {
   return String(error?.code || "").toUpperCase() === PAYMENT_CURRENCY_CONVERSION_UNAVAILABLE_CODE;
+}
+
+export function isAntiScamConfirmationRequiredError(error) {
+  return String(error?.code || "").toUpperCase() === ANTI_SCAM_CONFIRMATION_REQUIRED_CODE;
 }
 
 export function normalizePaymentIntent(payload = {}) {
