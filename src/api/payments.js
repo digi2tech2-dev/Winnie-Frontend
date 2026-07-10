@@ -36,6 +36,10 @@ export function normalizePaymentIntent(payload = {}) {
   const gatewayAmount = hasGatewayCharge ? toNumber(gatewayAmountValue, 0) : null;
   const gatewayCurrency = hasGatewayCharge ? String(gatewayCurrencyValue).toUpperCase() : "";
   const exchangeRate = payment.exchangeRate ?? checkout.exchangeRate ?? null;
+  const feePercent = toNumber(payment.feePercent ?? checkout.feePercent, 0);
+  const feeAmount = toNumber(payment.feeAmount ?? checkout.feeAmount, 0);
+  const payableAmount = toNumber(payment.payableAmount ?? payment.totalAmount ?? checkout.payableAmount ?? amount, amount);
+  const payableCurrency = String(payment.payableCurrency || checkout.payableCurrency || currency).toUpperCase();
 
   return {
     ...payment,
@@ -48,11 +52,17 @@ export function normalizePaymentIntent(payload = {}) {
     createdAtLabel: formatDateTime(payment.createdAt),
     currency,
     exchangeRate,
+    feeAmount,
+    feeAmountLabel: formatCurrency(feeAmount, payableCurrency),
+    feePercent,
     gatewayAmount,
     gatewayAmountLabel: hasGatewayCharge ? formatCurrency(gatewayAmount, gatewayCurrency) : "",
     gatewayCurrency,
     hasGatewayCharge: Boolean(hasGatewayCharge),
     idempotent: Boolean(payload.idempotent),
+    payableAmount,
+    payableAmountLabel: formatCurrency(payableAmount, payableCurrency),
+    payableCurrency,
     requestedAmount,
     requestedAmountLabel: formatCurrency(requestedAmount, requestedCurrency),
     requestedCurrency,

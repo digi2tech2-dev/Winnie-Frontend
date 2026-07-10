@@ -85,6 +85,28 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const isPaymento = String(method.gateway || "").toUpperCase() === "PAYMENTO";
   const walletCurrency = String(user?.currency || "USD").toUpperCase();
   const currency = isOnline ? walletCurrency : String(method.currency || method.groupCurrency || walletCurrency).toUpperCase();
+  const feePercent = Math.max(0, Number(method.fee) || 0);
+  const estimatedFeeAmount = amountValue * feePercent / 100;
+  const estimatedPayableAmount = amountValue + estimatedFeeAmount;
+  const amountBreakdown = paymentIntent
+    ? {
+        topUpAmountLabel: paymentIntent.requestedAmountLabel || paymentIntent.amountLabel,
+        feeAmountLabel: paymentIntent.feeAmountLabel || formatCurrencyValue(paymentIntent.feeAmount, paymentIntent.payableCurrency || currency),
+        feePercent: paymentIntent.feePercent ?? feePercent,
+        payableAmountLabel: paymentIntent.payableAmountLabel || paymentIntent.totalAmountLabel,
+        walletCreditLabel: paymentIntent.requestedAmountLabel || paymentIntent.amountLabel,
+        gatewayAmountLabel: paymentIntent.gatewayAmountLabel,
+        hasGatewayCharge: paymentIntent.hasGatewayCharge,
+      }
+    : {
+        topUpAmountLabel: `${formatMoney(amountValue)} ${currency}`,
+        feeAmountLabel: `${formatMoney(estimatedFeeAmount)} ${currency}`,
+        feePercent,
+        payableAmountLabel: `${formatMoney(estimatedPayableAmount)} ${currency}`,
+        walletCreditLabel: `${formatMoney(amountValue)} ${currency}`,
+        gatewayAmountLabel: "",
+        hasGatewayCharge: false,
+      };
 
   const updateAmount = (nextValue) => {
     const cleanedValue = nextValue
@@ -202,6 +224,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         amount: amountValue,
         currency,
         gateway: method.gateway || undefined,
+        paymentMethodId: method.id,
         returnUrl,
         cancelUrl,
       }, {
@@ -359,16 +382,27 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
           )}
 
           <section className="mt-3 rounded-[16px] border border-[#8B5CF6]/[0.16] bg-[linear-gradient(135deg,rgba(139,92,246,0.12),rgba(255,255,255,0.94)_44%)] p-3 dark:border-[#8B5CF6]/[0.24] dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.46),rgba(8,13,30,0.98)_44%)]">
-            <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl bg-white/85 p-3 dark:bg-[#050918]/80">
-              <div>
-                <p className="text-[11px] font-bold text-slate-500 dark:text-white/[0.48]">{t("topUp.requestedAmount")}</p>
-                <p dir="ltr" className="mt-1 text-3xl font-black leading-none text-slate-950 dark:text-white">
-                  {formatMoney(amountValue)} {currency}
-                </p>
+            <div className="rounded-xl bg-white/85 p-3 dark:bg-[#050918]/80">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-white/[0.48]">{t("topUp.totalPayable")}</p>
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#151136] text-white shadow-[0_12px_28px_rgba(139,92,246,0.24)]">
+                  <ReceiptText className="h-5 w-5" />
+                </span>
               </div>
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#151136] text-white shadow-[0_12px_28px_rgba(139,92,246,0.24)]">
-                <ReceiptText className="h-5 w-5" />
-              </span>
+              <p dir="ltr" className="mt-1 text-3xl font-black leading-none text-slate-950 dark:text-white">
+                {amountBreakdown.payableAmountLabel}
+              </p>
+              <div className="mt-3 grid gap-2 text-right">
+                <AmountBreakdownRow label={t("topUp.topUpAmount")} value={amountBreakdown.topUpAmountLabel} />
+                <AmountBreakdownRow
+                  label={t("topUp.paymentFeeWithPercent", { percent: formatPercent(amountBreakdown.feePercent) })}
+                  value={amountBreakdown.feeAmountLabel}
+                />
+                <AmountBreakdownRow label={t("topUp.walletCreditAmount")} value={amountBreakdown.walletCreditLabel} />
+                {amountBreakdown.hasGatewayCharge && amountBreakdown.gatewayAmountLabel && (
+                  <AmountBreakdownRow label={t("topUp.gatewayCharge")} value={amountBreakdown.gatewayAmountLabel} tone="sky" />
+                )}
+              </div>
             </div>
 
             {errorMessage && (
@@ -395,7 +429,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
             {paymentIntent?.hasGatewayCharge && (
               <div className="mt-3 grid gap-2 rounded-2xl border border-sky-500/25 bg-sky-500/10 p-3 text-right dark:border-sky-400/20 dark:bg-sky-400/10">
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{t("topUp.requestedAmountShort")}</span>
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{t("topUp.walletCreditAmount")}</span>
                   <span dir="ltr" className="text-sm font-black text-slate-900 dark:text-white">{paymentIntent.requestedAmountLabel}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
@@ -479,6 +513,17 @@ function NoPaymentMethods({ basePath, message }) {
           {t("topUp.backToWallet")}
         </Link>
       </section>
+    </div>
+  );
+}
+
+function AmountBreakdownRow({ label, value, tone = "slate" }) {
+  const valueClass = tone === "sky" ? "text-sky-700 dark:text-sky-300" : "text-slate-900 dark:text-white";
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 dark:bg-white/[0.04]">
+      <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{label}</span>
+      <span dir="ltr" className={`text-sm font-black ${valueClass}`}>{value}</span>
     </div>
   );
 }
@@ -615,6 +660,16 @@ function formatMoney(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatCurrencyValue(value, currency) {
+  return `${formatMoney(Number(value) || 0)} ${String(currency || "USD").toUpperCase()}`;
+}
+
+function formatPercent(value) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 4,
+  }).format(Number(value) || 0);
 }
 
 function formatGatewayChargeText(payment, t) {
