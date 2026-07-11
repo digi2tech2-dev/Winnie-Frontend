@@ -376,8 +376,8 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center bg-[#01030b]/85 p-0 backdrop-blur-md sm:items-center sm:p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section role="dialog" aria-modal="true" aria-labelledby="product-form-title" className="dark flex h-[97dvh] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[26px] border border-[#21376d] bg-[#050a18] shadow-[0_0_0_1px_rgba(59,130,246,0.08),0_34px_100px_rgba(0,0,0,0.55),0_0_60px_rgba(124,58,237,0.12)] sm:h-auto sm:max-h-[94vh] sm:rounded-[28px]">
-        <header className="relative shrink-0 overflow-hidden border-b border-white/[0.08] bg-[linear-gradient(135deg,#0c1630,#080f22_55%,#120d29)] px-4 pb-4 pt-5 sm:px-6">
+      <section role="dialog" aria-modal="true" aria-labelledby="product-form-title" className="admin-product-form-modal flex h-[97dvh] w-full max-w-[960px] flex-col overflow-hidden rounded-t-[26px] border border-slate-200 bg-white shadow-[0_34px_100px_rgba(15,23,42,0.24),0_0_60px_rgba(124,58,237,0.08)] dark:border-[#21376d] dark:bg-[#050a18] dark:shadow-[0_0_0_1px_rgba(59,130,246,0.08),0_34px_100px_rgba(0,0,0,0.55),0_0_60px_rgba(124,58,237,0.12)] sm:h-auto sm:max-h-[94vh] sm:rounded-[28px]">
+        <header className="relative shrink-0 overflow-hidden border-b border-slate-200 bg-[linear-gradient(135deg,#f8fbff,#f5f3ff_55%,#eef6ff)] px-4 pb-4 pt-5 dark:border-white/[0.08] dark:bg-[linear-gradient(135deg,#0c1630,#080f22_55%,#120d29)] sm:px-6">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-fuchsia-500 via-blue-500 to-emerald-400" />
           <span className="pointer-events-none absolute -left-12 -top-16 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
           <div className="relative flex items-center gap-3">

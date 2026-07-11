@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getCategories } from "../../api/catalog";
+import { filterMainCategories, getCategories } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import HomeSlide from "../../components/home/HomeSlide";
 import { CategoriesGrid } from "../../components/home/HomeShowcase";
@@ -22,7 +22,7 @@ export default function PublicCategories() {
 
       try {
         const result = await getCategories();
-        if (!cancelled) setCategories(result);
+        if (!cancelled) setCategories(filterMainCategories(result));
       } catch (requestError) {
         if (!cancelled) {
           setCategories([]);

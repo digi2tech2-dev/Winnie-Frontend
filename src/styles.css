@@ -7005,3 +7005,96 @@ html.dark .admin-dashboard-main .admin-date-popover::before {
     width: 58px;
   }
 }
+/* Product editor follows the global theme; the dialog no longer forces dark mode. */
+html:not(.dark) .admin-product-form-modal {
+  color: #172033;
+}
+
+html:not(.dark) .admin-product-form-modal > header {
+  border-color: #e2e8f0 !important;
+  background: linear-gradient(135deg, #f8fbff, #f5f3ff 55%, #eef6ff) !important;
+}
+
+html:not(.dark) .admin-product-form-modal > header h2,
+html:not(.dark) .admin-product-form-modal section h3,
+html:not(.dark) .admin-product-form-modal strong,
+html:not(.dark) .admin-product-form-modal .text-white {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .admin-product-form-modal > header nav,
+html:not(.dark) .admin-product-form-modal [class*="bg-[#030817]"],
+html:not(.dark) .admin-product-form-modal [class*="bg-[#071126]"],
+html:not(.dark) .admin-product-form-modal [class*="bg-[#0b1630]"],
+html:not(.dark) .admin-product-form-modal [class*="bg-[#040c1e]"],
+html:not(.dark) .admin-product-form-modal [class*="bg-[#050d20]"] {
+  border-color: #dbe4f0 !important;
+  background: #ffffff !important;
+}
+
+html:not(.dark) .admin-product-form-modal form {
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.07), transparent 38%);
+}
+
+html:not(.dark) .admin-product-form-modal form > section {
+  border-color: #dbe4f0 !important;
+  background: linear-gradient(145deg, #ffffff, #f8fbff) !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) .admin-product-form-modal form > section > div:first-of-type {
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .admin-product-form-modal input:not([type="checkbox"]):not([type="radio"]),
+html:not(.dark) .admin-product-form-modal textarea,
+html:not(.dark) .admin-product-form-modal select {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .admin-product-form-modal input::placeholder,
+html:not(.dark) .admin-product-form-modal textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .admin-product-form-modal .text-slate-300 {
+  color: #475569 !important;
+}
+
+html:not(.dark) .admin-product-form-modal .text-slate-400,
+html:not(.dark) .admin-product-form-modal .text-slate-500 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .admin-product-form-modal .text-violet-200,
+html:not(.dark) .admin-product-form-modal .text-violet-300 {
+  color: #6d28d9 !important;
+}
+
+html:not(.dark) .admin-product-form-modal .text-sky-200,
+html:not(.dark) .admin-product-form-modal .text-sky-300,
+html:not(.dark) .admin-product-form-modal .text-cyan-200,
+html:not(.dark) .admin-product-form-modal .text-cyan-300 {
+  color: #0369a1 !important;
+}
+
+html:not(.dark) .admin-product-form-modal .text-emerald-200,
+html:not(.dark) .admin-product-form-modal .text-emerald-300 {
+  color: #047857 !important;
+}
+
+html:not(.dark) .admin-product-form-modal .text-amber-200 {
+  color: #b45309 !important;
+}
+
+html:not(.dark) .admin-product-form-modal > footer {
+  border-color: #e2e8f0 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+html:not(.dark) .admin-product-form-modal > footer button:first-child {
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}

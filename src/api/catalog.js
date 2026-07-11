@@ -47,7 +47,11 @@ function pickIcon(text = "") {
 export function normalizeCategory(category = {}, index = 0) {
   const id = getItemId(category, category.slug || `category-${index}`);
   const title = category.name || category.title || category.nameAr || "Untitled category";
-  const parentId = category.parentCategory?._id || category.parentCategory || null;
+  const parentId = category.parentCategory?._id
+    || category.parentCategory
+    || category.parentId
+    || category.mainCategoryId
+    || null;
 
   return {
     ...category,
@@ -61,7 +65,8 @@ export function normalizeCategory(category = {}, index = 0) {
     image: resolveBackendAssetUrl(
       category.image || category.imageUrl || category.imageURL || category.thumbnail || category.cover,
     ),
-    parentCategory: parentId,
+    parentCategory: parentId ? String(parentId) : null,
+    parentId: parentId ? String(parentId) : null,
     sortOrder: toNumber(category.sortOrder, index),
     isActive: category.isActive !== false,
     icon: category.icon || pickIcon(`${title} ${category.slug || ""}`),
@@ -71,7 +76,9 @@ export function normalizeCategory(category = {}, index = 0) {
 
 export function normalizeProduct(product = {}, index = 0, categoryLookup = new Map()) {
   const id = getItemId(product, `product-${index}`);
-  const categoryValue = product.category?._id || product.category || "";
+  const subCategoryValue = product.subCategory?._id || product.subCategory || product.subCategoryId || product.subcategoryId || "";
+  const mainCategoryValue = product.mainCategory?._id || product.mainCategory || product.mainCategoryId || "";
+  const categoryValue = subCategoryValue || product.category?._id || product.category || mainCategoryValue || "";
   const category = categoryLookup.get(String(categoryValue)) || categoryLookup.get(String(product.categorySlug || ""));
   const displayCurrency = String(product.displayCurrency || product.currency || DEFAULT_CURRENCY).toUpperCase();
   const minQty = toNumber(product.minQty, 1);
@@ -104,6 +111,8 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     categoryId: category?.id || (categoryValue ? String(categoryValue) : ""),
     categorySlug: category?.slug || "",
     categoryTitle,
+    mainCategoryId: mainCategoryValue ? String(mainCategoryValue) : "",
+    subCategoryId: subCategoryValue ? String(subCategoryValue) : "",
     cover: product.cover || pickTone(`${id}${name}`),
     description: product.description || "",
     discountPercentage,
@@ -234,14 +243,22 @@ export function filterProductsByCategory(products, category) {
   ].filter(Boolean));
 
   return products.filter((product) => {
-    const values = [
-      product.category,
-      product.categoryId,
-      product.categorySlug,
-      product.categoryTitle,
-      product.categoryName,
-    ].map((value) => String(value || ""));
+    const values = [product.category, product.categoryId, product.categorySlug]
+      .map((value) => String(value || ""));
 
     return values.some((value) => accepted.has(value));
   });
+}
+
+export function filterMainCategories(categories = []) {
+  return categories.filter((category) => !String(category.parentId || category.parentCategory || "").trim());
+}
+
+export function filterChildCategories(categories = [], parentCategory) {
+  if (!parentCategory) return [];
+  const accepted = new Set([parentCategory.id, parentCategory._id, parentCategory.slug]
+    .map((value) => String(value || ""))
+    .filter(Boolean));
+
+  return categories.filter((category) => accepted.has(String(category.parentId || category.parentCategory || "")));
 }

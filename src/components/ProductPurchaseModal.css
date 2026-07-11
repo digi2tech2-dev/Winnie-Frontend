@@ -618,6 +618,10 @@ select.buy-dynamic-input option {
   border-radius: 16px;
 }
 
+html:not(.dark) .buy-modal__error--insufficient-funds {
+  color: #92400e;
+}
+
 .buy-actions {
   display: grid;
   margin-top: 22px;

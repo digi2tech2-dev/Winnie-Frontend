@@ -26,10 +26,10 @@ import {
   Zap,
 } from "lucide-react";
 import GoogleMark from "../../components/GoogleMark";
-import { BrandLockup, BrandName } from "../../components/Brand";
+import { BrandName } from "../../components/Brand";
 
 const company = {
-  name: "Winnie",
+  name: "Winnie FZE",
   registration: "4423622.01",
   tax: "105156169200001",
   email: "Support.winniefun@gmail.com",
@@ -61,7 +61,7 @@ export default function About() {
 
   const headquarters = useMemo(
     () => [
-      { label: t.companyName, value: <BrandLockup fullName={false} logoClassName="h-5 w-5" nameSize="inline" />, icon: Building2 },
+      { label: t.companyName, value: company.name, icon: Building2 },
       { label: t.address, value: location, icon: MapPin },
       { label: t.registration, value: company.registration, icon: BadgeCheck },
       { label: t.tax, value: company.tax, icon: Landmark },
@@ -141,7 +141,7 @@ export default function About() {
                     <img src="/logo.png" alt="Winnie" className="h-14 w-14 object-contain" />
                   </span>
                   <div>
-                    <BrandName size="tiny" />
+                    <BrandName fullName size="tiny" />
                     <h2 className="mt-1 text-2xl font-black text-[#111715] dark:text-[#F8F4E8]">{t.identityTitle}</h2>
                     <p className="mt-1 text-sm font-semibold leading-6 text-[var(--about-muted)]">{t.identitySubtitle}</p>
                   </div>

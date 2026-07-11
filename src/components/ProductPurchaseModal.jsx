@@ -37,20 +37,48 @@ export default function ProductPurchaseModal({
   const [quote, setQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState("");
+  const [balanceError, setBalanceError] = useState("");
   const modalRef = useRef(null);
   const modalScale = useViewportFitScale(modalRef, 10, 0.45);
 
   const selectedPackage = packages[selectedPackageIndex] || null;
-  const displayTotal = quote
-    ? formatCurrencyAmount(quote.chargedAmount ?? quote.payableAmount, quote.currency)
-    : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : "";
+  const numericQuantity = Number(quantity);
+  const quoteForQuantity = quote && Number(quote.quantity) === numericQuantity ? quote : null;
+  const localEstimate = calculateLocalEstimate(product, numericQuantity, user);
+  const displayTotal = quoteForQuantity?.displayTotal
+    || (quoteForQuantity ? formatCurrencyAmount(quoteForQuantity.chargedAmount ?? quoteForQuantity.payableAmount, quoteForQuantity.currency) : "")
+    || (localEstimate ? formatCurrencyAmount(localEstimate.amount, localEstimate.currency) : "")
+    || (quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : "");
+  const totalLabel = quoteForQuantity
+    ? t("purchase.total")
+    : t("purchase.estimatedTotal", { defaultValue: isArabic ? "الإجمالي التقديري" : "Estimated total" });
   const walletBalance = Number(user?.walletBalance ?? quote?.walletBalance ?? 0);
   const balanceLabel = formatPlainAmount(walletBalance);
-  const displayError = localError || submitError || quoteError;
+  const quantityWarning = getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
+  const displayError = localError || submitError || quantityWarning || balanceError || quoteError;
   const hasOrderFields = orderFields.length > 0;
   const showFallbackAccountInput = !hasOrderFields;
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
   const productImage = getProductImage(product);
+  const missingRequiredField = orderFields.some(
+    (field) => field.required !== false && !String(fieldValues[field.key] ?? "").trim(),
+  );
+  const missingFallbackAccount = !hasOrderFields && requireAccountId && !accountId.trim();
+  const isQuantityWithinBounds = Number.isInteger(numericQuantity)
+    && numericQuantity >= minQuantity
+    && numericQuantity <= maxQuantity;
+  const quoteAllowsSubmit = Boolean(quoteForQuantity)
+    && quoteForQuantity.isQuantityValid !== false
+    && quoteForQuantity.canSubmit !== false
+    && quoteForQuantity.hasEnoughBalance !== false;
+  const confirmDisabled = submitting
+    || quoteLoading
+    || Boolean(quoteError)
+    || Boolean(balanceError)
+    || !quoteAllowsSubmit
+    || !isQuantityWithinBounds
+    || missingRequiredField
+    || missingFallbackAccount;
 
   useEffect(() => {
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -69,10 +97,11 @@ export default function ProductPurchaseModal({
     const productId = product?._id || product?.id || product?.productId;
     const numericQuantity = Number(quantity);
 
-    if (!token || !productId || !Number.isInteger(numericQuantity) || numericQuantity < minQuantity || numericQuantity > maxQuantity) {
+    if (!token || !productId || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       setQuote(null);
       setQuoteLoading(false);
       setQuoteError("");
+      setBalanceError("");
       return undefined;
     }
 
@@ -80,6 +109,7 @@ export default function ProductPurchaseModal({
     const timer = window.setTimeout(() => {
       setQuoteLoading(true);
       setQuoteError("");
+      setBalanceError("");
 
       createCustomerOrderQuote(token, {
         productId,
@@ -89,12 +119,13 @@ export default function ProductPurchaseModal({
         .then((nextQuote) => {
           setQuote(nextQuote);
           if (nextQuote.hasEnoughBalance === false) {
-            setQuoteError(t("purchase.insufficientFunds"));
+            setBalanceError(t("purchase.insufficientFunds"));
           }
         })
         .catch((error) => {
           if (error.name === "AbortError" || error.code === "REQUEST_CANCELLED") return;
           setQuote(null);
+          setBalanceError("");
           setQuoteError(error.userMessage || t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
         })
         .finally(() => {
@@ -106,7 +137,7 @@ export default function ProductPurchaseModal({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [maxQuantity, minQuantity, product, quantity, t, token]);
+  }, [product, quantity, t, token]);
 
   const changeQuantity = (value) => {
     setQuantity(String(value).replace(/[^\d]/g, ""));
@@ -124,9 +155,7 @@ export default function ProductPurchaseModal({
 
     const numericQuantity = Number(quantity);
     if (!Number.isInteger(numericQuantity) || numericQuantity < minQuantity || numericQuantity > maxQuantity) {
-      setLocalError(isArabic
-        ? `أدخل كمية صحيحة من ${minQuantity} إلى ${maxQuantity}.`
-        : `Enter a valid quantity from ${minQuantity} to ${maxQuantity}.`);
+      setLocalError(getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t));
       return;
     }
 
@@ -145,7 +174,7 @@ export default function ProductPurchaseModal({
       return;
     }
 
-    if (!quote || quoteError) {
+    if (!quoteForQuantity || quoteError || balanceError || quoteForQuantity.isQuantityValid === false) {
       setLocalError(t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
       return;
     }
@@ -158,7 +187,7 @@ export default function ProductPurchaseModal({
       orderFieldsValues: hasOrderFields ? fieldValues : {},
       selectedPackage,
       totalLabel: displayTotal,
-      quote,
+      quote: quoteForQuantity,
     });
   };
 
@@ -241,7 +270,7 @@ export default function ProductPurchaseModal({
           </div>
 
           <div className="buy-summary__item buy-summary__item--total">
-            <span>{isArabic ? "الإجمالي" : "Total"}</span>
+            <span>{totalLabel}</span>
             <strong dir="ltr">{displayTotal}</strong>
           </div>
         </section>
@@ -290,10 +319,10 @@ export default function ProductPurchaseModal({
           ) : null}
         </div>
 
-        {displayError && <p className="buy-modal__error">{displayError}</p>}
+        {displayError && <p className={`buy-modal__error${displayError === t("purchase.insufficientFunds") ? " buy-modal__error--insufficient-funds" : ""}`}>{displayError}</p>}
 
         <div className="buy-actions">
-          <button className="buy-actions__submit" type="submit" disabled={submitting || quoteLoading || Boolean(quoteError) || !quote}>
+          <button className="buy-actions__submit" type="submit" disabled={confirmDisabled}>
             <span>{submitting ? t("purchase.creatingOrder") : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : isArabic ? "تأكيد الشحن" : "Confirm charge"}</span>
             {submitting ? <Loader2 className="is-spinning" /> : <Zap />}
           </button>
@@ -402,6 +431,97 @@ function getProductImage(product = {}) {
     || product.coverImage
     || product.productImage
     || "/winnie-wallet-charge-hero.png";
+}
+
+function getQuantityWarning(quantity, minQuantity, maxQuantity, isArabic, t) {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return t("purchase.quantityGreaterThanZero", {
+      defaultValue: isArabic ? "أدخل كمية أكبر من 0" : "Enter a quantity greater than 0",
+    });
+  }
+
+  if (quantity < minQuantity) {
+    const formattedMin = formatQuantityInput(minQuantity);
+    return t("purchase.minimumQuantity", {
+      minQty: formattedMin,
+      defaultValue: isArabic
+        ? `الحد الأدنى للطلب هو ${formattedMin}`
+        : `Minimum quantity is ${formattedMin}`,
+    });
+  }
+
+  if (quantity > maxQuantity) {
+    const formattedMax = formatQuantityInput(maxQuantity);
+    return t("purchase.maximumQuantity", {
+      maxQty: formattedMax,
+      defaultValue: isArabic
+        ? `الحد الأقصى للطلب هو ${formattedMax}`
+        : `Maximum quantity is ${formattedMax}`,
+    });
+  }
+
+  return "";
+}
+
+function calculateLocalEstimate(product = {}, quantity, user = {}) {
+  if (!Number.isInteger(quantity) || quantity <= 0) return null;
+
+  const unitPriceUsd = firstPositiveNumber(
+    product.customerUnitPriceUsd,
+    product.unitPriceUsd,
+    product.finalPriceUsd,
+    product.finalPrice,
+  );
+  if (!unitPriceUsd) return null;
+
+  const currency = String(
+    product.displayCurrency
+      || product.customerCurrency
+      || product.currency
+      || user?.currency
+      || "USD",
+  ).toUpperCase();
+  const totalUsd = unitPriceUsd * quantity;
+  const rate = currency === "USD" ? 1 : getLocalEstimateRate(product);
+
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+
+  return {
+    amount: totalUsd * rate,
+    currency,
+  };
+}
+
+function firstPositiveNumber(...values) {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  }
+  return null;
+}
+
+function getLocalEstimateRate(product = {}) {
+  const explicitRate = firstPositiveNumber(
+    product.rateSnapshot,
+    product.rate,
+    product.displayRate,
+    product.currencyRate,
+    product.exchangeRate,
+  );
+  if (explicitRate) return explicitRate;
+
+  const minTotalCustomerCurrency = Number(product.minTotalCustomerCurrency);
+  const minTotalUsd = Number(product.minTotalUsd);
+  if (
+    Number.isFinite(minTotalCustomerCurrency)
+    && minTotalCustomerCurrency > 0
+    && Number.isFinite(minTotalUsd)
+    && minTotalUsd > 0
+  ) {
+    return minTotalCustomerCurrency / minTotalUsd;
+  }
+
+  return null;
 }
 
 function calculateTotal(price, quantity) {

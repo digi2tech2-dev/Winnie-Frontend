@@ -27,7 +27,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
   return (
     <div
       dir={isArabic ? "rtl" : "ltr"}
-      className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-950/72 px-3 py-4 backdrop-blur-sm sm:items-center sm:p-5"
+      className="fixed inset-0 z-[190] flex items-start justify-center overflow-y-auto bg-slate-950/72 px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-sm sm:items-center sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby="anti-scam-title"
@@ -35,7 +35,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
         if (event.target === event.currentTarget) onCancel?.();
       }}
     >
-      <section className="flex max-h-[92dvh] w-full max-w-[620px] flex-col overflow-hidden rounded-t-[22px] border border-white/20 bg-white text-slate-950 shadow-[0_30px_90px_rgba(2,6,23,0.45)] sm:rounded-[22px] dark:border-white/10 dark:bg-[#080d1e] dark:text-white">
+      <section className="flex w-full max-w-[620px] flex-col rounded-t-[22px] border border-white/20 bg-white text-slate-950 shadow-[0_30px_90px_rgba(2,6,23,0.45)] sm:rounded-[22px] dark:border-white/10 dark:bg-[#080d1e] dark:text-white">
         <header className="relative border-b border-slate-200 bg-[linear-gradient(135deg,#fff7ed,#ffffff_48%,#f5f3ff)] px-4 py-4 text-center dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.18),rgba(8,13,30,0.98)_48%,rgba(139,92,246,0.18))] sm:px-5">
           <button
             type="button"
@@ -58,7 +58,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
           </p>
         </header>
 
-        <div className="overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="px-4 py-4 sm:px-5">
           <ol className="grid gap-2 rounded-[16px] border border-amber-300/45 bg-amber-50/90 p-3 text-sm font-bold leading-6 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
             {warningPoints.map((point, index) => (
               <li key={point} className="flex items-start gap-2.5">

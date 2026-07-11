@@ -4,7 +4,7 @@
     "paymentMethodsLoadError": "تعذر تحميل طرق الدفع.",
     "noPaymentMethods": "لا توجد طرق دفع نشطة حاليا",
     "paymentMethodsTitle": "طرق الدفع المتاحة",
-    "paymentMethodsDescription": "اختر طريقة الدفع المفضلة لديك أو أضف طريقة جديدة",
+    "paymentMethodsDescription": "اختر طريقة الدفع المناسبة لك",
     "global": "عالمي",
     "loadingPaymentMethods": "جار تحميل طرق الدفع...",
     "adminCanActivate": "يمكن تفعيل طريقة دفع من لوحة الإدارة.",

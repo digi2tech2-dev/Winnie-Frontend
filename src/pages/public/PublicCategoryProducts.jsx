@@ -3,8 +3,9 @@ import { AnimatePresence } from "framer-motion";
 import { ArrowRight, Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { filterProductsByCategory, getPublicCatalog } from "../../api/catalog";
+import { filterChildCategories, filterProductsByCategory, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
+import { CategoriesGrid } from "../../components/home/HomeShowcase";
 import { iconMap } from "../../components/icons";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 
@@ -72,6 +73,11 @@ export default function PublicCategoryProducts() {
       `${product.name} ${product.categoryTitle || ""}`.toLowerCase().includes(cleanQuery),
     );
   }, [catalog.products, category, query]);
+
+  const childCategories = useMemo(
+    () => filterChildCategories(catalog.categories, category),
+    [catalog.categories, category],
+  );
 
   const loginForPurchase = () => {
     setSelectedProduct(null);
@@ -161,6 +167,16 @@ export default function PublicCategoryProducts() {
         </button>
       </form>
 
+      {childCategories.length ? (
+        <section className="px-1" aria-label={t("public.categoriesTitle")}>
+          <CategoriesGrid
+            categories={childCategories}
+            layout="two"
+            onCategorySelect={(child) => navigate(`/categories/${child.slug || child.id}`)}
+          />
+        </section>
+      ) : null}
+
       {products.length ? (
         <section className="grid grid-cols-3 gap-x-2 gap-y-6 px-1 sm:gap-x-5 sm:gap-y-8">
           {products.map((product, index) => (
@@ -172,14 +188,14 @@ export default function PublicCategoryProducts() {
             />
           ))}
         </section>
-      ) : (
+      ) : !childCategories.length ? (
         <EmptyState
           title={query ? t("public.noProductsFound") : t("public.noProductsYet")}
           description={query ? t("public.clearSearchDescription") : t("public.categoryEmptyDescription")}
           actionLabel={query ? t("public.clearSearch") : undefined}
           onAction={() => setQuery("")}
         />
-      )}
+      ) : null}
 
       <AnimatePresence>
         {selectedProduct && (

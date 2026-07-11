@@ -4,7 +4,7 @@
     "paymentMethodsLoadError": "Unable to load payment methods.",
     "noPaymentMethods": "No active payment methods right now",
     "paymentMethodsTitle": "Available payment methods",
-    "paymentMethodsDescription": "Choose your preferred payment method or add a new one",
+    "paymentMethodsDescription": "Choose your preferred payment method",
     "global": "Global",
     "loadingPaymentMethods": "Loading payment methods...",
     "adminCanActivate": "A payment method can be activated from the admin panel.",

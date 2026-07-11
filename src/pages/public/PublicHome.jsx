@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { getPublicCatalog } from "../../api/catalog";
+import { filterMainCategories, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 import BestSellingSection from "../../components/home/BestSellingSection";
@@ -77,7 +77,7 @@ export default function PublicHome() {
         <EmptyState title={t("public.catalogEmptyTitle")} description={error} />
       ) : (
         <HomeShowcase
-          categories={catalog.categories}
+          categories={filterMainCategories(catalog.categories)}
           products={catalog.products.slice(0, 8)}
           productsTitle={t("common:nav.bestSelling")}
           onViewAll={openProducts}

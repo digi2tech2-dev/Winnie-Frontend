@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { Camera, X } from "lucide-react";
 import { resolveBackendAssetUrl } from "../../api/adapters";
-import { getCustomerCatalog } from "../../api/catalog";
+import { filterMainCategories, getCustomerCatalog } from "../../api/catalog";
 import BestSellingSection from "../../components/home/BestSellingSection";
 import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeShowcase from "../../components/home/HomeShowcase";
@@ -156,7 +156,7 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
       ) : null}
       <HomeSlide categoriesPath={`${basePath}/categories`} />
       <HomeShowcase
-        categories={dashboardData.categories}
+        categories={filterMainCategories(dashboardData.categories)}
         products={dashboardData.products.slice(0, 8)}
         onViewAll={goGames}
         onCategorySelect={goCategory}

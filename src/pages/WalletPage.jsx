@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronLeft, CreditCard, Plus, ReceiptText, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronLeft, CreditCard, ReceiptText, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getCustomerPaymentMethods } from "../api/paymentMethods";
@@ -12,7 +12,6 @@ export default function WalletPage({ basePath = "/customer" }) {
   const location = useLocation();
   const { token } = useAuth();
   const { t } = useTranslation("wallet");
-  const [globalGroupOpen, setGlobalGroupOpen] = useState(true);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,11 +20,6 @@ export default function WalletPage({ basePath = "/customer" }) {
   const [paymentMethodsError, setPaymentMethodsError] = useState("");
   const [pendingTopUpMethod, setPendingTopUpMethod] = useState(null);
   const insufficientFunds = location.state?.insufficientFunds || null;
-  const groupSubtitle =
-    paymentMethods.length > 0
-      ? paymentMethods.slice(0, 3).map((method) => method.title).join("، ")
-      : t("summary.noPaymentMethods");
-
   const showTransactions = () => {
     navigate(`${basePath}/wallet/transactions`);
   };
@@ -129,54 +123,25 @@ export default function WalletPage({ basePath = "/customer" }) {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-[18px] border border-slate-200 bg-white/90 shadow-soft backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#080d1e]/[0.96] dark:shadow-[0_16px_42px_rgba(0,0,0,0.26)]">
-            <button
-              type="button"
-              onClick={() => setGlobalGroupOpen((isOpen) => !isOpen)}
-              className="interactive-ring flex w-full items-center justify-between gap-4 px-4 py-3 text-right"
-              aria-expanded={globalGroupOpen}
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#F5F3FF] text-[#8B5CF6] dark:bg-[#8B5CF6]/16 dark:text-[#E9D5FF]">
-                  <CreditCard className="h-5 w-5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-lg font-black text-slate-950 dark:text-white sm:text-xl">{t("summary.global")}</span>
-                  <span className="mt-0.5 block text-xs font-semibold text-slate-500 dark:text-white/[0.48]">
-                    {groupSubtitle}
-                  </span>
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-[#F5F3FF] px-2.5 py-1 text-xs font-black text-[#8B5CF6] dark:bg-[#8B5CF6]/16 dark:text-[#E9D5FF]">
-                  {paymentMethods.length}
-                </span>
-                <ChevronDown className={`h-5 w-5 text-slate-400 transition ${globalGroupOpen ? "rotate-180" : ""}`} />
-              </span>
-            </button>
-
-            {globalGroupOpen && (
-              <div className="space-y-3 border-t border-slate-200 bg-slate-50/55 p-3 dark:border-white/10 dark:bg-white/[0.02]">
-                {paymentMethodsLoading ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-7 text-center dark:border-white/10 dark:bg-white/[0.03]">
-                    <p className="text-sm font-black text-slate-600 dark:text-white/70">{t("summary.loadingPaymentMethods")}</p>
-                  </div>
-                ) : paymentMethods.length > 0 ? (
-                  paymentMethods.map((method) => (
-                    <PaymentMethodRow key={method.id} method={method} onAdd={() => addPaymentMethod(method)} />
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-7 text-center dark:border-white/10 dark:bg-white/[0.03]">
-                    <CreditCard className="mx-auto h-8 w-8 text-slate-300 dark:text-white/25" />
-                    <p className="mt-3 text-sm font-black text-slate-600 dark:text-white/70">{t("summary.noPaymentMethods")}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-white/40">
-                      {paymentMethodsError || t("summary.adminCanActivate")}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {paymentMethodsLoading ? (
+            <div className="rounded-[18px] border border-dashed border-slate-200 bg-white/80 px-4 py-10 text-center dark:border-white/10 dark:bg-white/[0.03]">
+              <p className="text-sm font-black text-slate-600 dark:text-white/70">{t("summary.loadingPaymentMethods")}</p>
+            </div>
+          ) : paymentMethods.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+              {paymentMethods.map((method) => (
+                <PaymentMethodCard key={method.id} method={method} onSelect={() => addPaymentMethod(method)} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[18px] border border-dashed border-slate-200 bg-white/80 px-4 py-10 text-center dark:border-white/10 dark:bg-white/[0.03]">
+              <CreditCard className="mx-auto h-8 w-8 text-slate-300 dark:text-white/25" />
+              <p className="mt-3 text-sm font-black text-slate-600 dark:text-white/70">{t("summary.noPaymentMethods")}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-400 dark:text-white/40">
+                {paymentMethodsError || t("summary.adminCanActivate")}
+              </p>
+            </div>
+          )}
         </section>
 
         <SecurityPanel />
@@ -297,96 +262,27 @@ function WalletCoin({ className }) {
   );
 }
 
-function PaymentMethodRow({ method, onAdd }) {
-  const { t } = useTranslation("wallet");
+function PaymentMethodCard({ method, onSelect }) {
+  const imageUrl = method.imageUrl || method.image;
 
   return (
-    <article
-      dir="rtl"
-      className="grid items-center gap-3 rounded-[16px] border border-slate-200 bg-white/95 p-3 shadow-soft backdrop-blur-xl dark:border-white/[0.07] dark:bg-[#080d1e]/[0.96] dark:shadow-[0_16px_42px_rgba(0,0,0,0.26)] sm:grid-cols-[178px_minmax(0,1fr)_108px] sm:gap-4 sm:p-4"
+    <button
+      type="button"
+      onClick={onSelect}
+      className="interactive-ring flex min-h-[178px] min-w-0 flex-col items-center justify-center gap-4 rounded-[20px] border border-slate-200/90 bg-white p-4 text-center shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[#8B5CF6]/30 hover:shadow-[0_16px_36px_rgba(139,92,246,0.12)] dark:border-white/[0.08] dark:bg-[#080d1e] dark:shadow-[0_16px_36px_rgba(0,0,0,0.24)] sm:min-h-[198px] sm:p-5"
     >
-      <PaymentCardVisual method={method} />
-
-      <div className="min-w-0 text-right">
-        <h3 className="truncate text-base font-black leading-7 text-slate-950 dark:text-white sm:text-xl sm:leading-8">{method.title}</h3>
-        <p className="mt-0.5 text-xs font-semibold leading-5 text-slate-500 dark:text-white/[0.48] sm:mt-1 sm:text-sm sm:leading-6">{method.description}</p>
-      </div>
-
-      <button
-        type="button"
-        onClick={onAdd}
-        className="interactive-ring flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#8B5CF6]/[0.42] bg-white px-3 text-xs font-black text-[#8B5CF6] shadow-[inset_0_0_0_1px_rgba(168,85,247,0.10)] dark:border-[#8B5CF6]/[0.70] dark:bg-[#090d20] dark:text-[#A855F7] sm:h-12 sm:w-[108px] sm:gap-2 sm:text-sm"
-      >
-        <span>{t("summary.add")}</span>
-        <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-      </button>
-    </article>
+      <span className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-[18px] border border-slate-100 bg-white p-2.5 shadow-[0_8px_22px_rgba(15,23,42,0.08)] dark:border-white/10 sm:h-28 sm:w-28 sm:p-3">
+        {imageUrl ? (
+          <img src={imageUrl} alt="" loading="lazy" className="h-full w-full object-contain" />
+        ) : (
+          <CreditCard className="h-10 w-10 text-[#8B5CF6]" />
+        )}
+      </span>
+      <span className="line-clamp-2 min-h-[3rem] w-full text-sm font-black leading-6 text-slate-950 dark:text-white sm:text-base">
+        {method.title}
+      </span>
+    </button>
   );
-}
-
-function PaymentCardVisual({ method }) {
-  const type = getPaymentVisualType(method);
-
-  if (type === "apple") {
-    return (
-      <div className="flex h-[64px] w-full shrink-0 items-center justify-center rounded-xl border border-white/[0.18] bg-[linear-gradient(145deg,#ffffff,#d9dbe2)] text-2xl font-black text-[#111827] shadow-[0_16px_34px_rgba(0,0,0,0.25)] sm:h-[82px] sm:w-[178px] sm:text-3xl">
-        Apple Pay
-      </div>
-    );
-  }
-
-  if (type === "mastercard") {
-    return (
-      <div className="h-[64px] w-full shrink-0 overflow-hidden rounded-xl border border-white/[0.12] bg-[linear-gradient(145deg,#27304f,#11172c)] p-3 shadow-[0_16px_34px_rgba(0,0,0,0.25)] sm:h-[82px] sm:w-[178px] sm:p-4">
-        <div className="flex items-start justify-between">
-          <span className="relative h-7 w-14 sm:h-10 sm:w-20">
-            <span className="absolute left-0 top-1 h-7 w-7 rounded-full bg-[#eb001b] sm:h-10 sm:w-10" />
-            <span className="absolute left-5 top-1 h-7 w-7 rounded-full bg-[#f79e1b] mix-blend-screen sm:left-7 sm:h-10 sm:w-10" />
-          </span>
-          <span className="text-base font-black leading-none text-white/[0.82] sm:text-xl">)))</span>
-        </div>
-        <p className="mt-2 text-[9px] font-bold text-white/60 sm:mt-3 sm:text-[11px]">**** **** **** 4242</p>
-      </div>
-    );
-  }
-
-  if (type === "visa") {
-    return (
-      <div className="h-[64px] w-full shrink-0 overflow-hidden rounded-xl border border-blue-300/25 bg-[linear-gradient(145deg,#0d67ff,#082b9f)] p-3 shadow-[0_16px_34px_rgba(0,0,0,0.25)] sm:h-[82px] sm:w-[178px] sm:p-4">
-        <div className="flex items-start justify-between">
-          <span className="h-5 w-7 rounded bg-[linear-gradient(145deg,#f7d66a,#d69f22)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)] sm:h-7 sm:w-9 sm:rounded-md" />
-          <span className="text-lg font-black italic leading-none text-white sm:text-2xl">VISA</span>
-        </div>
-        <div className="mt-2 flex items-end justify-between text-white/75 sm:mt-3">
-          <p className="text-[9px] font-bold sm:text-[11px]">{method.account || "**** 4242"}</p>
-          <span className="text-base font-black leading-none sm:text-xl">)))</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-[64px] w-full shrink-0 overflow-hidden rounded-xl border border-blue-300/25 bg-[linear-gradient(145deg,#0d67ff,#082b9f)] p-3 shadow-[0_16px_34px_rgba(0,0,0,0.25)] sm:h-[82px] sm:w-[178px] sm:p-4">
-      <div className="flex h-full flex-col justify-between">
-        <div className="flex items-start justify-between gap-2">
-          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-white/15 text-white sm:h-10 sm:w-10">
-            {method.imageUrl || method.image ? <img src={method.imageUrl || method.image} alt="" className="h-full w-full object-contain p-1" /> : <CreditCard className="h-4 w-4" />}
-          </span>
-          <span className="min-w-0 truncate text-right text-[11px] font-black leading-4 text-white sm:text-sm">{method.title}</span>
-        </div>
-        <p className="truncate text-[9px] font-bold text-white/70 sm:text-[11px]">{method.bank || method.account || "Winnie Pay"}</p>
-      </div>
-    </div>
-  );
-}
-
-function getPaymentVisualType(method) {
-  const value = `${method.id || ""} ${method.title || ""} ${method.bank || ""}`.toLowerCase();
-
-  if (value.includes("apple")) return "apple";
-  if (value.includes("mastercard") || value.includes("master card")) return "mastercard";
-  if (value.includes("visa")) return "visa";
-  return "generic";
 }
 
 function SecurityPanel() {

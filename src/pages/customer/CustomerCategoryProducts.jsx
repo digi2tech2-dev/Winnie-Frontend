@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { filterProductsByCategory, getCustomerCatalog } from "../../api/catalog";
+import { filterChildCategories, filterProductsByCategory, getCustomerCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
+import { CategoriesGrid } from "../../components/home/HomeShowcase";
 import { iconMap } from "../../components/icons";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
@@ -80,6 +81,11 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
     );
   }, [category, products, query]);
 
+  const childCategories = useMemo(
+    () => filterChildCategories(categories, category),
+    [categories, category],
+  );
+
   if (loading) {
     return (
       <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
@@ -152,20 +158,30 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
         </button>
       </form>
 
+      {childCategories.length ? (
+        <section className="px-1" aria-label={t("common:nav.categories")}>
+          <CategoriesGrid
+            categories={childCategories}
+            layout="two"
+            onCategorySelect={(child) => navigate(`${basePath}/categories/${child.slug || child.id}`)}
+          />
+        </section>
+      ) : null}
+
       {categoryProducts.length ? (
         <section className="grid grid-cols-3 gap-x-2 gap-y-6 px-1 sm:gap-x-5 sm:gap-y-8">
           {categoryProducts.map((product, index) => (
             <ProductTile key={product.id} product={product} index={index} onSelect={() => openPurchase(product, category)} />
           ))}
         </section>
-      ) : (
+      ) : !childCategories.length ? (
         <EmptyState
           title={t("category.noProductsFound")}
           description={t("category.emptyDescription")}
           actionLabel={query ? t("category.clearSearch") : undefined}
           onAction={() => setQuery("")}
         />
-      )}
+      ) : null}
       {purchaseModals}
     </div>
   );

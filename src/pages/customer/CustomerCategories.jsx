@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { getCustomerCatalog } from "../../api/catalog";
+import { filterMainCategories, getCustomerCatalog } from "../../api/catalog";
 import HomeSlide from "../../components/home/HomeSlide";
 import { CategoriesGrid } from "../../components/home/HomeShowcase";
 import EmptyState from "../../components/EmptyState";
@@ -26,7 +26,7 @@ export default function CustomerCategories({ basePath = "/customer" }) {
 
       try {
         const catalog = await getCustomerCatalog(token);
-        if (!cancelled) setCategories(catalog.categories);
+        if (!cancelled) setCategories(filterMainCategories(catalog.categories));
       } catch (requestError) {
         if (!cancelled) {
           setError(requestError.userMessage || t("public.categoriesLoadError"));
