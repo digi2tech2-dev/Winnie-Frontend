@@ -305,7 +305,10 @@ export default function AdminUserWalletPage() {
       showToast({ type: "info", title: "لا توجد تغييرات", message: "الإعدادات المحددة محفوظة بالفعل." });
       return;
     }
-    if (!window.confirm(`هل تريد حفظ إعدادات حساب ${user?.name || "هذا المستخدم"}؟`)) return;
+    const confirmMessage = currencyChanged
+      ? `سيتم تحويل رصيد المستخدم من ${currency} إلى ${nextCurrency} حسب سعر الصرف الحالي.`
+      : `هل تريد حفظ إعدادات حساب ${user?.name || "هذا المستخدم"}؟`;
+    if (!window.confirm(confirmMessage)) return;
 
     setActionKey("account-settings");
     try {
@@ -316,7 +319,13 @@ export default function AdminUserWalletPage() {
         await updateAdminUserGroup(token, id, { groupId, reason: groupChangeReason });
       }
       if (currencyChanged) {
-        await updateAdminUserCurrency(token, id, nextCurrency);
+        const result = await updateAdminUserCurrency(token, id, nextCurrency);
+        const previousBalance = result.wallet?.previousBalance;
+        const nextBalance = result.wallet?.balance;
+        const convertedMessage = previousBalance !== undefined && nextBalance !== undefined
+          ? `${formatCurrency(previousBalance, currency, "ar-EG-u-nu-latn")} -> ${formatCurrency(nextBalance, nextCurrency, "ar-EG-u-nu-latn")}`
+          : "تم تغيير العملة وتحويل الرصيد بنجاح";
+        showToast({ type: "success", title: "تم تغيير العملة وتحويل الرصيد بنجاح", message: convertedMessage });
       }
 
       showToast({ type: "success", title: "تم حفظ إعدادات الحساب", message: "تم تحديث البيانات بنجاح." });

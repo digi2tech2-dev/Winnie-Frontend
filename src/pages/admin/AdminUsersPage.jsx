@@ -7,6 +7,7 @@ import {
   Copy,
   Eye,
   Filter,
+  KeyRound,
   RefreshCw,
   RotateCcw,
   Search,
@@ -20,15 +21,25 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { approveUser, getAdminUsers, rejectUser, updateUserIdentityVerification } from "../../api/adminUsers";
+import {
+  approveUser,
+  blockAdminUser,
+  changeAdminUserPassword,
+  getAdminUsers,
+  rejectUser,
+  restoreAdminUser,
+  unblockAdminUser,
+  updateUserIdentityVerification,
+} from "../../api/adminUsers";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 
 const statusOptions = [
-  { value: "all", label: "كل الحالات" },
+  { value: "all", label: "الكل" },
+  { value: "active", label: "النشطون" },
+  { value: "blocked", label: "المحظورون" },
+  { value: "deleted", label: "المحذوفون" },
   { value: "PENDING", label: "بانتظار المراجعة" },
-  { value: "ACTIVE", label: "نشط" },
-  { value: "REJECTED", label: "مرفوض" },
 ];
 
 const sortOptions = [
@@ -42,15 +53,17 @@ const sortOptions = [
 
 const statusTone = {
   ACTIVE: "admin-user-status-active",
+  BLOCKED: "admin-user-status-blocked",
+  DELETED: "bg-slate-500/12 text-slate-700 dark:text-slate-300",
   PENDING: "bg-amber-500/12 text-amber-700 dark:text-amber-300",
   REJECTED: "admin-user-status-blocked",
 };
 
 const statConfig = [
   { id: "total", label: "إجمالي المستخدمين", icon: Users, tone: "admin-users-stat-total" },
-  { id: "pending", label: "بانتظار المراجعة", icon: ShieldAlert, tone: "admin-users-stat-active" },
   { id: "active", label: "الحسابات النشطة", icon: UserCheck, tone: "admin-users-stat-active" },
-  { id: "rejected", label: "الحسابات المرفوضة", icon: Ban, tone: "admin-users-stat-total" },
+  { id: "blocked", label: "المحظورون", icon: Ban, tone: "admin-users-stat-total" },
+  { id: "deleted", label: "المحذوفون", icon: RotateCcw, tone: "admin-users-stat-total" },
 ];
 
 const avatarTones = [
@@ -109,6 +122,8 @@ export default function AdminUsersPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+  const [passwordModal, setPasswordModal] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
   const [actionKey, setActionKey] = useState("");
 
   const selectedUser = users.find((user) => user.id === selectedUserId) || null;
@@ -132,6 +147,8 @@ export default function AdminUsersPage() {
         limit: 20,
         email: appliedSearch.trim(),
         status: statusFilter === "all" ? undefined : statusFilter,
+        includeDeleted: statusFilter === "all" || statusFilter === "deleted",
+        includeBlocked: true,
         ...getSortQuery(sortBy),
       });
       setUsers(result.users);
@@ -153,7 +170,9 @@ export default function AdminUsersPage() {
     const counts = {
       total: pagination.total || users.length,
       pending: users.filter((user) => user.status === "PENDING").length,
-      active: users.filter((user) => user.status === "ACTIVE").length,
+      active: users.filter((user) => user.displayStatus === "ACTIVE").length,
+      blocked: users.filter((user) => user.displayStatus === "BLOCKED").length,
+      deleted: users.filter((user) => user.displayStatus === "DELETED").length,
       rejected: users.filter((user) => user.status === "REJECTED").length,
     };
 
@@ -227,6 +246,80 @@ export default function AdminUsersPage() {
     } catch (requestError) {
       const message = getErrorMessage(requestError, "تعذر تحديث طلب تأكيد الهوية.");
       showToast({ type: "error", title: "فشل تحديث التحقق", message });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const refreshAfterUserAction = async (title, type = "success") => {
+    showToast({ type, title });
+    await loadUsers();
+  };
+
+  const handleBlockUser = async (user) => {
+    if (!token || !user?.id) return;
+    const reason = window.prompt("سبب الحظر", user.blockReason || "");
+    if (reason === null) return;
+    setActionKey(`block:${user.id}`);
+    try {
+      await blockAdminUser(token, user.id, reason);
+      await refreshAfterUserAction("تم حظر المستخدم بنجاح", "warning");
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل حظر المستخدم", message: getErrorMessage(requestError, "تعذر حظر المستخدم.") });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleUnblockUser = async (user) => {
+    if (!token || !user?.id) return;
+    const reason = window.prompt("سبب إلغاء الحظر", "");
+    if (reason === null) return;
+    setActionKey(`unblock:${user.id}`);
+    try {
+      await unblockAdminUser(token, user.id, reason);
+      await refreshAfterUserAction("تم إلغاء حظر المستخدم");
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل إلغاء الحظر", message: getErrorMessage(requestError, "تعذر إلغاء حظر المستخدم.") });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleRestoreUser = async (user) => {
+    if (!token || !user?.id) return;
+    if (!window.confirm(`هل تريد استرجاع المستخدم ${user.name}؟`)) return;
+    setActionKey(`restore:${user.id}`);
+    try {
+      await restoreAdminUser(token, user.id);
+      await refreshAfterUserAction("تم استرجاع المستخدم");
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل استرجاع المستخدم", message: getErrorMessage(requestError, "تعذر استرجاع المستخدم.") });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const openPasswordModal = (user) => {
+    setPasswordModal(user);
+    setPasswordForm({ newPassword: "", confirmPassword: "" });
+  };
+
+  const submitPasswordChange = async () => {
+    if (!token || !passwordModal?.id) return;
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      showToast({ type: "error", title: "كلمة المرور غير متطابقة", message: "تأكد من كتابة كلمة المرور نفسها في خانة التأكيد." });
+      return;
+    }
+    setActionKey(`password:${passwordModal.id}`);
+    try {
+      await changeAdminUserPassword(token, passwordModal.id, passwordForm.newPassword);
+      showToast({ type: "success", title: "تم تغيير كلمة المرور بنجاح" });
+      setPasswordModal(null);
+      setPasswordForm({ newPassword: "", confirmPassword: "" });
+      await loadUsers();
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل تغيير كلمة المرور", message: getErrorMessage(requestError, "تعذر تغيير كلمة المرور.") });
     } finally {
       setActionKey("");
     }
@@ -371,9 +464,9 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="admin-user-meta-card admin-user-meta-status">
                     <span>{user.role === "SUPERVISOR" ? "مشرف" : "مستخدم"}</span>
-                    <StatusBadge status={user.status} label={user.statusLabel} />
+                    <StatusBadge status={user.displayStatus} label={user.displayStatusLabel} />
                     <div className="admin-user-status-actions">
-                      {user.status === "PENDING" && (
+                      {user.displayStatus !== "DELETED" && user.status === "PENDING" && (
                         <>
                           <button
                             type="button"
@@ -393,6 +486,41 @@ export default function AdminUsersPage() {
                           </button>
                         </>
                       )}
+                      {user.displayStatus === "DELETED" ? (
+                        <button
+                          type="button"
+                          className="admin-user-details-button"
+                          onClick={() => handleRestoreUser(user)}
+                          disabled={Boolean(actionKey)}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          <span>استرجاع المستخدم</span>
+                        </button>
+                      ) : user.displayStatus === "BLOCKED" ? (
+                        <button
+                          type="button"
+                          className="admin-user-details-button"
+                          onClick={() => handleUnblockUser(user)}
+                          disabled={Boolean(actionKey)}
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          <span>إلغاء الحظر</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="admin-user-details-button"
+                          onClick={() => handleBlockUser(user)}
+                          disabled={Boolean(actionKey)}
+                        >
+                          <Ban className="h-4 w-4" />
+                          <span>حظر</span>
+                        </button>
+                      )}
+                      <button type="button" className="admin-user-details-button" onClick={() => openPasswordModal(user)} disabled={Boolean(actionKey) || user.displayStatus === "DELETED"}>
+                        <KeyRound className="h-4 w-4" />
+                        <span>تغيير كلمة المرور</span>
+                      </button>
                       <button type="button" className="admin-user-details-button" onClick={() => openUserWallet(user.id)}>
                         <WalletCards className="h-4 w-4" />
                         <span>المحفظة والتحكم</span>
@@ -419,10 +547,14 @@ export default function AdminUsersPage() {
             user={selectedUser}
             busy={Boolean(actionKey)}
             onApprove={() => requestUserReview(selectedUser, "approve")}
+            onBlock={() => handleBlockUser(selectedUser)}
             onClose={() => setSelectedUserId(null)}
             onCopy={copyUserId}
             onOpenWallet={() => openUserWallet(selectedUser.id)}
+            onPassword={() => openPasswordModal(selectedUser)}
             onReject={() => requestUserReview(selectedUser, "reject")}
+            onRestore={() => handleRestoreUser(selectedUser)}
+            onUnblock={() => handleUnblockUser(selectedUser)}
             onUpdateIdentityVerification={handleIdentityVerificationUpdate}
           />
         )}
@@ -435,6 +567,19 @@ export default function AdminUsersPage() {
             busy={actionKey === `${confirmation.action}:${confirmation.userId}`}
             onCancel={() => setConfirmation(null)}
             onConfirm={executeReview}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {passwordModal && (
+          <PasswordDialog
+            busy={actionKey === `password:${passwordModal.id}`}
+            form={passwordForm}
+            user={passwordModal}
+            onCancel={() => setPasswordModal(null)}
+            onChange={setPasswordForm}
+            onConfirm={submitPasswordChange}
           />
         )}
       </AnimatePresence>
@@ -475,7 +620,7 @@ function Avatar({ user, large = false }) {
 }
 
 function StatusBadge({ status, label }) {
-  const arabicStatus = { ACTIVE: "نشط", PENDING: "بانتظار المراجعة", REJECTED: "مرفوض" }[status];
+  const arabicStatus = { ACTIVE: "نشط", BLOCKED: "محظور", DELETED: "محذوف", PENDING: "بانتظار المراجعة", REJECTED: "مرفوض" }[status];
   return (
     <span className={`admin-user-status ${statusTone[status] || statusTone.PENDING}`}>
       {arabicStatus || label || status}
@@ -483,8 +628,8 @@ function StatusBadge({ status, label }) {
   );
 }
 
-function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onReject, onUpdateIdentityVerification }) {
-  const canReview = user.status === "PENDING";
+function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWallet, onPassword, onReject, onRestore, onUnblock, onUpdateIdentityVerification }) {
+  const canReview = user.displayStatus !== "DELETED" && user.status === "PENDING";
   const [identityReason, setIdentityReason] = useState(user.identityVerificationReason || "");
 
   useEffect(() => {
@@ -526,7 +671,7 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
               <InfoItem label="المجموعة" value={`${user.groupName}${user.groupPercentage !== null ? ` (${user.groupPercentage}%)` : ""}`} />
               <div className="admin-user-info-item">
                 <span>الحالة</span>
-                <StatusBadge status={user.status} label={user.statusLabel} />
+                <StatusBadge status={user.displayStatus} label={user.displayStatusLabel} />
               </div>
               <InfoItem label="الدور" value={user.role === "SUPERVISOR" ? "مشرف" : "مستخدم"} />
               <InfoItem label="البريد موثّق" value={user.verified ? "نعم" : "لا"} />
@@ -605,7 +750,12 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
         </div>
 
         <footer className="admin-user-drawer-footer">
-          {canReview ? (
+          {user.displayStatus === "DELETED" ? (
+            <button type="button" onClick={onRestore} disabled={busy}>
+              <RotateCcw className="h-4 w-4" />
+              <span>استرجاع المستخدم</span>
+            </button>
+          ) : canReview ? (
             <>
               <button type="button" onClick={onApprove} className="admin-user-footer-primary" disabled={busy}>
                 <CheckCircle2 className="h-4 w-4" />
@@ -617,10 +767,23 @@ function UserDrawer({ user, busy, onApprove, onClose, onCopy, onOpenWallet, onRe
               </button>
             </>
           ) : (
-            <button type="button" onClick={onClose}>
-              <Eye className="h-4 w-4" />
-              <span>إغلاق المراجعة</span>
-            </button>
+            <>
+              {user.displayStatus === "BLOCKED" ? (
+                <button type="button" onClick={onUnblock} disabled={busy}>
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>إلغاء الحظر</span>
+                </button>
+              ) : (
+                <button type="button" onClick={onBlock} disabled={busy}>
+                  <Ban className="h-4 w-4" />
+                  <span>حظر المستخدم</span>
+                </button>
+              )}
+              <button type="button" onClick={onPassword} disabled={busy}>
+                <KeyRound className="h-4 w-4" />
+                <span>تغيير كلمة المرور</span>
+              </button>
+            </>
           )}
         </footer>
       </motion.aside>
@@ -655,6 +818,52 @@ function WalletItem({ label, value, strong = false }) {
       <span>{label}</span>
       <strong dir="ltr">{value}</strong>
     </article>
+  );
+}
+
+function PasswordDialog({ busy, form, user, onCancel, onChange, onConfirm }) {
+  return (
+    <div className="admin-user-confirm-layer">
+      <motion.div
+        className="admin-user-confirm"
+        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 14, scale: 0.98 }}
+      >
+        <span className="admin-user-confirm-icon">
+          <KeyRound className="h-6 w-6" />
+        </span>
+        <h2>تغيير كلمة المرور</h2>
+        <p>{user.name} - لا يتم عرض كلمة المرور بعد الحفظ.</p>
+        <label className="mt-4 block text-right">
+          <span className="mb-1 block text-[10px] font-black text-slate-500">كلمة المرور الجديدة</span>
+          <input
+            dir="ltr"
+            type="password"
+            value={form.newPassword}
+            onChange={(event) => onChange((current) => ({ ...current, newPassword: event.target.value }))}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/5 dark:text-white"
+          />
+        </label>
+        <label className="mt-3 block text-right">
+          <span className="mb-1 block text-[10px] font-black text-slate-500">تأكيد كلمة المرور</span>
+          <input
+            dir="ltr"
+            type="password"
+            value={form.confirmPassword}
+            onChange={(event) => onChange((current) => ({ ...current, confirmPassword: event.target.value }))}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/5 dark:text-white"
+          />
+        </label>
+        <div>
+          <button type="button" onClick={onCancel} disabled={busy}>إلغاء</button>
+          <button type="button" onClick={onConfirm} disabled={busy || !form.newPassword || !form.confirmPassword}>
+            {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+            <span>{busy ? "جارٍ الحفظ..." : "حفظ كلمة المرور"}</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 

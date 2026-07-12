@@ -29,6 +29,9 @@ export function normalizeAdminUser(user = {}) {
   const id = getItemId(user);
   const group = normalizeGroup(user.groupId || user.group);
   const status = String(user.status || "PENDING").toUpperCase();
+  const blockedAt = user.blockedAt || null;
+  const deletedAt = user.deletedAt || null;
+  const displayStatus = String(user.displayStatus || (deletedAt ? "DELETED" : blockedAt ? "BLOCKED" : status)).toUpperCase();
   const role = String(user.role || "CUSTOMER").toUpperCase();
   const currency = String(user.currency || DEFAULT_CURRENCY).toUpperCase();
   const walletBalance = toNumber(user.walletBalance ?? user.balance, 0);
@@ -41,6 +44,8 @@ export function normalizeAdminUser(user = {}) {
     _id: user._id ?? id,
     approvedAt: user.approvedAt || null,
     avatar: user.avatar || "",
+    blockedAt,
+    blockReason: user.blockReason || "",
     country: user.country || "",
     createdAt: user.createdAt || user.registeredAt || null,
     createdAtLabel: formatDateTime(user.createdAt || user.registeredAt, "ar-EG-u-nu-latn"),
@@ -62,7 +67,10 @@ export function normalizeAdminUser(user = {}) {
     role,
     roleLabel: humanizeToken(role, "Customer"),
     status,
+    displayStatus,
     statusLabel: humanizeToken(status, "Pending"),
+    displayStatusLabel: humanizeToken(displayStatus, "Pending"),
+    deletedAt,
     subAgentStatus: String(user.subAgentStatus || "NONE").toUpperCase(),
     verified: user.verified === true,
     walletBalance,
@@ -156,6 +164,59 @@ export async function updateUserIdentityVerification(token, id, { required, reas
       required,
       reason,
     }),
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
+export async function changeAdminUserPassword(token, id, newPassword) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/password`, {
+    body: { newPassword },
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+    wallet: response.data?.wallet || null,
+    conversion: response.data?.conversion || null,
+  };
+}
+
+export async function blockAdminUser(token, id, reason = "") {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/block`, {
+    body: compactObject({ reason }),
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
+export async function unblockAdminUser(token, id, reason = "") {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/unblock`, {
+    body: compactObject({ reason }),
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
+export async function restoreAdminUser(token, id) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/restore`, {
     method: "PATCH",
     token,
   });
