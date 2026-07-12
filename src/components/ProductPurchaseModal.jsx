@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
   CircleUserRound,
   Loader2,
   ShieldCheck,
@@ -56,6 +57,7 @@ export default function ProductPurchaseModal({
   const balanceLabel = formatPlainAmount(walletBalance);
   const quantityWarning = getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
   const displayError = localError || submitError || quantityWarning || balanceError || quoteError;
+  const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const hasOrderFields = orderFields.length > 0;
   const showFallbackAccountInput = !hasOrderFields;
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
@@ -319,7 +321,15 @@ export default function ProductPurchaseModal({
           ) : null}
         </div>
 
-        {displayError && <p className={`buy-modal__error${displayError === t("purchase.insufficientFunds") ? " buy-modal__error--insufficient-funds" : ""}`}>{displayError}</p>}
+        {displayError && (
+          <p
+            className={`buy-modal__error${isQuantityWarning ? " buy-modal__error--quantity-warning" : ""}${displayError === t("purchase.insufficientFunds") ? " buy-modal__error--insufficient-funds" : ""}`}
+            dir={isArabic ? "rtl" : "ltr"}
+          >
+            {isQuantityWarning && <AlertTriangle className="buy-modal__error-icon" aria-hidden="true" />}
+            <span>{displayError}</span>
+          </p>
+        )}
 
         <div className="buy-actions">
           <button className="buy-actions__submit" type="submit" disabled={confirmDisabled}>

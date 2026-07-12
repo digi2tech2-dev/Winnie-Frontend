@@ -3,16 +3,17 @@ import {
   AlertTriangle,
   Ban,
   CheckCircle2,
-  ChevronDown,
   Copy,
   Eye,
   Filter,
   KeyRound,
+  MoreVertical,
   RefreshCw,
   RotateCcw,
   Search,
   ShieldAlert,
   ShieldCheck,
+  Trash2,
   UserCheck,
   UserRound,
   Users,
@@ -25,6 +26,8 @@ import {
   approveUser,
   blockAdminUser,
   changeAdminUserPassword,
+  deleteAdminUser,
+  getAdminUser,
   getAdminUsers,
   rejectUser,
   restoreAdminUser,
@@ -45,10 +48,8 @@ const statusOptions = [
 const sortOptions = [
   { value: "newest", label: "الأحدث", sortBy: "createdAt", sortOrder: "desc" },
   { value: "oldest", label: "الأقدم", sortBy: "createdAt", sortOrder: "asc" },
-  { value: "nameAsc", label: "الاسم أبجديًا", sortBy: "name", sortOrder: "asc" },
-  { value: "emailAsc", label: "البريد أبجديًا", sortBy: "email", sortOrder: "asc" },
-  { value: "highestBalance", label: "الرصيد الأعلى", sortBy: "walletBalance", sortOrder: "desc" },
-  { value: "lowestBalance", label: "الرصيد الأقل", sortBy: "walletBalance", sortOrder: "asc" },
+  { value: "nameAsc", label: "الاسم", sortBy: "name", sortOrder: "asc" },
+  { value: "highestBalance", label: "الرصيد", sortBy: "walletBalance", sortOrder: "desc" },
 ];
 
 const statusTone = {
@@ -119,8 +120,8 @@ export default function AdminUsersPage() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [openActionUserId, setOpenActionUserId] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [passwordModal, setPasswordModal] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
@@ -142,10 +143,22 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError("");
     try {
+      const trimmedSearch = appliedSearch.trim();
+      const looksLikeUserId = /^[a-f\d]{24}$/i.test(trimmedSearch);
+
+      if (looksLikeUserId) {
+        const result = await getAdminUser(token, trimmedSearch);
+        const matchesStatus = statusFilter === "all" || result.user.displayStatus.toLowerCase() === statusFilter.toLowerCase() || result.user.status === statusFilter;
+        const nextUsers = matchesStatus ? [result.user] : [];
+        setUsers(nextUsers);
+        setPagination({ page: 1, limit: 20, total: nextUsers.length, pages: 1 });
+        return;
+      }
+
       const result = await getAdminUsers(token, {
         page: 1,
         limit: 20,
-        email: appliedSearch.trim(),
+        email: trimmedSearch,
         status: statusFilter === "all" ? undefined : statusFilter,
         includeDeleted: statusFilter === "all" || statusFilter === "deleted",
         includeBlocked: true,
@@ -154,7 +167,7 @@ export default function AdminUsersPage() {
       setUsers(result.users);
       setPagination(result.pagination);
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "تعذر تحميل المستخدمين.");
+      const message = getErrorMessage(requestError, "تعذر تحميل المستخدمين، حاول مرة أخرى");
       setError(message);
       showToast({ type: "error", title: "لم يتم تحميل المستخدمين", message });
     } finally {
@@ -206,24 +219,73 @@ export default function AdminUsersPage() {
     });
   };
 
-  const executeReview = async () => {
+  const requestUserStateChange = (user, action) => {
+    const copy = {
+      block: {
+        title: "حظر المستخدم",
+        message: "هل أنت متأكد من حظر هذا المستخدم؟",
+        confirmLabel: "حظر المستخدم",
+        tone: "danger",
+      },
+      unblock: {
+        title: "إلغاء حظر المستخدم",
+        message: "هل تريد إلغاء حظر هذا المستخدم؟",
+        confirmLabel: "إلغاء الحظر",
+        tone: "success",
+      },
+      delete: {
+        title: "حذف المستخدم",
+        message: "هل أنت متأكد من حذف هذا المستخدم؟",
+        confirmLabel: "حذف المستخدم",
+        tone: "danger",
+      },
+      restore: {
+        title: "استرجاع المستخدم",
+        message: "هل تريد استرجاع هذا المستخدم؟",
+        confirmLabel: "استرجاع المستخدم",
+        tone: "success",
+      },
+    }[action];
+
+    if (!copy) return;
+    setOpenActionUserId(null);
+    setConfirmation({
+      action,
+      userId: user.id,
+      ...copy,
+    });
+  };
+
+  const executeConfirmedAction = async () => {
     if (!confirmation || !token) return;
     const key = `${confirmation.action}:${confirmation.userId}`;
     setActionKey(key);
 
     try {
-      const result = confirmation.action === "approve"
-        ? await approveUser(token, confirmation.userId)
-        : await rejectUser(token, confirmation.userId);
+      let result = null;
+
+      if (confirmation.action === "approve") {
+        result = await approveUser(token, confirmation.userId);
+      } else if (confirmation.action === "reject") {
+        result = await rejectUser(token, confirmation.userId);
+      } else if (confirmation.action === "block") {
+        result = await blockAdminUser(token, confirmation.userId, "");
+      } else if (confirmation.action === "unblock") {
+        result = await unblockAdminUser(token, confirmation.userId, "");
+      } else if (confirmation.action === "delete") {
+        result = await deleteAdminUser(token, confirmation.userId);
+      } else if (confirmation.action === "restore") {
+        result = await restoreAdminUser(token, confirmation.userId);
+      }
 
       showToast({
-        type: confirmation.action === "approve" ? "success" : "warning",
-        title: result.message || (confirmation.action === "approve" ? "تم قبول المستخدم" : "تم رفض المستخدم"),
+        type: confirmation.tone === "danger" ? "warning" : "success",
+        title: result?.message || confirmation.confirmLabel,
       });
       setConfirmation(null);
       await loadUsers();
     } catch (requestError) {
-      const message = getErrorMessage(requestError, "فشلت مراجعة المستخدم.");
+      const message = getErrorMessage(requestError, "فشل تنفيذ الإجراء.");
       showToast({ type: "error", title: "فشل الإجراء", message });
     } finally {
       setActionKey("");
@@ -251,53 +313,16 @@ export default function AdminUsersPage() {
     }
   };
 
-  const refreshAfterUserAction = async (title, type = "success") => {
-    showToast({ type, title });
-    await loadUsers();
-  };
-
   const handleBlockUser = async (user) => {
-    if (!token || !user?.id) return;
-    const reason = window.prompt("سبب الحظر", user.blockReason || "");
-    if (reason === null) return;
-    setActionKey(`block:${user.id}`);
-    try {
-      await blockAdminUser(token, user.id, reason);
-      await refreshAfterUserAction("تم حظر المستخدم بنجاح", "warning");
-    } catch (requestError) {
-      showToast({ type: "error", title: "فشل حظر المستخدم", message: getErrorMessage(requestError, "تعذر حظر المستخدم.") });
-    } finally {
-      setActionKey("");
-    }
+    requestUserStateChange(user, "block");
   };
 
   const handleUnblockUser = async (user) => {
-    if (!token || !user?.id) return;
-    const reason = window.prompt("سبب إلغاء الحظر", "");
-    if (reason === null) return;
-    setActionKey(`unblock:${user.id}`);
-    try {
-      await unblockAdminUser(token, user.id, reason);
-      await refreshAfterUserAction("تم إلغاء حظر المستخدم");
-    } catch (requestError) {
-      showToast({ type: "error", title: "فشل إلغاء الحظر", message: getErrorMessage(requestError, "تعذر إلغاء حظر المستخدم.") });
-    } finally {
-      setActionKey("");
-    }
+    requestUserStateChange(user, "unblock");
   };
 
   const handleRestoreUser = async (user) => {
-    if (!token || !user?.id) return;
-    if (!window.confirm(`هل تريد استرجاع المستخدم ${user.name}؟`)) return;
-    setActionKey(`restore:${user.id}`);
-    try {
-      await restoreAdminUser(token, user.id);
-      await refreshAfterUserAction("تم استرجاع المستخدم");
-    } catch (requestError) {
-      showToast({ type: "error", title: "فشل استرجاع المستخدم", message: getErrorMessage(requestError, "تعذر استرجاع المستخدم.") });
-    } finally {
-      setActionKey("");
-    }
+    requestUserStateChange(user, "restore");
   };
 
   const openPasswordModal = (user) => {
@@ -329,28 +354,9 @@ export default function AdminUsersPage() {
     <div dir="rtl" className="admin-users-page">
       <section className="admin-users-hero">
         <div className="min-w-0">
-          <p className="admin-users-kicker">مراجعة المستخدمين</p>
-          <h1>مراجعة واعتماد الحسابات</h1>
+          <p className="admin-users-kicker">إدارة المستخدمين</p>
+          <h1>المستخدمون</h1>
         </div>
-        <form
-          className="admin-users-search-shell"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setAppliedSearch(search.trim());
-          }}
-        >
-          <Search className="h-5 w-5" />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="ابحث بالبريد الإلكتروني"
-            aria-label="البحث عن المستخدمين بالبريد الإلكتروني"
-          />
-          <button type="button" onClick={() => { setSearch(""); setAppliedSearch(""); }} title="مسح البحث" aria-label="مسح البحث">
-            <X className="h-4 w-4" />
-            <span>مسح</span>
-          </button>
-        </form>
       </section>
 
       <section className="admin-users-stats">
@@ -359,63 +365,53 @@ export default function AdminUsersPage() {
         ))}
       </section>
 
-      <section className="admin-users-filter-panel">
-        <button
-          type="button"
-          className="admin-users-filter-toggle"
-          onClick={() => setFiltersOpen((open) => !open)}
-          aria-expanded={filtersOpen}
-          aria-controls="admin-users-filters"
-        >
-          <span className="admin-users-filter-title">
-            <Filter className="h-5 w-5" />
-            <span>فلترة</span>
-          </span>
-          <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`} />
-        </button>
-
-        <AnimatePresence initial={false}>
-          {filtersOpen && (
-            <motion.div
-              id="admin-users-filters"
-              className="admin-users-filter-content"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <div className="admin-users-filterbar">
-                <FilterField label="الحالة">
-                  <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </FilterField>
-                <FilterField label="الترتيب">
-                  <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-                    {sortOptions.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </FilterField>
-                <button type="button" className="admin-users-reset" onClick={() => setAppliedSearch(search.trim())}>
-                  <Search className="h-4 w-4" />
-                  <span>تطبيق</span>
-                </button>
-                <button type="button" className="admin-users-reset" onClick={loadUsers} disabled={loading}>
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                  <span>تحديث</span>
-                </button>
-                <button type="button" className="admin-users-reset" onClick={resetFilters}>
-                  <RotateCcw className="h-4 w-4" />
-                  <span>إعادة ضبط</span>
-                </button>
-              </div>
-            </motion.div>
+      <form
+        className="admin-users-filter-panel admin-users-toolbar"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setAppliedSearch(search.trim());
+        }}
+      >
+        <label className="admin-users-search-field">
+          <Search className="h-4 w-4" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="ابحث بالاسم أو البريد الإلكتروني أو رقم المستخدم"
+            aria-label="ابحث بالاسم أو البريد الإلكتروني أو رقم المستخدم"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} title="مسح البحث" aria-label="مسح البحث">
+              <X className="h-4 w-4" />
+            </button>
           )}
-        </AnimatePresence>
-      </section>
+        </label>
+        <FilterField label="الحالة">
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="الترتيب">
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </FilterField>
+        <button type="submit" className="admin-users-reset admin-users-apply">
+          <Filter className="h-4 w-4" />
+          <span>تطبيق</span>
+        </button>
+        <button type="button" className="admin-users-reset" onClick={resetFilters}>
+          <RotateCcw className="h-4 w-4" />
+          <span>إعادة ضبط</span>
+        </button>
+        <button type="button" className="admin-users-icon-button" onClick={loadUsers} disabled={loading} title="تحديث" aria-label="تحديث">
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        </button>
+      </form>
 
       <section className="admin-users-table-card">
         <div className="admin-users-table-head">
@@ -434,108 +430,95 @@ export default function AdminUsersPage() {
 
         <div className="admin-users-list">
           {loading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="admin-user-row animate-pulse">
-                <span className="h-12 w-12 rounded-full bg-slate-200 dark:bg-white/10" />
-                <div className="h-10 flex-1 rounded-xl bg-slate-100 dark:bg-white/10" />
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="admin-user-table-skeleton animate-pulse">
+                <span />
+                <strong />
               </div>
             ))
           ) : users.length ? (
-            users.map((user) => (
-              <article key={user.id} className="admin-user-row">
-                <Avatar user={user} />
-                <div className="admin-user-main">
-                  <div className="admin-user-name-line">
-                    <h3>{user.name}</h3>
-                  </div>
-                  <p dir="ltr">{user.email || "-"}</p>
-                </div>
-                <div className="admin-user-meta-grid">
-                  <div className="admin-user-meta-card admin-user-meta-identity">
-                    <button type="button" className="admin-user-id" onClick={() => copyUserId(user.id)} title="نسخ معرّف المستخدم">
-                      <Copy className="h-3.5 w-3.5" />
-                      <span dir="ltr">{user.id}</span>
-                    </button>
-                    <span className="admin-user-group">{user.groupName}</span>
-                  </div>
-                  <div className="admin-user-meta-card admin-user-money">
-                    <strong dir="ltr">{user.walletBalanceLabel}</strong>
-                    <span>محفظة {user.currency}</span>
-                  </div>
-                  <div className="admin-user-meta-card admin-user-meta-status">
-                    <span>{user.role === "SUPERVISOR" ? "مشرف" : "مستخدم"}</span>
-                    <StatusBadge status={user.displayStatus} label={user.displayStatusLabel} />
-                    <div className="admin-user-status-actions">
-                      {user.displayStatus !== "DELETED" && user.status === "PENDING" && (
-                        <>
-                          <button
-                            type="button"
-                            className="rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-60"
-                            onClick={() => requestUserReview(user, "approve")}
-                            disabled={Boolean(actionKey)}
-                          >
-                            قبول
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-xl bg-rose-500/10 px-3 py-2 text-[10px] font-black text-rose-700 disabled:opacity-60 dark:text-rose-300"
-                            onClick={() => requestUserReview(user, "reject")}
-                            disabled={Boolean(actionKey)}
-                          >
-                            رفض
-                          </button>
-                        </>
-                      )}
-                      {user.displayStatus === "DELETED" ? (
-                        <button
-                          type="button"
-                          className="admin-user-details-button"
-                          onClick={() => handleRestoreUser(user)}
-                          disabled={Boolean(actionKey)}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                          <span>استرجاع المستخدم</span>
-                        </button>
-                      ) : user.displayStatus === "BLOCKED" ? (
-                        <button
-                          type="button"
-                          className="admin-user-details-button"
-                          onClick={() => handleUnblockUser(user)}
-                          disabled={Boolean(actionKey)}
-                        >
-                          <ShieldCheck className="h-4 w-4" />
-                          <span>إلغاء الحظر</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="admin-user-details-button"
-                          onClick={() => handleBlockUser(user)}
-                          disabled={Boolean(actionKey)}
-                        >
-                          <Ban className="h-4 w-4" />
-                          <span>حظر</span>
-                        </button>
-                      )}
-                      <button type="button" className="admin-user-details-button" onClick={() => openPasswordModal(user)} disabled={Boolean(actionKey) || user.displayStatus === "DELETED"}>
-                        <KeyRound className="h-4 w-4" />
-                        <span>تغيير كلمة المرور</span>
-                      </button>
-                      <button type="button" className="admin-user-details-button" onClick={() => openUserWallet(user.id)}>
-                        <WalletCards className="h-4 w-4" />
-                        <span>المحفظة والتحكم</span>
-                      </button>
-                      <button type="button" className="admin-user-details-button" onClick={() => setSelectedUserId(user.id)}>
-                        <Eye className="h-4 w-4" />
-                        <span>التفاصيل</span>
-                      </button>
+            <>
+              <div className="admin-users-table-wrap">
+                <table className="admin-users-table">
+                  <thead>
+                    <tr>
+                      <th>المستخدم</th>
+                      <th>الرصيد</th>
+                      <th>المجموعة</th>
+                      <th>الحالة</th>
+                      <th>آخر نشاط / تاريخ الإنشاء</th>
+                      <th>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td>
+                          <UserIdentity user={user} onCopy={copyUserId} />
+                        </td>
+                        <td>
+                          <strong className="admin-user-balance" dir="ltr">{user.walletBalanceLabel}</strong>
+                          <span className="admin-user-muted">{user.currency}</span>
+                        </td>
+                        <td><GroupBadge user={user} /></td>
+                        <td><StatusBadge status={user.displayStatus} label={user.displayStatusLabel} /></td>
+                        <td><DateCell user={user} /></td>
+                        <td>
+                          <RowActions
+                            actionKey={actionKey}
+                            isOpen={openActionUserId === user.id}
+                            user={user}
+                            onApprove={() => requestUserReview(user, "approve")}
+                            onBlock={() => handleBlockUser(user)}
+                            onDelete={() => requestUserStateChange(user, "delete")}
+                            onDetails={() => setSelectedUserId(user.id)}
+                            onOpenChange={(open) => setOpenActionUserId(open ? user.id : null)}
+                            onPassword={() => openPasswordModal(user)}
+                            onReject={() => requestUserReview(user, "reject")}
+                            onRestore={() => handleRestoreUser(user)}
+                            onUnblock={() => handleUnblockUser(user)}
+                            onWallet={() => openUserWallet(user.id)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="admin-users-mobile-list">
+                {users.map((user) => (
+                  <article key={user.id} className="admin-user-mobile-card">
+                    <div className="admin-user-mobile-head">
+                      <UserIdentity user={user} onCopy={copyUserId} />
+                      <StatusBadge status={user.displayStatus} label={user.displayStatusLabel} />
                     </div>
-                  </div>
-                </div>
-              </article>
-            ))
+                    <div className="admin-user-mobile-meta">
+                      <span dir="ltr">{user.walletBalanceLabel}</span>
+                      <GroupBadge user={user} />
+                      <DateCell user={user} />
+                    </div>
+                    <RowActions
+                      actionKey={actionKey}
+                      isOpen={openActionUserId === user.id}
+                      user={user}
+                      onApprove={() => requestUserReview(user, "approve")}
+                      onBlock={() => handleBlockUser(user)}
+                      onDelete={() => requestUserStateChange(user, "delete")}
+                      onDetails={() => setSelectedUserId(user.id)}
+                      onOpenChange={(open) => setOpenActionUserId(open ? user.id : null)}
+                      onPassword={() => openPasswordModal(user)}
+                      onReject={() => requestUserReview(user, "reject")}
+                      onRestore={() => handleRestoreUser(user)}
+                      onUnblock={() => handleUnblockUser(user)}
+                      onWallet={() => openUserWallet(user.id)}
+                    />
+                  </article>
+                ))}
+              </div>
+            </>
           ) : (
-            <div className="admin-user-empty-log">لا يوجد مستخدمون مطابقون للفلاتر الحالية.</div>
+            <div className="admin-user-empty-log">لا يوجد مستخدمون مطابقون للفلاتر الحالية</div>
           )}
         </div>
       </section>
@@ -566,7 +549,7 @@ export default function AdminUsersPage() {
             confirmation={confirmation}
             busy={actionKey === `${confirmation.action}:${confirmation.userId}`}
             onCancel={() => setConfirmation(null)}
-            onConfirm={executeReview}
+            onConfirm={executeConfirmedAction}
           />
         )}
       </AnimatePresence>
@@ -599,6 +582,128 @@ function StatCard({ stat }) {
       </div>
       <strong>{numberFormat(stat.value)}</strong>
     </article>
+  );
+}
+
+function UserIdentity({ user, onCopy }) {
+  return (
+    <div className="admin-user-identity-cell">
+      <Avatar user={user} />
+      <div className="min-w-0">
+        <strong title={user.name}>{user.name}</strong>
+        <span dir="ltr" title={user.email || "-"}>{user.email || "-"}</span>
+        <button type="button" onClick={() => onCopy(user.id)} title="نسخ معرّف المستخدم" aria-label="نسخ معرّف المستخدم">
+          <Copy className="h-3.5 w-3.5" />
+          <small dir="ltr">{user.id}</small>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GroupBadge({ user }) {
+  return (
+    <span className="admin-user-group" title={user.groupName}>
+      {user.groupName || "Default"}
+    </span>
+  );
+}
+
+function DateCell({ user }) {
+  const activityDate = user.lastSeenAt || user.updatedAt || user.createdAt;
+  return (
+    <span className="admin-user-date-cell" title={activityDate ? formatDate(activityDate) : "غير متاح"}>
+      {activityDate ? formatDate(activityDate) : "غير متاح"}
+    </span>
+  );
+}
+
+function RowActions({
+  actionKey,
+  isOpen,
+  user,
+  onApprove,
+  onBlock,
+  onDelete,
+  onDetails,
+  onOpenChange,
+  onPassword,
+  onReject,
+  onRestore,
+  onUnblock,
+  onWallet,
+}) {
+  const busy = Boolean(actionKey);
+  const isDeleted = user.displayStatus === "DELETED";
+  const isBlocked = user.displayStatus === "BLOCKED";
+  const canReview = !isDeleted && user.status === "PENDING";
+
+  const run = (handler) => {
+    onOpenChange(false);
+    handler();
+  };
+
+  return (
+    <div className="admin-user-row-actions">
+      <button type="button" className="admin-user-primary-action" onClick={onDetails}>
+        <Eye className="h-4 w-4" />
+        <span>التفاصيل</span>
+      </button>
+      <div className="admin-user-actions-menu">
+        <button
+          type="button"
+          className="admin-user-menu-trigger"
+          onClick={() => onOpenChange(!isOpen)}
+          aria-expanded={isOpen}
+          aria-label="إجراءات المستخدم"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              className="admin-user-menu-popover"
+              initial={{ opacity: 0, y: -4, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.14, ease: "easeOut" }}
+            >
+              {isDeleted ? (
+                <MenuButton icon={RotateCcw} label="استرجاع المستخدم" onClick={() => run(onRestore)} disabled={busy} />
+              ) : (
+                <>
+                  {canReview && (
+                    <>
+                      <MenuButton icon={CheckCircle2} label="قبول الحساب" onClick={() => run(onApprove)} disabled={busy} />
+                      <MenuButton icon={Ban} label="رفض الحساب" onClick={() => run(onReject)} disabled={busy} danger />
+                      <span className="admin-user-menu-separator" />
+                    </>
+                  )}
+                  <MenuButton icon={WalletCards} label="المحفظة والتحكم" onClick={() => run(onWallet)} disabled={busy} />
+                  <MenuButton icon={KeyRound} label="تغيير كلمة المرور" onClick={() => run(onPassword)} disabled={busy} />
+                  <span className="admin-user-menu-separator" />
+                  {isBlocked ? (
+                    <MenuButton icon={ShieldCheck} label="فك الحظر" onClick={() => run(onUnblock)} disabled={busy} />
+                  ) : (
+                    <MenuButton icon={Ban} label="حظر المستخدم" onClick={() => run(onBlock)} disabled={busy} danger />
+                  )}
+                  <MenuButton icon={Trash2} label="حذف المستخدم" onClick={() => run(onDelete)} disabled={busy} danger />
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function MenuButton({ danger = false, disabled = false, icon: Icon, label, onClick }) {
+  return (
+    <button type="button" className={danger ? "admin-user-menu-item admin-user-menu-danger" : "admin-user-menu-item"} onClick={onClick} disabled={disabled}>
+      <Icon className="h-4 w-4" />
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -665,6 +770,7 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
             <div className="admin-user-info-grid">
               <InfoItem label="الاسم" value={user.name} />
               <InfoItem label="البريد الإلكتروني" value={user.email || "-"} ltr />
+              <InfoItem label="معرّف المستخدم" value={user.id} ltr />
               <InfoItem label="الهاتف" value={user.phone || "-"} ltr />
               <InfoItem label="الدولة" value={user.country || "-"} />
               <InfoItem label="العملة" value={user.currency} ltr />
@@ -675,7 +781,11 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
               </div>
               <InfoItem label="الدور" value={user.role === "SUPERVISOR" ? "مشرف" : "مستخدم"} />
               <InfoItem label="البريد موثّق" value={user.verified ? "نعم" : "لا"} />
+              <InfoItem label="سبب الحظر" value={user.blockReason || "-"} />
+              <InfoItem label="تاريخ الحذف" value={formatDate(user.deletedAt)} />
               <InfoItem label="تاريخ التسجيل" value={formatDate(user.createdAt)} />
+              <InfoItem label="آخر تحديث" value={formatDate(user.updatedAt)} />
+              <InfoItem label="آخر نشاط" value={formatDate(user.lastSeenAt)} />
               <InfoItem label="تاريخ القبول" value={formatDate(user.approvedAt)} />
               <InfoItem label="تاريخ الرفض" value={formatDate(user.rejectedAt)} />
             </div>
@@ -742,10 +852,12 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
               <WalletItem label="حد الائتمان" value={`${user.creditLimit.toFixed(2)} ${user.currency}`} />
               <WalletItem label="الائتمان المستخدم" value={`${user.creditUsed.toFixed(2)} ${user.currency}`} />
             </div>
-            <button type="button" onClick={onOpenWallet} className="admin-user-details-button mt-3 w-full">
-              <WalletCards className="h-4 w-4" />
-              <span>المحفظة والتحكم</span>
-            </button>
+            {user.displayStatus !== "DELETED" && (
+              <button type="button" onClick={onOpenWallet} className="admin-user-details-button mt-3 w-full">
+                <WalletCards className="h-4 w-4" />
+                <span>المحفظة والتحكم</span>
+              </button>
+            )}
           </DrawerSection>
         </div>
 

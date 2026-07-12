@@ -618,6 +618,32 @@ select.buy-dynamic-input option {
   border-radius: 16px;
 }
 
+.buy-modal__error--quantity-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #9a3412;
+  text-align: start;
+  background: rgba(255, 247, 237, 0.95);
+  border-color: #fdba74;
+  box-shadow:
+    0 12px 26px rgba(249, 115, 22, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.buy-modal__error--quantity-warning .buy-modal__error-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: #f97316;
+  stroke-width: 2.4;
+}
+
+.buy-modal__error--quantity-warning span {
+  min-width: 0;
+}
+
 html:not(.dark) .buy-modal__error--insufficient-funds {
   color: #92400e;
 }

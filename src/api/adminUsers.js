@@ -226,3 +226,15 @@ export async function restoreAdminUser(token, id) {
     user: normalizeAdminUser(response.data?.user || response.data || {}),
   };
 }
+
+export async function deleteAdminUser(token, id) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
