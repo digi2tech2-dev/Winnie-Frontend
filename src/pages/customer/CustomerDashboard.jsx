@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { Camera, X } from "lucide-react";
 import { resolveBackendAssetUrl } from "../../api/adapters";
 import { filterMainCategories, getCustomerCatalog } from "../../api/catalog";
+import AllProductsSection from "../../components/home/AllProductsSection";
 import BestSellingSection from "../../components/home/BestSellingSection";
+import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
 import CustomerReviews from "../../components/home/CustomerReviews";
-import HomeShowcase from "../../components/home/HomeShowcase";
+import HomePromoBanners from "../../components/home/HomePromoBanners";
 import HomeSlide from "../../components/home/HomeSlide";
-import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 
@@ -75,7 +76,7 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
 
     const loadCatalog = async () => {
       try {
-        const catalog = await getCustomerCatalog(token, { page: 1, limit: 12 });
+        const catalog = await getCustomerCatalog(token, { page: 1, limit: 48 });
         if (!cancelled) {
           setDashboardData({ categories: catalog.categories, products: catalog.products });
         }
@@ -106,6 +107,15 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   const goCategory = (category) => {
     navigate(`${basePath}/categories/${category.slug || category.id}`);
   };
+  const mainCategories = useMemo(
+    () => filterMainCategories(dashboardData.categories).filter((category) => category?.isActive !== false),
+    [dashboardData.categories],
+  );
+  const visibleProducts = useMemo(
+    () => dashboardData.products.filter((product) => product?.visibleInStore !== false && product?.visible !== false),
+    [dashboardData.products],
+  );
+  const openProductPurchase = (product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"));
   const backendAvatarUrl = resolveBackendAssetUrl(user?.avatar);
   const hasProfileImage = isImageAvatar(backendAvatarUrl) || isImageAvatar(profileAvatarUrl);
   const dismissCompleteProfile = () => {
@@ -155,21 +165,14 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
         </div>
       ) : null}
       <HomeSlide categoriesPath={`${basePath}/categories`} />
-      <HomeShowcase
-        categories={filterMainCategories(dashboardData.categories)}
-        products={dashboardData.products.slice(0, 8)}
-        onViewAll={goGames}
-        onCategorySelect={goCategory}
-        onProductSelect={(product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"))}
-      />
-      <RecentAdditionsSection
-        items={dashboardData.products}
-        onSelect={(product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"))}
-      />
+      <CategoryShowcaseSection categories={mainCategories} onSelect={goCategory} />
       <BestSellingSection
-        items={dashboardData.products}
-        onSelect={(product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"))}
+        items={visibleProducts}
+        onSelect={openProductPurchase}
+        onViewAll={goGames}
       />
+      <HomePromoBanners />
+      <AllProductsSection items={visibleProducts} onSelect={openProductPurchase} />
       <CustomerReviews />
       {purchaseModals}
     </div>

@@ -281,7 +281,7 @@ export default function CustomerLayout() {
             className={
               isAboutPage
                 ? "pb-28 pt-4 sm:pt-6 xl:pb-12"
-                : "customer-app-main mx-auto max-w-[1160px] px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 xl:pb-12"
+                : "customer-app-main mx-auto w-full max-w-[1440px] px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 xl:pb-12"
             }
           >
             <BackButton

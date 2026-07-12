@@ -91,7 +91,7 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
   const hasMinTotal = minTotalValue !== undefined && minTotalValue !== null && minTotalValue !== "";
   const displayPriceLabel = explicitPriceLabel || (
     minQty > 1 && hasMinTotal
-      ? `${minQty.toLocaleString("en-US")} = ${formatCurrency(minTotalValue, displayCurrency)}`
+      ? formatCurrency(minTotalValue, displayCurrency)
       : hasDisplayPrice ? formatCurrency(numericPrice, displayCurrency) : ""
   );
   const hasDiscount = product.hasDiscount === true;
