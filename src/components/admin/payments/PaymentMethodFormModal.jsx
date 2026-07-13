@@ -4,6 +4,13 @@ import { ImagePlus, Save, X } from "lucide-react";
 import { PAYMENT_GATEWAYS } from "../../../api/paymentMethods";
 
 const methodTypes = ["MANUAL", "ONLINE", "CARD", "WALLET", "BANK_TRANSFER", "CRYPTO"];
+const gatewayLabels = {
+  MOCK: "Mock",
+  NETWORK_INTERNATIONAL: "Network International",
+  PAYMENTO: "Paymento USDT",
+  ZIINA: "Ziina / زينة",
+  TAP: "Tap",
+};
 
 export default function PaymentMethodFormModal({ open, method, defaultGroupId, groups, onClose, onSave }) {
   if (!open) return null;
@@ -118,7 +125,7 @@ function Content({ method, defaultGroupId, groups, onClose, onSave }) {
           <SelectField label="بوابة الدفع" value={form.gateway} onChange={(value) => set("gateway", value)}>
             <option value="">بدون بوابة</option>
             {PAYMENT_GATEWAYS.map((gateway) => (
-              <option key={gateway} value={gateway}>{gateway}</option>
+              <option key={gateway} value={gateway}>{gatewayLabels[gateway] || gateway}</option>
             ))}
           </SelectField>
 
