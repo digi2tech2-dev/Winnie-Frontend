@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useOutletContext } from "react-router-dom";
-import { getCustomerProducts } from "../../api/catalog";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { getCustomerProducts, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
@@ -10,13 +10,15 @@ import { sortProductsByNewest } from "../../utils/recentProducts";
 
 const pageSize = 100;
 
-export default function CustomerRecentlyAdded({ basePath = "/customer" }) {
+export default function CustomerRecentlyAdded({ loginOnPurchase = false, basePath = "/customer" }) {
+  const navigate = useNavigate();
   const { token } = useAuth();
   const { t, i18n } = useTranslation("home");
   const outletContext = useOutletContext() || {};
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const useBackendProducts = !loginOnPurchase && Boolean(token);
   const { openPurchase, purchaseModals } = useCustomerPurchase({
     basePath,
     onSuccess: outletContext.onWalletRefresh,
@@ -24,14 +26,15 @@ export default function CustomerRecentlyAdded({ basePath = "/customer" }) {
   });
 
   useEffect(() => {
-    if (!token) return undefined;
     let cancelled = false;
 
     const loadProducts = async () => {
       setLoading(true);
       setError("");
       try {
-        const result = await getCustomerProducts(token, { page: 1, limit: pageSize });
+        const result = useBackendProducts
+          ? await getCustomerProducts(token, { page: 1, limit: pageSize })
+          : await getPublicCatalog({ page: 1, limit: pageSize });
         if (!cancelled) setProducts(result.products);
       } catch (requestError) {
         if (!cancelled) {
@@ -45,13 +48,19 @@ export default function CustomerRecentlyAdded({ basePath = "/customer" }) {
 
     void loadProducts();
     return () => { cancelled = true; };
-  }, [token, t]);
+  }, [token, t, useBackendProducts]);
 
   const recentProducts = useMemo(
     () => sortProductsByNewest(products.filter((product) => product?.isActive !== false && product?.visibleInStore !== false && product?.visible !== false)),
     [products],
   );
-  const selectProduct = (product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"));
+  const selectProduct = (product) => {
+    if (!useBackendProducts) {
+      navigate("/login", { state: { from: `${basePath}/dashboard` } });
+      return;
+    }
+    openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"));
+  };
 
   return (
     <div dir={i18n.language?.startsWith("ar") ? "rtl" : "ltr"} className="space-y-6">

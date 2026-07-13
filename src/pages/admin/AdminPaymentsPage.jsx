@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -125,6 +126,8 @@ function countActiveFilters(filters) {
 export default function AdminPaymentsPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedPaymentId = searchParams.get("details") || "";
   const [payments, setPayments] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
   const [draftFilters, setDraftFilters] = useState(initialFilters);
@@ -132,7 +135,7 @@ export default function AdminPaymentsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState(() => requestedPaymentId || null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
@@ -171,6 +174,10 @@ export default function AdminPaymentsPage() {
   useEffect(() => {
     loadPayments();
   }, [loadPayments]);
+
+  useEffect(() => {
+    if (requestedPaymentId) setSelectedPaymentId(requestedPaymentId);
+  }, [requestedPaymentId]);
 
   useEffect(() => {
     if (!selectedPaymentId || !token) return undefined;
@@ -234,7 +241,12 @@ export default function AdminPaymentsPage() {
     setSelectedPaymentId(null);
     setSelectedPayment(null);
     setDetailsError("");
-  }, [actionKey]);
+    if (searchParams.has("details")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("details");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [actionKey, searchParams, setSearchParams]);
 
   const syncPayment = async (paymentId) => {
     if (!token || actionKey) return;

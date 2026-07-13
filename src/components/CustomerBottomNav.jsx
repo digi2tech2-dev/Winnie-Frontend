@@ -1,12 +1,14 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../context/LanguageContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { customerMobileNav } from "../data/navigation";
 import { iconMap } from "./icons";
 
 export default function CustomerBottomNav({ basePath = "/customer", translate = true }) {
   const { language } = useLanguage();
   const { t } = useTranslation("common");
+  const { favorites } = useFavorites();
   const displayLanguage = translate ? language : "ar";
   const navItems = customerMobileNav.map((item) => ({
     ...item,
@@ -20,13 +22,14 @@ export default function CustomerBottomNav({ basePath = "/customer", translate = 
           <BottomItem key={item.path} item={item} />
         ))}
         <NavLink
-          to={`${basePath}/best-selling`}
+          to={`${basePath}/favorites`}
           className="group relative mx-auto grid h-[46px] w-[46px] place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:scale-105 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]"
-          aria-label={t("nav.bestSelling")}
-          title={t("nav.bestSelling")}
+          aria-label={t("nav.favorites")}
+          title={t("nav.favorites")}
         >
           <span className="absolute -inset-1 -z-10 rounded-full bg-gradient-to-r from-violet-500/30 to-blue-500/30 blur-md opacity-70 transition group-hover:opacity-100" />
           <img src="/logo.png" alt="Winnie Fun" className="relative h-8 w-8 object-contain transition duration-300 group-hover:scale-105" />
+          {favorites.length ? <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-black text-white shadow-[0_6px_14px_rgba(244,63,94,0.38)] dark:border-[#070B19]">{favorites.length > 99 ? "99+" : favorites.length}</span> : null}
         </NavLink>
         {navItems.slice(2).map((item) => (
           <BottomItem key={item.path} item={item} />

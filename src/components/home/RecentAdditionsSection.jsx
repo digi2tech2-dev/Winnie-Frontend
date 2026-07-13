@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { sortProductsByNewest } from "../../utils/recentProducts";
 import HomeProductCard from "./HomeProductCard";
 
-export const recentHomepageLimit = 5;
+export const recentHomepageLimit = 6;
 
 export default function RecentAdditionsSection({ items = [], onSelect, onViewAll }) {
   const { t, i18n } = useTranslation("home");
@@ -40,11 +40,15 @@ export default function RecentAdditionsSection({ items = [], onSelect, onViewAll
       </div>
 
       {recentItems.length ? (
-        <div className="recent-products-row -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 sm:gap-4">
+        <div className="homepage-product-row">
           {recentItems.map((product, index) => (
-            <div key={product.id || product._id || product.slug || product.name} className="w-[calc(50%-0.375rem)] shrink-0 snap-start md:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]">
-              <HomeProductCard product={product} index={index} onSelect={onSelect} />
-            </div>
+            <HomeProductCard
+              key={product.id || product._id || product.slug || product.name}
+              product={product}
+              index={index}
+              onSelect={onSelect}
+              variant="featured"
+            />
           ))}
         </div>
       ) : (

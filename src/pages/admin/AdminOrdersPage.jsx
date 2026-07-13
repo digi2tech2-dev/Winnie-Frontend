@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, RefreshCw, Search, Sparkles } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   getAdminOrder,
   getAdminOrders,
@@ -37,12 +38,14 @@ function getErrorMessage(error, fallback) {
 export default function AdminOrdersPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedOrderId = searchParams.get("details") || "";
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [page, setPage] = useState(1);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(() => requestedOrderId || null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -83,6 +86,10 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    if (requestedOrderId) setSelectedOrderId(requestedOrderId);
+  }, [requestedOrderId]);
 
   useEffect(() => {
     if (!selectedOrderId || !token) return undefined;
@@ -140,7 +147,12 @@ export default function AdminOrdersPage() {
     setSelectedOrderId(null);
     setSelectedOrder(null);
     setDetailsError("");
-  }, [actionKey]);
+    if (searchParams.has("details")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("details");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [actionKey, searchParams, setSearchParams]);
 
   const executeOrderAction = async (orderId, action, payload = {}) => {
     if (!token || actionKey) return;

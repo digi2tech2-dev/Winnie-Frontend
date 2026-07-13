@@ -19,6 +19,8 @@ export async function updateMyProfile(token, payload = {}) {
       phone: payload.phone,
       username: payload.username,
       country: payload.country,
+      currency: payload.currency,
+      inviteCode: payload.inviteCode,
     }),
   });
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -14,7 +15,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { approveDeposit, getAdminDeposits, rejectDeposit } from "../../api/adminDeposits";
+import { approveDeposit, getAdminDeposit, getAdminDeposits, rejectDeposit } from "../../api/adminDeposits";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 import { SkeletonBlock } from "../../components/Skeletons";
@@ -55,6 +56,8 @@ function countByStatus(items, status) {
 export default function AdminBalanceRequestsPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedDepositId = searchParams.get("details") || "";
   const [requests, setRequests] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
   const [summary, setSummary] = useState(null);
@@ -100,6 +103,40 @@ export default function AdminBalanceRequestsPage() {
   useEffect(() => {
     loadRequests();
   }, [loadRequests]);
+
+  useEffect(() => {
+    if (!requestedDepositId || !token) return undefined;
+    let cancelled = false;
+
+    const loadRequestedDeposit = async () => {
+      try {
+        const result = await getAdminDeposit(token, requestedDepositId);
+        if (!cancelled) setSelected(result.deposit);
+      } catch (requestError) {
+        if (!cancelled) {
+          showToast({
+            type: "error",
+            title: "تعذر فتح تفاصيل العملية",
+            message: getErrorMessage(requestError, "لم نتمكن من تحميل طلب إضافة الرصيد المرتبط بهذا الإشعار."),
+          });
+        }
+      }
+    };
+
+    void loadRequestedDeposit();
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedDepositId, showToast, token]);
+
+  const closeSelectedRequest = useCallback(() => {
+    setSelected(null);
+    if (searchParams.has("details")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("details");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const counts = useMemo(() => ({
     total: summary?.totalDeposits ?? pagination.total ?? requests.length,
@@ -212,7 +249,7 @@ export default function AdminBalanceRequestsPage() {
       <RequestDetails
         actionKey={actionKey}
         request={confirmation ? null : selected}
-        onClose={() => setSelected(null)}
+        onClose={closeSelectedRequest}
         onReview={requestReview}
       />
 

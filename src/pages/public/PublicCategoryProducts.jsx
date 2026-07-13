@@ -5,7 +5,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { filterChildCategories, filterProductsByCategory, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
-import { CategoriesGrid } from "../../components/home/HomeShowcase";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 
@@ -168,12 +167,17 @@ export default function PublicCategoryProducts() {
       </form>
 
       {childCategories.length ? (
-        <section className="px-1" aria-label={t("public.categoriesTitle")}>
-          <CategoriesGrid
-            categories={childCategories}
-            layout="two"
-            onCategorySelect={(child) => navigate(`/categories/${child.slug || child.id}`)}
-          />
+        <section className="marketplace-product-grid px-1" aria-label={t("public.categoriesTitle")}>
+          {childCategories.map((child, index) => (
+            <HomeProductCard
+              key={child.id || child.slug || child.name}
+              product={child}
+              index={index}
+              onSelect={(selectedChild) => navigate(`/categories/${selectedChild.slug || selectedChild.id}`)}
+              reservePriceSpace
+              favoriteEnabled={false}
+            />
+          ))}
         </section>
       ) : null}
 

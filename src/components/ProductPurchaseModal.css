@@ -452,6 +452,53 @@
   font-size: 20px;
 }
 
+.buy-quantity-limits {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 7px 4px 0;
+  color: rgba(220, 226, 255, 0.68);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.buy-quantity-limits__item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.buy-quantity-limits__item svg {
+  width: 12px;
+  height: 12px;
+  color: #22d3ee;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.52));
+}
+
+.buy-quantity-limits__item:last-child svg {
+  color: #c084fc;
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.52));
+}
+
+.buy-quantity-limits__item strong {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+}
+
+.buy-quantity-limits__divider {
+  width: 1px;
+  height: 13px;
+  background: linear-gradient(180deg, transparent, rgba(192, 132, 252, 0.62), transparent);
+}
+
 .buy-quantity input::-webkit-inner-spin-button,
 .buy-quantity input::-webkit-outer-spin-button {
   margin: 0;
@@ -844,6 +891,20 @@ html:not(.dark) .buy-modal__error--insufficient-funds {
     font-size: 18px;
   }
 
+  .buy-quantity-limits {
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 9px;
+  }
+
+  .buy-quantity-limits__item {
+    gap: 4px;
+  }
+
+  .buy-quantity-limits__item strong {
+    font-size: 10px;
+  }
+
   .buy-w-coin {
     width: 25px;
     height: 25px;
@@ -1004,6 +1065,14 @@ html:not(.dark) .buy-row {
 html:not(.dark) .buy-balance-card span,
 html:not(.dark) .buy-summary__item > span {
   color: #526078;
+}
+
+html:not(.dark) .buy-quantity-limits {
+  color: #64748b;
+}
+
+html:not(.dark) .buy-quantity-limits__item strong {
+  color: #4c1d95;
 }
 
 html:not(.dark) .buy-quantity input,

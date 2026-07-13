@@ -20,7 +20,7 @@ function isImageAvatar(avatar) {
   return typeof avatar === "string" && /^(https?:|data:image|\/)/.test(avatar);
 }
 
-export default function AdminHeader({ onOpenSidebar, unreadNotificationCount = 0 }) {
+export default function AdminHeader({ fixed = true, onOpenSidebar, unreadNotificationCount = 0 }) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ export default function AdminHeader({ onOpenSidebar, unreadNotificationCount = 0
   }, []);
 
   return (
-    <header dir="ltr" className="admin-header winnie-mobile-topbar site-header-warm fixed inset-x-0 top-0 z-[70] overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
+    <header dir="ltr" className={`admin-header winnie-mobile-topbar site-header-warm overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8 ${fixed ? "fixed inset-x-0 top-0 z-[70]" : "relative z-40"}`}>
       <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
       <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-400/10" />
       <div className="winnie-mobile-topbar-shell relative mx-auto grid max-w-[1120px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">

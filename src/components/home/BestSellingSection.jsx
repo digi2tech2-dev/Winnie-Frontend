@@ -35,7 +35,7 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
           </button>
         ) : null}
       </div>
-      <div className="marketplace-product-grid">
+      <div className="homepage-product-row">
         {bestSellingItems.map((item, index) => (
           <HomeProductCard
             key={item.id || item._id || item.slug || item.name}

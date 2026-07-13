@@ -158,6 +158,21 @@ export async function updateAdminUserCurrency(token, id, currency, reason = "Adm
   };
 }
 
+export async function updateAdminUserCountry(token, id, country) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
+    body: {
+      country: String(country || "").trim(),
+    },
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
+  };
+}
+
 export async function updateUserIdentityVerification(token, id, { required, reason } = {}) {
   const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/identity-verification`, {
     body: compactObject({

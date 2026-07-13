@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Bell, Check, Globe2, Moon, RotateCcw, Save, ShieldCheck, WalletCards } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../components/ToastProvider";
+import WhatsAppSupportButton from "../components/WhatsAppSupportButton";
 
 const languageOptions = [
   { value: "ar", label: "العربية", noteKey: "languageOptions.arNote" },
@@ -95,11 +96,11 @@ export default function SettingsPage({
           <div className="grid grid-cols-2 gap-2">
             {languageLocked ? (
               <>
-                <ChoiceCard active disabled title={t("adminLanguagePrimary")} note={t("adminLanguagePrimaryNote")} />
-                <ChoiceCard disabled title={t("adminLanguageSecondary")} note={t("adminLanguageSecondaryNote")} />
+                <ChoiceCard active disabled tone="language" title={t("adminLanguagePrimary")} note={t("adminLanguagePrimaryNote")} />
+                <ChoiceCard disabled tone="language" title={t("adminLanguageSecondary")} note={t("adminLanguageSecondaryNote")} />
               </>
             ) : (
-              languageOptions.map((option) => <ChoiceCard key={option.value} active={language === option.value} title={option.label} note={t(option.noteKey)} onClick={() => onLanguageChange(option.value)} />)
+              languageOptions.map((option) => <ChoiceCard key={option.value} active={language === option.value} tone="language" title={option.label} note={t(option.noteKey)} onClick={() => onLanguageChange(option.value)} />)
             )}
           </div>
         </SettingsPanel>
@@ -107,14 +108,17 @@ export default function SettingsPage({
         <SettingsPanel icon={WalletCards} title={t("currencyTitle")} description={t("currencyDescription")}>
           <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-400/20 dark:bg-violet-500/10">
             <strong dir="ltr" className="block text-base font-black text-violet-800 dark:text-violet-200">{currency}</strong>
-            <span className="mt-1 block text-xs font-bold text-slate-500 dark:text-slate-400">{currencyNote}</span>
+            <span className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span>{currencyNote}</span>
+              <WhatsAppSupportButton />
+            </span>
           </div>
         </SettingsPanel>
 
         <SettingsPanel icon={Moon} title={t("appearanceTitle")} description={t("appearanceDescription")}>
           <div className="grid grid-cols-2 gap-2">
-            <ChoiceCard active={theme === "light"} title={t("light")} note={t("lightNote")} onClick={() => onThemeChange("light")} />
-            <ChoiceCard active={theme === "dark"} title={t("dark")} note={t("darkNote")} onClick={() => onThemeChange("dark")} />
+            <ChoiceCard active={theme === "light"} tone="appearance" title={t("light")} note={t("lightNote")} onClick={() => onThemeChange("light")} />
+            <ChoiceCard active={theme === "dark"} tone="appearance" title={t("dark")} note={t("darkNote")} onClick={() => onThemeChange("dark")} />
           </div>
         </SettingsPanel>
 
@@ -170,12 +174,26 @@ function SettingsPanel({ icon: Icon, title, description, className = "", childre
   );
 }
 
-function ChoiceCard({ active, disabled = false, title, note, onClick, compact = false }) {
+function ChoiceCard({ active, disabled = false, title, note, onClick, compact = false, tone = "default" }) {
+  const languageTone = tone === "language";
+  const appearanceTone = tone === "appearance";
+  const colorClasses = languageTone
+    ? active
+      ? "border-violet-500 bg-violet-50 text-violet-800 shadow-[0_10px_24px_rgba(124,58,237,0.10)] dark:border-fuchsia-400/70 dark:bg-[linear-gradient(135deg,rgba(124,58,237,0.38),rgba(37,99,235,0.28))] dark:text-white dark:shadow-[0_12px_30px_rgba(124,58,237,0.22)]"
+      : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-cyan-300/25 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(8,47,73,0.48))] dark:text-cyan-50 dark:hover:border-cyan-300/45 dark:hover:bg-[linear-gradient(135deg,rgba(30,41,59,0.96),rgba(8,69,94,0.60))]"
+    : appearanceTone
+      ? active
+        ? "border-blue-500 bg-blue-50 text-blue-800 shadow-[0_10px_24px_rgba(37,99,235,0.10)] dark:border-cyan-300/65 dark:bg-[linear-gradient(135deg,rgba(14,116,144,0.42),rgba(37,99,235,0.34))] dark:text-white dark:shadow-[0_12px_30px_rgba(6,182,212,0.18)]"
+        : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-indigo-300/25 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.94),rgba(49,46,129,0.34))] dark:text-indigo-50 dark:hover:border-indigo-300/45 dark:hover:bg-[linear-gradient(135deg,rgba(30,41,59,0.96),rgba(55,48,163,0.46))]"
+    : active
+      ? "border-violet-500 bg-violet-50 text-violet-800 shadow-[0_10px_24px_rgba(124,58,237,0.10)] dark:bg-violet-500/12 dark:text-violet-200"
+      : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300";
+
   return (
-    <button type="button" disabled={disabled} onClick={onClick} className={`relative min-w-0 rounded-2xl border text-right transition disabled:cursor-not-allowed disabled:opacity-65 ${compact ? "h-14 px-3" : "min-h-[72px] p-3"} ${active ? "border-violet-500 bg-violet-50 text-violet-800 shadow-[0_10px_24px_rgba(124,58,237,0.10)] dark:bg-violet-500/12 dark:text-violet-200" : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300"}`}>
-      {active && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-violet-600 text-white"><Check className="h-3 w-3" /></span>}
-      <strong className="block truncate text-sm font-black">{title}</strong>
-      {note && <span className="mt-1 block pr-5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">{note}</span>}
+    <button type="button" disabled={disabled} onClick={onClick} className={`relative min-w-0 rounded-2xl border text-right transition disabled:cursor-not-allowed disabled:opacity-65 ${compact ? "h-14 px-3" : "min-h-[72px] p-3"} ${colorClasses}`}>
+      {active && <span className="absolute top-2 grid h-5 w-5 place-items-center rounded-full bg-violet-600 text-white shadow-md ltr:left-2 ltr:right-auto rtl:left-auto rtl:right-2 dark:bg-gradient-to-br dark:from-fuchsia-400 dark:to-cyan-400 dark:text-slate-950"><Check className="h-3 w-3" /></span>}
+      <strong className={`block truncate text-sm font-black ${active ? "ltr:pl-6 rtl:pr-6" : ""}`}>{title}</strong>
+      {note && <span className={`mt-1 block text-[10px] font-semibold ${active ? "ltr:pl-5 rtl:pr-5" : ""} ${languageTone ? active ? "text-violet-600 dark:text-violet-100" : "text-slate-500 dark:text-cyan-100/70" : appearanceTone ? active ? "text-blue-600 dark:text-cyan-100" : "text-slate-500 dark:text-indigo-100/70" : "text-slate-500 dark:text-slate-400"}`}>{note}</span>}
     </button>
   );
 }

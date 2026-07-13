@@ -220,6 +220,22 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
     });
   }, [basePath, insufficientFundsPrompt, navigate]);
 
+  const showQuoteInsufficientFunds = useCallback((quote = {}) => {
+    const required = Number(quote.chargedAmount ?? quote.payableAmount ?? 0);
+    const available = Number(quote.walletBalance ?? 0);
+    const shortfall = Math.max(0, required - available);
+    const currency = String(quote.currency || "").toUpperCase();
+
+    setPurchaseError("");
+    setInsufficientFundsPrompt({
+      message: shortfall > 0 ? "" : t("purchase.insufficientFunds"),
+      required,
+      available,
+      shortfall,
+      shortfallLabel: formatCurrencyAmount(shortfall, currency),
+    });
+  }, [t]);
+
   const submitPurchase = useCallback(async (purchase) => {
     if (purchaseSubmitting) return;
 
@@ -275,6 +291,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
           category={purchaseItem.category}
           onClose={closePurchase}
           onConfirm={submitPurchase}
+          onInsufficientFunds={showQuoteInsufficientFunds}
           requireAccountId={false}
           submitError={purchaseError}
           submitting={purchaseSubmitting}
@@ -295,13 +312,14 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
         <InsufficientFundsPrompt
           message={insufficientFundsPrompt.message}
           shortfall={insufficientFundsPrompt.shortfall}
+          shortfallLabel={insufficientFundsPrompt.shortfallLabel}
           onCancel={closeInsufficientFundsPrompt}
           onConfirm={goToAddBalance}
           t={t}
         />
       )}
     </AnimatePresence>
-  ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, insufficientFundsPrompt, submitPurchase, t, token]);
+  ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, insufficientFundsPrompt, showQuoteInsufficientFunds, submitPurchase, t, token]);
 
   return {
     openPurchase,
@@ -309,7 +327,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
   };
 }
 
-function InsufficientFundsPrompt({ message, shortfall, onCancel, onConfirm, t }) {
+function InsufficientFundsPrompt({ message, shortfall, shortfallLabel, onCancel, onConfirm, t }) {
   const modal = (
     <motion.div
       className="fixed inset-0 z-[100100] grid place-items-center bg-slate-950/70 px-4 text-right backdrop-blur-md"
@@ -348,12 +366,14 @@ function InsufficientFundsPrompt({ message, shortfall, onCancel, onConfirm, t })
         <h2 id="insufficient-funds-title" className="mt-4 text-2xl font-black leading-8">
           {t("purchase.insufficientFundsTitle")}
         </h2>
-        <p className="mt-2 text-sm font-bold leading-7 text-slate-600 dark:text-white/68">
-          {message}
-        </p>
+        {message ? (
+          <p className="mt-2 text-sm font-bold leading-7 text-slate-600 dark:text-white/68">
+            {message}
+          </p>
+        ) : null}
         {shortfall > 0 && (
           <p className="mt-3 rounded-2xl border border-violet-300/50 bg-violet-50 px-3 py-2 text-sm font-black leading-7 text-violet-800 dark:border-violet-300/20 dark:bg-violet-300/10 dark:text-violet-200">
-            {t("purchase.insufficientFundsShortfall", { amount: formatAmount(shortfall) })}
+            {t("purchase.insufficientFundsShortfall", { amount: shortfallLabel || formatAmount(shortfall) })}
           </p>
         )}
         <p className="mt-3 rounded-2xl border border-amber-300/50 bg-amber-50 px-3 py-2 text-sm font-black leading-7 text-amber-800 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-200">
@@ -386,6 +406,17 @@ function InsufficientFundsPrompt({ message, shortfall, onCancel, onConfirm, t })
 
 function formatAmount(value) {
   return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatCurrencyAmount(value, currency) {
+  if (!currency) return formatAmount(value);
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);

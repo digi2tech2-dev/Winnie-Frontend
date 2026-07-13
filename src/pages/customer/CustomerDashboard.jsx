@@ -172,7 +172,9 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
         onSelect={openProductPurchase}
         onViewAll={goGames}
       />
-      <HomePromoBanners />
+      <div className="lg:hidden">
+        <HomePromoBanners />
+      </div>
       <RecentAdditionsSection
         items={visibleProducts}
         onSelect={openProductPurchase}

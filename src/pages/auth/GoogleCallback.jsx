@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { getDefaultRouteForRole } from "../../utils/authRoles";
+import { shouldCompleteGoogleProfile } from "../../utils/googleOnboarding";
 
 function getQueryParam(params, key) {
   return String(params.get(key) || "").trim();
@@ -54,6 +55,11 @@ export default function GoogleCallback() {
 
       if (!result.ok) {
         fail(result.message || "Google login did not return a valid session.");
+        return;
+      }
+
+      if (shouldCompleteGoogleProfile(result.user, params)) {
+        navigate("/auth/google/complete", { replace: true });
         return;
       }
 

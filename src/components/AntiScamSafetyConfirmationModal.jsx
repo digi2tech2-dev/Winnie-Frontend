@@ -27,7 +27,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
   return (
     <div
       dir={isArabic ? "rtl" : "ltr"}
-      className="fixed inset-0 z-[190] flex items-start justify-center overflow-y-auto bg-slate-950/72 px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-sm sm:items-center sm:p-5"
+      className="fixed inset-0 z-[190] flex items-center justify-center overflow-y-auto bg-slate-950/72 p-2.5 backdrop-blur-sm sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="anti-scam-title"
@@ -35,34 +35,37 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
         if (event.target === event.currentTarget) onCancel?.();
       }}
     >
-      <section className="flex w-full max-w-[620px] flex-col rounded-t-[22px] border border-white/20 bg-white text-slate-950 shadow-[0_30px_90px_rgba(2,6,23,0.45)] sm:rounded-[22px] dark:border-white/10 dark:bg-[#080d1e] dark:text-white">
-        <header className="relative border-b border-slate-200 bg-[linear-gradient(135deg,#fff7ed,#ffffff_48%,#f5f3ff)] px-4 py-4 text-center dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.18),rgba(8,13,30,0.98)_48%,rgba(139,92,246,0.18))] sm:px-5">
+      <section className="relative flex max-h-[calc(100dvh-1.25rem)] w-full max-w-[540px] flex-col overflow-hidden rounded-[20px] border border-white/30 bg-white text-slate-950 shadow-[0_28px_80px_rgba(2,6,23,0.5)] dark:border-white/10 dark:bg-[#080d1e] dark:text-white sm:max-h-[calc(100dvh-2rem)]">
+        <span className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-violet-500" aria-hidden="true" />
+        <header className="relative flex shrink-0 items-center gap-3 border-b border-slate-200 bg-[linear-gradient(135deg,#fff8ed,#ffffff_52%,#f7f5ff)] px-3.5 py-3 text-start dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.16),rgba(8,13,30,0.98)_52%,rgba(139,92,246,0.16))]">
           <button
             type="button"
             onClick={onCancel}
-            className={`interactive-ring absolute top-3 grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white/80 text-slate-500 transition hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60 dark:hover:text-white ${isArabic ? "left-3" : "right-3"}`}
+            className={`interactive-ring absolute top-2.5 grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-white/90 text-slate-500 shadow-sm transition hover:scale-105 hover:text-slate-950 dark:border-white/10 dark:bg-white/[0.07] dark:text-white/60 dark:hover:text-white ${isArabic ? "left-2.5" : "right-2.5"}`}
             aria-label={t("antiScamCancel")}
             title={t("antiScamCancel")}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
 
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-amber-300/50 bg-amber-100 text-amber-700 shadow-[0_14px_34px_rgba(245,158,11,0.20)] dark:border-amber-300/20 dark:bg-amber-300/12 dark:text-amber-300">
-            <ShieldAlert className="h-7 w-7" />
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] border border-amber-300/60 bg-gradient-to-br from-amber-100 to-orange-50 text-amber-700 shadow-[0_8px_22px_rgba(245,158,11,0.2)] dark:border-amber-300/20 dark:from-amber-300/15 dark:to-orange-400/5 dark:text-amber-300">
+            <ShieldAlert className="h-5 w-5" />
           </span>
-          <h2 id="anti-scam-title" className="mt-3 text-xl font-black leading-7 sm:text-2xl">
-            {t("antiScamTitle")}
-          </h2>
-          <p className="mt-1 text-sm font-bold leading-6 text-slate-500 dark:text-white/60">
-            {t("antiScamSubtitle")}
-          </p>
+          <div className={`min-w-0 flex-1 ${isArabic ? "pl-8" : "pr-8"}`}>
+            <h2 id="anti-scam-title" className="text-base font-black leading-5 sm:text-lg">
+              {t("antiScamTitle")}
+            </h2>
+            <p className="mt-0.5 text-[11px] font-bold leading-4 text-slate-500 dark:text-white/60">
+              {t("antiScamSubtitle")}
+            </p>
+          </div>
         </header>
 
-        <div className="px-4 py-4 sm:px-5">
-          <ol className="grid gap-2 rounded-[16px] border border-amber-300/45 bg-amber-50/90 p-3 text-sm font-bold leading-6 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+        <div className="min-h-0 overflow-y-auto bg-slate-50/70 px-2.5 py-2.5 dark:bg-black/10 sm:px-3">
+          <ol className="grid gap-1.5 rounded-[14px] border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/60 p-1.5 text-[11px] font-bold leading-[1.15rem] text-amber-950 dark:border-amber-300/15 dark:from-amber-300/[0.09] dark:to-orange-400/[0.04] dark:text-amber-100 sm:text-xs">
             {warningPoints.map((point, index) => (
-              <li key={point} className="flex items-start gap-2.5">
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-amber-500 text-[11px] font-black text-white">
+              <li key={point} className="flex items-start gap-2 rounded-[10px] border border-white/70 bg-white/65 px-2 py-1.5 shadow-[0_2px_8px_rgba(120,53,15,0.04)] dark:border-white/[0.05] dark:bg-white/[0.035]">
+                <span className="mt-px grid h-[19px] w-[19px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[9px] font-black text-white shadow-[0_3px_8px_rgba(245,158,11,0.28)]">
                   {index + 1}
                 </span>
                 <span className="min-w-0 flex-1">{point}</span>
@@ -70,7 +73,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
             ))}
           </ol>
 
-          <div className="mt-4 grid gap-2.5">
+          <div className="mt-2 grid gap-1.5">
             <CheckboxRow
               checked={checked.ownNeed}
               id="anti-scam-own-need"
@@ -85,14 +88,14 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
             />
             <label
               htmlFor="anti-scam-terms"
-              className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-slate-200 bg-slate-50/80 p-3 text-sm font-bold leading-6 text-slate-700 transition hover:border-[#8B5CF6]/40 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/74"
+              className={`group flex cursor-pointer items-start gap-2 rounded-xl border p-2 text-[11px] font-bold leading-[1.15rem] transition sm:text-xs ${checked.terms ? "border-violet-300 bg-violet-50 text-violet-950 shadow-[0_4px_14px_rgba(139,92,246,0.08)] dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-100" : "border-slate-200 bg-white text-slate-700 hover:border-[#8B5CF6]/40 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/74"}`}
             >
               <input
                 id="anti-scam-terms"
                 type="checkbox"
                 checked={checked.terms}
                 onChange={() => toggle("terms")}
-                className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300 text-[#8B5CF6] focus:ring-[#8B5CF6]/30 dark:border-white/20 dark:bg-[#050918]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-[#8B5CF6] focus:ring-[#8B5CF6]/30 dark:border-white/20 dark:bg-[#050918]"
               />
               <span>
                 {t("antiScamCheckTermsPrefix")}{" "}
@@ -110,11 +113,11 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
           </div>
         </div>
 
-        <footer className="grid gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:grid-cols-[1fr_1.5fr] dark:border-white/10 dark:bg-[#080d1e]">
+        <footer className="grid shrink-0 grid-cols-[0.8fr_1.4fr] gap-2 border-t border-slate-200 bg-white px-2.5 py-2.5 dark:border-white/10 dark:bg-[#080d1e] sm:px-3">
           <button
             type="button"
             onClick={onCancel}
-            className="interactive-ring h-11 rounded-xl border border-slate-200 bg-white text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.08]"
+            className="interactive-ring h-9 rounded-[10px] border border-slate-200 bg-white text-xs font-black text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.08]"
           >
             {t("antiScamCancel")}
           </button>
@@ -122,7 +125,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
             type="button"
             disabled={!allChecked}
             onClick={confirm}
-            className="interactive-ring h-11 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#A855F7] px-4 text-sm font-black text-white shadow-[0_12px_30px_rgba(139,92,246,0.30)] disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none dark:disabled:bg-white/[0.08] dark:disabled:text-white/35"
+            className="interactive-ring h-9 rounded-[10px] bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#A855F7] px-3 text-xs font-black text-white shadow-[0_8px_22px_rgba(139,92,246,0.3)] transition hover:-translate-y-px hover:shadow-[0_10px_26px_rgba(139,92,246,0.38)] disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:hover:translate-y-0 dark:disabled:bg-white/[0.08] dark:disabled:text-white/35"
           >
             {t("antiScamAgreeContinue")}
           </button>
@@ -136,14 +139,14 @@ function CheckboxRow({ checked, id, label, onChange }) {
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-slate-200 bg-slate-50/80 p-3 text-sm font-bold leading-6 text-slate-700 transition hover:border-[#8B5CF6]/40 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/74"
+      className={`group flex cursor-pointer items-start gap-2 rounded-xl border p-2 text-[11px] font-bold leading-[1.15rem] transition sm:text-xs ${checked ? "border-violet-300 bg-violet-50 text-violet-950 shadow-[0_4px_14px_rgba(139,92,246,0.08)] dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-100" : "border-slate-200 bg-white text-slate-700 hover:border-[#8B5CF6]/40 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/74"}`}
     >
       <input
         id={id}
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300 text-[#8B5CF6] focus:ring-[#8B5CF6]/30 dark:border-white/20 dark:bg-[#050918]"
+        className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-[#8B5CF6] focus:ring-[#8B5CF6]/30 dark:border-white/20 dark:bg-[#050918]"
       />
       <span>{label}</span>
     </label>

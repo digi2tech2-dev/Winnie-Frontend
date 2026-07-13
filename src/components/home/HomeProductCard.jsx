@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import FavoriteButton from "../FavoriteButton";
 import { iconMap } from "../icons";
 
 function getPriceLabel(product = {}) {
@@ -13,7 +14,7 @@ function getPriceLabel(product = {}) {
   return pricePart || parts[0] || label;
 }
 
-export default function HomeProductCard({ product, index = 0, onSelect }) {
+export default function HomeProductCard({ product, index = 0, onSelect, reservePriceSpace = false, favoriteEnabled = true }) {
   const [imageFailed, setImageFailed] = useState(false);
   const Icon = typeof product.icon === "function" ? product.icon : iconMap[product.icon] || iconMap.ShoppingBag;
   const priceLabel = getPriceLabel(product);
@@ -52,13 +53,20 @@ export default function HomeProductCard({ product, index = 0, onSelect }) {
         )}
       </div>
 
-      <h3 className="mt-2 line-clamp-2 min-h-[2.25rem] w-full text-center text-[11px] font-bold leading-[1.125rem] text-slate-900 transition-colors group-hover:text-violet-700 dark:text-slate-100 dark:group-hover:text-violet-300 sm:text-sm sm:leading-5">
-        {product.name || product.title}
-      </h3>
+      <div className="mt-2 flex min-h-[2.25rem] w-full items-start justify-center gap-1.5">
+        <h3 className="line-clamp-2 min-w-0 text-center text-[11px] font-bold leading-[1.125rem] text-slate-900 transition-colors group-hover:text-violet-700 dark:text-slate-100 dark:group-hover:text-violet-300 sm:text-sm sm:leading-5">
+          {product.name || product.title}
+        </h3>
+        {favoriteEnabled ? (
+          <FavoriteButton product={product} compact className="mt-0.5" />
+        ) : null}
+      </div>
       {priceLabel ? (
         <p dir="ltr" className="mt-1 w-full truncate text-center text-[10px] font-extrabold text-violet-700 dark:text-violet-300 sm:text-sm">
           {priceLabel}
         </p>
+      ) : reservePriceSpace ? (
+        <span aria-hidden="true" className="mt-1 block h-[15px] w-full sm:h-5" />
       ) : null}
     </motion.article>
   );

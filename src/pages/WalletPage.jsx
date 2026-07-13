@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ChevronLeft, CreditCard, ReceiptText, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, CreditCard, ReceiptText, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getCustomerPaymentMethods } from "../api/paymentMethods";
@@ -128,7 +128,7 @@ export default function WalletPage({ basePath = "/customer" }) {
               <p className="text-sm font-black text-slate-600 dark:text-white/70">{t("summary.loadingPaymentMethods")}</p>
             </div>
           ) : paymentMethods.length > 0 ? (
-            <div className="grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5 sm:gap-x-3 sm:gap-y-5 lg:grid-cols-7 lg:gap-x-4 lg:gap-y-6">
+            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
               {paymentMethods.map((method) => (
                 <PaymentMethodCard
                   key={method.id}
@@ -269,22 +269,41 @@ function WalletCoin({ className }) {
 
 function PaymentMethodCard({ method, onSelect, selected = false }) {
   const imageUrl = method.image ? (method.imageUrl || method.image) : "";
+  const tone = getPaymentMethodTone(method);
 
   return (
     <button
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`group flex min-w-0 cursor-pointer flex-col items-center text-center text-royal outline-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-royal focus-visible:ring-offset-4 focus-visible:ring-offset-[#F8FCFF] dark:focus-visible:ring-offset-[#020615] ${selected ? "payment-method-selected" : ""}`}
+      className={`payment-method-card payment-method-tone-${tone} group relative flex min-h-[122px] min-w-0 cursor-pointer flex-col items-center gap-1.5 overflow-hidden rounded-[18px] border p-1.5 text-center outline-none transition duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8FCFF] dark:focus-visible:ring-offset-[#020615] sm:min-h-[78px] sm:flex-row sm:gap-3 sm:rounded-[20px] sm:p-2.5 sm:text-start ${selected ? "payment-method-selected" : ""}`}
     >
-      <span className="flex h-14 w-full items-center justify-center sm:h-16 lg:h-20">
-        {imageUrl ? <img src={imageUrl} alt={method.title || method.name || ""} loading="lazy" className="payment-method-image h-full w-full object-contain" /> : null}
+      <span className="payment-method-logo-shell flex h-[68px] w-full shrink-0 items-center justify-center rounded-[13px] p-1.5 sm:h-16 sm:w-[72px] sm:rounded-[15px] sm:p-2">
+        {imageUrl ? <img src={imageUrl} alt="" aria-hidden="true" loading="lazy" className="payment-method-image h-full w-full object-contain" /> : null}
       </span>
-      <span className={`mt-2 line-clamp-2 min-h-[2rem] max-w-full text-[11px] font-black leading-4 text-slate-950 dark:text-white sm:text-xs ${selected ? "payment-method-selected-name" : ""}`}>
-        {method.title || method.name}
+      <span className="payment-method-label-shell flex min-w-0 w-full flex-1 flex-col justify-center sm:block sm:flex-1">
+        <span className={`payment-method-name line-clamp-2 block text-[13px] font-black leading-[17px] sm:truncate sm:text-[15px] sm:leading-normal ${selected ? "payment-method-selected-name" : ""}`}>
+          {method.title || method.name}
+        </span>
+        <span className="mt-1 flex items-center justify-center gap-1 sm:mt-2 sm:justify-start sm:gap-1.5" aria-hidden="true">
+          <span className="payment-method-dot h-1.5 w-1.5 shrink-0 rounded-full" />
+          <span className="h-px w-4 rounded-full bg-slate-200 dark:bg-white/10 sm:w-7" />
+        </span>
+      </span>
+      <span className={`payment-method-check absolute left-2 top-2 grid h-5 w-5 shrink-0 place-items-center rounded-full sm:static sm:h-7 sm:w-7 ${selected ? "payment-method-check-selected" : ""}`} aria-hidden="true">
+        {selected ? <Check className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2" />}
       </span>
     </button>
   );
+}
+
+function getPaymentMethodTone(method = {}) {
+  const value = `${method.title || ""} ${method.name || ""}`.toLowerCase();
+  if (value.includes("apple")) return "apple";
+  if (value.includes("paypal")) return "paypal";
+  if (value.includes("vodafone") || value.includes("فودافون")) return "vodafone";
+  if (value.includes("insta") || value.includes("انيستا") || value.includes("انستا")) return "instapay";
+  return "default";
 }
 
 function SecurityPanel() {

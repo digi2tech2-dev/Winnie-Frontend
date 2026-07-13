@@ -50,7 +50,7 @@
   "noCurrencies": "No active currencies are available for self-service updates.",
   "selectDifferentCurrency": "Select a different active currency to enable saving.",
   "currencyBackendNote": "Currency will be saved through the backend and your session will be refreshed.",
-  "adminManagedCurrency": "Account currency is set by an administrator.",
+  "adminManagedCurrency": "Contact the administrator to change the currency.",
   "languageOptions": {
     "arNote": "Arabic interface",
     "enNote": "English interface"

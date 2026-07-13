@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   CircleUserRound,
   Loader2,
   ShieldCheck,
@@ -18,6 +20,7 @@ export default function ProductPurchaseModal({
   product,
   onClose,
   onConfirm,
+  onInsufficientFunds,
   requireAccountId = true,
   submitError = "",
   submitting = false,
@@ -38,7 +41,6 @@ export default function ProductPurchaseModal({
   const [quote, setQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState("");
-  const [balanceError, setBalanceError] = useState("");
   const modalRef = useRef(null);
   const modalScale = useViewportFitScale(modalRef, 10, 0.45);
 
@@ -56,7 +58,7 @@ export default function ProductPurchaseModal({
   const walletBalance = Number(user?.walletBalance ?? quote?.walletBalance ?? 0);
   const balanceLabel = formatPlainAmount(walletBalance);
   const quantityWarning = getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
-  const displayError = localError || submitError || quantityWarning || balanceError || quoteError;
+  const displayError = localError || submitError || quantityWarning || quoteError;
   const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const hasOrderFields = orderFields.length > 0;
   const showFallbackAccountInput = !hasOrderFields;
@@ -71,12 +73,10 @@ export default function ProductPurchaseModal({
     && numericQuantity <= maxQuantity;
   const quoteAllowsSubmit = Boolean(quoteForQuantity)
     && quoteForQuantity.isQuantityValid !== false
-    && quoteForQuantity.canSubmit !== false
-    && quoteForQuantity.hasEnoughBalance !== false;
+    && (quoteForQuantity.canSubmit !== false || quoteForQuantity.hasEnoughBalance === false);
   const confirmDisabled = submitting
     || quoteLoading
     || Boolean(quoteError)
-    || Boolean(balanceError)
     || !quoteAllowsSubmit
     || !isQuantityWithinBounds
     || missingRequiredField
@@ -103,7 +103,6 @@ export default function ProductPurchaseModal({
       setQuote(null);
       setQuoteLoading(false);
       setQuoteError("");
-      setBalanceError("");
       return undefined;
     }
 
@@ -111,7 +110,6 @@ export default function ProductPurchaseModal({
     const timer = window.setTimeout(() => {
       setQuoteLoading(true);
       setQuoteError("");
-      setBalanceError("");
 
       createCustomerOrderQuote(token, {
         productId,
@@ -120,14 +118,10 @@ export default function ProductPurchaseModal({
       }, { signal: controller.signal })
         .then((nextQuote) => {
           setQuote(nextQuote);
-          if (nextQuote.hasEnoughBalance === false) {
-            setBalanceError(t("purchase.insufficientFunds"));
-          }
         })
         .catch((error) => {
           if (error.name === "AbortError" || error.code === "REQUEST_CANCELLED") return;
           setQuote(null);
-          setBalanceError("");
           setQuoteError(error.userMessage || t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
         })
         .finally(() => {
@@ -176,8 +170,18 @@ export default function ProductPurchaseModal({
       return;
     }
 
-    if (!quoteForQuantity || quoteError || balanceError || quoteForQuantity.isQuantityValid === false) {
+    if (!quoteForQuantity || quoteError || quoteForQuantity.isQuantityValid === false) {
       setLocalError(t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
+      return;
+    }
+
+    if (quoteForQuantity.hasEnoughBalance === false) {
+      if (typeof onInsufficientFunds === "function") {
+        setLocalError("");
+        onInsufficientFunds(quoteForQuantity);
+      } else {
+        setLocalError(t("purchase.insufficientFunds"));
+      }
       return;
     }
 
@@ -277,6 +281,20 @@ export default function ProductPurchaseModal({
           </div>
         </section>
 
+        <div className="buy-quantity-limits" dir={isArabic ? "rtl" : "ltr"}>
+          <span className="buy-quantity-limits__item">
+            <ArrowDown aria-hidden="true" />
+            <span>{t("purchase.minimumChargeValue")}</span>
+            <strong dir="ltr">{formatQuantityInput(minQuantity)}</strong>
+          </span>
+          <span className="buy-quantity-limits__divider" aria-hidden="true" />
+          <span className="buy-quantity-limits__item">
+            <ArrowUp aria-hidden="true" />
+            <span>{t("purchase.maximumQuantityValue")}</span>
+            <strong dir="ltr">{formatQuantityInput(maxQuantity)}</strong>
+          </span>
+        </div>
+
         {packages.length > 1 && (
           <div className="buy-packages" aria-label={t("purchase.package")}>
             {packages.map((item, index) => (
@@ -323,7 +341,7 @@ export default function ProductPurchaseModal({
 
         {displayError && (
           <p
-            className={`buy-modal__error${isQuantityWarning ? " buy-modal__error--quantity-warning" : ""}${displayError === t("purchase.insufficientFunds") ? " buy-modal__error--insufficient-funds" : ""}`}
+            className={`buy-modal__error${isQuantityWarning ? " buy-modal__error--quantity-warning" : ""}`}
             dir={isArabic ? "rtl" : "ltr"}
           >
             {isQuantityWarning && <AlertTriangle className="buy-modal__error-icon" aria-hidden="true" />}

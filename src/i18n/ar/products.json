@@ -26,6 +26,15 @@
     "emptyDescription": "هذا القسم لا يحتوي على منتجات نشطة بعد.",
     "clearSearch": "مسح البحث"
   },
+  "favorites": {
+    "title": "المنتجات المفضلة",
+    "subtitle": "كل المنتجات التي أحببتها في مكان واحد لتصل إليها بسرعة.",
+    "add": "إضافة إلى المفضلة",
+    "remove": "إزالة من المفضلة",
+    "emptyTitle": "لا توجد منتجات مفضلة بعد",
+    "emptyDescription": "اضغط على علامة القلب بجانب أي منتج وسيظهر هنا مباشرةً.",
+    "browse": "تصفح المنتجات"
+  },
   "purchase": {
     "pricedByBackend": "السعر من الخادم",
     "newOrder": "طلب جديد",
@@ -47,6 +56,8 @@
     "accountRequired": "اكتب معرف الحساب أو اللاعب قبل تأكيد الطلب.",
     "minimumQuantity": "الحد الأدنى للطلب هو {{minQty}}",
     "maximumQuantity": "الحد الأقصى للطلب هو {{maxQty}}",
+    "minimumChargeValue": "أقل قيمة للشحن",
+    "maximumQuantityValue": "أكبر عدد",
     "quantityGreaterThanZero": "أدخل كمية أكبر من 0",
     "quantityInvalidConfirm": "لا يمكن تأكيد الطلب قبل إدخال كمية صالحة",
     "missingProductId": "هذا المنتج لا يحتوي على معرف منتج من الخادم.",
@@ -54,7 +65,7 @@
     "orderCreated": "تم إنشاء الطلب",
     "insufficientFunds": "الرصيد غير كافٍ لإتمام الطلب.",
     "insufficientFundsWithAmounts": "الرصيد غير كافٍ. المطلوب: {{required}}، المتاح: {{available}}.",
-    "insufficientFundsShortfall": "تحتاج إلى إضافة {{amount}} إلى رصيدك لإتمام العملية.",
+    "insufficientFundsShortfall": "توجّه إلى المحفظة لشحن رصيد بقيمة {{amount}} لإتمام الطلب.",
     "insufficientFundsTitle": "الرصيد غير كافٍ",
     "insufficientFundsConfirmQuestion": "هل أنت متأكد من الانتقال لإضافة الرصيد؟",
     "insufficientFundsConfirm": "موافق",

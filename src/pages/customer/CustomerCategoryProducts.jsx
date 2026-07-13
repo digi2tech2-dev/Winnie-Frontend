@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { filterChildCategories, filterProductsByCategory, getCustomerCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
-import { CategoriesGrid } from "../../components/home/HomeShowcase";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
@@ -145,12 +144,17 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
       </header>
 
       {childCategories.length ? (
-        <section className="px-1" aria-label={t("common:nav.categories")}>
-          <CategoriesGrid
-            categories={childCategories}
-            layout="two"
-            onCategorySelect={(child) => navigate(`${basePath}/categories/${child.slug || child.id}`)}
-          />
+        <section className="marketplace-product-grid px-1" aria-label={t("common:nav.categories")}>
+          {childCategories.map((child, index) => (
+            <HomeProductCard
+              key={child.id || child.slug || child.name}
+              product={child}
+              index={index}
+              onSelect={(selectedChild) => navigate(`${basePath}/categories/${selectedChild.slug || selectedChild.id}`)}
+              reservePriceSpace
+              favoriteEnabled={false}
+            />
+          ))}
         </section>
       ) : null}
 
