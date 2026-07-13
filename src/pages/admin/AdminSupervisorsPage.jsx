@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { createPortal } from "react-dom";
 import { Activity, Check, ChevronDown, ClipboardList, Pencil, Plus, Search, ShieldCheck, Trash2, UserCog, Users } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -134,7 +136,9 @@ export default function AdminSupervisorsPage() {
         </>
       ) : <EmptyState icon={ShieldCheck} title="لا يوجد مشرفون" actionLabel="إضافة مشرف" onAction={() => setWizard({ stage: "search" })} />}
 
-      <SupervisorWizard key={wizard?.candidate?.id || wizard?.stage || "closed"} state={wizard} permissionGroups={permissionGroups} token={token} onClose={() => setWizard(null)} onStage={setWizard} onSave={saveSupervisor} saving={busy} />
+      <AnimatePresence>
+        {wizard && <SupervisorWizard key={wizard?.candidate?.id || wizard?.stage} state={wizard} permissionGroups={permissionGroups} token={token} onClose={() => setWizard(null)} onStage={setWizard} onSave={saveSupervisor} saving={busy} />}
+      </AnimatePresence>
       <LogsModal supervisor={logsFor} open={logsFor !== undefined} logs={logs} supervisors={supervisors} loading={logsLoading} error={logsError} onClose={() => setLogsFor(undefined)} />
       <ConfirmDialog open={Boolean(deleting)} title="إزالة صلاحيات المشرف؟" message="هل أنت متأكد من إزالة صلاحيات المشرف من هذا المستخدم؟ لن يتم حذف حساب المستخدم." confirmLabel="إزالة الصلاحيات" onCancel={() => setDeleting(null)} onConfirm={confirmRemove} busy={busy} />
     </div>
@@ -151,7 +155,84 @@ function SupervisorCard({ supervisor, logCount, onPermissions, onLogs, onDelete 
 function Mini({ label, value }) { return <div className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-[#0B1220]"><p className="text-[7px] font-black text-slate-400">{label}</p><p className="mt-1 truncate text-[9px] font-black dark:text-white">{typeof value === "number" ? value.toLocaleString("ar-EG-u-nu-latn") : value}</p></div>; }
 function CardButton({ icon: Icon, label, danger, onClick }) { return <button type="button" onClick={onClick} className={`inline-flex h-9 items-center justify-center gap-1 rounded-xl text-[8px] font-black ${danger ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-violet-500/10 text-violet-700 dark:text-violet-300"}`}><Icon className="h-3.5 w-3.5" />{label}</button>; }
 
-function SupervisorWizard({ state, permissionGroups, token, onClose, onStage, onSave, saving }) {
+function SupervisorWizard(props) {
+  if (props.state?.stage === "permissions") return <SupervisorPermissionsModal {...props} />;
+  return <SupervisorWizardLegacy {...props} />;
+}
+
+function SupervisorPermissionsModal({ state, permissionGroups, onClose, onSave, saving }) {
+  const candidate = state.candidate;
+  const [permissions, setPermissions] = useState(candidate?.permissions || []);
+  const isExistingSupervisor = Boolean(candidate?.permissions);
+  const toggle = (permission) => setPermissions((current) => current.includes(permission) ? current.filter((item) => item !== permission) : [...current, permission]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+
+  return createPortal(
+    <motion.div
+      className="supervisor-permissions-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+    >
+      <motion.section
+        className="supervisor-permissions-modal"
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        <header className="supervisor-permissions-header">
+          <button type="button" onClick={onClose} className="supervisor-permissions-close" aria-label="إغلاق">✕</button>
+          <div className="supervisor-permissions-identity">
+            <span>{candidate.name.slice(0, 1)}</span>
+            <div>
+              <h2>{candidate.name}</h2>
+              <p dir="ltr">{candidate.email}</p>
+              <strong dir="ltr">{candidate.id}</strong>
+            </div>
+          </div>
+        </header>
+
+        <div className="supervisor-permissions-content">
+          {permissionGroups.map((group) => (
+            <section key={group.group || group.title} className="supervisor-permission-card">
+              <h3>{group.title}</h3>
+              <div className="supervisor-permission-grid">
+                {group.items.map((item) => {
+                  const checked = permissions.includes(item.key);
+                  return (
+                    <label key={item.key} className="supervisor-permission-row">
+                      <span>{item.label}</span>
+                      <input type="checkbox" checked={checked} onChange={() => toggle(item.key)} className="sr-only" />
+                      <span className={`supervisor-permission-toggle ${checked ? "is-active" : ""}`} aria-hidden="true"><i /></span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+          {!permissionGroups.length && <p className="rounded-2xl border border-slate-200 p-3 text-center text-[10px] font-black text-slate-400 dark:border-white/10">تعذر تحميل قائمة الصلاحيات</p>}
+        </div>
+
+        <footer className="supervisor-permissions-footer">
+          <button type="button" disabled={saving || !candidate} onClick={() => onSave(candidate, permissions)} className="supervisor-permissions-save">
+            {saving ? "جارٍ الحفظ..." : isExistingSupervisor ? "حفظ الصلاحيات" : "تعيين كمشرف"}
+          </button>
+          <button type="button" onClick={onClose} disabled={saving} className="supervisor-permissions-cancel">إلغاء</button>
+        </footer>
+      </motion.section>
+    </motion.div>,
+    document.body,
+  );
+}
+
+function SupervisorWizardLegacy({ state, permissionGroups, token, onClose, onStage, onSave, saving }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [users, setUsers] = useState([]);

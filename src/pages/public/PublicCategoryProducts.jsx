@@ -5,8 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { filterChildCategories, filterProductsByCategory, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
-import { CategoriesGrid } from "../../components/home/HomeShowcase";
-import { iconMap } from "../../components/icons";
+import HomeProductCard from "../../components/home/HomeProductCard";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 
 export default function PublicCategoryProducts() {
@@ -168,23 +167,28 @@ export default function PublicCategoryProducts() {
       </form>
 
       {childCategories.length ? (
-        <section className="px-1" aria-label={t("public.categoriesTitle")}>
-          <CategoriesGrid
-            categories={childCategories}
-            layout="two"
-            onCategorySelect={(child) => navigate(`/categories/${child.slug || child.id}`)}
-          />
+        <section className="marketplace-product-grid px-1" aria-label={t("public.categoriesTitle")}>
+          {childCategories.map((child, index) => (
+            <HomeProductCard
+              key={child.id || child.slug || child.name}
+              product={child}
+              index={index}
+              onSelect={(selectedChild) => navigate(`/categories/${selectedChild.slug || selectedChild.id}`)}
+              reservePriceSpace
+              favoriteEnabled={false}
+            />
+          ))}
         </section>
       ) : null}
 
       {products.length ? (
-        <section className="grid grid-cols-3 gap-x-2 gap-y-6 px-1 sm:gap-x-5 sm:gap-y-8">
+        <section className="marketplace-product-grid px-1">
           {products.map((product, index) => (
-            <ProductTile
+            <HomeProductCard
               key={product.id || product.name}
               product={product}
               index={index}
-              onSelect={() => setSelectedProduct(product)}
+              onSelect={setSelectedProduct}
             />
           ))}
         </section>
@@ -212,33 +216,3 @@ export default function PublicCategoryProducts() {
   );
 }
 
-function ProductTile({ product, index, onSelect }) {
-  const ProductIcon = iconMap[product.icon] || iconMap.ShoppingBag;
-  const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="group flex min-w-0 flex-col items-center text-center outline-none"
-      style={{ animationDelay: `${Math.min(index * 35, 220)}ms` }}
-    >
-      <span className="relative grid h-24 w-full max-w-[96px] place-items-center transition group-hover:scale-[1.04] sm:h-36 sm:max-w-[144px] lg:h-40 lg:max-w-[160px]">
-        <span className="absolute bottom-2 h-5 w-20 rounded-full bg-slate-950/12 blur-md transition group-hover:bg-[#7C3AED]/16 dark:bg-black/35 sm:h-7 sm:w-32" />
-        <span className={`absolute bottom-4 h-[74px] w-[78px] rotate-[-8deg] rounded-[24px] bg-gradient-to-br ${tone} shadow-[0_18px_34px_rgba(15,23,42,0.20)] transition group-hover:-rotate-[12deg] sm:h-[112px] sm:w-[120px] sm:rounded-[36px] lg:h-[124px] lg:w-[132px]`} />
-        <span className="absolute bottom-5 h-[62px] w-[62px] rotate-[-8deg] rounded-[20px] bg-[radial-gradient(circle_at_22%_18%,rgba(255,255,255,0.34)_0_2px,transparent_3px)] bg-[length:14px_14px] opacity-35 sm:h-[94px] sm:w-[94px]" />
-        <span className={`relative grid h-[58px] w-[58px] place-items-center rounded-[20px] border border-white/55 bg-gradient-to-br ${tone} text-white shadow-[0_16px_28px_rgba(15,23,42,0.25)] transition group-hover:-translate-y-2 group-hover:rotate-[3deg] sm:h-[88px] sm:w-[88px] sm:rounded-[28px] lg:h-[98px] lg:w-[98px]`}>
-          <span className="absolute inset-1 rounded-[16px] bg-white/14 sm:rounded-[24px]" />
-          {product.image ? (
-            <img src={product.image} alt="" className="relative h-10 w-10 rounded-2xl object-cover sm:h-14 sm:w-14" loading="lazy" />
-          ) : (
-            <ProductIcon className="relative h-8 w-8 drop-shadow-[0_10px_18px_rgba(15,23,42,0.30)] sm:h-12 sm:w-12 lg:h-14 lg:w-14" />
-          )}
-        </span>
-      </span>
-      <span className="mt-2 block min-h-[40px] max-w-[7.5rem] text-[12px] font-black leading-5 text-slate-950 transition group-hover:text-[#7C3AED] dark:text-white dark:group-hover:text-[#C084FC] sm:mt-3 sm:max-w-[10rem] sm:text-base sm:leading-7">
-        {product.name}
-      </span>
-    </button>
-  );
-}

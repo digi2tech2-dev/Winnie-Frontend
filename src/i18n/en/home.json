@@ -30,6 +30,17 @@
     "recentlyAdded": "Recently added",
     "bestSelling": "Best selling"
   },
+  "recentlyAdded": {
+    "title": "Recently Added",
+    "subtitle": "Discover the latest products added recently",
+    "viewAll": "View All",
+    "empty": "No recently added products are available.",
+    "loadError": "Unable to load recently added products."
+  },
+  "bestSellers": {
+    "subtitle": "Discover the most popular products",
+    "empty": "No best-selling products are available."
+  },
   "homePage": {
     "browseCategories": "Browse Categories",
     "browseCategory": "Browse Category",

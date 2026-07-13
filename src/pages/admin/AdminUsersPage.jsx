@@ -20,7 +20,8 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   approveUser,
@@ -122,12 +123,26 @@ export default function AdminUsersPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [openActionUserId, setOpenActionUserId] = useState(null);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [passwordModal, setPasswordModal] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
   const [actionKey, setActionKey] = useState("");
 
   const selectedUser = users.find((user) => user.id === selectedUserId) || null;
+  const actionMenuUser = users.find((user) => user.id === openActionUserId) || null;
+  const closeActionMenu = useCallback(() => {
+    setOpenActionUserId(null);
+    setActionMenuAnchor(null);
+  }, []);
+  const toggleActionMenu = (userId, anchor) => {
+    if (openActionUserId === userId) {
+      closeActionMenu();
+      return;
+    }
+    setOpenActionUserId(userId);
+    setActionMenuAnchor(anchor);
+  };
   const openUserWallet = useCallback((userId) => {
     navigate(`/admin/tools/users/${userId}/wallet`);
   }, [navigate]);
@@ -464,20 +479,11 @@ export default function AdminUsersPage() {
                         <td><StatusBadge status={user.displayStatus} label={user.displayStatusLabel} /></td>
                         <td><DateCell user={user} /></td>
                         <td>
-                          <RowActions
-                            actionKey={actionKey}
+                          <UserActionTrigger
                             isOpen={openActionUserId === user.id}
                             user={user}
-                            onApprove={() => requestUserReview(user, "approve")}
-                            onBlock={() => handleBlockUser(user)}
-                            onDelete={() => requestUserStateChange(user, "delete")}
-                            onDetails={() => setSelectedUserId(user.id)}
-                            onOpenChange={(open) => setOpenActionUserId(open ? user.id : null)}
-                            onPassword={() => openPasswordModal(user)}
-                            onReject={() => requestUserReview(user, "reject")}
-                            onRestore={() => handleRestoreUser(user)}
-                            onUnblock={() => handleUnblockUser(user)}
-                            onWallet={() => openUserWallet(user.id)}
+                            onDetails={() => { closeActionMenu(); setSelectedUserId(user.id); }}
+                            onToggle={(anchor) => toggleActionMenu(user.id, anchor)}
                           />
                         </td>
                       </tr>
@@ -498,20 +504,11 @@ export default function AdminUsersPage() {
                       <GroupBadge user={user} />
                       <DateCell user={user} />
                     </div>
-                    <RowActions
-                      actionKey={actionKey}
+                    <UserActionTrigger
                       isOpen={openActionUserId === user.id}
                       user={user}
-                      onApprove={() => requestUserReview(user, "approve")}
-                      onBlock={() => handleBlockUser(user)}
-                      onDelete={() => requestUserStateChange(user, "delete")}
-                      onDetails={() => setSelectedUserId(user.id)}
-                      onOpenChange={(open) => setOpenActionUserId(open ? user.id : null)}
-                      onPassword={() => openPasswordModal(user)}
-                      onReject={() => requestUserReview(user, "reject")}
-                      onRestore={() => handleRestoreUser(user)}
-                      onUnblock={() => handleUnblockUser(user)}
-                      onWallet={() => openUserWallet(user.id)}
+                      onDetails={() => { closeActionMenu(); setSelectedUserId(user.id); }}
+                      onToggle={(anchor) => toggleActionMenu(user.id, anchor)}
                     />
                   </article>
                 ))}
@@ -522,6 +519,23 @@ export default function AdminUsersPage() {
           )}
         </div>
       </section>
+
+      {actionMenuUser && actionMenuAnchor && (
+        <UserActionsMenu
+          actionKey={actionKey}
+          anchor={actionMenuAnchor}
+          user={actionMenuUser}
+          onApprove={() => requestUserReview(actionMenuUser, "approve")}
+          onBlock={() => handleBlockUser(actionMenuUser)}
+          onClose={closeActionMenu}
+          onDelete={() => requestUserStateChange(actionMenuUser, "delete")}
+          onPassword={() => openPasswordModal(actionMenuUser)}
+          onReject={() => requestUserReview(actionMenuUser, "reject")}
+          onRestore={() => handleRestoreUser(actionMenuUser)}
+          onUnblock={() => handleUnblockUser(actionMenuUser)}
+          onWallet={() => openUserWallet(actionMenuUser.id)}
+        />
+      )}
 
       <AnimatePresence>
         {selectedUser && (
@@ -618,7 +632,7 @@ function DateCell({ user }) {
   );
 }
 
-function RowActions({
+export function RowActions({
   actionKey,
   isOpen,
   user,
@@ -633,6 +647,8 @@ function RowActions({
   onUnblock,
   onWallet,
 }) {
+  const menuTriggerRef = useRef(null);
+  const [menuPosition, setMenuPosition] = useState(null);
   const busy = Boolean(actionKey);
   const isDeleted = user.displayStatus === "DELETED";
   const isBlocked = user.displayStatus === "BLOCKED";
@@ -643,6 +659,33 @@ function RowActions({
     handler();
   };
 
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuPosition(null);
+      return undefined;
+    }
+
+    const updatePosition = () => {
+      const rect = menuTriggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const menuWidth = 210;
+      const menuHeight = 270;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setMenuPosition({
+        left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
+        top: spaceBelow >= menuHeight ? rect.bottom + 6 : Math.max(8, rect.top - menuHeight - 6),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen]);
+
   return (
     <div className="admin-user-row-actions">
       <button type="button" className="admin-user-primary-action" onClick={onDetails}>
@@ -651,6 +694,7 @@ function RowActions({
       </button>
       <div className="admin-user-actions-menu">
         <button
+          ref={menuTriggerRef}
           type="button"
           className="admin-user-menu-trigger"
           onClick={() => onOpenChange(!isOpen)}
@@ -659,10 +703,12 @@ function RowActions({
         >
           <MoreVertical className="h-4 w-4" />
         </button>
-        <AnimatePresence>
-          {isOpen && (
+        {createPortal(
+          <AnimatePresence>
+          {isOpen && menuPosition && (
             <motion.div
               className="admin-user-menu-popover"
+              style={menuPosition}
               initial={{ opacity: 0, y: -4, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.98 }}
@@ -692,9 +738,91 @@ function RowActions({
               )}
             </motion.div>
           )}
-        </AnimatePresence>
+          </AnimatePresence>,
+          document.body,
+        )}
       </div>
     </div>
+  );
+}
+
+function UserActionTrigger({ isOpen, user, onDetails, onToggle }) {
+  return (
+    <div className="admin-user-row-actions">
+      <button type="button" className="admin-user-primary-action" onClick={onDetails}>
+        <Eye className="h-4 w-4" />
+        <span>التفاصيل</span>
+      </button>
+      <div className="admin-user-actions-menu">
+        <button type="button" className="admin-user-menu-trigger" onClick={(event) => onToggle(event.currentTarget)} aria-expanded={isOpen} aria-haspopup="menu" aria-label={`إجراءات ${user.name}`}>
+          <MoreVertical className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UserActionsMenu({ actionKey, anchor, user, onApprove, onBlock, onClose, onDelete, onPassword, onReject, onRestore, onUnblock, onWallet }) {
+  const menuRef = useRef(null);
+  const [position, setPosition] = useState(null);
+  const busy = Boolean(actionKey);
+  const isDeleted = user.displayStatus === "DELETED";
+  const isBlocked = user.displayStatus === "BLOCKED";
+  const canReview = !isDeleted && user.status === "PENDING";
+  const run = (handler) => { onClose(); handler(); };
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (!anchor?.isConnected) { onClose(); return; }
+      const rect = anchor.getBoundingClientRect();
+      const width = menuRef.current?.offsetWidth || 210;
+      const height = menuRef.current?.offsetHeight || 220;
+      const edge = 12;
+      const offset = 6;
+      const direction = window.getComputedStyle(anchor).direction;
+      const preferredLeft = direction === "rtl" ? rect.right - width : rect.left;
+      setPosition({
+        left: Math.max(edge, Math.min(preferredLeft, window.innerWidth - width - edge)),
+        top: window.innerHeight - rect.bottom >= height + offset ? rect.bottom + offset : Math.max(edge, rect.top - height - offset),
+      });
+    };
+    const handleOutside = (event) => {
+      if (anchor.contains(event.target) || menuRef.current?.contains(event.target)) return;
+      onClose();
+    };
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      onClose();
+      anchor.focus();
+    };
+    updatePosition();
+    const frameId = window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    document.addEventListener("pointerdown", handleOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+      document.removeEventListener("pointerdown", handleOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [anchor, onClose]);
+
+  if (!position) return null;
+  return createPortal(
+    <motion.div ref={menuRef} className="admin-user-menu-popover" style={position} role="menu" initial={{ opacity: 0, y: -4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.14, ease: "easeOut" }}>
+      {isDeleted ? <MenuButton icon={RotateCcw} label="استرجاع المستخدم" onClick={() => run(onRestore)} disabled={busy} /> : <>
+        {canReview && <><MenuButton icon={CheckCircle2} label="قبول الحساب" onClick={() => run(onApprove)} disabled={busy} /><MenuButton icon={Ban} label="رفض الحساب" onClick={() => run(onReject)} disabled={busy} danger /><span className="admin-user-menu-separator" /></>}
+        <MenuButton icon={WalletCards} label="المحفظة والتحكم" onClick={() => run(onWallet)} disabled={busy} />
+        <MenuButton icon={KeyRound} label="تغيير كلمة المرور" onClick={() => run(onPassword)} disabled={busy} />
+        <span className="admin-user-menu-separator" />
+        {isBlocked ? <MenuButton icon={ShieldCheck} label="فك الحظر" onClick={() => run(onUnblock)} disabled={busy} /> : <MenuButton icon={Ban} label="حظر المستخدم" onClick={() => run(onBlock)} disabled={busy} danger />}
+        <MenuButton icon={Trash2} label="حذف المستخدم" onClick={() => run(onDelete)} disabled={busy} danger />
+      </>}
+    </motion.div>,
+    document.body,
   );
 }
 
@@ -741,7 +869,21 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
     setIdentityReason(user.identityVerificationReason || "");
   }, [user.id, user.identityVerificationReason]);
 
-  return (
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return createPortal(
     <div className="admin-user-drawer-layer">
       <button type="button" className="admin-user-drawer-backdrop" onClick={onClose} aria-label="إغلاق تفاصيل المستخدم" />
       <motion.aside
@@ -899,7 +1041,8 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
           )}
         </footer>
       </motion.aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

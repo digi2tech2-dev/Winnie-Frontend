@@ -456,8 +456,8 @@ function Filters({ activeCount, allCurrenciesLabel, currencyOptions, filters, on
 
 function AdjustmentsTable({ adjustments }) {
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
-      <div className="hidden grid-cols-[1.05fr_1fr_1.2fr_0.75fr_0.9fr_0.65fr_0.9fr_0.9fr_1.45fr_1fr] gap-3 border-b border-slate-100 px-4 py-3 text-[9px] font-black text-slate-400 dark:border-white/10 xl:grid">
+    <div className="rounded-[24px] border border-transparent bg-transparent lg:max-h-[68vh] lg:overflow-auto lg:border-slate-200 lg:bg-white lg:shadow-[0_14px_36px_rgba(15,23,42,0.06)] lg:dark:border-white/10 lg:dark:bg-[#111827] lg:dark:shadow-[0_18px_42px_rgba(0,0,0,0.22)]">
+      <div className="sticky top-0 z-10 hidden grid-cols-[1.05fr_1fr_0.8fr_1fr_0.6fr_0.9fr_0.9fr_1fr] gap-3 border-b border-slate-200 bg-slate-50/95 px-5 py-4 text-[9px] font-black text-slate-500 backdrop-blur-xl dark:border-white/10 dark:bg-[#0B1220]/95 dark:text-slate-400 lg:grid lg:[&>*:nth-child(3)]:hidden lg:[&>*:nth-child(9)]:hidden xl:grid-cols-[1.05fr_1fr_1.2fr_0.75fr_0.9fr_0.65fr_0.9fr_0.9fr_1.45fr_1fr] xl:[&>*:nth-child(3)]:block xl:[&>*:nth-child(9)]:block">
         <span>التاريخ</span>
         <span>المستخدم</span>
         <span>البريد الإلكتروني</span>
@@ -469,7 +469,7 @@ function AdjustmentsTable({ adjustments }) {
         <span>السبب / الملاحظة</span>
         <span>الأدمن المسؤول</span>
       </div>
-      <div className="divide-y divide-slate-100 dark:divide-white/10">
+      <div className="grid gap-3 md:grid-cols-2 lg:block lg:divide-y lg:divide-slate-100 lg:dark:divide-white/10">
         {adjustments.map((adjustment) => (
           <AdjustmentRow adjustment={adjustment} key={adjustment.id} />
         ))}
@@ -483,7 +483,7 @@ function AdjustmentRow({ adjustment }) {
   const amountClass = deduct ? "text-rose-600 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300";
 
   return (
-    <article className="grid gap-3 px-4 py-4 xl:grid-cols-[1.05fr_1fr_1.2fr_0.75fr_0.9fr_0.65fr_0.9fr_0.9fr_1.45fr_1fr] xl:items-center">
+    <article className="grid grid-cols-2 gap-x-4 gap-y-4 rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-[0_18px_38px_rgba(76,29,149,0.10)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_16px_34px_rgba(0,0,0,0.22)] [&>*:nth-child(3)]:col-span-2 [&>*:nth-child(9)]:col-span-2 lg:grid-cols-[1.05fr_1fr_0.8fr_1fr_0.6fr_0.9fr_0.9fr_1fr] lg:items-center lg:rounded-none lg:border-0 lg:bg-transparent lg:px-5 lg:py-4 lg:shadow-none lg:hover:translate-y-0 lg:hover:bg-violet-50/55 lg:hover:shadow-none lg:dark:bg-transparent lg:dark:hover:bg-violet-400/[0.045] lg:[&>*:nth-child(3)]:hidden lg:[&>*:nth-child(9)]:hidden xl:grid-cols-[1.05fr_1fr_1.2fr_0.75fr_0.9fr_0.65fr_0.9fr_0.9fr_1.45fr_1fr] xl:[&>*:nth-child(3)]:col-span-1 xl:[&>*:nth-child(3)]:block xl:[&>*:nth-child(9)]:col-span-1 xl:[&>*:nth-child(9)]:block">
       <Cell label="التاريخ" value={adjustment.createdAtLabel} />
       <Cell label="المستخدم" value={adjustment.user.name || "-"} strong />
       <Cell label="البريد الإلكتروني" value={adjustment.user.email || adjustment.user.id || "-"} dir="ltr" />
@@ -506,8 +506,8 @@ function AdjustmentRow({ adjustment }) {
 function Cell({ className = "", dir, label, strong = false, value }) {
   return (
     <div className="min-w-0">
-      <p className="mb-1 text-[9px] font-black text-slate-400 xl:hidden">{label}</p>
-      <p dir={dir} className={`truncate text-xs ${strong ? "font-black" : "font-bold"} text-slate-700 dark:text-slate-200 ${dir === "ltr" ? "text-right" : ""} ${className}`}>
+      <p className="mb-1.5 text-[9px] font-black text-slate-400 dark:text-slate-500 lg:hidden">{label}</p>
+      <p dir={dir} title={String(value)} className={`break-words text-xs leading-5 lg:truncate ${strong ? "font-black" : "font-bold"} text-slate-700 dark:text-slate-200 ${dir === "ltr" ? "text-right" : ""} ${className}`}>
         {value}
       </p>
     </div>

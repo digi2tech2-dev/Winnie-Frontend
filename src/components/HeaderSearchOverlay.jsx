@@ -3,6 +3,7 @@ import { Search, ShoppingBag, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import FavoriteButton from "./FavoriteButton";
 import { iconMap } from "./icons";
 
 export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", products: providedProducts = [] }) {
@@ -180,9 +181,13 @@ function SearchProductCard({ product, onClick }) {
   const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onClick();
+      }}
       className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-sky-100 bg-white p-2 text-right shadow-[0_8px_20px_rgba(14,165,233,0.08)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:shadow-[0_12px_28px_rgba(124,58,237,0.12)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_14px_rgba(139,92,246,0.10)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
     >
       <span className={`relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-gradient-to-br ${tone}`}>
@@ -190,12 +195,15 @@ function SearchProductCard({ product, onClick }) {
         <Icon className="relative h-5 w-5 text-white drop-shadow-lg transition group-hover:scale-110" />
       </span>
       <span className="block min-w-0 flex-1">
-        <span className="block truncate text-xs font-black leading-5 text-slate-950 dark:text-white">{product.name}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate text-xs font-black leading-5 text-slate-950 dark:text-white">{product.name}</span>
+          <FavoriteButton product={product} compact />
+        </span>
         <span className="block truncate text-[10px] font-bold leading-4 text-slate-500 dark:text-[#8A94A7]">{product.groupTitle}</span>
         {product.price ? (
           <span dir="ltr" className="block text-[11px] font-black leading-4 text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
         ) : null}
       </span>
-    </button>
+    </div>
   );
 }

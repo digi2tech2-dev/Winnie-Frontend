@@ -10,6 +10,7 @@ export const publicServices = [
 
 export const customerNav = [
   { label: "الرئيسية", path: "/customer/dashboard", icon: "Home" },
+  { label: "المنتجات المفضلة", path: "/customer/favorites", icon: "Heart" },
   { label: "الأقسام", path: "/customer/categories", icon: "ListChecks" },
   { label: "طلباتي", path: "/customer/orders", icon: "ClipboardList" },
   { label: "محفظتي", path: "/customer/wallet", icon: "WalletCards" },
@@ -29,6 +30,7 @@ export const customerMobileNav = [
 
 export const adminNav = [
   { label: "الرئيسية", path: "/admin/user/dashboard", icon: "Home" },
+  { label: "المنتجات المفضلة", path: "/admin/user/favorites", icon: "Heart" },
   { label: "الأكثر مبيعاً", path: "/admin/user/best-selling", icon: "ShoppingBag" },
   { label: "الأقسام", path: "/admin/user/categories", icon: "ListChecks" },
   { label: "طلباتي", path: "/admin/user/orders", icon: "ClipboardList" },

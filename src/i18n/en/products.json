@@ -26,6 +26,15 @@
     "emptyDescription": "This backend category does not have active products yet.",
     "clearSearch": "Clear search"
   },
+  "favorites": {
+    "title": "Favorite products",
+    "subtitle": "All the products you love in one place for quick access.",
+    "add": "Add to favorites",
+    "remove": "Remove from favorites",
+    "emptyTitle": "No favorite products yet",
+    "emptyDescription": "Tap the heart beside any product and it will appear here instantly.",
+    "browse": "Browse products"
+  },
   "purchase": {
     "pricedByBackend": "Priced by backend",
     "newOrder": "New order",
@@ -47,6 +56,8 @@
     "accountRequired": "Enter the account or player id before confirming the order.",
     "minimumQuantity": "Minimum quantity is {{minQty}}",
     "maximumQuantity": "Maximum quantity is {{maxQty}}",
+    "minimumChargeValue": "Minimum charge",
+    "maximumQuantityValue": "Maximum quantity",
     "quantityGreaterThanZero": "Enter a quantity greater than 0",
     "quantityInvalidConfirm": "You cannot confirm before entering a valid quantity",
     "missingProductId": "This product is missing a backend product id.",
@@ -54,7 +65,7 @@
     "orderCreated": "Order created",
     "insufficientFunds": "Your balance is not enough to complete this order.",
     "insufficientFundsWithAmounts": "Insufficient balance. Required: {{required}}, available: {{available}}.",
-    "insufficientFundsShortfall": "Add {{amount}} to your balance to complete this purchase.",
+    "insufficientFundsShortfall": "Go to your wallet and add {{amount}} to complete this order.",
     "insufficientFundsTitle": "Insufficient balance",
     "insufficientFundsConfirmQuestion": "Are you sure you want to go add balance?",
     "insufficientFundsConfirm": "OK",

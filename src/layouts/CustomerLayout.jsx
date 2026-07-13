@@ -17,12 +17,14 @@ import {
 } from "../api/notifications";
 import { getWalletSummary } from "../api/wallet";
 import { useAuth } from "../context/AuthContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { useLanguage } from "../context/LanguageContext";
 import { customerNav } from "../data/navigation";
 import { getNotificationTarget } from "../utils/notificationNavigation";
 
 const customerPages = [
   ["/customer/dashboard", "nav.home", "nav.dashboardMeta", "Home"],
+  ["/customer/favorites", "nav.favorites", "nav.favoritesMeta", "Heart"],
   ["/customer/categories", "nav.categories", "nav.categoriesMeta", "ListChecks"],
   ["/customer/orders", "nav.orders", "nav.ordersMeta", "ClipboardList"],
   ["/customer/wallet", "nav.wallet", "nav.walletMeta", "WalletCards"],
@@ -34,6 +36,7 @@ const customerPages = [
 ];
 
 export default function CustomerLayout() {
+  const { favorites } = useFavorites();
   const { isLoading: authLoading, refreshCurrentUser, token, user } = useAuth();
   const { language } = useLanguage();
   const { t } = useTranslation("common");
@@ -237,10 +240,14 @@ export default function CustomerLayout() {
         ({
           ...item,
           label: getCustomerNavLabel(item.path, t),
-          badge: item.path === "/customer/notifications" && unreadNotificationCount ? String(unreadNotificationCount) : undefined,
+          badge: item.path === "/customer/notifications" && unreadNotificationCount
+            ? String(unreadNotificationCount)
+            : item.path === "/customer/favorites" && favorites.length
+              ? String(favorites.length)
+              : undefined,
         }),
       ),
-    [t, unreadNotificationCount],
+    [favorites.length, t, unreadNotificationCount],
   );
 
   const searchResults = useMemo(() => {
@@ -331,6 +338,7 @@ function getCustomerNavLabel(path, t) {
 
 const customerNavLabelKeys = {
   "/customer/dashboard": "nav.home",
+  "/customer/favorites": "nav.favorites",
   "/customer/categories": "nav.categories",
   "/customer/orders": "nav.orders",
   "/customer/wallet": "nav.wallet",

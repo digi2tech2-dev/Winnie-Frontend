@@ -50,7 +50,7 @@
   "noCurrencies": "لا توجد عملات نشطة متاحة للتحديث الذاتي.",
   "selectDifferentCurrency": "اختر عملة نشطة مختلفة لتفعيل الحفظ.",
   "currencyBackendNote": "سيتم حفظ العملة عبر الخادم وتحديث الجلسة.",
-  "adminManagedCurrency": "عملة الحساب يحددها المسؤول.",
+  "adminManagedCurrency": "تواصل مع المسؤول لتغيير العملة.",
   "languageOptions": {
     "arNote": "لغة الواجهة العربية",
     "enNote": "لغة الواجهة الإنجليزية"

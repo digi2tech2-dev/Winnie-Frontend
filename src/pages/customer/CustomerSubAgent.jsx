@@ -541,7 +541,7 @@ function MetricCard({ icon: Icon, label, tone = "violet", value }) {
         <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </span>
       <p className="mt-2 min-h-8 text-[10px] font-bold leading-4 text-slate-500 dark:text-slate-400 sm:mt-4 sm:min-h-0 sm:text-sm sm:font-semibold sm:leading-5">{label}</p>
-      <p dir="ltr" className={`mt-1 truncate text-sm font-black sm:break-words sm:text-2xl ${colors.value}`}>{value}</p>
+      <p dir="ltr" className={`mt-1 break-all text-xs font-black leading-5 sm:break-words sm:text-2xl ${colors.value}`}>{value}</p>
     </article>
   );
 }
@@ -550,7 +550,7 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
   const { t } = useTranslation("subAgent");
 
   return (
-    <article className="relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(124,58,237,0.09)] dark:border-violet-400/15 dark:bg-[#111827] lg:col-span-2">
+    <article className="relative block w-full min-w-0 overflow-hidden rounded-[22px] border border-violet-200/70 bg-white p-3.5 shadow-[0_18px_46px_rgba(124,58,237,0.09)] dark:border-violet-400/15 dark:bg-[#111827] sm:rounded-[26px] sm:p-5 lg:col-span-2">
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-violet-600 via-fuchsia-500 to-sky-400" />
       <div className="flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-[0_12px_26px_rgba(124,58,237,0.26)]">
@@ -558,7 +558,7 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
         </span>
         <div>
           <h2 className="text-base font-black text-slate-950 dark:text-white">{t("inviteLink")}</h2>
-          <p dir="ltr" className="mt-0.5 text-lg font-black tracking-wider text-violet-700 dark:text-violet-300">{referralCode || t("common:states.unavailable")}</p>
+          <p dir="ltr" className="mt-0.5 break-all text-base font-black tracking-wider text-violet-700 dark:text-violet-300 sm:text-lg">{referralCode || t("common:states.unavailable")}</p>
         </div>
       </div>
 
@@ -568,16 +568,16 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
         </p>
       )}
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:mt-5 md:grid-cols-2">
         <button
           type="button"
           onClick={() => onCopy(referralLink, t("referralLinkCopied"))}
           disabled={!referralLink}
-          className="interactive-ring flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-4 text-left text-sm font-black text-sky-900 shadow-[0_8px_20px_rgba(14,165,233,0.07)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-sky-400/15 dark:bg-sky-400/[0.07] dark:text-sky-100"
+          className="interactive-ring flex min-h-[76px] w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2.5 text-left text-sm font-black text-sky-900 shadow-[0_8px_20px_rgba(14,165,233,0.07)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-sky-400/15 dark:bg-sky-400/[0.07] dark:text-sky-100 sm:gap-3 sm:px-4"
         >
           <span className="flex min-w-0 flex-col">
             <span>{t("copyRegistrationLink")}</span>
-            <span dir="ltr" className="mt-1 truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span dir="ltr" className="mt-1 block max-w-full whitespace-normal break-all text-[10px] font-semibold leading-4 text-slate-500 dark:text-slate-400 sm:text-xs">
               {referralLink || t("common:states.unavailable")}
             </span>
           </span>
@@ -588,11 +588,11 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
           type="button"
           onClick={() => onCopy(referralCode, t("inviteCodeCopied"))}
           disabled={!referralCode}
-          className="interactive-ring flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-violet-200/80 bg-violet-50/80 px-4 text-left text-sm font-black text-violet-800 shadow-[0_8px_20px_rgba(139,92,246,0.08)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-violet-400/15 dark:bg-violet-400/[0.08] dark:text-violet-100"
+          className="interactive-ring flex min-h-[76px] w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-violet-200/80 bg-violet-50/80 px-3 py-2.5 text-left text-sm font-black text-violet-800 shadow-[0_8px_20px_rgba(139,92,246,0.08)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-violet-400/15 dark:bg-violet-400/[0.08] dark:text-violet-100 sm:gap-3 sm:px-4"
         >
           <span className="flex min-w-0 flex-col">
             <span>{t("copyCodeOnly")}</span>
-            <span dir="ltr" className="mt-1 text-xs font-semibold">
+            <span dir="ltr" className="mt-1 block break-all text-xs font-semibold">
               {referralCode || t("common:states.unavailable")}
             </span>
           </span>

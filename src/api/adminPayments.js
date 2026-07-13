@@ -11,8 +11,15 @@ import {
   toNumber,
 } from "./adapters";
 
-const SYNCABLE_GATEWAYS = new Set(["NETWORK_INTERNATIONAL", "PAYMENTO"]);
+const SYNCABLE_GATEWAYS = new Set(["NETWORK_INTERNATIONAL", "PAYMENTO", "ZIINA"]);
 const syncableStatuses = new Set(["INITIATED", "PENDING", "REQUIRES_ACTION"]);
+const gatewayLabels = {
+  MOCK: "Mock",
+  NETWORK_INTERNATIONAL: "Network International",
+  PAYMENTO: "Paymento USDT",
+  ZIINA: "Ziina / زينة",
+  TAP: "Tap",
+};
 
 function normalizeStatus(status) {
   return String(status || "PENDING").trim().toUpperCase() || "PENDING";
@@ -138,7 +145,7 @@ export function normalizeAdminPayment(payment = {}) {
     feeAmount,
     feeAmountLabel: formatCurrency(feeAmount, currency, "ar-EG-u-nu-latn"),
     gateway,
-    gatewayLabel: humanizeToken(gateway, "Gateway"),
+    gatewayLabel: gatewayLabels[gateway] || humanizeToken(gateway, "Gateway"),
     method: payment.method || "CARD",
     purpose: payment.purpose || "WALLET_TOPUP",
     risk: normalizeRiskSummary(payment),

@@ -18,6 +18,7 @@ const PublicCategoryProducts = lazy(() => import("./pages/public/PublicCategoryP
 const Login = lazy(() => import("./pages/public/Login"));
 const Register = lazy(() => import("./pages/public/Register"));
 const GoogleCallback = lazy(() => import("./pages/auth/GoogleCallback"));
+const GoogleCompleteProfile = lazy(() => import("./pages/auth/GoogleCompleteProfile"));
 const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword"));
 const EmailVerified = lazy(() => import("./pages/public/EmailVerified"));
 const ImportantArticlePage = lazy(() => import("./pages/public/ImportantArticlePage"));
@@ -25,6 +26,8 @@ const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
 
 const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
 const CustomerBestSelling = lazy(() => import("./pages/customer/CustomerBestSelling"));
+const CustomerRecentlyAdded = lazy(() => import("./pages/customer/CustomerRecentlyAdded"));
+const CustomerFavorites = lazy(() => import("./pages/customer/CustomerFavorites"));
 const CustomerCategories = lazy(() => import("./pages/customer/CustomerCategories"));
 const CustomerCategoryProducts = lazy(() => import("./pages/customer/CustomerCategoryProducts"));
 const CustomerOrders = lazy(() => import("./pages/customer/CustomerOrders"));
@@ -76,11 +79,13 @@ export default function App() {
             <Route path="categories" element={<Animated><PublicCategories /></Animated>} />
             <Route path="categories/:categoryId" element={<Animated><PublicCategoryProducts /></Animated>} />
             <Route path="best-selling" element={<Animated><CustomerBestSelling loginOnPurchase /></Animated>} />
+            <Route path="recently-added" element={<Animated><CustomerRecentlyAdded loginOnPurchase /></Animated>} />
             <Route path="login" element={<Animated><Login /></Animated>} />
             <Route path="register" element={<Animated><Register /></Animated>} />
             <Route path="auth" element={<Animated><GoogleCallback /></Animated>} />
             <Route path="auth/callback" element={<Animated><GoogleCallback /></Animated>} />
             <Route path="auth/google/callback" element={<Animated><GoogleCallback /></Animated>} />
+            <Route path="auth/google/complete" element={<Animated><GoogleCompleteProfile /></Animated>} />
             <Route path="forgot-password" element={<Animated><ForgotPassword /></Animated>} />
             <Route path="email-verified" element={<Animated><EmailVerified /></Animated>} />
             <Route path="payment/success" element={<Animated><PaymentReturnPage variant="success" /></Animated>} />
@@ -107,6 +112,8 @@ export default function App() {
             <Route index element={<Navigate to="/customer/dashboard" replace />} />
             <Route path="dashboard" element={<Animated><CustomerDashboard /></Animated>} />
             <Route path="best-selling" element={<Animated><CustomerBestSelling /></Animated>} />
+            <Route path="recently-added" element={<Animated><CustomerRecentlyAdded /></Animated>} />
+            <Route path="favorites" element={<Animated><CustomerFavorites /></Animated>} />
             <Route path="categories" element={<Animated><CustomerCategories /></Animated>} />
             <Route path="categories/:categoryId" element={<Animated><CustomerCategoryProducts /></Animated>} />
             <Route path="orders" element={<Animated><CustomerOrders /></Animated>} />
@@ -142,6 +149,8 @@ export default function App() {
               <Route index element={<Navigate to="/admin/user/dashboard" replace />} />
               <Route path="dashboard" element={<Animated><CustomerDashboard basePath="/admin/user" /></Animated>} />
               <Route path="best-selling" element={<Animated><CustomerBestSelling basePath="/admin/user" /></Animated>} />
+              <Route path="recently-added" element={<Animated><CustomerRecentlyAdded basePath="/admin/user" /></Animated>} />
+              <Route path="favorites" element={<Animated><CustomerFavorites basePath="/admin/user" /></Animated>} />
               <Route path="categories" element={<Animated><CustomerCategories basePath="/admin/user" /></Animated>} />
               <Route path="categories/:categoryId" element={<Animated><CustomerCategoryProducts basePath="/admin/user" /></Animated>} />
               <Route path="orders" element={<Animated><CustomerOrders basePath="/admin/user" /></Animated>} />

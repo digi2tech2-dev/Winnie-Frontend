@@ -26,7 +26,6 @@ const adminToolItems = [
   { label: "إدارة العملات", path: "/admin/tools/currencies", icon: "Coins" },
   { label: "إعدادات النظام", path: "/admin/tools/settings", icon: "Settings" },
   { label: "طلبات الوكلاء الفرعيين", path: "/admin/tools/sub-agents", icon: "UserPlus" },
-  { label: "مركز الإشعارات", path: "/admin/tools/notifications", icon: "Bell" },
 ];
 
 function getStoredProfileAvatar() {

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { isAdminAreaRole } from "../utils/authRoles";
 
 const protectedItems = [
@@ -16,6 +17,7 @@ const protectedItems = [
 export default function PublicBottomNav() {
   const [loginTarget, setLoginTarget] = useState(null);
   const { user, isAuthenticated } = useAuth();
+  const { favorites } = useFavorites();
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,22 +37,23 @@ export default function PublicBottomNav() {
     navigate(`${base}/${item.id === "profile" ? "profile" : item.id}`);
   };
 
-  const openProducts = () => {
+  const openFavorites = () => {
     if (!isAuthenticated) {
-      navigate("/best-selling");
+      setLoginTarget({ id: "favorites", path: "/customer/favorites" });
       return;
     }
     const base = isAdminAreaRole(user?.role) ? "/admin/user" : "/customer";
-    navigate(`${base}/best-selling`);
+    navigate(`${base}/favorites`);
   };
 
   return (
     <>
       <nav dir="rtl" aria-label={t("nav.mobileNavigation")} className="fixed bottom-2 left-3 right-3 z-[65] grid grid-cols-5 items-center rounded-[22px] border border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-1.5 py-1.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl transition-colors duration-300 dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:hidden">
         {firstItems.map((item) => <NavItem key={item.id} item={item} label={t(publicMobileLabelKeys[item.id])} active={item.public && location.pathname === "/"} onClick={() => openItem(item)} />)}
-        <button type="button" onClick={openProducts} className="group relative mx-auto grid h-[46px] w-[46px] place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:scale-105 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]" aria-label={t("nav.bestSelling")} title={t("nav.bestSelling")}>
+        <button type="button" onClick={openFavorites} className="group relative mx-auto grid h-[46px] w-[46px] place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:scale-105 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A]" aria-label={t("nav.favorites")} title={t("nav.favorites")}>
           <span className="absolute -inset-1 -z-10 rounded-full bg-gradient-to-r from-violet-500/30 to-blue-500/30 blur-md opacity-70 transition group-hover:opacity-100" />
           <img src="/logo.png" alt="" className="relative h-8 w-8 object-contain transition duration-300 group-hover:scale-105" />
+          {favorites.length ? <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-black text-white shadow-[0_6px_14px_rgba(244,63,94,0.38)] dark:border-[#070B19]">{favorites.length > 99 ? "99+" : favorites.length}</span> : null}
         </button>
         {lastItems.map((item) => <NavItem key={item.id} item={item} label={t(publicMobileLabelKeys[item.id])} active={false} onClick={() => openItem(item)} />)}
       </nav>
@@ -69,6 +72,7 @@ const publicMobileLabelKeys = {
   wallet: "nav.wallet",
   orders: "nav.orders",
   profile: "nav.account",
+  favorites: "nav.favorites",
 };
 
 function LoginRequiredModal({ item, onClose, onLogin }) {

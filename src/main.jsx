@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { FeedbackProvider } from "./components/FeedbackProvider.jsx";
 import { ToastProvider } from "./components/ToastProvider.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { FavoritesProvider } from "./context/FavoritesContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { cleanupServiceWorkersAndCaches } from "./utils/disableServiceWorker.js";
@@ -19,11 +20,13 @@ createRoot(document.getElementById("root")).render(
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <ToastProvider>
-              <FeedbackProvider>
-                <App />
-              </FeedbackProvider>
-            </ToastProvider>
+            <FavoritesProvider>
+              <ToastProvider>
+                <FeedbackProvider>
+                  <App />
+                </FeedbackProvider>
+              </ToastProvider>
+            </FavoritesProvider>
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
