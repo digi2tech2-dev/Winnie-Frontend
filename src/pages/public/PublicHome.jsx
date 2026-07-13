@@ -6,8 +6,8 @@ import { filterMainCategories, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 import BestSellingSection from "../../components/home/BestSellingSection";
+import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
 import CustomerReviews from "../../components/home/CustomerReviews";
-import HomeShowcase from "../../components/home/HomeShowcase";
 import HomeSlide from "../../components/home/HomeSlide";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 
@@ -53,6 +53,7 @@ export default function PublicHome() {
 
   const openCategory = (category) => navigate(`/categories/${category.slug || category.id}`);
   const openProducts = () => navigate("/best-selling");
+  const openRecentlyAdded = () => navigate("/recently-added");
   const openPurchase = (product, categoryTitle = t("showcase.catalog")) => {
     setPurchaseItem({ product, category: categoryTitle });
   };
@@ -76,23 +77,23 @@ export default function PublicHome() {
       ) : error ? (
         <EmptyState title={t("public.catalogEmptyTitle")} description={error} />
       ) : (
-        <HomeShowcase
-          categories={filterMainCategories(catalog.categories)}
-          products={catalog.products.slice(0, 8)}
-          productsTitle={t("common:nav.bestSelling")}
-          onViewAll={openProducts}
-          onCategorySelect={openCategory}
-          onProductSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
-        />
+        <>
+          <CategoryShowcaseSection
+            categories={filterMainCategories(catalog.categories)}
+            onSelect={openCategory}
+          />
+          <RecentAdditionsSection
+            items={catalog.products}
+            onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
+            onViewAll={openRecentlyAdded}
+          />
+          <BestSellingSection
+            items={catalog.products}
+            onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
+            onViewAll={openProducts}
+          />
+        </>
       )}
-      <RecentAdditionsSection
-        items={catalog.products}
-        onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
-      />
-      <BestSellingSection
-        items={catalog.products}
-        onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
-      />
       <CustomerReviews />
       <AnimatePresence>
         {purchaseItem && (

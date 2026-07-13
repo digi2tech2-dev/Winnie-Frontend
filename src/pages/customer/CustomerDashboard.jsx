@@ -4,12 +4,12 @@ import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { Camera, X } from "lucide-react";
 import { resolveBackendAssetUrl } from "../../api/adapters";
 import { filterMainCategories, getCustomerCatalog } from "../../api/catalog";
-import AllProductsSection from "../../components/home/AllProductsSection";
 import BestSellingSection from "../../components/home/BestSellingSection";
 import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
 import CustomerReviews from "../../components/home/CustomerReviews";
 import HomePromoBanners from "../../components/home/HomePromoBanners";
 import HomeSlide from "../../components/home/HomeSlide";
+import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 
@@ -104,6 +104,7 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   }, []);
 
   const goGames = () => navigate(`${basePath}/best-selling`);
+  const goRecentlyAdded = () => navigate(`${basePath}/recently-added`);
   const goCategory = (category) => {
     navigate(`${basePath}/categories/${category.slug || category.id}`);
   };
@@ -171,8 +172,14 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
         onSelect={openProductPurchase}
         onViewAll={goGames}
       />
-      <HomePromoBanners />
-      <AllProductsSection items={visibleProducts} onSelect={openProductPurchase} />
+      <div className="lg:hidden">
+        <HomePromoBanners />
+      </div>
+      <RecentAdditionsSection
+        items={visibleProducts}
+        onSelect={openProductPurchase}
+        onViewAll={goRecentlyAdded}
+      />
       <CustomerReviews />
       {purchaseModals}
     </div>

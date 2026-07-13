@@ -21,7 +21,9 @@ export default function PaymentGroupCard({
     <article className="overflow-hidden rounded-[23px] border border-slate-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
       <div className="p-3.5">
         <div className="flex items-center gap-3">
-          <img src={group.imageUrl || group.image || "/logo.png"} alt={group.name} className="h-14 w-14 rounded-2xl object-cover" />
+          <span className="payment-admin-logo-shell grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl p-1.5">
+            <img src={group.imageUrl || group.image || "/logo.png"} alt={group.name} className="h-full w-full object-contain" />
+          </span>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-sm font-black dark:text-white">{group.name}</h2>
             <p className="mt-0.5 line-clamp-1 text-[8px] font-bold text-slate-400">{group.description}</p>

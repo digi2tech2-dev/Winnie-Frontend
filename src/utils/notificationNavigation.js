@@ -29,16 +29,43 @@ function normalizeBackendRoute(route, basePath) {
   return path.replace(/\/orders\/([^/?#]+)/, "/order/$1");
 }
 
+function encodeEntityId(value) {
+  return encodeURIComponent(String(value || "").trim());
+}
+
+function getAdminOperationTarget(notification, entityType, backendType, entityId) {
+  const route = String(notification.route || notification.url || notification.link || notification.actionUrl || "").trim();
+  const routeMatch = route.match(/\/(orders?|payments?|deposits?|balance-requests)\/([^/?#]+)/i);
+  const routeKind = normalizeType(routeMatch?.[1]);
+  const operationId = entityId || routeMatch?.[2] || "";
+  const idQuery = operationId ? `?details=${encodeEntityId(operationId)}` : "";
+  const notificationText = `${notification.title || ""} ${notification.message || ""}`.toLowerCase();
+  const combinedType = `${entityType} ${backendType} ${routeKind} ${notificationText}`;
+
+  if (/supplier|provider|مورد/.test(combinedType)) return "/admin/tools/suppliers";
+  if (/\border|purchase/.test(combinedType)) return `/admin/tools/orders${idQuery}`;
+  if (/deposit|top_up|topup|balance_request/.test(combinedType)) return `/admin/tools/balance-requests${idQuery}`;
+  if (/payment|transaction|wallet_transaction/.test(combinedType)) return `/admin/tools/payments${idQuery}`;
+  return "";
+}
+
 export function getNotificationTarget(notification = {}, basePath = "/customer") {
   const backendRoute = normalizeBackendRoute(
     notification.route || notification.url || notification.link || notification.actionUrl,
     basePath,
   );
-  if (backendRoute) return backendRoute;
 
   const entityType = normalizeType(notification.entityType);
   const backendType = normalizeType(notification.backendType || notification.type);
   const entityId = notification.entityId?._id || notification.entityId?.id || notification.entityId || "";
+  const isAdmin = String(basePath).startsWith("/admin");
+
+  if (isAdmin) {
+    const adminOperationTarget = getAdminOperationTarget(notification, entityType, backendType, entityId);
+    if (adminOperationTarget) return adminOperationTarget;
+  }
+
+  if (backendRoute) return backendRoute;
 
   if (orderTypes.has(entityType) || orderTypes.has(backendType) || backendType.startsWith("order_")) {
     return entityId ? `${basePath}/order/${entityId}` : `${basePath}/orders`;

@@ -6,18 +6,16 @@ import EmptyState from "../../components/EmptyState";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
-import { sortProductsByBestSelling } from "../../utils/bestSellingProducts";
+import { sortProductsByNewest } from "../../utils/recentProducts";
 
 const pageSize = 100;
 
-export default function CustomerBestSelling({ loginOnPurchase = false, basePath = "/customer" }) {
+export default function CustomerRecentlyAdded({ loginOnPurchase = false, basePath = "/customer" }) {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { t, i18n } = useTranslation("home");
-  const { t: productsT } = useTranslation("products");
   const outletContext = useOutletContext() || {};
-  const [backendProducts, setBackendProducts] = useState([]);
-  const [publicProducts, setPublicProducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const useBackendProducts = !loginOnPurchase && Boolean(token);
@@ -29,22 +27,19 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
 
   useEffect(() => {
     let cancelled = false;
+
     const loadProducts = async () => {
       setLoading(true);
       setError("");
       try {
-        if (useBackendProducts) {
-          const result = await getCustomerProducts(token, { page: 1, limit: pageSize });
-          if (!cancelled) setBackendProducts(result.products);
-        } else {
-          const result = await getPublicCatalog({ page: 1, limit: pageSize });
-          if (!cancelled) setPublicProducts(result.products);
-        }
+        const result = useBackendProducts
+          ? await getCustomerProducts(token, { page: 1, limit: pageSize })
+          : await getPublicCatalog({ page: 1, limit: pageSize });
+        if (!cancelled) setProducts(result.products);
       } catch (requestError) {
         if (!cancelled) {
-          setBackendProducts([]);
-          setPublicProducts([]);
-          setError(requestError.userMessage || productsT("listing.loadError"));
+          setProducts([]);
+          setError(requestError.userMessage || t("recentlyAdded.loadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -53,14 +48,12 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
 
     void loadProducts();
     return () => { cancelled = true; };
-  }, [token, useBackendProducts, productsT]);
+  }, [token, t, useBackendProducts]);
 
-  const sourceProducts = useBackendProducts ? backendProducts : publicProducts;
-  const bestSellingProducts = useMemo(
-    () => sortProductsByBestSelling(sourceProducts.filter((product) => product?.isActive !== false && product?.visibleInStore !== false && product?.visible !== false)),
-    [sourceProducts],
+  const recentProducts = useMemo(
+    () => sortProductsByNewest(products.filter((product) => product?.isActive !== false && product?.visibleInStore !== false && product?.visible !== false)),
+    [products],
   );
-
   const selectProduct = (product) => {
     if (!useBackendProducts) {
       navigate("/login", { state: { from: `${basePath}/dashboard` } });
@@ -74,23 +67,23 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
       <header>
         <h1 className="relative text-2xl font-black text-slate-950 dark:text-white sm:text-3xl ltr:pl-3 rtl:pr-3">
           <span className="absolute top-1/2 h-9 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#ec4899,#7c3aed,#22d3ee)] ltr:left-0 rtl:right-0" />
-          {t("homePage.bestSellers")}
+          {t("recentlyAdded.title")}
         </h1>
-        <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">{t("bestSellers.subtitle")}</p>
+        <p className="mt-2 text-sm font-bold text-slate-500 dark:text-slate-400">{t("recentlyAdded.subtitle")}</p>
       </header>
 
       {loading ? (
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">{t("common:states.loadingProducts")}</div>
       ) : error ? (
-        <EmptyState title={productsT("listing.loadError")} description={error} />
-      ) : bestSellingProducts.length ? (
+        <EmptyState title={t("recentlyAdded.loadError")} description={error} />
+      ) : recentProducts.length ? (
         <section className="recent-products-grid">
-          {bestSellingProducts.map((product, index) => (
+          {recentProducts.map((product, index) => (
             <HomeProductCard key={product.id || product._id || product.slug || product.name} product={product} index={index} onSelect={selectProduct} />
           ))}
         </section>
       ) : (
-        <EmptyState title={t("bestSellers.empty")} />
+        <EmptyState title={t("recentlyAdded.empty")} />
       )}
       {purchaseModals}
     </div>

@@ -1,18 +1,10 @@
 import { useMemo } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { sortProductsByBestSelling } from "../../utils/bestSellingProducts";
 import HomeProductCard from "./HomeProductCard";
 
 const maxBestSellingItems = 6;
-
-function getBestSellingScore(item = {}) {
-  const keys = ["salesCount", "ordersCount", "soldCount", "purchaseCount", "popularity", "rating"];
-
-  return keys.reduce((score, key) => {
-    const value = Number(item[key]);
-    return Number.isFinite(value) ? Math.max(score, value) : score;
-  }, 0);
-}
 
 export default function BestSellingSection({ items = [], onSelect, onViewAll }) {
   const { t, i18n } = useTranslation("home");
@@ -20,12 +12,7 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
   const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
   const bestSellingItems = useMemo(() => {
     const activeItems = items.filter((item) => item?.isActive !== false);
-    const scoredItems = activeItems
-      .map((item, index) => ({ item, index, score: getBestSellingScore(item) }))
-      .sort((left, right) => right.score - left.score || left.index - right.index)
-      .map(({ item }) => item);
-
-    return scoredItems.slice(0, maxBestSellingItems);
+    return sortProductsByBestSelling(activeItems).slice(0, maxBestSellingItems);
   }, [items]);
 
   if (!bestSellingItems.length) return null;
@@ -48,7 +35,7 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
           </button>
         ) : null}
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
+      <div className="homepage-product-row">
         {bestSellingItems.map((item, index) => (
           <HomeProductCard
             key={item.id || item._id || item.slug || item.name}

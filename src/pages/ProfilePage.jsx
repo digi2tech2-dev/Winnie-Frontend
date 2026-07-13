@@ -7,6 +7,7 @@ import { normalizeApiError } from "../api/errors";
 import { changeMyPassword, getProfile, updateMyProfile, uploadMyAvatar } from "../api/profile";
 import { getMyReferrals } from "../api/referrals";
 import BackButton from "../components/BackButton";
+import WhatsAppSupportButton from "../components/WhatsAppSupportButton";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ToastProvider";
 
@@ -437,8 +438,7 @@ function EditProfilePanel({
   const dirty =
     form.name.trim() !== (displayName || "").trim() ||
     form.phone.trim() !== (phoneValue || "").trim() ||
-    form.username.trim() !== (usernameValue || "").trim() ||
-    country !== initialCountry;
+    form.username.trim() !== (usernameValue || "").trim();
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -453,7 +453,6 @@ function EditProfilePanel({
       name: form.name.trim(),
       phone: form.phone.trim(),
       username: form.username.trim(),
-      country,
     });
   };
 
@@ -484,8 +483,8 @@ function EditProfilePanel({
           helper={t("panel.usernameHelper")}
         />
         <Field label={t("panel.email")} defaultValue={email} readOnly helper={t("panel.emailHelper")} />
-        <CountrySelectField label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} />
-        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} />
+        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} helper={t("panel.countryHelper")} helperAction={<WhatsAppSupportButton topic="country" />} />
+        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} helperAction={<WhatsAppSupportButton />} />
         <ProfilePhoneField
           label={t("panel.phone")}
           countryCode={selectedDialCode}
@@ -518,8 +517,8 @@ function EditProfilePanel({
           readOnly
           helper={t("panel.emailHelper")}
         />
-        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} />
-        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} />
+        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} helper={t("panel.countryHelper")} helperAction={<WhatsAppSupportButton topic="country" />} />
+        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} helperAction={<WhatsAppSupportButton />} />
         <ProfilePhoneField label={t("panel.phone")} countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
         <button
           type="button"
@@ -779,7 +778,7 @@ function PasswordInput({ label, value, onChange }) {
   );
 }
 
-function Field({ label, defaultValue, value, onChange, readOnly = false, helper }) {
+function Field({ label, defaultValue, value, onChange, readOnly = false, helper, helperAction }) {
   const { t } = useTranslation("profile");
   const inputProps = value === undefined
     ? { defaultValue: defaultValue || "" }
@@ -807,19 +806,20 @@ function Field({ label, defaultValue, value, onChange, readOnly = false, helper 
         )}
       </span>
       {helper && (
-        <span className="mt-2 block text-xs font-black text-slate-500 dark:text-[#8A94A7]">
-          {helper}
+        <span className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs font-black text-slate-500 dark:text-[#8A94A7]">
+          <span>{helper}</span>
+          {helperAction}
         </span>
       )}
     </label>
   );
 }
 
-function CountrySelectField({ disabled = false, label, value, options, onChange }) {
+function CountrySelectField({ disabled = false, label, value, options, onChange, helper, helperAction }) {
   const { t } = useTranslation("profile");
 
   return (
-    <label className="block">
+    <div className="block">
       <span className="mb-2 block text-sm font-black text-violet-800 dark:text-violet-200">{label}</span>
       <span className="relative block">
         <Globe2 className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-500 dark:text-sky-300" />
@@ -836,7 +836,13 @@ function CountrySelectField({ disabled = false, label, value, options, onChange 
           ))}
         </select>
       </span>
-    </label>
+      {helper && (
+        <span className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs font-black text-slate-500 dark:text-[#8A94A7]">
+          <span>{helper}</span>
+          {helperAction}
+        </span>
+      )}
+    </div>
   );
 }
 

@@ -24,7 +24,7 @@ import {
   getAdminUserWalletTransactions,
   updateAdminUserCreditLimit,
 } from "../../api/adminWallet";
-import { updateAdminUserCurrency, updateAdminUserGroup } from "../../api/adminUsers";
+import { updateAdminUserCountry, updateAdminUserCurrency, updateAdminUserGroup } from "../../api/adminUsers";
 import { getPublicCurrencies } from "../../api/currencies";
 import { formatCurrency } from "../../api/adapters";
 import { useToast } from "../../components/ToastProvider";
@@ -37,6 +37,7 @@ const defaultAdjustmentForm = { amount: "", reason: "" };
 const defaultCreditForm = { creditLimit: "" };
 const defaultGroupForm = { groupId: "" };
 const defaultFormErrors = { account: "", adjustment: "" };
+const countryOptions = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
 
 function getErrorMessage(error, fallback) {
   return error?.userMessage || error?.message || fallback;
@@ -114,6 +115,7 @@ export default function AdminUserWalletPage() {
   const [currencies, setCurrencies] = useState([]);
   const [currenciesLoading, setCurrenciesLoading] = useState(false);
   const [currencyCode, setCurrencyCode] = useState("");
+  const [countryCode, setCountryCode] = useState("");
   const [actionKey, setActionKey] = useState("");
   const [walletConfirmation, setWalletConfirmation] = useState(null);
   const [adjustmentForm, setAdjustmentForm] = useState(defaultAdjustmentForm);
@@ -143,6 +145,7 @@ export default function AdminUserWalletPage() {
         groupId: current.groupId || nextWallet.user?.group?.id || "",
       }));
       setCurrencyCode((current) => current || nextWallet.currency || "USD");
+      setCountryCode((current) => current || nextWallet.user?.country || "مصر");
     } catch (requestError) {
       setWallet(null);
       setTransactions([]);
@@ -279,6 +282,7 @@ export default function AdminUserWalletPage() {
     const creditLimit = parseNonNegativeAmount(creditForm.creditLimit);
     const groupId = groupForm.groupId;
     const nextCurrency = String(currencyCode || "").trim().toUpperCase();
+    const nextCountry = String(countryCode || "").trim();
     if (creditLimit === null) {
       const message = "اكتب قيمة صحيحة لحد الائتمان. لا يمكن أن يكون الحد فارغًا أو سالبًا.";
       setFormErrors((current) => ({ ...current, account: message }));
@@ -297,11 +301,18 @@ export default function AdminUserWalletPage() {
       showToast({ type: "error", title: "تعذر حفظ الإعدادات", message });
       return;
     }
+    if (!nextCountry) {
+      const message = "اختر دولة المستخدم قبل حفظ التغيير.";
+      setFormErrors((current) => ({ ...current, account: message }));
+      showToast({ type: "error", title: "تعذر حفظ الإعدادات", message });
+      return;
+    }
 
     const creditChanged = creditLimit !== Number(wallet?.creditLimit || 0);
     const groupChanged = groupId !== (currentGroup?.id || "");
     const currencyChanged = nextCurrency !== currency;
-    if (!creditChanged && !groupChanged && !currencyChanged) {
+    const countryChanged = nextCountry !== String(user?.country || "مصر").trim();
+    if (!creditChanged && !groupChanged && !currencyChanged && !countryChanged) {
       showToast({ type: "info", title: "لا توجد تغييرات", message: "الإعدادات المحددة محفوظة بالفعل." });
       return;
     }
@@ -327,11 +338,16 @@ export default function AdminUserWalletPage() {
           : "تم تغيير العملة وتحويل الرصيد بنجاح";
         showToast({ type: "success", title: "تم تغيير العملة وتحويل الرصيد بنجاح", message: convertedMessage });
       }
+      if (countryChanged) {
+        await updateAdminUserCountry(token, id, nextCountry);
+        showToast({ type: "success", title: "تم تغيير الدولة", message: `تم تحديث دولة المستخدم إلى ${nextCountry}.` });
+      }
 
       showToast({ type: "success", title: "تم حفظ إعدادات الحساب", message: "تم تحديث البيانات بنجاح." });
       setCreditForm({ ...defaultCreditForm, creditLimit: String(creditLimit) });
       setGroupForm({ ...defaultGroupForm, groupId });
       setCurrencyCode(nextCurrency);
+      setCountryCode(nextCountry);
       setFormErrors((current) => ({ ...current, account: "" }));
       await load();
     } catch (requestError) {
@@ -447,7 +463,7 @@ export default function AdminUserWalletPage() {
         </ControlCard>
 
         <ControlCard icon={UsersRound} title="إعدادات الحساب">
-          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-[#0B1220] sm:grid-cols-3">
+          <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-white/10 dark:bg-[#0B1220] sm:grid-cols-2">
             <FormField label="حد الائتمان">
               <input
                 dir="ltr"
@@ -496,6 +512,22 @@ export default function AdminUserWalletPage() {
                 ))}
               </select>
             </FormField>
+            <FormField label="الدولة">
+              <select
+                value={countryCode}
+                onChange={(event) => {
+                  setCountryCode(event.target.value);
+                  setFormErrors((current) => ({ ...current, account: "" }));
+                }}
+              >
+                {!countryOptions.includes(countryCode) && countryCode && (
+                  <option value={countryCode}>{countryCode}</option>
+                )}
+                {countryOptions.map((country) => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+            </FormField>
           </div>
           <InlineActionError message={formErrors.account} />
           <div className="mt-auto pt-4">
@@ -503,7 +535,7 @@ export default function AdminUserWalletPage() {
               className="w-full"
               icon={Save}
               busy={actionKey === "account-settings"}
-              disabled={Boolean(actionKey) || loading || groupsLoading || currenciesLoading || !groups.length || !currencyCode}
+              disabled={Boolean(actionKey) || loading || groupsLoading || currenciesLoading || !groups.length || !currencyCode || !countryCode}
               label="حفظ الإعدادات"
               onClick={() => void handleAccountSettings()}
             />

@@ -100,6 +100,14 @@ export async function getAdminDeposits(token, query = {}) {
   };
 }
 
+export async function getAdminDeposit(token, id) {
+  const response = await apiRequest(`/admin/deposits/${id}`, { token });
+  return {
+    deposit: normalizeAdminDeposit(response.data?.deposit || response.data || {}),
+    message: response.message,
+  };
+}
+
 export async function approveDeposit(token, id, payload = {}) {
   const response = await apiRequest(`/admin/deposits/${id}/approve`, {
     method: "PATCH",

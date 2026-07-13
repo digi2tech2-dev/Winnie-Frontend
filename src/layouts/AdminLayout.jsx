@@ -14,12 +14,14 @@ import DashboardSidebar from "../components/DashboardSidebar";
 import SiteFooter from "../components/SiteFooter";
 import CustomerBottomNav from "../components/CustomerBottomNav";
 import { useAuth } from "../context/AuthContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { adminNav } from "../data/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { getNotificationTarget } from "../utils/notificationNavigation";
 import i18n from "../i18n";
 
 export default function AdminLayout() {
+  const { favorites } = useFavorites();
   const { token } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [walletSummary, setWalletSummary] = useState(null);
@@ -149,10 +151,14 @@ export default function AdminLayout() {
         ({
           ...item,
           label: getAdminNavLabel(item.path),
-          badge: item.path === "/admin/user/notifications" && unreadNotificationCount ? String(unreadNotificationCount) : undefined,
+          badge: item.path === "/admin/user/notifications" && unreadNotificationCount
+            ? String(unreadNotificationCount)
+            : item.path === "/admin/user/favorites" && favorites.length
+              ? String(favorites.length)
+              : undefined,
         }),
       ),
-    [unreadNotificationCount],
+    [favorites.length, unreadNotificationCount],
   );
 
   return (
@@ -167,10 +173,11 @@ export default function AdminLayout() {
         />
         <div dir="rtl" className="admin-app-content min-w-0 flex-1">
           <AdminHeader
+            fixed={isAdminToolsPage}
             onOpenSidebar={() => setSidebarOpen(true)}
             unreadNotificationCount={unreadNotificationCount}
           />
-          <main className={`admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 pt-[108px] sm:px-6 sm:pt-[118px] lg:px-8 ${isAdminToolsPage ? "pb-6" : "pb-28 xl:pb-12"}`}>
+          <main className={`admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[108px] sm:pt-[118px]" : "pb-28 pt-5 sm:pt-6 xl:pb-12"}`}>
             <BackButton fallbackPath="/admin/user/dashboard" hiddenPaths={["/", "/admin/user/dashboard", "/admin/user/profile", "/admin/tools/dashboard"]} />
             <Outlet
               context={{
@@ -204,6 +211,7 @@ export default function AdminLayout() {
 
 const adminNavLabels = {
   "/admin/user/dashboard": "الرئيسية",
+  "/admin/user/favorites": "المنتجات المفضلة",
   "/admin/user/best-selling": "الأكثر مبيعًا",
   "/admin/user/categories": "الأقسام",
   "/admin/user/orders": "طلباتي",

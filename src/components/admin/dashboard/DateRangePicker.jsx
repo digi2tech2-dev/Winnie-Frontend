@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 import {
   addMonths,
   createCustomRange,
@@ -164,6 +164,12 @@ export default function DateRangePicker({ allowAll = false, value, onChange }) {
           <span className="admin-date-ambient admin-date-ambient-two" />
 
           <div className="relative z-10 grid gap-4">
+            <div className="admin-date-mobile-header">
+              <span>اختيار الفترة الزمنية</span>
+              <button type="button" onClick={() => setOpen(false)} aria-label="إغلاق التقويم" title="إغلاق">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             <div className="admin-date-presets">
               {(allowAll ? [{ id: "all", label: "كل الفترات" }, ...datePresets] : datePresets).map((preset) => (
                 <button
