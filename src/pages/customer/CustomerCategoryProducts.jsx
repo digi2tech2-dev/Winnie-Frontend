@@ -155,7 +155,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
       ) : null}
 
       {categoryProducts.length ? (
-        <section className="grid grid-cols-3 gap-2 px-1 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
+        <section className="marketplace-product-grid px-1">
           {categoryProducts.map((product, index) => (
             <HomeProductCard
               key={product.id || product._id || product.slug || product.name}
@@ -181,7 +181,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
 
 function ProductGridSkeleton() {
   return (
-    <div className="grid grid-cols-3 gap-2 px-1 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6" aria-hidden="true">
+    <div className="marketplace-product-grid px-1" aria-hidden="true">
       {Array.from({ length: 6 }).map((_, index) => (
         <div key={index} className="overflow-hidden rounded-[14px] border border-white/80 bg-white/[0.86] shadow-[0_8px_18px_rgba(76,29,149,0.08)] dark:border-white/10 dark:bg-slate-900/80">
           <div className="aspect-square animate-pulse bg-slate-200 dark:bg-white/10" />

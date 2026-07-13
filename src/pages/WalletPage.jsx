@@ -128,9 +128,14 @@ export default function WalletPage({ basePath = "/customer" }) {
               <p className="text-sm font-black text-slate-600 dark:text-white/70">{t("summary.loadingPaymentMethods")}</p>
             </div>
           ) : paymentMethods.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5 sm:gap-x-3 sm:gap-y-5 lg:grid-cols-7 lg:gap-x-4 lg:gap-y-6">
               {paymentMethods.map((method) => (
-                <PaymentMethodCard key={method.id} method={method} onSelect={() => addPaymentMethod(method)} />
+                <PaymentMethodCard
+                  key={method.id}
+                  method={method}
+                  selected={pendingTopUpMethod?.id === method.id}
+                  onSelect={() => addPaymentMethod(method)}
+                />
               ))}
             </div>
           ) : (
@@ -262,24 +267,21 @@ function WalletCoin({ className }) {
   );
 }
 
-function PaymentMethodCard({ method, onSelect }) {
-  const imageUrl = method.imageUrl || method.image;
+function PaymentMethodCard({ method, onSelect, selected = false }) {
+  const imageUrl = method.image ? (method.imageUrl || method.image) : "";
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="interactive-ring flex min-h-[178px] min-w-0 flex-col items-center justify-center gap-4 rounded-[20px] border border-slate-200/90 bg-white p-4 text-center shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-[#8B5CF6]/30 hover:shadow-[0_16px_36px_rgba(139,92,246,0.12)] dark:border-white/[0.08] dark:bg-[#080d1e] dark:shadow-[0_16px_36px_rgba(0,0,0,0.24)] sm:min-h-[198px] sm:p-5"
+      aria-pressed={selected}
+      className={`group flex min-w-0 cursor-pointer flex-col items-center text-center text-royal outline-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-royal focus-visible:ring-offset-4 focus-visible:ring-offset-[#F8FCFF] dark:focus-visible:ring-offset-[#020615] ${selected ? "payment-method-selected" : ""}`}
     >
-      <span className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-[18px] border border-slate-100 bg-white p-2.5 shadow-[0_8px_22px_rgba(15,23,42,0.08)] dark:border-white/10 sm:h-28 sm:w-28 sm:p-3">
-        {imageUrl ? (
-          <img src={imageUrl} alt="" loading="lazy" className="h-full w-full object-contain" />
-        ) : (
-          <CreditCard className="h-10 w-10 text-[#8B5CF6]" />
-        )}
+      <span className="flex h-14 w-full items-center justify-center sm:h-16 lg:h-20">
+        {imageUrl ? <img src={imageUrl} alt={method.title || method.name || ""} loading="lazy" className="payment-method-image h-full w-full object-contain" /> : null}
       </span>
-      <span className="line-clamp-2 min-h-[3rem] w-full text-sm font-black leading-6 text-slate-950 dark:text-white sm:text-base">
-        {method.title}
+      <span className={`mt-2 line-clamp-2 min-h-[2rem] max-w-full text-[11px] font-black leading-4 text-slate-950 dark:text-white sm:text-xs ${selected ? "payment-method-selected-name" : ""}`}>
+        {method.title || method.name}
       </span>
     </button>
   );

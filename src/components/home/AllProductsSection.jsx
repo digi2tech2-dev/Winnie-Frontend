@@ -27,7 +27,7 @@ export default function AllProductsSection({ items = [], onSelect, onViewAll }) 
       </div>
 
       {items.length ? (
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
+        <div className="marketplace-product-grid">
           {items.map((product, index) => (
             <HomeProductCard
               key={product.id || product._id || product.slug || product.name}

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -578,19 +579,41 @@ function StatusBadge({ label, status }) {
 }
 
 function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payment }) {
+  const closeButtonRef = useRef(null);
+  const paymentId = payment?.id;
+
+  useEffect(() => {
+    if (!paymentId) return undefined;
+    const previouslyFocused = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [onClose, paymentId]);
+
   if (!payment) return null;
   const syncing = actionKey === `${payment.id}:sync`;
 
-  return (
-    <div className="fixed inset-0 z-[140] bg-slate-950/45 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true">
-      <section className="ms-auto flex h-full w-full max-w-3xl flex-col overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#0B1220]">
-        <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
+  return createPortal(
+    <div className="payment-details-overlay bg-slate-950/45 backdrop-blur-sm" role="presentation">
+      <section className="payment-details-modal border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#0B1220]" role="dialog" aria-modal="true" aria-labelledby="payment-details-title">
+        <header className="payment-details-header flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white">
             <ReceiptText className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-lg font-black text-slate-950 dark:text-white">{payment.displayId}</h3>
-            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{payment.userName} · {payment.createdAtLabel}</p>
+            <h3 id="payment-details-title" className="break-words text-lg font-black text-slate-950 dark:text-white">{payment.displayId}</h3>
+            <p className="break-words text-[10px] font-bold text-slate-500 dark:text-slate-400">{payment.userName} · {payment.createdAtLabel}</p>
           </div>
           {payment.canSync && (
             <button
@@ -604,6 +627,7 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
             </button>
           )}
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             disabled={Boolean(actionKey)}
@@ -614,7 +638,7 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="payment-details-body p-4">
           {loading && (
             <div className="mb-4 grid gap-3 sm:grid-cols-3">
               {Array.from({ length: 3 }).map((_, index) => <SkeletonBlock key={index} className="h-24 rounded-2xl" />)}
@@ -626,13 +650,13 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="payment-details-summary-grid grid gap-3">
             <DetailCard label="الحالة" value={statusLabels[payment.status] || payment.statusLabel} helper={payment.status} icon={ShieldCheck} />
             <DetailCard label="المبلغ المطلوب" value={payment.requestedAmountLabel} helper={payment.requestedCurrency} icon={ReceiptText} />
             <DetailCard label="خصم البوابة" value={payment.gatewayAmountLabel} helper={payment.gatewayCurrency || payment.gatewayLabel} icon={RefreshCw} />
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
+          <div className="payment-details-columns mt-4 grid gap-4">
             <section className="rounded-[22px] border border-slate-200 p-4 dark:border-white/10">
               <h4 className="text-sm font-black text-slate-950 dark:text-white">ملخص الدفعة</h4>
               <DetailList
@@ -716,17 +740,18 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
           </section>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 function DetailCard({ helper, icon: Icon, label, value }) {
   return (
-    <article className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+    <article className="payment-details-card rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
       <Icon className="h-4 w-4 text-violet-500" />
       <p className="mt-3 text-[10px] font-black uppercase text-slate-400">{label}</p>
-      <p className="mt-1 text-base font-black text-slate-950 dark:text-white">{value}</p>
-      <p className="mt-1 text-[10px] font-bold text-slate-500 dark:text-slate-400">{helper}</p>
+      <p className="mt-1 break-words text-base font-black text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-1 break-words text-[10px] font-bold text-slate-500 dark:text-slate-400">{helper}</p>
     </article>
   );
 }
@@ -737,7 +762,7 @@ function DetailList({ items }) {
       {items.map(([label, value]) => (
         <div key={label} className="flex items-start justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2 dark:bg-white/[0.04]">
           <dt className="text-[10px] font-black uppercase text-slate-400">{label}</dt>
-          <dd className="min-w-0 break-words text-left text-xs font-black text-slate-700 dark:text-slate-200">{value || "-"}</dd>
+          <dd className="payment-details-value min-w-0 text-left text-xs font-black text-slate-700 dark:text-slate-200">{value || "-"}</dd>
         </div>
       ))}
     </dl>
