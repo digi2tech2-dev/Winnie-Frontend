@@ -87,7 +87,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const amountValue = Math.max(0, Number(amount) || 0);
   const isManual = topUpFlow === "manual";
   const isOnline = topUpFlow === "online";
-  const isPaymento = String(method.gateway || "").toUpperCase() === "PAYMENTO";
+  const hostedCheckoutName = getHostedCheckoutName(method.gateway);
   const walletCurrency = String(user?.currency || "USD").toUpperCase();
   const currency = isOnline ? walletCurrency : String(method.currency || method.groupCurrency || walletCurrency).toUpperCase();
   const feePercent = Math.max(0, Number(method.fee) || 0);
@@ -252,7 +252,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       if (result.payment.checkoutUrl) {
         shouldRedirect = true;
         const gatewayChargeText = formatGatewayChargeText(result.payment, t);
-        const hostedCheckoutText = isPaymento ? "Paymento / USDT secure checkout" : "";
+        const hostedCheckoutText = hostedCheckoutName ? `${hostedCheckoutName} secure checkout` : "";
         const redirectSummary = [hostedCheckoutText, gatewayChargeText].filter(Boolean).join(". ");
         setRedirecting(true);
         setPendingMessage(redirectSummary
@@ -692,6 +692,15 @@ function getTopUpFlow(method) {
   if (["MANUAL", "BANK_TRANSFER", "WALLET", "CRYPTO"].includes(configuredType)) return "manual";
   if (method.account || method.bank) return "manual";
   return "unsupported";
+}
+
+function getHostedCheckoutName(gateway) {
+  return {
+    PAYMENTO: "Paymento / USDT",
+    ZIINA: "Ziina",
+    NETWORK_INTERNATIONAL: "Network International",
+    TAP: "Tap",
+  }[String(gateway || "").toUpperCase()] || "";
 }
 
 function formatMoney(value) {
