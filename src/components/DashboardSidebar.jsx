@@ -25,6 +25,7 @@ const adminToolItems = [
   { label: "إدارة الموردين", path: "/admin/tools/suppliers", icon: "Building2" },
   { label: "طرق الدفع", path: "/admin/tools/payment-methods", icon: "CreditCard" },
   { label: "إدارة العملات", path: "/admin/tools/currencies", icon: "Coins" },
+  { label: "إشعارات واتساب", path: "/admin/tools/whatsapp-notifications", icon: "MessageCircle" },
   { label: "إعدادات النظام", path: "/admin/tools/settings", icon: "Settings" },
   { label: "طلبات الوكلاء الفرعيين", path: "/admin/tools/sub-agents", icon: "UserPlus" },
 ];

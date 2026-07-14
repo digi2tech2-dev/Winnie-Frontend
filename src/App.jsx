@@ -56,6 +56,7 @@ const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage")
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminUserWalletPage = lazy(() => import("./pages/admin/AdminUserWalletPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
+const AdminWhatsAppNotificationsPage = lazy(() => import("./pages/admin/AdminWhatsAppNotificationsPage"));
 
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
 
@@ -190,6 +191,7 @@ export default function App() {
               <Route path="balance-requests" element={<Animated><AdminBalanceRequestsPage /></Animated>} />
               <Route path="currencies" element={<Animated><AdminCurrenciesPage /></Animated>} />
               <Route path="settings" element={<Animated><AdminSettingsPage /></Animated>} />
+              <Route path="whatsapp-notifications" element={<Animated><AdminWhatsAppNotificationsPage /></Animated>} />
               <Route path="sub-agents" element={<Animated><AdminSubAgentsPage /></Animated>} />
               <Route path="notifications" element={<Animated><CustomerNotifications /></Animated>} />
             </Route>
