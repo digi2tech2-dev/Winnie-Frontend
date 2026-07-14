@@ -38,6 +38,7 @@
     "totalPayable": "الإجمالي المطلوب دفعه",
     "walletCreditAmount": "سيتم إضافة الرصيد إلى محفظتك",
     "gatewayCharge": "سيتم الدفع عبر البوابة",
+    "paidViaProvider": "الدفع عبر {{provider}}",
     "chooseManualDeposit": "اختر إيداع يدوي",
     "secureCheckout": "الدفع الآمن",
     "submitDeposit": "إرسال طلب الإيداع",

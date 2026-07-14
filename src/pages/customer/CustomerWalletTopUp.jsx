@@ -88,6 +88,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const isManual = topUpFlow === "manual";
   const isOnline = topUpFlow === "online";
   const hostedCheckoutName = getHostedCheckoutName(method.gateway);
+  const gatewayChargeLabel = hostedCheckoutName
+    ? t("topUp.paidViaProvider", { provider: hostedCheckoutName })
+    : t("topUp.gatewayCharge");
   const walletCurrency = String(user?.currency || "USD").toUpperCase();
   const currency = isOnline ? walletCurrency : String(method.currency || method.groupCurrency || walletCurrency).toUpperCase();
   const feePercent = Math.max(0, Number(method.fee) || 0);
@@ -101,6 +104,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         payableAmountLabel: paymentIntent.payableAmountLabel || paymentIntent.totalAmountLabel,
         walletCreditLabel: paymentIntent.requestedAmountLabel || paymentIntent.amountLabel,
         gatewayAmountLabel: paymentIntent.gatewayAmountLabel,
+        gatewayChargeLabel,
         hasGatewayCharge: paymentIntent.hasGatewayCharge,
       }
     : {
@@ -110,6 +114,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         payableAmountLabel: `${formatMoney(estimatedPayableAmount)} ${currency}`,
         walletCreditLabel: `${formatMoney(amountValue)} ${currency}`,
         gatewayAmountLabel: "",
+        gatewayChargeLabel,
         hasGatewayCharge: false,
       };
 
@@ -423,7 +428,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                 />
                 <AmountBreakdownRow label={t("topUp.walletCreditAmount")} value={amountBreakdown.walletCreditLabel} />
                 {amountBreakdown.hasGatewayCharge && amountBreakdown.gatewayAmountLabel && (
-                  <AmountBreakdownRow label={t("topUp.gatewayCharge")} value={amountBreakdown.gatewayAmountLabel} tone="sky" />
+                  <AmountBreakdownRow label={amountBreakdown.gatewayChargeLabel} value={amountBreakdown.gatewayAmountLabel} tone="sky" />
                 )}
               </div>
             </div>
@@ -456,7 +461,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
                   <span dir="ltr" className="text-sm font-black text-slate-900 dark:text-white">{paymentIntent.requestedAmountLabel}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-white/75 px-3 py-2 dark:bg-[#050918]/70">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{t("topUp.secureChargeShort")}</span>
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{gatewayChargeLabel}</span>
                   <span dir="ltr" className="text-sm font-black text-sky-700 dark:text-sky-300">{paymentIntent.gatewayAmountLabel}</span>
                 </div>
               </div>

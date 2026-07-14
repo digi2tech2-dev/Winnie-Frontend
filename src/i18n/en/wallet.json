@@ -38,6 +38,7 @@
     "totalPayable": "Total payable",
     "walletCreditAmount": "Wallet credit amount",
     "gatewayCharge": "Gateway charge",
+    "paidViaProvider": "Paid via {{provider}}",
     "chooseManualDeposit": "Choose manual deposit",
     "secureCheckout": "Secure checkout",
     "submitDeposit": "Submit deposit request",
