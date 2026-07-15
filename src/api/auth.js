@@ -46,6 +46,25 @@ export async function register(payload) {
   };
 }
 
+export async function completeGoogleProfile(token, payload) {
+  const response = await apiRequest("/auth/google/complete-profile", {
+    method: "PATCH",
+    token,
+    body: compactPayload({
+      country: payload?.country,
+      currency: payload?.currency,
+      phone: payload?.phone,
+      inviteCode: payload?.inviteCode,
+      referralCode: payload?.referralCode,
+    }),
+  });
+
+  return {
+    ...(response.data || {}),
+    message: response.message,
+  };
+}
+
 export async function verifyTwoFactor(payload) {
   const response = await apiRequest("/auth/verify-2fa", {
     method: "POST",

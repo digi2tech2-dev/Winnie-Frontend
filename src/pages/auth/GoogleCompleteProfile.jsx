@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Coins, Globe2, MailCheck, Phone, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { completeGoogleProfile as completeGoogleProfileRequest } from "../../api/auth";
 import { getPublicCurrencies } from "../../api/currencies";
-import { updateMyProfile } from "../../api/profile";
 import { validateReferralCode } from "../../api/referrals";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
@@ -122,7 +122,7 @@ export default function GoogleCompleteProfile() {
         }
       }
 
-      await updateMyProfile(token, {
+      await completeGoogleProfileRequest(token, {
         country: details.country,
         currency: details.currency,
         phone: details.phone ? `${selectedDialCode}${details.phone}` : undefined,
