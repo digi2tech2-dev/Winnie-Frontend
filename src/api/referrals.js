@@ -99,6 +99,13 @@ export function normalizeReferralSummary(summary = {}) {
 
   return {
     ...summary,
+    isSubAgent: summary.isSubAgent === true,
+    agentProfile: {
+      ...(summary.agentProfile || {}),
+      commissionPercent: toNumber(summary.agentProfile?.commissionPercent, 0),
+      code: summary.agentProfile?.code || referralCode,
+      status: summary.agentProfile?.status || "inactive",
+    },
     inviteLink: referralLink,
     invitedUsersCount: toNumber(summary.invitedUsersCount ?? summary.invitedCount, 0),
     inviter: normalizePerson(summary.inviter),
@@ -132,8 +139,17 @@ export async function getMyReferrals(token) {
   };
 }
 
+export async function getMySubAgent(token) {
+  const response = await apiRequest("/me/sub-agent", { token });
+
+  return {
+    message: response.message,
+    summary: normalizeReferralSummary(response.data || {}),
+  };
+}
+
 export async function getMyReferralCommissions(token, query = {}) {
-  const response = await apiRequest("/me/referrals/commissions", {
+  const response = await apiRequest("/me/sub-agent/commissions", {
     token,
     query,
   });
@@ -148,6 +164,59 @@ export async function getMyReferralCommissions(token, query = {}) {
       limit: query.limit,
       total: commissions.length,
     }),
+  };
+}
+
+export function normalizeReferredUser(row = {}) {
+  const user = row.user || row.invitedUserId || {};
+  const id = getItemId(row);
+  const status = String(row.commissionStatus || "").toLowerCase();
+
+  return {
+    ...row,
+    id,
+    user: normalizePerson(user),
+    joinedAt: row.joinedAt || row.createdAt || null,
+    joinedAtLabel: formatDateTime(row.joinedAt || row.createdAt),
+    commissionEligibleUntil: row.commissionEligibleUntil || null,
+    commissionEligibleUntilLabel: row.commissionEligibleUntil ? formatDateTime(row.commissionEligibleUntil) : "",
+    commissionStoppedAt: row.commissionStoppedAt || null,
+    commissionStoppedReason: row.commissionStoppedReason || "",
+    commissionStatus: status || "unknown",
+    totalCommission: asArray(row.totalCommission).map(normalizeTotalCommission),
+  };
+}
+
+export async function getMySubAgentReferredUsers(token, query = {}) {
+  const response = await apiRequest("/me/sub-agent/referred-users", {
+    token,
+    query,
+  });
+  const referredUsers = asArray(response.data?.referredUsers || response.data).map(normalizeReferredUser);
+
+  return {
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page,
+      limit: query.limit,
+      total: referredUsers.length,
+    }),
+    referredUsers,
+  };
+}
+
+export async function submitSubAgentRequest(token, payload = {}) {
+  const response = await apiRequest("/me/sub-agent/request", {
+    method: "POST",
+    token,
+    body: compactPayload({
+      requestedMessage: payload.requestedMessage || payload.message || payload.reason,
+    }),
+  });
+
+  return {
+    message: response.message,
+    request: response.data?.request || response.data,
   };
 }
 

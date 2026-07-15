@@ -65,6 +65,7 @@ export async function approveGroupRequest(token, id, payload = {}) {
     token,
     body: compactObject({
       approvedGroupId: payload.approvedGroupId,
+      approvedCommissionPercent: payload.approvedCommissionPercent,
       adminNote: payload.adminNote,
     }),
   });
