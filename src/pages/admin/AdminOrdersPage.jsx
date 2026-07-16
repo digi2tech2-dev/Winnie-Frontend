@@ -190,20 +190,23 @@ export default function AdminOrdersPage() {
 
   return (
     <div dir="rtl" className="space-y-4 sm:space-y-5">
-      <section className="relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white via-sky-50/80 to-violet-50/80 p-5 shadow-[0_18px_48px_rgba(124,58,237,0.09)] sm:p-6 dark:border-white/[0.08] dark:bg-[linear-gradient(135deg,#111827,#0D1324_58%,#17152A)] dark:shadow-[0_0_26px_rgba(139,92,246,0.14)]">
-        <div className="relative flex items-center gap-3">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
+      <section className="relative overflow-hidden rounded-[24px] border border-violet-200/80 bg-[radial-gradient(circle_at_12%_0%,rgba(125,211,252,0.34),transparent_38%),radial-gradient(circle_at_92%_16%,rgba(244,114,182,0.24),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(245,243,255,0.96)_52%,rgba(236,254,255,0.94))] p-4 shadow-[0_20px_55px_rgba(109,40,217,0.13)] sm:rounded-[32px] sm:p-6 dark:border-violet-300/15 dark:bg-[radial-gradient(circle_at_10%_0%,rgba(56,189,248,0.16),transparent_36%),radial-gradient(circle_at_94%_10%,rgba(236,72,153,0.14),transparent_32%),linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,20,58,0.97)_55%,rgba(8,47,73,0.94))] dark:shadow-[0_24px_65px_rgba(0,0,0,0.34)]">
+        <span className="pointer-events-none absolute -left-10 -top-14 h-36 w-36 rounded-full border border-white/50 bg-white/20 blur-sm dark:border-white/5 dark:bg-cyan-300/5" />
+        <span className="pointer-events-none absolute -bottom-16 right-1/3 h-36 w-36 rounded-full bg-violet-400/10 blur-3xl dark:bg-fuchsia-400/10" />
+
+        <div className="relative flex flex-wrap items-center gap-3 sm:gap-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] via-[#8B5CF6] to-[#38BDF8] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
             <ClipboardList className="h-6 w-6" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">إدارة الطلبات</h1>
+              <h1 className="bg-gradient-to-l from-slate-950 via-violet-800 to-sky-700 bg-clip-text text-2xl font-black text-transparent sm:text-3xl dark:from-white dark:via-violet-200 dark:to-cyan-200">إدارة الطلبات</h1>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
                 <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 متصل بالخادم
               </span>
             </div>
-            <p className="mt-1 text-xs font-bold text-slate-500 sm:text-sm dark:text-[#9AA7BD]">
+            <p className="mt-2 text-xs font-bold leading-6 text-slate-600 sm:text-sm dark:text-slate-300">
               متابعة طلبات العملاء الفعلية وإدارتها من الخادم.
             </p>
           </div>
@@ -211,12 +214,14 @@ export default function AdminOrdersPage() {
             type="button"
             onClick={loadOrders}
             disabled={isLoading}
-            className="inline-flex h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300"
+            className="interactive-ring order-last inline-flex min-h-11 basis-full items-center justify-center gap-2 rounded-2xl border border-violet-200/80 bg-white/75 px-4 text-xs font-black text-violet-700 shadow-[0_10px_24px_rgba(124,58,237,0.09)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-white disabled:opacity-60 sm:order-none sm:basis-auto dark:border-white/10 dark:bg-white/[0.065] dark:text-violet-200 dark:hover:bg-white/[0.1]"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             تحديث
           </button>
-          <Sparkles className="hidden h-6 w-6 text-violet-400/60 sm:block" />
+          <span className="hidden h-11 w-11 shrink-0 place-items-center rounded-2xl border border-fuchsia-200/70 bg-white/65 text-fuchsia-500 shadow-[0_10px_22px_rgba(217,70,239,0.1)] backdrop-blur-md sm:grid dark:border-white/10 dark:bg-white/[0.06] dark:text-fuchsia-300">
+            <Sparkles className="h-5 w-5" />
+          </span>
         </div>
       </section>
 

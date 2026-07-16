@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Copy, Languages, X } from "lucide-react";
+import { Copy, Languages, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
@@ -404,7 +404,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
                         }`
                       }
                     >
-                      <Icon className="h-4.5 w-4.5" />
+                      <Icon className="sidebar-stable-tool-icon h-4.5 w-4.5 shrink-0 text-amber-600 transition dark:text-amber-300" />
                       <span className="flex-1">{item.label}</span>
                       {item.badge && (
                         <span className="grid min-w-5 place-items-center rounded-lg bg-[#F59E0B] px-1.5 py-0.5 text-[11px] font-black text-white">
@@ -418,17 +418,19 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
             )}
 
             {adminUserNavOpen && (
-              <div id="admin-user-pages" className="space-y-1.5 pe-4">
+              <div id="admin-user-pages" className="space-y-2.5 pe-4">
                 <NavLink
                   to={`${accountPrefix}/wallet`}
                   onClick={onClose}
-                  className="block rounded-[22px] border border-sky-100 bg-[linear-gradient(135deg,rgba(224,242,254,0.95),rgba(245,243,255,0.86),rgba(253,242,248,0.72))] p-4 text-right shadow-[0_18px_38px_rgba(14,165,233,0.11)] dark:border-[rgba(255,255,255,0.08)] dark:bg-none dark:bg-[#0D1324] dark:shadow-[0_0_20px_rgba(139,92,246,0.18)]"
+                  className="admin-user-wallet-card group relative block overflow-hidden rounded-[17px] border px-2.5 py-2 text-right transition duration-300 hover:-translate-y-0.5"
                 >
-                  <p className="text-xs font-semibold text-slate-500 dark:text-[#8A94A7]">{sidebarText.walletBalance}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-2xl font-black">{walletBalance}</span>
-                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#A855F7] text-lg font-black text-white shadow-[0_0_20px_rgba(139,92,246,0.32)]">
-                      +
+                  <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-9 h-24 w-24 rounded-full bg-fuchsia-400/20 blur-2xl transition group-hover:bg-fuchsia-400/30 dark:bg-fuchsia-500/15" />
+                  <span aria-hidden="true" className="pointer-events-none absolute -bottom-10 -left-7 h-24 w-24 rounded-full bg-cyan-300/24 blur-2xl transition group-hover:bg-cyan-300/34 dark:bg-cyan-400/12" />
+                  <p className="relative text-center text-[9px] font-black leading-3 tracking-wide text-violet-600 dark:text-violet-200">{sidebarText.walletBalance}</p>
+                  <div className="relative mt-1 flex flex-col items-center gap-1.5 text-center">
+                    <span dir="ltr" className="admin-wallet-balance max-w-full truncate text-base font-black leading-5">{walletBalance}</span>
+                    <span className="admin-wallet-plus grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/75 text-white transition duration-300 group-hover:rotate-90 group-hover:scale-110 dark:border-white/15">
+                      <Plus className="h-3.5 w-3.5 stroke-[2.6]" />
                     </span>
                   </div>
                 </NavLink>
@@ -441,17 +443,19 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
                       to={item.path}
                       onClick={onClose}
                       className={({ isActive }) =>
-                        `flex h-11 w-full items-center gap-3 rounded-2xl px-3 text-right text-sm font-bold transition ${
+                        `admin-user-nav-link group relative flex h-11 w-full items-center gap-2.5 overflow-hidden rounded-[15px] border px-2.5 text-right text-sm font-black transition duration-200 hover:-translate-y-px ${
                           isActive
-                            ? "bg-[#F5F3FF] text-[#7C3AED] shadow-[inset_3px_0_0_#8B5CF6] dark:bg-[#1A2335] dark:text-white dark:shadow-[inset_3px_0_0_#A855F7]"
-                            : "text-slate-500 hover:bg-sky-50 hover:text-[#2563EB] dark:text-[#7C8598] dark:hover:bg-[#1A2335] dark:hover:text-[#C4C9D4]"
+                            ? "border-indigo-400/70 bg-[linear-gradient(135deg,#4338CA,#6D28D9)] text-white shadow-[0_8px_20px_rgba(79,70,229,0.24)] dark:border-violet-300/30 dark:bg-[linear-gradient(135deg,#3730A3,#6D28D9)] dark:shadow-[0_0_18px_rgba(109,40,217,0.20)]"
+                            : "border-slate-200/90 bg-white/75 text-slate-700 shadow-[0_4px_12px_rgba(15,23,42,0.045)] hover:border-indigo-300 hover:bg-indigo-50/80 hover:text-indigo-700 hover:shadow-[0_7px_16px_rgba(79,70,229,0.10)] dark:border-white/10 dark:bg-white/[0.035] dark:text-[#AAB3C2] dark:hover:border-indigo-400/30 dark:hover:bg-indigo-400/[0.08] dark:hover:text-indigo-200"
                         }`
                       }
                     >
-                      <Icon className="h-4.5 w-4.5" />
-                      <span className="flex-1">{item.label}</span>
+                      <span className="admin-user-nav-icon sidebar-stable-nav-icon relative grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 transition duration-200 group-hover:border-indigo-300 group-hover:bg-indigo-100 group-hover:text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200 dark:group-hover:text-indigo-200">
+                        <Icon className="h-4 w-4 stroke-[2]" />
+                      </span>
+                      <span className="relative min-w-0 flex-1 truncate">{item.label}</span>
                       {item.badge && (
-                        <span className="grid min-w-5 place-items-center rounded-lg bg-[#8B5CF6] px-1.5 py-0.5 text-[11px] font-black text-white">
+                        <span dir="ltr" className="admin-user-nav-badge inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#312E81] px-1.5 text-[9px] font-black tabular-nums text-white shadow-[0_3px_9px_rgba(49,46,129,0.22)] dark:bg-indigo-400 dark:text-[#0B1020]">
                           {item.badge}
                         </span>
                       )}
@@ -467,19 +471,21 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
           <NavLink
             to={`${accountPrefix}/wallet`}
             onClick={onClose}
-            className="mt-2.5 rounded-[20px] border border-sky-100 bg-[linear-gradient(135deg,rgba(224,242,254,0.95),rgba(245,243,255,0.86),rgba(253,242,248,0.72))] p-3 text-right shadow-[0_18px_45px_rgba(14,165,233,0.12)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] dark:border-[rgba(255,255,255,0.08)] dark:bg-none dark:bg-[#0D1324] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)]"
+            className="admin-user-wallet-card group relative mt-2.5 block overflow-hidden rounded-[17px] border px-2.5 py-2 text-right transition duration-300 hover:-translate-y-0.5"
           >
-            <p className="text-xs font-semibold text-slate-500 dark:text-[#8A94A7]">{sidebarText.walletBalance}</p>
-            <div className="mt-2 flex items-center justify-between">
-              <span dir="ltr" className="min-w-0 truncate text-xl font-black">{walletBalance}</span>
-              <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#A855F7] text-lg font-black text-white shadow-[0_0_20px_rgba(139,92,246,0.32)]">
-                +
+            <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-9 h-24 w-24 rounded-full bg-fuchsia-400/20 blur-2xl transition group-hover:bg-fuchsia-400/30 dark:bg-fuchsia-500/15" />
+            <span aria-hidden="true" className="pointer-events-none absolute -bottom-10 -left-7 h-24 w-24 rounded-full bg-cyan-300/24 blur-2xl transition group-hover:bg-cyan-300/34 dark:bg-cyan-400/12" />
+            <p className="relative text-center text-[9px] font-black leading-3 tracking-wide text-violet-600 dark:text-violet-200">{sidebarText.walletBalance}</p>
+            <div className="relative mt-1 flex flex-col items-center gap-1.5 text-center">
+              <span dir="ltr" className="admin-wallet-balance max-w-full truncate text-base font-black leading-5">{walletBalance}</span>
+              <span className="admin-wallet-plus grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/75 text-white transition duration-300 group-hover:rotate-90 group-hover:scale-110 dark:border-white/15">
+                <Plus className="h-3.5 w-3.5 stroke-[2.6]" />
               </span>
             </div>
           </NavLink>
         )}
 
-        <nav className="no-scrollbar mt-3 flex-1 space-y-1 overflow-y-auto pb-4">
+        <nav className="no-scrollbar mt-3 flex-1 space-y-2.5 overflow-y-auto pb-4">
           {visibleItems.map((item) => {
             const Icon = iconMap[item.icon] || iconMap.Home;
             return (
@@ -488,17 +494,19 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
                 to={item.path}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex h-10 w-full items-center gap-2.5 rounded-2xl px-3 text-right text-sm font-bold transition ${
+                  `admin-user-nav-link group relative flex h-11 w-full items-center gap-2.5 overflow-hidden rounded-[15px] border px-2.5 text-right text-sm font-black transition duration-200 hover:-translate-y-px ${
                     isActive
-                      ? "bg-gradient-to-r from-[#8B5CF6] via-[#A855F7] to-[#38BDF8] text-white shadow-[0_0_28px_rgba(139,92,246,0.35)] dark:bg-[linear-gradient(135deg,#7C3AED,#A855F7)] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)]"
-                      : "text-slate-600 hover:bg-sky-50 hover:text-[#2563EB] dark:text-[#7C8598] dark:hover:bg-[#1A2335] dark:hover:text-[#C4C9D4]"
+                      ? "border-indigo-400/70 bg-[linear-gradient(135deg,#4338CA,#6D28D9)] text-white shadow-[0_8px_20px_rgba(79,70,229,0.24)] dark:border-violet-300/30 dark:bg-[linear-gradient(135deg,#3730A3,#6D28D9)] dark:shadow-[0_0_18px_rgba(109,40,217,0.20)]"
+                      : "border-slate-200/90 bg-white/75 text-slate-700 shadow-[0_4px_12px_rgba(15,23,42,0.045)] hover:border-indigo-300 hover:bg-indigo-50/80 hover:text-indigo-700 hover:shadow-[0_7px_16px_rgba(79,70,229,0.10)] dark:border-white/10 dark:bg-white/[0.035] dark:text-[#AAB3C2] dark:hover:border-indigo-400/30 dark:hover:bg-indigo-400/[0.08] dark:hover:text-indigo-200"
                   }`
                 }
               >
-                <Icon className="h-5 w-5" />
-                <span className="flex-1">{item.label}</span>
+                <span className="admin-user-nav-icon sidebar-stable-nav-icon relative grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 transition duration-200 group-hover:border-indigo-300 group-hover:bg-indigo-100 group-hover:text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200 dark:group-hover:text-indigo-200">
+                  <Icon className="h-4 w-4 stroke-[2]" />
+                </span>
+                <span className="relative min-w-0 flex-1 truncate">{item.label}</span>
                 {item.badge && (
-                  <span className="grid min-w-5 place-items-center rounded-lg bg-[#8B5CF6] px-1.5 py-0.5 text-[11px] font-black text-white">
+                  <span dir="ltr" className="admin-user-nav-badge inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#312E81] px-1.5 text-[9px] font-black tabular-nums text-white shadow-[0_3px_9px_rgba(49,46,129,0.22)] dark:bg-indigo-400 dark:text-[#0B1020]">
                     {item.badge}
                   </span>
                 )}
@@ -506,6 +514,12 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
             );
           })}
         </nav>
+
+        <footer dir="rtl" className="mt-auto shrink-0 border-t border-violet-100/80 px-2 pb-1 pt-3 text-center dark:border-white/10">
+          <p className="text-[10px] font-bold leading-5 text-slate-400 dark:text-[#7C8598] sm:text-[11px]">
+            جميع الحقوق محفوظة لدى © <span className="winnie-brand-name font-black not-italic">ويني</span> 2026
+          </p>
+        </footer>
 
       </aside>
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { BrandName } from "./Brand";
+import HeaderSearchOverlay from "./HeaderSearchOverlay";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
@@ -20,11 +21,12 @@ function isImageAvatar(avatar) {
   return typeof avatar === "string" && /^(https?:|data:image|\/)/.test(avatar);
 }
 
-export default function AdminHeader({ fixed = true, onOpenSidebar, unreadNotificationCount = 0 }) {
+export default function AdminHeader({ fixed = true, onOpenSidebar, searchProducts = [], unreadNotificationCount = 0 }) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(getStoredProfileAvatar);
+  const [searchOpen, setSearchOpen] = useState(false);
   const headerAvatarUrl = profileAvatarUrl || (isImageAvatar(user?.avatar) ? user.avatar : "") || "/hero-winnie-fun.png";
   const isDarkTheme = theme === "dark";
   const switchTheme = () => setTheme(isDarkTheme ? "light" : "dark");
@@ -41,8 +43,16 @@ export default function AdminHeader({ fixed = true, onOpenSidebar, unreadNotific
     };
   }, []);
 
+  useEffect(() => {
+    const openSearchFromPage = () => setSearchOpen(true);
+
+    window.addEventListener("winnie-open-search", openSearchFromPage);
+    return () => window.removeEventListener("winnie-open-search", openSearchFromPage);
+  }, []);
+
   return (
-    <header dir="ltr" className={`admin-header winnie-mobile-topbar site-header-warm overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8 ${fixed ? "fixed inset-x-0 top-0 z-[70]" : "relative z-40"}`}>
+    <>
+      <header dir="ltr" className={`admin-header winnie-mobile-topbar site-header-warm overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8 ${fixed ? "fixed inset-x-0 top-0 z-[70]" : "relative z-40"}`}>
       <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
       <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-400/10" />
       <div className="winnie-mobile-topbar-shell relative mx-auto grid max-w-[1120px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
@@ -70,14 +80,15 @@ export default function AdminHeader({ fixed = true, onOpenSidebar, unreadNotific
 
           <button
             type="button"
-            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A] sm:h-12 sm:w-12"
+            className="group relative isolate grid h-11 w-11 place-items-center overflow-visible rounded-2xl border border-sky-200/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(224,242,254,0.92)_48%,rgba(237,233,254,0.94))] text-sky-600 shadow-[0_10px_26px_rgba(14,165,233,0.16),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:text-violet-600 hover:shadow-[0_14px_30px_rgba(124,58,237,0.18),0_0_20px_rgba(34,211,238,0.16)] dark:border-cyan-300/20 dark:bg-[linear-gradient(145deg,rgba(8,15,32,0.96),rgba(12,31,52,0.94)_48%,rgba(40,20,70,0.92))] dark:text-cyan-300 dark:shadow-[0_0_22px_rgba(34,211,238,0.12)] dark:hover:border-fuchsia-400/45 dark:hover:text-fuchsia-300 sm:h-12 sm:w-12"
             aria-label="الإشعارات"
             title="الإشعارات"
             onClick={() => navigate("/admin/user/notifications")}
           >
-            <Bell className="h-6 w-6 stroke-[1.8]" />
+            <span aria-hidden="true" className="absolute inset-1.5 -z-10 rounded-xl bg-white/45 opacity-70 transition group-hover:bg-white/70 dark:bg-white/[0.04] dark:group-hover:bg-fuchsia-400/[0.08]" />
+            <Bell className="h-6 w-6 stroke-[2] drop-shadow-[0_3px_8px_rgba(14,165,233,0.24)] transition duration-300 group-hover:-rotate-6 group-hover:scale-105 dark:drop-shadow-[0_0_8px_rgba(34,211,238,0.38)]" />
             {unreadNotificationCount > 0 && (
-              <span className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#A855F7] px-1 text-[11px] font-black leading-none text-white shadow-[0_0_16px_rgba(168,85,247,0.80)]">
+              <span dir="ltr" className="absolute -right-1.5 -top-1.5 inline-flex h-[21px] min-w-[21px] items-center justify-center rounded-full border-2 border-white bg-[linear-gradient(135deg,#F43F5E,#D946EF_52%,#7C3AED)] px-1 text-[9px] font-black tabular-nums leading-none tracking-[-0.02em] text-white shadow-[0_5px_14px_rgba(217,70,239,0.48),0_0_0_1px_rgba(244,63,94,0.12)] dark:border-[#080F20] dark:shadow-[0_0_14px_rgba(244,114,182,0.62)]">
                 {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
               </span>
             )}
@@ -111,6 +122,14 @@ export default function AdminHeader({ fixed = true, onOpenSidebar, unreadNotific
           </button>
         </div>
       </div>
-    </header>
+      </header>
+      <HeaderSearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={navigate}
+        mode="admin-user"
+        products={searchProducts}
+      />
+    </>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getAdminWalletAdjustments } from "../../api/adminWalletAdjustments";
 import { getPublicCurrencies } from "../../api/currencies";
+import DateFilterPicker from "../../components/DateFilterPicker";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -433,8 +434,15 @@ function Filters({ activeCount, allCurrenciesLabel, currencyOptions, filters, on
             <option key={code} value={code}>{code}</option>
           ))}
         </select>
-        <input type="date" value={filters.dateFrom} onChange={(event) => onChange("dateFrom", event.target.value)} className="h-11 min-w-0 rounded-2xl bg-slate-50 px-3 text-xs font-black outline-none dark:bg-[#0B1220] dark:text-white" />
-        <input type="date" value={filters.dateTo} onChange={(event) => onChange("dateTo", event.target.value)} className="h-11 min-w-0 rounded-2xl bg-slate-50 px-3 text-xs font-black outline-none dark:bg-[#0B1220] dark:text-white" />
+        <DateFilterPicker
+          className="sm:col-span-2"
+          from={filters.dateFrom}
+          to={filters.dateTo}
+          onChange={(range) => {
+            onChange("dateFrom", range.dateFrom);
+            onChange("dateTo", range.dateTo);
+          }}
+        />
         <input dir="ltr" type="number" min="0" step="0.01" value={filters.minAmount} onChange={(event) => onChange("minAmount", event.target.value)} placeholder="Min" className="h-11 min-w-0 rounded-2xl bg-slate-50 px-3 text-xs font-black outline-none dark:bg-[#0B1220] dark:text-white" />
         <input dir="ltr" type="number" min="0" step="0.01" value={filters.maxAmount} onChange={(event) => onChange("maxAmount", event.target.value)} placeholder="Max" className="h-11 min-w-0 rounded-2xl bg-slate-50 px-3 text-xs font-black outline-none dark:bg-[#0B1220] dark:text-white" />
         <select value={filters.sort} onChange={(event) => onChange("sort", event.target.value)} className="h-11 min-w-0 rounded-2xl bg-slate-50 px-3 text-xs font-black dark:bg-[#0B1220] dark:text-white">

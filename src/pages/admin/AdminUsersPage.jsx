@@ -35,6 +35,7 @@ import {
   unblockAdminUser,
   updateUserIdentityVerification,
 } from "../../api/adminUsers";
+import { getAdminUserWalletTransactions } from "../../api/adminWallet";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 
@@ -109,6 +110,76 @@ function getErrorMessage(error, fallback) {
   return error?.userMessage || error?.message || fallback;
 }
 
+function getArabicGroupName(groupName) {
+  const normalized = String(groupName || "").trim().toUpperCase().replace(/[\s-]+/g, "_");
+  return {
+    SUB_AGENT: "وكيل فرعي",
+    UNASSIGNED: "غير معيّن",
+    DEFAULT: "افتراضي",
+  }[normalized] || groupName || "افتراضي";
+}
+
+function getExplicitFundingCount(user) {
+  const countValue = [
+    user.fundingCount,
+    user.depositCount,
+    user.depositsCount,
+    user.approvedDepositCount,
+    user.approvedDepositsCount,
+    user.successfulDepositCount,
+    user.walletStats?.depositCount,
+  ].find((value) => value !== undefined && value !== null && value !== "");
+  if (countValue !== undefined) return Math.max(0, Number(countValue) || 0);
+
+  const booleanValue = user.hasAddedFunds ?? user.hasDeposited ?? user.hasFundedWallet;
+  if (booleanValue === false) return 0;
+  return null;
+}
+
+function isFundingTransaction(transaction) {
+  if (transaction.direction !== "CREDIT") return false;
+  if (["FAILED", "PENDING", "REJECTED", "CANCELLED", "CANCELED"].includes(String(transaction.status).toUpperCase())) return false;
+  const fingerprint = [
+    transaction.type,
+    transaction.semanticType,
+    transaction.sourceType,
+    transaction.description,
+  ].join(" ").toUpperCase();
+
+  if (["REFUND", "COMMISSION", "REVERSAL", "CASHBACK", "BONUS", "PROMO"]
+    .some((token) => fingerprint.includes(token))) return false;
+  return true;
+}
+
+async function getFundingCountFromWallet(token, userId) {
+  let fundingCount = 0;
+  let page = 1;
+  let pages = 1;
+
+  do {
+    const result = await getAdminUserWalletTransactions(token, userId, { page, limit: 100 });
+    fundingCount += result.transactions.filter(isFundingTransaction).length;
+    pages = Math.max(1, result.pagination?.pages || 1);
+    page += 1;
+  } while (page <= pages && fundingCount <= 5);
+
+  return fundingCount;
+}
+
+async function attachFundingStatus(token, users) {
+  return Promise.all(users.map(async (user) => {
+    const explicitCount = getExplicitFundingCount(user);
+    if (explicitCount !== null) return { ...user, fundingCount: explicitCount };
+
+    try {
+      const fundingCount = await getFundingCountFromWallet(token, user.id);
+      return { ...user, fundingCount };
+    } catch {
+      return user;
+    }
+  }));
+}
+
 export default function AdminUsersPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
@@ -164,7 +235,7 @@ export default function AdminUsersPage() {
       if (looksLikeUserId) {
         const result = await getAdminUser(token, trimmedSearch);
         const matchesStatus = statusFilter === "all" || result.user.displayStatus.toLowerCase() === statusFilter.toLowerCase() || result.user.status === statusFilter;
-        const nextUsers = matchesStatus ? [result.user] : [];
+        const nextUsers = matchesStatus ? await attachFundingStatus(token, [result.user]) : [];
         setUsers(nextUsers);
         setPagination({ page: 1, limit: 20, total: nextUsers.length, pages: 1 });
         return;
@@ -179,7 +250,7 @@ export default function AdminUsersPage() {
         includeBlocked: true,
         ...getSortQuery(sortBy),
       });
-      setUsers(result.users);
+      setUsers(await attachFundingStatus(token, result.users));
       setPagination(result.pagination);
     } catch (requestError) {
       const message = getErrorMessage(requestError, "تعذر تحميل المستخدمين، حاول مرة أخرى");
@@ -616,9 +687,14 @@ function UserIdentity({ user, onCopy }) {
 }
 
 function GroupBadge({ user }) {
+  const label = user.fundingCount === 0
+    ? "زبون جديد"
+    : user.fundingCount > 5
+      ? "زبون دائم"
+      : getArabicGroupName(user.groupName);
   return (
-    <span className="admin-user-group" title={user.groupName}>
-      {user.groupName || "Default"}
+    <span className="admin-user-group" title={label}>
+      {label}
     </span>
   );
 }
@@ -916,7 +992,7 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
               <InfoItem label="الهاتف" value={user.phone || "-"} ltr />
               <InfoItem label="الدولة" value={user.country || "-"} />
               <InfoItem label="العملة" value={user.currency} ltr />
-              <InfoItem label="المجموعة" value={`${user.groupName}${user.groupPercentage !== null ? ` (${user.groupPercentage}%)` : ""}`} />
+              <InfoItem label="المجموعة" value={`${getArabicGroupName(user.groupName)}${user.groupPercentage !== null ? ` (${user.groupPercentage}%)` : ""}`} />
               <div className="admin-user-info-item">
                 <span>الحالة</span>
                 <StatusBadge status={user.displayStatus} label={user.displayStatusLabel} />
@@ -991,7 +1067,7 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
           <DrawerSection icon={WalletCards} title="ملخص المحفظة">
             <div className="admin-user-wallet-grid">
               <WalletItem label="رصيد المحفظة" value={user.walletBalanceLabel} strong />
-              <WalletItem label="حد الائتمان" value={`${user.creditLimit.toFixed(2)} ${user.currency}`} />
+              <WalletItem label="حد الدين" value={`${user.creditLimit.toFixed(2)} ${user.currency}`} />
               <WalletItem label="الائتمان المستخدم" value={`${user.creditUsed.toFixed(2)} ${user.currency}`} />
             </div>
             {user.displayStatus !== "DELETED" && (

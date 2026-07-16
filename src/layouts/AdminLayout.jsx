@@ -19,6 +19,7 @@ import { adminNav } from "../data/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { getNotificationTarget } from "../utils/notificationNavigation";
 import i18n from "../i18n";
+import { getCustomerCatalog } from "../api/catalog";
 
 export default function AdminLayout() {
   const { favorites } = useFavorites();
@@ -36,6 +37,7 @@ export default function AdminLayout() {
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [notificationsError, setNotificationsError] = useState("");
   const [notificationAction, setNotificationAction] = useState("");
+  const [searchProducts, setSearchProducts] = useState([]);
 
   useEffect(() => {
     void i18n.changeLanguage("ar");
@@ -67,6 +69,29 @@ export default function AdminLayout() {
   useEffect(() => {
     void refreshWallet();
   }, [refreshWallet]);
+
+  useEffect(() => {
+    if (!token) {
+      setSearchProducts([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadSearchProducts = async () => {
+      try {
+        const result = await getCustomerCatalog(token, { page: 1, limit: 100 });
+        if (!cancelled) setSearchProducts(result.products);
+      } catch {
+        if (!cancelled) setSearchProducts([]);
+      }
+    };
+
+    void loadSearchProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const refreshNotifications = useCallback(async ({ showLoading = true } = {}) => {
     if (!token) {
@@ -175,6 +200,7 @@ export default function AdminLayout() {
           <AdminHeader
             fixed={isAdminToolsPage}
             onOpenSidebar={() => setSidebarOpen(true)}
+            searchProducts={searchProducts}
             unreadNotificationCount={unreadNotificationCount}
           />
           <main className={`admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[108px] sm:pt-[118px]" : "pb-28 pt-5 sm:pt-6 xl:pb-12"}`}>

@@ -12,7 +12,7 @@ export const customerNav = [
   { label: "الرئيسية", path: "/customer/dashboard", icon: "Home" },
   { label: "المنتجات المفضلة", path: "/customer/favorites", icon: "Heart" },
   { label: "الأقسام", path: "/customer/categories", icon: "ListChecks" },
-  { label: "طلباتي", path: "/customer/orders", icon: "ClipboardList" },
+  { label: "طلباتي", path: "/customer/orders", icon: "ShoppingCart" },
   { label: "محفظتي", path: "/customer/wallet", icon: "WalletCards" },
   { label: "وكيل فرعي", path: "/customer/sub-agent", icon: "UserPlus" },
   { label: "من نحن", path: "/customer/about", icon: "Building2" },
@@ -24,7 +24,7 @@ export const customerNav = [
 export const customerMobileNav = [
   { label: "الرئيسية", path: "/customer/dashboard", icon: "Home" },
   { label: "محفظتي", path: "/customer/wallet", icon: "WalletCards" },
-  { label: "طلباتي", path: "/customer/orders", icon: "ClipboardList" },
+  { label: "طلباتي", path: "/customer/orders", icon: "ShoppingCart" },
   { label: "حسابي", path: "/customer/profile", icon: "UserRound" },
 ];
 
@@ -33,7 +33,7 @@ export const adminNav = [
   { label: "المنتجات المفضلة", path: "/admin/user/favorites", icon: "Heart" },
   { label: "الأكثر مبيعاً", path: "/admin/user/best-selling", icon: "ShoppingBag" },
   { label: "الأقسام", path: "/admin/user/categories", icon: "ListChecks" },
-  { label: "طلباتي", path: "/admin/user/orders", icon: "ClipboardList" },
+  { label: "طلباتي", path: "/admin/user/orders", icon: "ShoppingCart" },
   { label: "محفظتي", path: "/admin/user/wallet", icon: "WalletCards" },
   { label: "وكيل فرعي", path: "/admin/user/sub-agent", icon: "UserPlus" },
   { label: "من نحن", path: "/admin/user/about", icon: "Building2" },

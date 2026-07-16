@@ -5,6 +5,7 @@ import {
   getItemId,
   humanizeToken,
   normalizePagination,
+  resolveBackendAssetUrl,
   toNumber,
 } from "./adapters";
 
@@ -104,6 +105,11 @@ export function normalizeGroupRequest(request = {}) {
     createdAt: request.createdAt || null,
     createdAtLabel: formatDateTime(request.createdAt),
     currentGroup: normalizeGroupForRequest(request.currentGroup),
+    proofImageMimeType: request.proofImageMimeType || "",
+    proofImageOriginalName: request.proofImageOriginalName || "",
+    proofImagePath: request.proofImagePath || "",
+    proofImageSize: request.proofImageSize ?? null,
+    proofImageUrl: resolveBackendAssetUrl(request.proofImageUrl || request.proofImagePath) || "",
     reason: request.reason || "",
     requestedGroup: normalizeGroupForRequest(request.requestedGroup),
     requestType,

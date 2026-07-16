@@ -1,9 +1,20 @@
 {
+  "statuses": {
+    "COMPLETED": "Completed",
+    "PROCESSING": "Processing",
+    "PENDING": "Pending",
+    "MANUAL_REVIEW": "Under review",
+    "CANCELED": "Canceled",
+    "CANCELLED": "Cancelled",
+    "FAILED": "Failed",
+    "PARTIAL": "Partially completed"
+  },
   "list": {
     "title": "My orders",
     "description": "Read-only backend order history.",
     "loadError": "Unable to load orders.",
     "count": "{{shown}} of {{total}}",
+    "totalAmount": "Total amount",
     "resetFilters": "Reset filters",
     "searchFilter": "Search and filter orders",
     "searchPlaceholder": "Search by order number, product, status, price...",

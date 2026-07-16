@@ -36,6 +36,7 @@ export default function WalletPage({ basePath = "/customer" }) {
       state: {
         antiScamConfirmed: true,
         antiScamConfirmedAt: new Date().toISOString(),
+        insufficientFunds,
       },
     });
   };
@@ -172,15 +173,16 @@ function InsufficientFundsNotice({ currency, details }) {
 
   return (
     <section
-      className="flex items-start gap-3 rounded-[18px] border border-amber-300/60 bg-amber-50/95 p-4 text-right shadow-[0_14px_34px_rgba(245,158,11,0.12)] dark:border-amber-300/20 dark:bg-amber-300/10"
+      className="relative flex items-center gap-2.5 overflow-hidden rounded-[14px] border border-amber-300/45 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.92))] px-3 py-2.5 text-right shadow-[0_8px_24px_rgba(245,158,11,0.09)] dark:border-amber-300/15 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.12),rgba(8,13,30,0.96))]"
       role="alert"
     >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-300/15 dark:text-amber-300">
-        <AlertTriangle className="h-5 w-5" />
+      <span className="absolute inset-y-2 right-0 w-[3px] rounded-l-full bg-gradient-to-b from-amber-400 to-orange-500" aria-hidden="true" />
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-amber-100/90 text-amber-600 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.08)] dark:bg-amber-400 dark:text-[#241500] dark:shadow-[0_0_18px_rgba(251,191,36,0.34),inset_0_0_0_1px_rgba(255,255,255,0.34)]">
+        <AlertTriangle className="h-4 w-4" strokeWidth={2.8} />
       </span>
       <div className="min-w-0 flex-1">
-        <h2 className="text-base font-black text-amber-950 dark:text-amber-100">{t("summary.insufficientPurchaseTitle")}</h2>
-        <p className="mt-1 text-sm font-bold leading-6 text-amber-800 dark:text-amber-200">
+        <h2 className="text-[13px] font-black leading-5 text-amber-950 dark:text-amber-100">{t("summary.insufficientPurchaseTitle")}</h2>
+        <p className="mt-0.5 text-[11px] font-bold leading-5 text-amber-700 dark:text-amber-200/85 sm:text-xs">
           {hasShortfall
             ? t("summary.insufficientPurchaseAmount", { amount: amountLabel })
             : details.message || t("summary.insufficientPurchaseDescription")}
@@ -312,28 +314,28 @@ function SecurityPanel() {
   return (
     <section
       dir="ltr"
-      className="flex items-center gap-4 rounded-[16px] border border-[#8B5CF6]/[0.12] bg-[linear-gradient(135deg,rgba(139,92,246,0.14),rgba(255,255,255,0.96)_44%,rgba(255,255,255,0.96))] p-5 shadow-soft dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.58),rgba(8,13,30,0.98)_44%,rgba(8,13,30,0.98))] dark:shadow-[0_16px_42px_rgba(0,0,0,0.3)]"
+      className="flex items-center gap-3 rounded-[15px] border border-[#8B5CF6]/[0.12] bg-[linear-gradient(135deg,rgba(139,92,246,0.14),rgba(255,255,255,0.96)_44%,rgba(255,255,255,0.96))] p-4 shadow-soft dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.58),rgba(8,13,30,0.98)_44%,rgba(8,13,30,0.98))] dark:shadow-[0_16px_42px_rgba(0,0,0,0.3)]"
     >
-      <span className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-[#151136] shadow-[inset_0_0_26px_rgba(139,92,246,0.28)]">
-        <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-[linear-gradient(145deg,#a855f7,#5b21b6)] text-white shadow-[0_16px_34px_rgba(139,92,246,0.38)]">
-          <ShieldCheck className="h-8 w-8" />
+      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-[14px] bg-[#151136] shadow-[inset_0_0_22px_rgba(139,92,246,0.28)]">
+        <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[linear-gradient(145deg,#a855f7,#5b21b6)] text-white shadow-[0_12px_28px_rgba(139,92,246,0.34)]">
+          <ShieldCheck className="h-6 w-6" />
         </span>
       </span>
 
       <div dir="rtl" className="min-w-0 flex-1 text-center sm:text-right">
-        <h2 className="text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{t("summary.securityTitle")}</h2>
-        <p className="mt-2 text-sm font-semibold leading-7 text-slate-500 dark:text-white/[0.58]">
+        <h2 className="text-lg font-black text-slate-950 dark:text-white sm:text-xl">{t("summary.securityTitle")}</h2>
+        <p className="mt-1 text-xs font-semibold leading-6 text-slate-500 dark:text-white/[0.58] sm:text-[13px]">
           {t("summary.securityDescription")}
         </p>
       </div>
 
       <button
         type="button"
-        className="interactive-ring grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#8B5CF6]/20 bg-white text-[#8B5CF6] dark:bg-[#080d20]"
+        className="interactive-ring grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#8B5CF6]/20 bg-white text-[#8B5CF6] dark:bg-[#080d20]"
         aria-label={t("summary.securityDetails")}
         title={t("summary.securityDetails")}
       >
-        <ChevronLeft className="h-6 w-6" />
+        <ChevronLeft className="h-5 w-5" />
       </button>
     </section>
   );

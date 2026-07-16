@@ -8,6 +8,8 @@ import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { getPublicCurrencies } from "../../api/currencies";
 
+const REFERRAL_STORAGE_KEY = "winnie-referral-code";
+
 const countries = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
 const countryDialCodes = {
   "الولايات المتحدة": "+1",
@@ -30,10 +32,11 @@ function withReferralAlias(errors = {}) {
 export default function Register() {
   const { t } = useTranslation("auth");
   const location = useLocation();
-  const inviteCodeFromUrl = new URLSearchParams(location.search).get("inviteCode") || new URLSearchParams(location.search).get("referralCode") || "";
+  const inviteCodeFromUrl = new URLSearchParams(location.search).get("ref") || new URLSearchParams(location.search).get("inviteCode") || new URLSearchParams(location.search).get("referralCode") || "";
+  const storedInviteCode = readStoredReferralCode();
   const [step, setStep] = useState("account");
   const [account, setAccount] = useState({ name: "", email: "", password: "", confirmPassword: "" });
-  const [details, setDetails] = useState({ country: countries[0], currency: "", phone: "", inviteCode: inviteCodeFromUrl });
+  const [details, setDetails] = useState({ country: countries[0], currency: "", phone: "", inviteCode: inviteCodeFromUrl || storedInviteCode });
   const [currencyOptions, setCurrencyOptions] = useState([]);
   const [currenciesLoading, setCurrenciesLoading] = useState(true);
   const [currenciesError, setCurrenciesError] = useState("");
@@ -227,6 +230,7 @@ export default function Register() {
       return;
     }
 
+    persistReferralCode("");
     showToast({ type: "success", title: t("register.sentTitle"), message: result.message || account.email });
 
     if (result.authenticated) {
@@ -240,6 +244,7 @@ export default function Register() {
   const continueWithGoogle = () => {
     if (!ensurePolicyAgreement()) return;
 
+    persistReferralCode(details.inviteCode || inviteCodeFromUrl || storedInviteCode);
     setGoogleLoading(true);
     const result = loginWithGoogle();
     if (!result.ok) {
@@ -375,6 +380,27 @@ export default function Register() {
       {policyModalOpen && <PoliciesModal onClose={() => setPolicyModalOpen(false)} />}
     </div>
   );
+}
+
+function persistReferralCode(code) {
+  const value = String(code || "").trim();
+  try {
+    if (!value) {
+      sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
+      return;
+    }
+    sessionStorage.setItem(REFERRAL_STORAGE_KEY, value);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function readStoredReferralCode() {
+  try {
+    return String(sessionStorage.getItem(REFERRAL_STORAGE_KEY) || "").trim();
+  } catch {
+    return "";
+  }
 }
 
 function Field({ icon: Icon, label, value, onChange, type = "text", autoComplete, required = false, error }) {

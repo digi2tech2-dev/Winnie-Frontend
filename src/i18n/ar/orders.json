@@ -1,9 +1,20 @@
 {
+  "statuses": {
+    "COMPLETED": "مكتمل",
+    "PROCESSING": "قيد التنفيذ",
+    "PENDING": "قيد الانتظار",
+    "MANUAL_REVIEW": "قيد المراجعة",
+    "CANCELED": "ملغي",
+    "CANCELLED": "ملغي",
+    "FAILED": "فشل",
+    "PARTIAL": "مكتمل جزئيًا"
+  },
   "list": {
     "title": "طلباتي",
     "description": "سجل الطلبات من الخادم للقراءة فقط.",
     "loadError": "تعذر تحميل الطلبات.",
     "count": "{{shown}} من {{total}}",
+    "totalAmount": "إجمالي المبلغ",
     "resetFilters": "إعادة ضبط الفلاتر",
     "searchFilter": "بحث وتصفية الطلبات",
     "searchPlaceholder": "ابحث برقم الطلب أو المنتج أو الحالة أو السعر...",

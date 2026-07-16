@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { ClipboardList, Home, LogIn, UserRound, WalletCards, X } from "lucide-react";
+import { Home, LogIn, ShoppingCart, UserRound, WalletCards, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +10,7 @@ import { isAdminAreaRole } from "../utils/authRoles";
 const protectedItems = [
   { id: "home", label: "الرئيسية", icon: Home, path: "/", public: true },
   { id: "wallet", label: "محفظتي", icon: WalletCards, path: "/customer/wallet" },
-  { id: "orders", label: "طلباتي", icon: ClipboardList, path: "/customer/orders" },
+  { id: "orders", label: "طلباتي", icon: ShoppingCart, path: "/customer/orders" },
   { id: "profile", label: "حسابي", icon: UserRound, path: "/customer/profile" },
 ];
 

@@ -24,6 +24,13 @@ function makeIdempotencyKey(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function getRequiredTopUpAmount(locationState) {
+  const shortfall = Number(locationState?.insufficientFunds?.shortfall);
+  if (!Number.isFinite(shortfall) || shortfall <= 0) return "";
+
+  return shortfall.toFixed(2);
+}
+
 export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const { methodId } = useParams();
   const location = useLocation();
@@ -36,7 +43,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const [method, setMethod] = useState(null);
   const [methodLoading, setMethodLoading] = useState(true);
   const [methodError, setMethodError] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(() => getRequiredTopUpAmount(location.state));
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentIntent, setPaymentIntent] = useState(null);
   const [pendingMessage, setPendingMessage] = useState("");
@@ -625,10 +632,11 @@ function SelectedPaymentCard({ method }) {
 
   if (type === "apple") {
     return (
-      <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff,#d9dbe2)] p-4 text-[#111827] shadow-[0_16px_34px_rgba(15,23,42,0.16)]">
-        <span className="absolute -left-7 -top-7 h-20 w-20 rounded-full bg-white/60" />
+      <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff,#d9dbe2)] p-4 text-[#111827] shadow-[0_16px_34px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-[linear-gradient(145deg,#242733,#090b12_70%)] dark:text-white dark:shadow-[0_18px_38px_rgba(0,0,0,0.38)]">
+        <span className="absolute -left-7 -top-7 h-20 w-20 rounded-full bg-white/60 dark:bg-white/[0.08]" />
+        <span className="absolute -bottom-10 -right-8 hidden h-24 w-24 rounded-full bg-violet-500/10 dark:block" />
         <p className="relative text-2xl font-black">Apple Pay</p>
-        <p className="relative mt-8 text-xs font-black text-slate-500">{t("topUp.onlineIntent")}</p>
+        <p className="relative mt-8 text-xs font-black text-slate-500 dark:text-white/60">{t("topUp.onlineIntent")}</p>
       </div>
     );
   }

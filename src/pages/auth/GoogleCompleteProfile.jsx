@@ -9,6 +9,7 @@ import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { getDefaultRouteForRole } from "../../utils/authRoles";
 import { markGoogleProfileCompleted } from "../../utils/googleOnboarding";
+const REFERRAL_STORAGE_KEY = "winnie-referral-code";
 
 const countries = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
 const countryDialCodes = {
@@ -35,16 +36,33 @@ function initialCountry(value) {
   return match?.[0] || countries[0];
 }
 
+function readStoredReferralCode() {
+  try {
+    return String(sessionStorage.getItem(REFERRAL_STORAGE_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function clearStoredReferralCode() {
+  try {
+    sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export default function GoogleCompleteProfile() {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { isAuthenticated, isLoading: authLoading, refreshCurrentUser, token, user } = useAuth();
+  const storedInviteCode = readStoredReferralCode();
   const [details, setDetails] = useState(() => ({
     country: initialCountry(user?.country),
     currency: String(user?.currency || "").toUpperCase(),
     phone: "",
-    inviteCode: "",
+    inviteCode: storedInviteCode,
   }));
   const [currencies, setCurrencies] = useState([]);
   const [currenciesLoading, setCurrenciesLoading] = useState(true);
@@ -132,6 +150,7 @@ export default function GoogleCompleteProfile() {
       if (!refreshed.ok) throw new Error(refreshed.message);
 
       markGoogleProfileCompleted(refreshed.user || user);
+      clearStoredReferralCode();
       showToast({
         type: "success",
         title: t("googleComplete.successTitle"),

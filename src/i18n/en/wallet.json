@@ -117,10 +117,23 @@
     "creditedOnPage": "Credited on this page",
     "transactions": "Transactions",
     "searchPlaceholder": "Search loaded transactions",
+    "download": "Download transactions",
     "downloadAria": "Download transaction history",
-    "downloadTitle": "Export will be connected later",
+    "downloadTitle": "Download visible transactions",
     "loadError": "Unable to load wallet transactions.",
     "loading": "Loading wallet transactions...",
-    "empty": "No wallet transactions found."
+    "empty": "No wallet transactions found.",
+    "export": {
+      "id": "Transaction ID",
+      "date": "Date",
+      "type": "Type",
+      "description": "Description",
+      "direction": "Direction",
+      "amount": "Amount",
+      "currency": "Currency",
+      "status": "Status",
+      "balanceBefore": "Balance before",
+      "balanceAfter": "Balance after"
+    }
   }
 }

@@ -61,7 +61,7 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
     return () => {
       cancelled = true;
     };
-  }, [id, token]);
+  }, [id, t, token]);
 
   if (loading) {
     return (
@@ -91,7 +91,10 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
         <h1 className="mt-2 text-3xl font-black">{order.displayId}</h1>
         <p className="mt-2 text-sm text-slate-400 dark:text-[#8A94A7]">{order.productName} - {order.dateTimeLabel}</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <Info label={t("details.status")} value={order.statusLabel} />
+          <Info
+            label={t("details.status")}
+            value={t(`statuses.${order.status}`, { defaultValue: order.statusLabel })}
+          />
           <Info label={t("details.price")} value={order.price} />
           <Info label={t("details.quantity")} value={String(order.quantity)} />
         </div>

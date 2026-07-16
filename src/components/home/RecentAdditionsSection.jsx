@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { sortProductsByNewest } from "../../utils/recentProducts";
 import HomeProductCard from "./HomeProductCard";
+import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
 export const recentHomepageLimit = 6;
 
@@ -31,26 +32,22 @@ export default function RecentAdditionsSection({ items = [], onSelect, onViewAll
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[14px] border border-violet-300/70 px-3 text-xs font-black text-violet-700 transition hover:bg-violet-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-400/10 sm:text-sm"
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-slate-200/70 bg-white/35 px-2.5 text-[10px] font-black text-slate-400 shadow-[0_3px_10px_rgba(15,23,42,0.04)] backdrop-blur-sm transition hover:border-violet-200 hover:bg-violet-50/60 hover:text-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 dark:border-white/10 dark:bg-white/[0.025] dark:text-slate-500 dark:hover:border-violet-400/20 dark:hover:bg-violet-400/[0.06] dark:hover:text-violet-300"
           >
             {t("recentlyAdded.viewAll")}
-            <ArrowIcon className="h-4 w-4" />
+            <ArrowIcon className="h-3 w-3 stroke-[2.4]" />
           </button>
         ) : null}
       </div>
 
       {recentItems.length ? (
-        <div className="homepage-product-row">
+        <HorizontalProductCarousel label={t("recentlyAdded.title")}>
           {recentItems.map((product, index) => (
-            <HomeProductCard
-              key={product.id || product._id || product.slug || product.name}
-              product={product}
-              index={index}
-              onSelect={onSelect}
-              variant="featured"
-            />
+            <div key={product.id || product._id || product.slug || product.name} dir={isArabic ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
+              <HomeProductCard product={product} index={index} onSelect={onSelect} variant="featured" />
+            </div>
           ))}
-        </div>
+        </HorizontalProductCarousel>
       ) : (
         <div className="rounded-[22px] border border-violet-100 bg-white/[0.85] p-6 text-center text-sm font-black text-slate-500 dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-400">
           {t("recentlyAdded.empty")}

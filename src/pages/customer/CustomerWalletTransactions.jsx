@@ -8,6 +8,25 @@ import { useAuth } from "../../context/AuthContext";
 
 const pageSize = 20;
 
+function escapeCsvValue(value) {
+  let safeValue = String(value ?? "");
+  if (/^[=+\-@]/.test(safeValue)) safeValue = `'${safeValue}`;
+  return `"${safeValue.replace(/"/g, '""')}"`;
+}
+
+function downloadCsvFile(rows, fileName) {
+  const csv = rows.map((row) => row.map(escapeCsvValue).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function CustomerWalletTransactions({ basePath = "/customer" }) {
   const { token } = useAuth();
   const { t } = useTranslation("wallet");
@@ -75,6 +94,38 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
     .reduce((sum, transaction) => sum + transaction.amount, 0);
   const primaryCurrency = transactions[0]?.currency || "USD";
 
+  const downloadTransactions = () => {
+    if (!filteredTransactions.length) return;
+
+    const headers = [
+      t("transactions.export.id"),
+      t("transactions.export.date"),
+      t("transactions.export.type"),
+      t("transactions.export.description"),
+      t("transactions.export.direction"),
+      t("transactions.export.amount"),
+      t("transactions.export.currency"),
+      t("transactions.export.status"),
+      t("transactions.export.balanceBefore"),
+      t("transactions.export.balanceAfter"),
+    ];
+    const rows = filteredTransactions.map((transaction) => [
+      transaction.id,
+      transaction.dateLabel,
+      transaction.semanticTypeLabel || transaction.typeLabel,
+      transaction.description,
+      transaction.directionLabel || transaction.direction,
+      transaction.amount,
+      transaction.currency,
+      transaction.statusLabel,
+      transaction.balanceBefore,
+      transaction.balanceAfter,
+    ]);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+
+    downloadCsvFile([headers, ...rows], `wallet-transactions-${dateStamp}.csv`);
+  };
+
   return (
     <div
       dir="ltr"
@@ -117,8 +168,16 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
                 className="h-12 w-full rounded-full border border-slate-200 bg-white px-12 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050918] dark:text-white dark:placeholder:text-white/[0.34]"
               />
             </label>
-            <button type="button" disabled className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-slate-300 dark:border-white/10 dark:bg-[#050918] dark:text-white/25" aria-label={t("transactions.downloadAria")} title={t("transactions.downloadTitle")}>
+            <button
+              type="button"
+              onClick={downloadTransactions}
+              disabled={loading || Boolean(error) || filteredTransactions.length === 0}
+              className="interactive-ring inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-[#8B5CF6]/25 bg-[#8B5CF6]/10 px-3.5 text-xs font-black text-[#7C3AED] transition hover:border-[#8B5CF6]/45 hover:bg-[#8B5CF6]/15 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-300 dark:border-[#C084FC]/20 dark:bg-[#C084FC]/10 dark:text-[#D8B4FE] dark:hover:bg-[#C084FC]/15 dark:disabled:border-white/10 dark:disabled:bg-[#050918] dark:disabled:text-white/25 sm:px-4 sm:text-sm"
+              aria-label={t("transactions.downloadAria")}
+              title={t("transactions.downloadTitle")}
+            >
               <Download className="h-5 w-5" />
+              <span className="hidden sm:inline">{t("transactions.download")}</span>
             </button>
           </div>
 

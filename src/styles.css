@@ -109,6 +109,42 @@
 }
 
 @layer components {
+  .homepage-product-carousel {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: auto;
+    overscroll-behavior-block: auto;
+    touch-action: pan-y pinch-zoom;
+    overflow-y: clip;
+  }
+
+  .homepage-product-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .homepage-product-carousel__item {
+    flex: 0 0 calc(50% - 0.375rem);
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .homepage-product-carousel__item {
+      flex-basis: calc(33.333% - 0.667rem);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .homepage-product-carousel__item {
+      flex-basis: calc(25% - 0.75rem);
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .homepage-product-carousel__item {
+      flex-basis: calc(20% - 0.8rem);
+    }
+  }
+
   .homepage-product-row {
     @apply grid grid-cols-2 gap-x-3 gap-y-0 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6;
   }
@@ -873,6 +909,51 @@ html.dark .supervisor-permissions-cancel {
   width: 36px;
 }
 
+/* Keep every shared date filter visually aligned with the admin dashboard picker. */
+.unified-date-filter .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(251, 207, 232, 0.95), rgba(224, 242, 254, 0.92)) !important;
+  border-color: rgba(125, 211, 252, 0.34) !important;
+  box-shadow: 0 16px 38px rgba(14, 165, 233, 0.10), 0 14px 34px rgba(244, 114, 182, 0.10) !important;
+}
+
+.unified-date-filter .admin-date-trigger-icon,
+.unified-date-filter .admin-date-preset-active,
+.unified-date-filter .admin-calendar-day-selected::before {
+  background: linear-gradient(135deg, #EC4899, #8B5CF6 52%, #38BDF8) !important;
+  box-shadow: 0 12px 28px rgba(236, 72, 153, 0.22) !important;
+}
+
+.unified-date-filter .admin-date-popover {
+  background: rgba(248, 250, 255, 0.90) !important;
+  border-color: rgba(125, 211, 252, 0.28) !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18), 0 18px 50px rgba(244, 114, 182, 0.10) !important;
+}
+
+.unified-date-filter .admin-date-popover::before,
+.unified-date-filter .admin-date-presets,
+.unified-date-filter .admin-calendar-card,
+.unified-date-filter .admin-date-nav {
+  border-color: rgba(125, 211, 252, 0.22) !important;
+}
+
+.unified-date-filter .admin-date-preset:hover,
+.unified-date-filter .admin-calendar-day:hover:not(:disabled)::before,
+.unified-date-filter .admin-calendar-day-range::before {
+  background: rgba(251, 207, 232, 0.62) !important;
+}
+
+html.dark .unified-date-filter .admin-date-trigger {
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.58), rgba(12, 74, 110, 0.44)) !important;
+  border-color: rgba(186, 230, 253, 0.20) !important;
+}
+
+html.dark .unified-date-filter .admin-date-popover::before {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(244, 114, 182, 0.14), transparent 52%),
+    radial-gradient(circle at 100% 12%, rgba(56, 189, 248, 0.14), transparent 52%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.90), rgba(24, 16, 48, 0.82)) !important;
+}
+
 html.dark .admin-date-trigger {
   background: linear-gradient(135deg, rgba(76, 29, 149, 0.58), rgba(12, 74, 110, 0.48)) !important;
   border-color: rgba(192, 132, 252, 0.25) !important;
@@ -1582,6 +1663,73 @@ html.dark .admin-dashboard-main .admin-metric-card {
     animation-duration: 5.6s;
   }
 
+  .admin-user-nav-link[aria-current="page"] .admin-user-nav-icon {
+    border-color: rgba(196, 181, 253, 0.78);
+    background: rgba(245, 243, 255, 0.94);
+    color: #5b21b6;
+  }
+
+  .dark .admin-user-nav-link[aria-current="page"] .admin-user-nav-icon {
+    border-color: rgba(196, 181, 253, 0.34);
+    background: rgba(139, 92, 246, 0.18);
+    color: #ddd6fe;
+  }
+
+  html.dark .admin-control-sidebar .admin-user-nav-link:hover .sidebar-stable-nav-icon,
+  html.dark .admin-control-sidebar .admin-user-nav-link[aria-current="page"] .sidebar-stable-nav-icon {
+    color: #ddd6fe !important;
+  }
+
+  html.dark .admin-control-sidebar a:hover .sidebar-stable-tool-icon,
+  html.dark .admin-control-sidebar a[aria-current="page"] .sidebar-stable-tool-icon {
+    color: #fcd34d !important;
+  }
+
+  .admin-user-nav-link[aria-current="page"] .admin-user-nav-badge {
+    background: #fff;
+    color: #4338ca;
+    box-shadow: 0 3px 9px rgba(30, 27, 75, 0.2);
+  }
+
+  .admin-user-wallet-card {
+    border-color: rgba(196, 181, 253, 0.78);
+    background-image: linear-gradient(125deg, rgba(255, 255, 255, 0.96), rgba(250, 232, 255, 0.88) 38%, rgba(224, 242, 254, 0.9) 72%, rgba(245, 243, 255, 0.94));
+    background-size: 220% 100%;
+    box-shadow: 0 9px 22px rgba(124, 58, 237, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    animation: brand-sidebar-colors 7s ease-in-out infinite;
+  }
+
+  .admin-user-wallet-card:hover {
+    border-color: rgba(217, 70, 239, 0.55);
+    box-shadow: 0 12px 28px rgba(217, 70, 239, 0.17), 0 0 14px rgba(56, 189, 248, 0.1);
+  }
+
+  .dark .admin-user-wallet-card {
+    border-color: rgba(192, 132, 252, 0.24);
+    background-image: linear-gradient(125deg, rgba(22, 15, 45, 0.96), rgba(58, 20, 70, 0.86) 40%, rgba(8, 47, 73, 0.88) 74%, rgba(23, 17, 52, 0.96));
+    box-shadow: 0 0 26px rgba(168, 85, 247, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .admin-wallet-balance {
+    background-image: linear-gradient(100deg, #7c3aed, #ec4899 38%, #0284c7 72%, #a855f7);
+    background-size: 240% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: brand-sidebar-colors 4.8s ease-in-out infinite;
+    filter: drop-shadow(0 3px 8px rgba(168, 85, 247, 0.16));
+  }
+
+  .dark .admin-wallet-balance {
+    background-image: linear-gradient(100deg, #c4b5fd, #f9a8d4 38%, #67e8f9 72%, #d8b4fe);
+  }
+
+  .admin-wallet-plus {
+    background-image: linear-gradient(135deg, #f43f5e, #d946ef 48%, #7c3aed 74%, #22d3ee);
+    box-shadow: 0 5px 13px rgba(217, 70, 239, 0.3), 0 0 9px rgba(56, 189, 248, 0.13);
+  }
+
   @keyframes winnie-brand-colors {
     0%,
     100% {
@@ -1595,8 +1743,21 @@ html.dark .admin-dashboard-main .admin-metric-card {
     }
   }
 
+  @keyframes brand-sidebar-colors {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .winnie-brand-name {
+    .winnie-brand-name,
+    .admin-user-wallet-card,
+    .admin-wallet-balance {
       animation: none;
     }
   }
@@ -8636,5 +8797,993 @@ html.dark .admin-user-drawer-layer {
   .admin-dashboard-main .admin-date-start-tooltip {
     font-size: 9px;
     padding: 5px 8px;
+  }
+}
+
+/* Platform dashboard hero */
+.admin-dashboard-main .admin-platform-hero {
+  isolation: isolate;
+  min-height: 158px;
+  overflow: hidden;
+  padding: 24px 26px !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.26), transparent 34%),
+    radial-gradient(circle at 92% 8%, rgba(244, 114, 182, 0.22), transparent 36%),
+    radial-gradient(circle at 54% 120%, rgba(139, 92, 246, 0.20), transparent 42%),
+    linear-gradient(135deg, rgba(17, 28, 55, 0.99), rgba(28, 20, 55, 0.98) 55%, rgba(7, 42, 62, 0.98)) !important;
+  border: 1px solid rgba(186, 230, 253, 0.22) !important;
+  border-radius: 28px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 24px 60px rgba(2, 6, 23, 0.30),
+    0 0 34px rgba(139, 92, 246, 0.08) !important;
+}
+
+.admin-dashboard-main .admin-platform-hero::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  content: "";
+  inset: 0;
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.72), transparent 72%);
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.admin-dashboard-main .admin-platform-hero::after {
+  background: linear-gradient(90deg, transparent, #38bdf8, #a78bfa, #f472b6, transparent) !important;
+  bottom: 0;
+  box-shadow: 0 0 18px rgba(139, 92, 246, 0.62);
+  height: 2px;
+  left: 7%;
+  opacity: 0.9;
+  right: 7%;
+}
+
+.admin-platform-hero-orb {
+  border-radius: 999px;
+  filter: blur(2px);
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.admin-platform-hero-orb-one {
+  background: rgba(56, 189, 248, 0.13);
+  height: 150px;
+  left: -42px;
+  top: -72px;
+  width: 150px;
+}
+
+.admin-platform-hero-orb-two {
+  background: rgba(244, 114, 182, 0.12);
+  bottom: -86px;
+  height: 180px;
+  right: 32%;
+  width: 180px;
+}
+
+.admin-dashboard-main .admin-platform-hero-copy {
+  align-items: center;
+  display: flex;
+  gap: 15px;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-dashboard-main .admin-platform-hero-icon {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6 52%, #38bdf8);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  border-radius: 20px;
+  box-shadow: 0 15px 32px rgba(139, 92, 246, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  color: #fff;
+  display: grid;
+  flex-shrink: 0;
+  height: 58px;
+  place-items: center;
+  transform: rotate(-3deg);
+  width: 58px;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-kicker {
+  align-items: center;
+  color: #bae6fd !important;
+  display: flex;
+  font-size: 11px;
+  gap: 7px;
+  letter-spacing: 0.04em;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-kicker i {
+  animation: admin-platform-live-pulse 1.8s ease-in-out infinite;
+  background: #34d399;
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.80);
+  height: 7px;
+  width: 7px;
+}
+
+.admin-dashboard-main .admin-platform-hero h1 {
+  background: linear-gradient(90deg, #fff, #e9d5ff 48%, #bae6fd);
+  background-clip: text;
+  color: transparent !important;
+  font-size: clamp(28px, 3vw, 40px);
+  letter-spacing: -0.035em;
+  margin-top: 3px;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-refresh {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(186, 230, 253, 0.14);
+  border-radius: 12px;
+  color: #cbd5e1 !important;
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 5px 9px;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-refresh svg {
+  color: #7dd3fc;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-refresh bdi {
+  color: #fff;
+  font-weight: 900;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-top-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-live-pill,
+.admin-dashboard-main .admin-platform-hero .admin-toolbar-button {
+  backdrop-filter: blur(14px);
+  border-radius: 15px !important;
+  height: 46px;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-live-pill {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 78, 59, 0.18)) !important;
+  border-color: rgba(110, 231, 183, 0.28) !important;
+  color: #a7f3d0 !important;
+  box-shadow: 0 12px 26px rgba(16, 185, 129, 0.10) !important;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-dashboard-live-pill svg {
+  color: #34d399;
+  filter: drop-shadow(0 0 7px rgba(52, 211, 153, 0.65));
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-toolbar-button {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), rgba(56, 189, 248, 0.18)) !important;
+  border-color: rgba(196, 181, 253, 0.30) !important;
+  color: #ede9fe !important;
+  box-shadow: 0 12px 28px rgba(76, 29, 149, 0.18) !important;
+}
+
+.admin-dashboard-main .admin-platform-hero .admin-toolbar-button:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.36), rgba(14, 165, 233, 0.28)) !important;
+  border-color: rgba(216, 180, 254, 0.48) !important;
+  box-shadow: 0 16px 34px rgba(76, 29, 149, 0.26) !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-platform-hero {
+  background:
+    radial-gradient(circle at 7% 0%, rgba(56, 189, 248, 0.30), transparent 34%),
+    radial-gradient(circle at 94% 8%, rgba(244, 114, 182, 0.25), transparent 36%),
+    radial-gradient(circle at 54% 120%, rgba(139, 92, 246, 0.18), transparent 42%),
+    linear-gradient(135deg, #ffffff, #f5f3ff 56%, #ecfeff) !important;
+  border-color: rgba(167, 139, 250, 0.34) !important;
+  box-shadow: 0 24px 58px rgba(109, 40, 217, 0.13) !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-platform-hero h1 {
+  background: linear-gradient(90deg, #111827, #6d28d9 52%, #0369a1);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-platform-hero .admin-dashboard-kicker {
+  color: #6d28d9 !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-platform-hero .admin-dashboard-refresh {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(167, 139, 250, 0.24);
+  color: #64748b !important;
+}
+
+html:not(.dark) .admin-dashboard-main .admin-platform-hero .admin-dashboard-refresh bdi {
+  color: #334155;
+}
+
+@keyframes admin-platform-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.78); }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard-main .admin-platform-hero {
+    align-items: stretch;
+    border-radius: 21px !important;
+    min-height: 0;
+    padding: 16px !important;
+  }
+
+  .admin-dashboard-main .admin-platform-hero-icon {
+    border-radius: 16px;
+    height: 46px;
+    width: 46px;
+  }
+
+  .admin-dashboard-main .admin-platform-hero-icon svg {
+    height: 20px;
+    width: 20px;
+  }
+
+  .admin-dashboard-main .admin-platform-hero h1 {
+    font-size: 26px;
+  }
+
+  .admin-dashboard-main .admin-platform-hero .admin-top-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .admin-dashboard-main .admin-platform-hero .admin-dashboard-live-pill,
+  .admin-dashboard-main .admin-platform-hero .admin-toolbar-button {
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Warm brown wallet-control workspace. */
+.admin-wallet-control-page {
+  --wallet-brown-950: #321b11;
+  --wallet-brown-900: #4a2819;
+  --wallet-brown-800: #633923;
+  --wallet-brown-700: #7d4a2f;
+  --wallet-copper: #b8763f;
+  --wallet-gold: #d6a461;
+  --wallet-cream: #fffaf3;
+  --wallet-cream-strong: #f8ecdc;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(184, 118, 63, 0.13), transparent 28%),
+    radial-gradient(circle at 4% 40%, rgba(214, 164, 97, 0.09), transparent 30%),
+    linear-gradient(145deg, rgba(255, 250, 243, 0.62), rgba(248, 236, 220, 0.28));
+  border: 1px solid rgba(125, 74, 47, 0.10);
+  border-radius: 30px;
+  font-family: "Noto Sans Arabic", "Noto Kufi Arabic", Tahoma, Arial, sans-serif;
+  padding: clamp(10px, 1.6vw, 18px);
+}
+
+.admin-wallet-control-page button,
+.admin-wallet-control-page input,
+.admin-wallet-control-page select,
+.admin-wallet-control-page textarea {
+  font-family: inherit;
+}
+
+.admin-wallet-control-page [dir="ltr"] {
+  font-family: "Space Grotesk", "Segoe UI", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-wallet-control-page .admin-wallet-hero {
+  background:
+    radial-gradient(circle at 8% -35%, rgba(214, 164, 97, 0.28), transparent 38%),
+    linear-gradient(135deg, rgba(255, 253, 249, 0.98), rgba(248, 236, 220, 0.94)) !important;
+  border-color: rgba(125, 74, 47, 0.20) !important;
+  box-shadow: 0 18px 50px rgba(74, 40, 25, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-wallet-control-page .admin-wallet-hero::after {
+  background: linear-gradient(90deg, transparent, var(--wallet-gold), var(--wallet-copper), transparent);
+  bottom: 0;
+  content: "";
+  height: 3px;
+  inset-inline: 24px;
+  opacity: 0.72;
+  position: absolute;
+}
+
+.admin-wallet-control-page .admin-wallet-hero > span {
+  background: linear-gradient(145deg, var(--wallet-brown-800), var(--wallet-copper)) !important;
+  box-shadow: 0 12px 26px rgba(99, 57, 35, 0.24);
+}
+
+.admin-wallet-control-page .admin-wallet-hero > div > p:first-child {
+  color: var(--wallet-copper) !important;
+  letter-spacing: 0.03em;
+}
+
+.admin-wallet-control-page .admin-wallet-hero h1 {
+  color: var(--wallet-brown-950) !important;
+  letter-spacing: -0.025em;
+}
+
+.admin-wallet-control-page .admin-wallet-hero button {
+  border-color: rgba(125, 74, 47, 0.18) !important;
+  color: var(--wallet-brown-700) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-hero > a {
+  background: linear-gradient(135deg, var(--wallet-brown-900), var(--wallet-brown-700)) !important;
+  box-shadow: 0 10px 24px rgba(74, 40, 25, 0.18);
+}
+
+.admin-wallet-control-page .admin-wallet-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 239, 0.94)) !important;
+  border-color: rgba(125, 74, 47, 0.16) !important;
+  box-shadow: 0 14px 34px rgba(74, 40, 25, 0.07);
+  position: relative;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card:hover {
+  border-color: rgba(184, 118, 63, 0.40) !important;
+  box-shadow: 0 18px 42px rgba(74, 40, 25, 0.12);
+  transform: translateY(-2px);
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card > svg {
+  background: rgba(184, 118, 63, 0.12) !important;
+  color: var(--wallet-copper) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card > p {
+  color: #8a6957 !important;
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card > strong {
+  color: var(--wallet-brown-950) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card,
+.admin-wallet-control-page .admin-wallet-ledger {
+  background: rgba(255, 253, 249, 0.96) !important;
+  border-color: rgba(125, 74, 47, 0.16) !important;
+  box-shadow: 0 18px 46px rgba(74, 40, 25, 0.08) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card > div:first-child {
+  border-color: rgba(125, 74, 47, 0.11) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card > div:first-child > span {
+  background: rgba(184, 118, 63, 0.12) !important;
+  color: var(--wallet-copper) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card h2,
+.admin-wallet-control-page .admin-wallet-ledger h2 {
+  color: var(--wallet-brown-950) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card > div:nth-child(2) {
+  background: linear-gradient(145deg, rgba(248, 236, 220, 0.46), rgba(255, 250, 243, 0.70)) !important;
+  border-color: rgba(125, 74, 47, 0.13) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-form-field > span:first-child {
+  color: var(--wallet-brown-700) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-form-field input,
+.admin-wallet-control-page .admin-wallet-form-field select,
+.admin-wallet-control-page .admin-wallet-form-field textarea,
+.admin-wallet-control-page .admin-wallet-ledger input {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(125, 74, 47, 0.18) !important;
+  color: var(--wallet-brown-950) !important;
+  box-shadow: inset 0 1px 2px rgba(74, 40, 25, 0.035);
+}
+
+.admin-wallet-control-page .admin-wallet-form-field input:focus,
+.admin-wallet-control-page .admin-wallet-form-field select:focus,
+.admin-wallet-control-page .admin-wallet-form-field textarea:focus,
+.admin-wallet-control-page .admin-wallet-ledger input:focus {
+  border-color: var(--wallet-copper) !important;
+  box-shadow: 0 0 0 4px rgba(184, 118, 63, 0.12) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-action--default {
+  background: linear-gradient(135deg, var(--wallet-brown-900), var(--wallet-brown-700)) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 26px rgba(74, 40, 25, 0.18);
+}
+
+.admin-wallet-control-page .admin-wallet-action--success {
+  background: linear-gradient(135deg, #2f6b50, #4b8a68) !important;
+  box-shadow: 0 12px 24px rgba(47, 107, 80, 0.16);
+}
+
+.admin-wallet-control-page .admin-wallet-action--danger {
+  background: linear-gradient(135deg, #9a4937, #c2674d) !important;
+  box-shadow: 0 12px 24px rgba(154, 73, 55, 0.16);
+}
+
+.admin-wallet-control-page .admin-wallet-ledger .relative > svg {
+  color: var(--wallet-copper) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-transaction {
+  background: linear-gradient(135deg, rgba(255, 253, 249, 0.96), rgba(248, 236, 220, 0.34)) !important;
+  border-color: rgba(125, 74, 47, 0.13) !important;
+  box-shadow: 0 8px 20px rgba(74, 40, 25, 0.045);
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-wallet-control-page .admin-wallet-transaction::before {
+  content: "";
+  inset-block: 8px;
+  position: absolute;
+  right: 0;
+  width: 3px;
+}
+
+.admin-wallet-control-page .admin-wallet-transaction--credit::before { background: #4b8a68; }
+.admin-wallet-control-page .admin-wallet-transaction--debit::before { background: #c2674d; }
+
+.admin-wallet-control-page .admin-wallet-transaction-title {
+  color: var(--wallet-brown-950) !important;
+}
+
+html.dark .admin-wallet-control-page {
+  background:
+    radial-gradient(circle at 95% 0%, rgba(184, 118, 63, 0.13), transparent 30%),
+    linear-gradient(145deg, rgba(32, 20, 15, 0.64), rgba(12, 11, 15, 0.55));
+  border-color: rgba(214, 164, 97, 0.10);
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-hero {
+  background: linear-gradient(135deg, rgba(49, 29, 20, 0.96), rgba(25, 20, 22, 0.96)) !important;
+  border-color: rgba(214, 164, 97, 0.18) !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-hero h1,
+html.dark .admin-wallet-control-page .admin-wallet-summary-card > strong,
+html.dark .admin-wallet-control-page .admin-wallet-control-card h2,
+html.dark .admin-wallet-control-page .admin-wallet-ledger h2,
+html.dark .admin-wallet-control-page .admin-wallet-transaction-title {
+  color: #fff8ef !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-summary-card,
+html.dark .admin-wallet-control-page .admin-wallet-control-card,
+html.dark .admin-wallet-control-page .admin-wallet-ledger {
+  background: linear-gradient(145deg, rgba(38, 27, 23, 0.96), rgba(21, 19, 22, 0.96)) !important;
+  border-color: rgba(214, 164, 97, 0.14) !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-control-card > div:nth-child(2),
+html.dark .admin-wallet-control-page .admin-wallet-transaction {
+  background: linear-gradient(145deg, rgba(49, 35, 28, 0.58), rgba(20, 19, 22, 0.80)) !important;
+  border-color: rgba(214, 164, 97, 0.12) !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-form-field input,
+html.dark .admin-wallet-control-page .admin-wallet-form-field select,
+html.dark .admin-wallet-control-page .admin-wallet-form-field textarea,
+html.dark .admin-wallet-control-page .admin-wallet-ledger input {
+  background: rgba(16, 15, 18, 0.80) !important;
+  border-color: rgba(214, 164, 97, 0.14) !important;
+  color: #fff8ef !important;
+}
+
+@media (max-width: 700px) {
+  .admin-wallet-control-page {
+    border-radius: 20px;
+    padding: 7px;
+  }
+
+  .admin-wallet-control-page.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 9px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-hero {
+    border-radius: 18px;
+    gap: 8px;
+    padding: 11px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-hero > span {
+    border-radius: 13px;
+    height: 38px;
+    width: 38px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-hero h1 {
+    font-size: 1.2rem;
+    line-height: 1.35;
+  }
+
+  .admin-wallet-control-page .admin-wallet-hero button,
+  .admin-wallet-control-page .admin-wallet-hero > a {
+    flex: 1 1 auto;
+    height: 35px;
+    justify-content: center;
+    padding-inline: 9px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-summary-grid {
+    gap: 6px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-summary-card {
+    border-radius: 14px !important;
+    min-height: 92px;
+    padding: 9px !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-summary-card > svg {
+    height: 27px !important;
+    width: 27px !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-summary-card > p {
+    font-size: 8px !important;
+    line-height: 1.45;
+    margin-top: 6px !important;
+    min-height: 0;
+  }
+
+  .admin-wallet-control-page .admin-wallet-summary-card > strong {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-control-grid {
+    gap: 9px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-control-card,
+  .admin-wallet-control-page .admin-wallet-ledger {
+    border-radius: 17px !important;
+    padding: 11px !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-control-card > div:first-child {
+    margin-bottom: 10px;
+    min-height: 0;
+    padding-bottom: 10px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-control-card > div:nth-child(2) {
+    border-radius: 13px;
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-form-field input,
+  .admin-wallet-control-page .admin-wallet-form-field select {
+    height: 40px !important;
+    min-height: 40px;
+    padding-inline: 10px !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-form-field textarea {
+    min-height: 68px !important;
+    padding: 9px 10px !important;
+  }
+
+  .admin-wallet-control-page .admin-wallet-action {
+    height: 42px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-ledger input {
+    height: 39px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-transaction {
+    border-radius: 13px;
+    gap: 7px;
+    padding: 9px 10px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-transaction-title {
+    font-size: 11px;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .admin-wallet-control-page .admin-wallet-transaction > div:last-child {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    text-align: right;
+  }
+}
+
+/* Logo-colored finish for the wallet workspace. */
+.admin-wallet-control-page {
+  --wallet-brown-950: #1e1b4b;
+  --wallet-brown-900: #312e81;
+  --wallet-brown-800: #5b21b6;
+  --wallet-brown-700: #6d28d9;
+  --wallet-copper: #8b5cf6;
+  --wallet-gold: #38bdf8;
+  background:
+    radial-gradient(circle at 96% 0%, rgba(168, 85, 247, 0.13), transparent 30%),
+    radial-gradient(circle at 4% 42%, rgba(37, 99, 235, 0.09), transparent 32%),
+    linear-gradient(145deg, rgba(248, 247, 255, 0.78), rgba(239, 246, 255, 0.45));
+  border-color: rgba(124, 58, 237, 0.12);
+}
+
+.admin-wallet-control-page .admin-wallet-hero {
+  background:
+    radial-gradient(circle at 8% -35%, rgba(56, 189, 248, 0.20), transparent 40%),
+    radial-gradient(circle at 96% 0%, rgba(168, 85, 247, 0.17), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(245, 243, 255, 0.96)) !important;
+  border-color: rgba(124, 58, 237, 0.20) !important;
+  box-shadow: 0 18px 52px rgba(76, 29, 149, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.admin-wallet-control-page .admin-wallet-hero::after {
+  background: linear-gradient(90deg, transparent, #2563eb, #7c3aed, #d946ef, transparent);
+}
+
+.admin-wallet-control-page .admin-wallet-hero > span {
+  background: linear-gradient(145deg, #7c3aed, #2563eb) !important;
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.28);
+}
+
+.admin-wallet-control-page .admin-wallet-hero > div > p:first-child {
+  color: #7c3aed !important;
+}
+
+.admin-wallet-control-page .admin-wallet-hero h1,
+.admin-wallet-control-page .admin-wallet-summary-card > strong,
+.admin-wallet-control-page .admin-wallet-control-card h2,
+.admin-wallet-control-page .admin-wallet-ledger h2,
+.admin-wallet-control-page .admin-wallet-transaction-title {
+  color: #1e1b4b !important;
+}
+
+.admin-wallet-control-page .admin-wallet-refresh {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(124, 58, 237, 0.20) !important;
+  color: #7c3aed !important;
+  flex: 0 0 auto !important;
+  padding: 0 !important;
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.admin-wallet-control-page .admin-wallet-refresh:hover {
+  background: #f5f3ff !important;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.16);
+  transform: rotate(10deg) translateY(-1px);
+}
+
+.admin-wallet-control-page .admin-wallet-hero > a {
+  background: linear-gradient(135deg, #6d28d9, #2563eb) !important;
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.22);
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(245, 243, 255, 0.94)) !important;
+  border-color: rgba(124, 58, 237, 0.15) !important;
+  box-shadow: 0 14px 34px rgba(76, 29, 149, 0.07);
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card:hover {
+  border-color: rgba(139, 92, 246, 0.42) !important;
+  box-shadow: 0 18px 44px rgba(76, 29, 149, 0.13);
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card > svg,
+.admin-wallet-control-page .admin-wallet-control-card > div:first-child > span {
+  background: rgba(124, 58, 237, 0.11) !important;
+  color: #7c3aed !important;
+}
+
+.admin-wallet-control-page .admin-wallet-summary-card > p,
+.admin-wallet-control-page .admin-wallet-form-field > span:first-child {
+  color: #6b5b8e !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card,
+.admin-wallet-control-page .admin-wallet-ledger {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(124, 58, 237, 0.14) !important;
+  box-shadow: 0 18px 48px rgba(76, 29, 149, 0.075) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card > div:first-child {
+  border-color: rgba(124, 58, 237, 0.10) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-control-card > div:nth-child(2) {
+  background: linear-gradient(145deg, rgba(245, 243, 255, 0.68), rgba(239, 246, 255, 0.62)) !important;
+  border-color: rgba(124, 58, 237, 0.13) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-form-field input,
+.admin-wallet-control-page .admin-wallet-form-field select,
+.admin-wallet-control-page .admin-wallet-form-field textarea,
+.admin-wallet-control-page .admin-wallet-ledger input {
+  border-color: rgba(124, 58, 237, 0.17) !important;
+  color: #1e1b4b !important;
+}
+
+.admin-wallet-control-page .admin-wallet-form-field input:focus,
+.admin-wallet-control-page .admin-wallet-form-field select:focus,
+.admin-wallet-control-page .admin-wallet-form-field textarea:focus,
+.admin-wallet-control-page .admin-wallet-ledger input:focus {
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.11) !important;
+}
+
+.admin-wallet-control-page .admin-wallet-action--default {
+  background: linear-gradient(135deg, #6d28d9, #2563eb) !important;
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.22);
+}
+
+.admin-wallet-control-page .admin-wallet-ledger .relative > svg {
+  color: #8b5cf6 !important;
+}
+
+.admin-wallet-control-page .admin-wallet-transaction {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(245, 243, 255, 0.46)) !important;
+  border-color: rgba(124, 58, 237, 0.12) !important;
+  box-shadow: 0 8px 22px rgba(76, 29, 149, 0.045);
+}
+
+html.dark .admin-wallet-control-page {
+  background:
+    radial-gradient(circle at 95% 0%, rgba(168, 85, 247, 0.15), transparent 32%),
+    radial-gradient(circle at 4% 42%, rgba(37, 99, 235, 0.11), transparent 34%),
+    linear-gradient(145deg, rgba(13, 10, 28, 0.82), rgba(5, 10, 24, 0.76));
+  border-color: rgba(139, 92, 246, 0.13);
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-hero {
+  background:
+    radial-gradient(circle at 95% 0%, rgba(168, 85, 247, 0.15), transparent 40%),
+    linear-gradient(135deg, rgba(25, 18, 49, 0.97), rgba(10, 17, 38, 0.97)) !important;
+  border-color: rgba(139, 92, 246, 0.20) !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-summary-card,
+html.dark .admin-wallet-control-page .admin-wallet-control-card,
+html.dark .admin-wallet-control-page .admin-wallet-ledger {
+  background: linear-gradient(145deg, rgba(22, 17, 43, 0.97), rgba(9, 16, 34, 0.97)) !important;
+  border-color: rgba(139, 92, 246, 0.15) !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-control-card > div:nth-child(2),
+html.dark .admin-wallet-control-page .admin-wallet-transaction {
+  background: linear-gradient(145deg, rgba(45, 30, 74, 0.46), rgba(8, 16, 35, 0.82)) !important;
+  border-color: rgba(139, 92, 246, 0.13) !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-form-field input,
+html.dark .admin-wallet-control-page .admin-wallet-form-field select,
+html.dark .admin-wallet-control-page .admin-wallet-form-field textarea,
+html.dark .admin-wallet-control-page .admin-wallet-ledger input {
+  background: rgba(7, 12, 28, 0.86) !important;
+  border-color: rgba(139, 92, 246, 0.15) !important;
+  color: #f8f7ff !important;
+}
+
+html.dark .admin-wallet-control-page .admin-wallet-refresh {
+  background: rgba(124, 58, 237, 0.10) !important;
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  color: #c4b5fd !important;
+}
+
+@media (max-width: 700px) {
+  .admin-wallet-control-page .admin-wallet-hero > div {
+    flex-basis: calc(100% - 48px);
+  }
+
+  .admin-wallet-control-page .admin-wallet-hero .admin-wallet-refresh {
+    flex: 0 0 36px !important;
+    height: 36px;
+    width: 36px;
+  }
+
+  .admin-wallet-control-page .admin-wallet-hero > a {
+    flex: 1 1 calc(100% - 44px);
+  }
+}
+
+/* Arabic-first typography for the users workspace and its portalled overlays. */
+.admin-users-page,
+.admin-user-drawer-layer,
+.admin-user-menu-popover {
+  font-family: "Noto Sans Arabic", "Noto Kufi Arabic", Tahoma, Arial, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+.admin-users-page button,
+.admin-users-page input,
+.admin-users-page select,
+.admin-users-page textarea,
+.admin-user-drawer-layer button,
+.admin-user-drawer-layer input,
+.admin-user-drawer-layer select,
+.admin-user-drawer-layer textarea,
+.admin-user-menu-popover button {
+  font-family: inherit;
+}
+
+.admin-users-page [dir="ltr"],
+.admin-user-drawer-layer [dir="ltr"],
+.admin-user-menu-popover [dir="ltr"] {
+  font-family: "Space Grotesk", "Segoe UI", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keep the four user summary cards on one row at every viewport size. */
+.admin-users-page .admin-users-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 640px) {
+  .admin-users-page .admin-users-stats {
+    gap: 5px;
+  }
+
+  .admin-users-page .admin-users-stat {
+    align-items: center;
+    border-radius: 14px;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+    min-height: 112px;
+    padding: 7px 3px;
+    text-align: center;
+  }
+
+  .admin-users-page .admin-users-stat div {
+    align-items: center;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-users-page .admin-users-stat-icon {
+    border-radius: 9px;
+    height: 28px;
+    width: 28px;
+  }
+
+  .admin-users-page .admin-users-stat-icon svg {
+    height: 14px;
+    width: 14px;
+  }
+
+  .admin-users-page .admin-users-stat p {
+    font-size: 8.5px;
+    line-height: 1.35;
+    min-height: 23px;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .admin-users-page .admin-users-stat strong {
+    font-size: 1.15rem;
+    line-height: 1;
+    margin: 0;
+  }
+}
+
+/* Extra-compact admin users search and filters. */
+.admin-users-page .admin-users-toolbar {
+  gap: 5px;
+  grid-template-columns: minmax(210px, 1fr) minmax(86px, 0.18fr) minmax(86px, 0.18fr) auto auto auto;
+  padding: 5px;
+}
+
+.admin-users-page .admin-users-search-field {
+  border-radius: 9px;
+  gap: 5px;
+  min-height: 30px;
+  padding-inline: 7px;
+}
+
+.admin-users-page .admin-users-search-field > svg {
+  height: 12px;
+  width: 12px;
+}
+
+.admin-users-page .admin-users-search-field input {
+  font-size: 9px !important;
+  min-height: 28px;
+}
+
+.admin-users-page .admin-users-search-field button {
+  border-radius: 7px;
+  height: 22px;
+  width: 22px;
+}
+
+.admin-users-page .admin-users-search-field button svg {
+  height: 11px;
+  width: 11px;
+}
+
+.admin-users-page .admin-users-filter-field {
+  gap: 2px;
+}
+
+.admin-users-page .admin-users-filter-field > span {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.admin-users-page .admin-users-filter-field select {
+  border-radius: 8px;
+  font-size: 9px;
+  min-height: 30px;
+  padding-inline: 7px;
+}
+
+.admin-users-page .admin-users-reset,
+.admin-users-page .admin-users-icon-button {
+  align-self: end;
+  border-radius: 8px;
+  font-size: 8.5px;
+  gap: 4px;
+  height: 30px;
+  min-height: 30px;
+  padding-inline: 8px;
+  white-space: nowrap;
+}
+
+.admin-users-page .admin-users-icon-button {
+  padding: 0;
+  width: 30px;
+}
+
+.admin-users-page .admin-users-reset svg,
+.admin-users-page .admin-users-icon-button svg {
+  height: 12px;
+  width: 12px;
+}
+
+@media (max-width: 640px) {
+  .admin-users-page .admin-users-toolbar {
+    gap: 4px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 4px;
+  }
+
+  .admin-users-page .admin-users-search-field {
+    grid-column: 1 / -1;
+  }
+
+  .admin-users-page .admin-users-icon-button {
+    justify-self: start;
+    width: 30px !important;
+  }
+
+  .admin-users-page .admin-users-reset {
+    width: 100%;
   }
 }

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { filterMainCategories, getCategories } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import HomeSlide from "../../components/home/HomeSlide";
-import { CategoriesGrid } from "../../components/home/HomeShowcase";
+import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
 
 export default function PublicCategories() {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ export default function PublicCategories() {
         ) : error ? (
           <EmptyState title={t("public.categoriesLoadError")} description={error} />
         ) : categories.length ? (
-          <CategoriesGrid categories={categories} layout="two" onCategorySelect={openCategory} />
+          <CategoryShowcaseSection categories={categories} onSelect={openCategory} showHeading={false} />
         ) : (
           <EmptyState title={t("public.categoriesEmptyTitle")} description={t("public.categoriesEmptyDescription")} />
         )}

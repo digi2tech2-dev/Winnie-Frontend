@@ -37,11 +37,11 @@ export function buildReferralInviteLink(referralCode) {
   if (!code) return "";
 
   if (typeof window === "undefined" || !window.location?.origin) {
-    return `/register?inviteCode=${encodeURIComponent(code)}`;
+    return `/register?ref=${encodeURIComponent(code)}`;
   }
 
   const url = new URL("/register", window.location.origin);
-  url.searchParams.set("inviteCode", code);
+  url.searchParams.set("ref", code);
   return url.toString();
 }
 
@@ -206,6 +206,24 @@ export async function getMySubAgentReferredUsers(token, query = {}) {
 }
 
 export async function submitSubAgentRequest(token, payload = {}) {
+  if (payload.proofImageFile) {
+    const formData = new FormData();
+    const message = payload.requestedMessage || payload.message || payload.reason;
+    if (message) formData.append("requestedMessage", message);
+    formData.append("proofImage", payload.proofImageFile);
+
+    const response = await apiRequest("/me/sub-agent/request", {
+      method: "POST",
+      token,
+      body: formData,
+    });
+
+    return {
+      message: response.message,
+      request: response.data?.request || response.data,
+    };
+  }
+
   const response = await apiRequest("/me/sub-agent/request", {
     method: "POST",
     token,

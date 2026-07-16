@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeDollarSign, CheckCircle2, Copy, Edit3, RefreshCw, UsersRound, XCircle } from "lucide-react";
+import { BadgeDollarSign, CheckCircle2, Edit3, RefreshCw, UsersRound, XCircle } from "lucide-react";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -17,10 +17,10 @@ import { GROUP_REQUEST_STATUS } from "../../api/groupRequests";
 import { useAuth } from "../../context/AuthContext";
 
 const tabs = [
-  ["requests", "Requests"],
-  ["agents", "Sub-agents"],
-  ["commissions", "Commissions"],
-  ["referred", "Referred users"],
+  ["requests", "الطلبات"],
+  ["agents", "الوكلاء الفرعيون"],
+  ["commissions", "العمولات"],
+  ["referred", "المستخدمون المُحالون"],
 ];
 
 export default function AdminSubAgentsPage() {
@@ -48,7 +48,7 @@ export default function AdminSubAgentsPage() {
     setError("");
     try {
       const [requestsResult, agentsResult, commissionsResult, groupsResult] = await Promise.all([
-        getSubAgentRequests(token, { status: GROUP_REQUEST_STATUS.PENDING, page: 1, limit: 50 }),
+        getSubAgentRequests(token, { page: 1, limit: 50 }),
         getSubAgents(token, { page: 1, limit: 50 }),
         getSubAgentCommissions(token, { page: 1, limit: 50 }),
         getAdminGroups(token),
@@ -59,9 +59,9 @@ export default function AdminSubAgentsPage() {
       setGroups(groupsResult.groups);
       setSelectedAgentId((current) => current || agentsResult.subAgents[0]?.userId || "");
     } catch (requestError) {
-      const message = requestError.userMessage || "Unable to load sub-agent data.";
+      const message = requestError.userMessage || "تعذر تحميل بيانات الوكلاء الفرعيين.";
       setError(message);
-      showToast({ type: "error", title: "Load failed", message });
+      showToast({ type: "error", title: "فشل التحميل", message });
     } finally {
       setLoading(false);
     }
@@ -92,11 +92,11 @@ export default function AdminSubAgentsPage() {
     setBusy(`approve:${approveRequest.id}`);
     try {
       await approveSubAgentRequest(token, approveRequest.id, values);
-      showToast({ type: "success", title: "Sub-agent approved" });
+      showToast({ type: "success", title: "تم قبول الوكيل الفرعي" });
       setApproveRequest(null);
       await loadData();
     } catch (requestError) {
-      showToast({ type: "error", title: "Approval failed", message: requestError.userMessage || "Check group and percent." });
+      showToast({ type: "error", title: "فشل القبول", message: requestError.userMessage || "تحقق من المجموعة المحددة." });
     } finally {
       setBusy("");
     }
@@ -107,11 +107,11 @@ export default function AdminSubAgentsPage() {
     setBusy(`reject:${rejectRequest.id}`);
     try {
       await rejectSubAgentRequest(token, rejectRequest.id, { rejectionReason: reason });
-      showToast({ type: "warning", title: "Sub-agent request rejected" });
+      showToast({ type: "warning", title: "تم رفض طلب الوكيل الفرعي" });
       setRejectRequest(null);
       await loadData();
     } catch (requestError) {
-      showToast({ type: "error", title: "Reject failed", message: requestError.userMessage || "Unable to reject request." });
+      showToast({ type: "error", title: "فشل الرفض", message: requestError.userMessage || "تعذر رفض الطلب." });
     } finally {
       setBusy("");
     }
@@ -122,11 +122,11 @@ export default function AdminSubAgentsPage() {
     setBusy(`agent:${editAgent.userId}`);
     try {
       await updateSubAgent(token, editAgent.userId, values);
-      showToast({ type: "success", title: "Sub-agent updated" });
+      showToast({ type: "success", title: "تم تحديث الوكيل الفرعي" });
       setEditAgent(null);
       await loadData();
     } catch (requestError) {
-      showToast({ type: "error", title: "Update failed", message: requestError.userMessage || "Unable to update sub-agent." });
+      showToast({ type: "error", title: "فشل التحديث", message: requestError.userMessage || "تعذر تحديث الوكيل الفرعي." });
     } finally {
       setBusy("");
     }
@@ -207,29 +207,48 @@ function Header({ loading, onRefresh }) {
     <section className="flex items-center gap-3 rounded-lg border border-violet-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
       <BadgeDollarSign className="h-9 w-9 rounded-lg bg-violet-500/10 p-2 text-violet-600" />
       <div className="min-w-0 flex-1">
-        <h1 className="text-xl font-black dark:text-white">Sub-agent system</h1>
-        <p className="text-xs font-bold text-slate-500">Approve requests, manage commission percent, groups, status, and ledger.</p>
+        <h1 className="text-xl font-black dark:text-white">نظام الوكلاء الفرعيين</h1>
+        <p className="text-xs font-bold text-slate-500">قبول الطلبات وإدارة نسبة العمولة والمجموعات والحالة وسجل العمليات.</p>
       </div>
       <button onClick={onRefresh} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-lg bg-violet-600 px-4 text-xs font-black text-white disabled:opacity-60">
         <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        Refresh
+        تحديث
       </button>
     </section>
   );
 }
 
 function RequestTab({ onApprove, onReject, requests }) {
-  if (!requests.length) return <EmptyState icon={UsersRound} title="No pending requests" description="New sub-agent requests will appear here." />;
+  if (!requests.length) return <EmptyState icon={UsersRound} title="لا توجد طلبات معلقة" description="ستظهر طلبات الوكلاء الفرعيين الجديدة هنا." />;
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       {requests.map((request) => (
         <Panel key={request.id}>
-          <RowTitle title={request.user?.name || "User"} subtitle={request.user?.email || request.createdAtLabel} />
-          <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">{request.reason || "No message."}</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button onClick={() => onReject(request)} className="h-10 rounded-lg bg-rose-500/10 text-xs font-black text-rose-700">Reject</button>
-            <button onClick={() => onApprove(request)} className="h-10 rounded-lg bg-emerald-600 text-xs font-black text-white">Approve</button>
+          <RowTitle title={request.user?.name || "مستخدم"} subtitle={request.user?.email || request.createdAtLabel} />
+          <div className="mt-2 flex items-center gap-2">
+            <Status status={request.status} />
+            <span className="text-xs font-bold text-slate-400">{request.reviewedAtLabel || request.createdAtLabel}</span>
           </div>
+          <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">{request.reason || "لا توجد رسالة."}</p>
+          {request.proofImageUrl ? (
+            <a
+              href={request.proofImageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs font-black text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200"
+            >
+              <img src={request.proofImageUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
+              <span className="min-w-0 flex-1 truncate">{request.proofImageOriginalName || "عرض صورة الإثبات"}</span>
+            </a>
+          ) : (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs font-black text-amber-700">لا توجد صورة إثبات مرفقة.</p>
+          )}
+          {request.status === GROUP_REQUEST_STATUS.PENDING ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={() => onReject(request)} className="h-10 rounded-lg bg-rose-500/10 text-xs font-black text-rose-700">رفض</button>
+              <button onClick={() => onApprove(request)} className="h-10 rounded-lg bg-emerald-600 text-xs font-black text-white">قبول</button>
+            </div>
+          ) : null}
         </Panel>
       ))}
     </div>
@@ -237,7 +256,7 @@ function RequestTab({ onApprove, onReject, requests }) {
 }
 
 function AgentsTab({ agents, onEdit }) {
-  if (!agents.length) return <EmptyState icon={UsersRound} title="No approved sub-agents" description="Approved users will appear here." />;
+  if (!agents.length) return <EmptyState icon={UsersRound} title="لا يوجد وكلاء فرعيون مقبولون" description="سيظهر المستخدمون المقبولون هنا." />;
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       {agents.map((agent) => (
@@ -247,16 +266,16 @@ function AgentsTab({ agents, onEdit }) {
             <Status status={agent.status} />
           </div>
           <div className="mt-3 grid gap-2 text-xs font-bold text-slate-500 md:grid-cols-2">
-            <span dir="ltr">Code: {agent.code || "-"}</span>
-            <span>{agent.commissionPercent}% commission</span>
-            <span>Group: {agent.group?.name || "-"}</span>
-            <span>Approved: {agent.approvedAtLabel || "-"}</span>
-            <span>Pending: {formatTotals(agent.totalPendingCommissions)}</span>
-            <span>Paid: {formatTotals(agent.totalPaidCommissions)}</span>
+            <span dir="ltr">الكود: {agent.code || "-"}</span>
+            <span>العمولة: {agent.commissionPercent}%</span>
+            <span>المجموعة: {agent.group?.name || "-"}</span>
+            <span>تاريخ القبول: {agent.approvedAtLabel || "-"}</span>
+            <span>المعلقة: {formatTotals(agent.totalPendingCommissions)}</span>
+            <span>المدفوعة: {formatTotals(agent.totalPaidCommissions)}</span>
           </div>
           <button onClick={() => onEdit(agent)} className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-black text-white dark:bg-white dark:text-slate-950">
             <Edit3 className="h-4 w-4" />
-            Edit
+            تعديل
           </button>
         </Panel>
       ))}
@@ -265,19 +284,19 @@ function AgentsTab({ agents, onEdit }) {
 }
 
 function CommissionsTab({ rows }) {
-  if (!rows.length) return <EmptyState icon={BadgeDollarSign} title="No commission records" description="Real top-up commissions will appear here." />;
+  if (!rows.length) return <EmptyState icon={BadgeDollarSign} title="لا توجد سجلات عمولات" description="ستظهر عمولات شحن الرصيد الفعلية هنا." />;
   return (
     <Panel>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="text-xs text-slate-500">
             <tr className="border-b border-slate-100 dark:border-white/10">
-              <th className="py-2 text-start">Agent</th>
-              <th className="py-2 text-start">User</th>
-              <th className="py-2 text-start">Source</th>
-              <th className="py-2 text-start">Top-up</th>
-              <th className="py-2 text-start">Commission</th>
-              <th className="py-2 text-start">Status</th>
+              <th className="py-2 text-start">الوكيل</th>
+              <th className="py-2 text-start">المستخدم</th>
+              <th className="py-2 text-start">المصدر</th>
+              <th className="py-2 text-start">قيمة الشحن</th>
+              <th className="py-2 text-start">العمولة</th>
+              <th className="py-2 text-start">الحالة</th>
             </tr>
           </thead>
           <tbody>
@@ -285,7 +304,7 @@ function CommissionsTab({ rows }) {
               <tr key={row.id} className="border-b border-slate-100 last:border-b-0 dark:border-white/10">
                 <td className="py-3 font-bold dark:text-white">{row.inviterUserId?.name || row.agent?.name || "-"}</td>
                 <td className="py-3">{row.invitedUser?.name || "-"}</td>
-                <td className="py-3">{row.sourceTypeLabel}</td>
+                <td className="py-3">{translateSourceType(row.sourceType)}</td>
                 <td className="py-3">{row.sourceAmountLabel}</td>
                 <td className="py-3 font-black text-emerald-600">{row.amountLabel}</td>
                 <td className="py-3"><Status status={row.status} /></td>
@@ -305,13 +324,13 @@ function ReferredTab({ agents, rows, selectedAgentId, setSelectedAgentId }) {
         {agents.map((agent) => <option key={agent.userId} value={agent.userId}>{agent.name} - {agent.code}</option>)}
       </select>
       {!rows.length ? (
-        <EmptyState icon={UsersRound} title="No referred users" description="Direct referred users for the selected agent will appear here." />
+        <EmptyState icon={UsersRound} title="لا يوجد مستخدمون مُحالون" description="سيظهر المستخدمون المُحالون مباشرة بواسطة الوكيل المحدد هنا." />
       ) : (
         <div className="grid gap-2">
           {rows.map((row) => (
             <div key={row.id} className="grid gap-2 rounded-lg border border-slate-100 p-3 text-sm dark:border-white/10 md:grid-cols-[1fr_auto_auto]">
-              <RowTitle title={row.user?.name || "User"} subtitle={row.user?.email || row.user?.phone || "-"} />
-              <span className="text-xs font-bold text-slate-500">Until: {row.commissionEligibleUntilLabel || "-"}</span>
+              <RowTitle title={row.user?.name || "مستخدم"} subtitle={row.user?.email || row.user?.phone || "-"} />
+              <span className="text-xs font-bold text-slate-500">استحقاق العمولة حتى: {row.commissionEligibleUntilLabel || "-"}</span>
               <Status status={row.commissionStatus} />
             </div>
           ))}
@@ -322,30 +341,26 @@ function ReferredTab({ agents, rows, selectedAgentId, setSelectedAgentId }) {
 }
 
 function ApproveModal({ busy, groups, onClose, onSubmit, request }) {
-  const [groupId, setGroupId] = useState(groups[0]?.id || "");
-  const [percent, setPercent] = useState("1");
+  const [groupId, setGroupId] = useState(request.approvedGroup?.id || groups[0]?.id || "");
   const [adminNote, setAdminNote] = useState("");
 
   const submit = () => {
-    if (!groupId || percent === "") return;
-    onSubmit({ approvedGroupId: groupId, approvedCommissionPercent: Number(percent), adminNote });
+    if (!groupId) return;
+    onSubmit({ approvedGroupId: groupId, adminNote });
   };
 
   return (
-    <Modal title={`Approve ${request.user?.name || "user"}`} onClose={onClose}>
-      <Field label="Assigned group">
+    <Modal title={`قبول ${request.user?.name || "المستخدم"}`} onClose={onClose}>
+      <Field label="المجموعة المعيّنة">
         <select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="input">
-          <option value="">Select group</option>
+          <option value="">اختر المجموعة</option>
           {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
         </select>
       </Field>
-      <Field label="Commission percent">
-        <input value={percent} onChange={(event) => setPercent(event.target.value)} type="number" min="0" max="100" step="0.01" className="input" />
-      </Field>
-      <Field label="Admin note">
+      <Field label="ملاحظة الإدارة">
         <textarea value={adminNote} onChange={(event) => setAdminNote(event.target.value)} className="input min-h-20" />
       </Field>
-      <ModalActions busy={busy} disabled={!groupId || percent === ""} onClose={onClose} onSubmit={submit} submitLabel="Approve" />
+      <ModalActions busy={busy} disabled={!groupId} onClose={onClose} onSubmit={submit} submitLabel="قبول" />
     </Modal>
   );
 }
@@ -353,11 +368,11 @@ function ApproveModal({ busy, groups, onClose, onSubmit, request }) {
 function RejectModal({ busy, onClose, onSubmit, request }) {
   const [reason, setReason] = useState("");
   return (
-    <Modal title={`Reject ${request.user?.name || "request"}`} onClose={onClose}>
-      <Field label="Rejection reason">
+    <Modal title={`رفض طلب ${request.user?.name || "المستخدم"}`} onClose={onClose}>
+      <Field label="سبب الرفض">
         <textarea value={reason} onChange={(event) => setReason(event.target.value)} className="input min-h-24" />
       </Field>
-      <ModalActions busy={busy} onClose={onClose} onSubmit={() => onSubmit(reason)} submitLabel="Reject" tone="danger" />
+      <ModalActions busy={busy} onClose={onClose} onSubmit={() => onSubmit(reason)} submitLabel="رفض" tone="danger" />
     </Modal>
   );
 }
@@ -367,19 +382,19 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
   const [percent, setPercent] = useState(String(agent.commissionPercent ?? 0));
   const [status, setStatus] = useState(agent.status || "active");
   return (
-    <Modal title={`Edit ${agent.name}`} onClose={onClose}>
-      <Field label="Assigned group">
+    <Modal title={`تعديل ${agent.name}`} onClose={onClose}>
+      <Field label="المجموعة المعيّنة">
         <select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="input">
           {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
         </select>
       </Field>
-      <Field label="Commission percent">
+      <Field label="نسبة العمولة">
         <input value={percent} onChange={(event) => setPercent(event.target.value)} type="number" min="0" max="100" step="0.01" className="input" />
       </Field>
-      <Field label="Status">
+      <Field label="الحالة">
         <select value={status} onChange={(event) => setStatus(event.target.value)} className="input">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
         </select>
       </Field>
       <ModalActions
@@ -387,7 +402,7 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
         disabled={!groupId || percent === ""}
         onClose={onClose}
         onSubmit={() => onSubmit({ groupId, commissionPercent: Number(percent), status })}
-        submitLabel="Save"
+        submitLabel="حفظ"
       />
     </Modal>
   );
@@ -412,7 +427,7 @@ function ModalActions({ busy, disabled, onClose, onSubmit, submitLabel, tone = "
   const submitClass = tone === "danger" ? "bg-rose-600" : "bg-emerald-600";
   return (
     <div className="grid grid-cols-2 gap-2">
-      <button type="button" onClick={onClose} disabled={busy} className="h-10 rounded-lg border border-slate-200 text-xs font-black dark:border-white/10 dark:text-white">Cancel</button>
+      <button type="button" onClick={onClose} disabled={busy} className="h-10 rounded-lg border border-slate-200 text-xs font-black dark:border-white/10 dark:text-white">إلغاء</button>
       <button type="button" onClick={onSubmit} disabled={busy || disabled} className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg text-xs font-black text-white disabled:opacity-60 ${submitClass}`}>
         {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
         {submitLabel}
@@ -452,7 +467,40 @@ function Status({ status }) {
     : good
       ? "bg-emerald-500/10 text-emerald-700"
       : "bg-slate-500/10 text-slate-600";
-  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${classes}`}>{normalized || "-"}</span>;
+  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${classes}`}>{translateStatus(normalized)}</span>;
+}
+
+function translateStatus(status) {
+  const labels = {
+    active: "نشط",
+    approved: "مقبول",
+    cancelled: "ملغي",
+    completed: "مكتمل",
+    credited: "تمت الإضافة",
+    eligible: "مؤهل",
+    failed: "فشل",
+    inactive: "غير نشط",
+    paid: "مدفوعة",
+    pending: "معلقة",
+    skipped: "تم التجاوز",
+    stopped: "متوقف",
+    unknown: "غير معروف",
+  };
+  return labels[status] || (status ? "حالة غير معروفة" : "-");
+}
+
+function translateSourceType(sourceType) {
+  const normalized = String(sourceType || "").toUpperCase();
+  const labels = {
+    ADMIN_CREDIT: "إضافة رصيد إدارية",
+    DEPOSIT: "إيداع",
+    MANUAL_DEPOSIT: "إيداع يدوي",
+    PAYMENT: "عملية دفع",
+    REFERRAL_SOURCE: "مصدر إحالة",
+    TOP_UP: "شحن رصيد",
+    WALLET_TOP_UP: "شحن المحفظة",
+  };
+  return labels[normalized] || (normalized ? "مصدر غير معروف" : "-");
 }
 
 function formatTotals(totals = []) {

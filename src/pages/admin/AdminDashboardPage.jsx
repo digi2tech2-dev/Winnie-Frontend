@@ -481,13 +481,26 @@ export default function AdminDashboardPage() {
 
   return (
     <div dir="rtl" className="admin-dashboard space-y-3">
-      <section className="admin-dashboard-top">
-        <div className="admin-dashboard-hero-copy min-w-0">
-          <p className="admin-dashboard-kicker">مركز إدارة المنصة</p>
-          <h1>لوحة الإدارة</h1>
-          <p className="admin-dashboard-refresh">
-            آخر تحديث {formatRefreshTime(dashboard?.refreshedAt)}
-          </p>
+      <section className="admin-dashboard-top admin-platform-hero">
+        <span className="admin-platform-hero-orb admin-platform-hero-orb-one" aria-hidden="true" />
+        <span className="admin-platform-hero-orb admin-platform-hero-orb-two" aria-hidden="true" />
+
+        <div className="admin-dashboard-hero-copy admin-platform-hero-copy min-w-0">
+          <span className="admin-platform-hero-icon" aria-hidden="true">
+            <Server className="h-6 w-6" />
+          </span>
+          <div className="min-w-0">
+            <p className="admin-dashboard-kicker">
+              <i aria-hidden="true" />
+              مركز إدارة المنصة
+            </p>
+            <h1>لوحة الإدارة</h1>
+            <p className="admin-dashboard-refresh">
+              <Clock3 className="h-3.5 w-3.5" />
+              <span>آخر تحديث</span>
+              <bdi dir="ltr">{formatRefreshTime(dashboard?.refreshedAt)}</bdi>
+            </p>
+          </div>
         </div>
         <div className="admin-top-actions">
           <span className="admin-dashboard-live-pill">

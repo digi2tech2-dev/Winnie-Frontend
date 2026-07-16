@@ -26,7 +26,7 @@ const customerPages = [
   ["/customer/dashboard", "nav.home", "nav.dashboardMeta", "Home"],
   ["/customer/favorites", "nav.favorites", "nav.favoritesMeta", "Heart"],
   ["/customer/categories", "nav.categories", "nav.categoriesMeta", "ListChecks"],
-  ["/customer/orders", "nav.orders", "nav.ordersMeta", "ClipboardList"],
+  ["/customer/orders", "nav.orders", "nav.ordersMeta", "ShoppingCart"],
   ["/customer/wallet", "nav.wallet", "nav.walletMeta", "WalletCards"],
   ["/customer/sub-agent", "nav.subAgent", "nav.subAgentMeta", "UserPlus"],
   ["/customer/notifications", "nav.notifications", "nav.notificationsMeta", "Bell"],

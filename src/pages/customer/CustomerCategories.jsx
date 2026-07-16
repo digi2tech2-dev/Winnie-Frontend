@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { filterMainCategories, getCustomerCatalog } from "../../api/catalog";
 import HomeSlide from "../../components/home/HomeSlide";
-import { CategoriesGrid } from "../../components/home/HomeShowcase";
+import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
 import EmptyState from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
 
@@ -67,7 +67,7 @@ export default function CustomerCategories({ basePath = "/customer" }) {
         ) : error ? (
           <EmptyState title={t("public.categoriesLoadError")} description={error} />
         ) : categories.length ? (
-          <CategoriesGrid categories={categories} layout="two" onCategorySelect={openCategory} />
+          <CategoryShowcaseSection categories={categories} onSelect={openCategory} showHeading={false} />
         ) : (
           <EmptyState title={t("public.categoriesEmptyTitle")} description={t("public.categoriesEmptyDescription")} />
         )}

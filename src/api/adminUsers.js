@@ -158,19 +158,48 @@ export async function updateAdminUserCurrency(token, id, currency, reason = "Adm
   };
 }
 
-export async function updateAdminUserCountry(token, id, country) {
-  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
-    body: {
-      country: String(country || "").trim(),
+export async function updateAdminUserCountry(token, id, country, { currentName } = {}) {
+  const userId = encodeURIComponent(id);
+  const normalizedCountry = String(country || "").trim();
+  const attempts = [
+    {
+      path: `/admin/users/${userId}`,
+      body: compactObject({ country: normalizedCountry, name: currentName }),
     },
-    method: "PATCH",
-    token,
-  });
+    {
+      path: `/admin/users/${userId}/country`,
+      body: { country: normalizedCountry },
+    },
+    {
+      path: `/admin/users/${userId}/profile`,
+      body: { country: normalizedCountry },
+    },
+  ];
+  let lastError;
 
-  return {
-    message: response.message,
-    user: normalizeAdminUser(response.data?.user || response.data || {}),
-  };
+  for (const attempt of attempts) {
+    try {
+      const response = await apiRequest(attempt.path, {
+        body: attempt.body,
+        method: "PATCH",
+        token,
+      });
+      const user = normalizeAdminUser(response.data?.user || response.data || {});
+      if (String(user.country || "").trim() === normalizedCountry) {
+        return { message: response.message, user };
+      }
+    } catch (error) {
+      lastError = error;
+      const status = Number(error?.status || error?.statusCode || 0);
+      const isCompatibilityError = [400, 404, 405, 422].includes(status) || /at least one field/i.test(String(error?.message || error?.userMessage || ""));
+      if (!isCompatibilityError) throw error;
+    }
+  }
+
+  const unsupportedError = new Error("The server did not persist the country update.");
+  unsupportedError.userMessage = "الخادم لم يحفظ الدولة الجديدة. يجب تفعيل حقل الدولة في صلاحيات تحديث المستخدمين على الخادم.";
+  unsupportedError.cause = lastError;
+  throw unsupportedError;
 }
 
 export async function updateUserIdentityVerification(token, id, { required, reason } = {}) {

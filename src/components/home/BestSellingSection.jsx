@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { sortProductsByBestSelling } from "../../utils/bestSellingProducts";
 import HomeProductCard from "./HomeProductCard";
+import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
 const maxBestSellingItems = 6;
 
@@ -28,24 +29,20 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex h-10 items-center gap-2 rounded-[14px] bg-white px-3 text-sm font-black text-violet-700 shadow-[0_10px_24px_rgba(76,29,149,0.08)] ring-1 ring-violet-100 transition hover:bg-violet-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 dark:bg-slate-900 dark:text-violet-200 dark:ring-white/10 dark:hover:bg-white/10"
+            className="inline-flex h-7 items-center gap-1 rounded-full border border-slate-200/70 bg-white/35 px-2.5 text-[10px] font-black text-slate-400 shadow-[0_3px_10px_rgba(15,23,42,0.04)] backdrop-blur-sm transition hover:border-violet-200 hover:bg-violet-50/60 hover:text-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 dark:border-white/10 dark:bg-white/[0.025] dark:text-slate-500 dark:hover:border-violet-400/20 dark:hover:bg-violet-400/[0.06] dark:hover:text-violet-300"
           >
             {t("showcase.viewAll")}
-            <ArrowIcon className="h-4 w-4" />
+            <ArrowIcon className="h-3 w-3 stroke-[2.4]" />
           </button>
         ) : null}
       </div>
-      <div className="homepage-product-row">
+      <HorizontalProductCarousel label={t("homePage.bestSellers")}>
         {bestSellingItems.map((item, index) => (
-          <HomeProductCard
-            key={item.id || item._id || item.slug || item.name}
-            product={item}
-            index={index}
-            onSelect={onSelect}
-            variant="featured"
-          />
+          <div key={item.id || item._id || item.slug || item.name} dir={isArabic ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
+            <HomeProductCard product={item} index={index} onSelect={onSelect} variant="featured" />
+          </div>
         ))}
-      </div>
+      </HorizontalProductCarousel>
     </section>
   );
 }

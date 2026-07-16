@@ -128,10 +128,10 @@ export default function HomeSlide({ categoriesPath = "/categories", subAgentPath
             : "border-violet-100/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(248,250,252,0.94)_48%,rgba(245,243,255,0.92))] dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(7,10,24,0.96)_48%,rgba(124,58,237,0.18))]"
         }`}
       >
-        <span aria-hidden="true" className={`pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-cyan-300/28 to-transparent blur-2xl transition-opacity duration-300 dark:from-cyan-400/18 ${focused ? "opacity-100" : "opacity-60"}`} />
-        <span aria-hidden="true" className={`pointer-events-none absolute -left-8 bottom-[-18px] h-24 w-24 rounded-full bg-fuchsia-300/22 blur-2xl transition-opacity duration-300 dark:bg-fuchsia-400/15 ${focused ? "opacity-100" : "opacity-50"}`} />
+        <span aria-hidden="true" className={`pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-rose-300/30 to-transparent blur-2xl transition-opacity duration-300 dark:from-rose-400/18 ${focused ? "opacity-100" : "opacity-60"}`} />
+        <span aria-hidden="true" className={`pointer-events-none absolute -left-8 bottom-[-18px] h-24 w-24 rounded-full bg-fuchsia-300/25 blur-2xl transition-opacity duration-300 dark:bg-fuchsia-400/18 ${focused ? "opacity-100" : "opacity-50"}`} />
 
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,#22D3EE,#7C3AED,#EC4899)] text-white shadow-[0_10px_20px_rgba(124,58,237,0.26)] transition duration-300 group-hover:scale-105">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,#F43F5E,#D946EF_52%,#7C3AED)] text-white shadow-[0_7px_18px_rgba(217,70,239,0.38),0_0_0_1px_rgba(244,63,94,0.12)] transition duration-300 group-hover:scale-105 group-hover:shadow-[0_9px_22px_rgba(217,70,239,0.48),0_0_14px_rgba(244,114,182,0.30)]">
           <Search className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1 truncate text-[15px] font-black leading-none tracking-[-0.01em] text-slate-900 drop-shadow-[0_1px_0_rgba(255,255,255,0.75)] sm:text-base dark:text-white dark:drop-shadow-[0_0_12px_rgba(168,85,247,0.28)]">

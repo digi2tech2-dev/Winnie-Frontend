@@ -157,16 +157,17 @@ export default function CustomerHeader({
             <div ref={notificationsRef} className="relative">
               <button
                 type="button"
-                className="relative grid h-11 w-11 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#A855F7] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A] sm:h-12 sm:w-12"
+                className="group relative isolate grid h-11 w-11 place-items-center overflow-visible rounded-2xl border border-sky-200/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(224,242,254,0.92)_48%,rgba(237,233,254,0.94))] text-sky-600 shadow-[0_10px_26px_rgba(14,165,233,0.16),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:text-violet-600 hover:shadow-[0_14px_30px_rgba(124,58,237,0.18),0_0_20px_rgba(34,211,238,0.16)] dark:border-cyan-300/20 dark:bg-[linear-gradient(145deg,rgba(8,15,32,0.96),rgba(12,31,52,0.94)_48%,rgba(40,20,70,0.92))] dark:text-cyan-300 dark:shadow-[0_0_22px_rgba(34,211,238,0.12)] dark:hover:border-fuchsia-400/45 dark:hover:text-fuchsia-300 sm:h-12 sm:w-12"
                 aria-expanded={notificationsOpen}
                 aria-haspopup="dialog"
                 aria-label={t("nav.notifications")}
                 title={t("nav.notifications")}
                 onClick={toggleNotifications}
               >
-                <Bell className="h-6 w-6 stroke-[1.8]" />
+                <span aria-hidden="true" className="absolute inset-1.5 -z-10 rounded-xl bg-white/45 opacity-70 transition group-hover:bg-white/70 dark:bg-white/[0.04] dark:group-hover:bg-fuchsia-400/[0.08]" />
+                <Bell className="h-6 w-6 stroke-[2] drop-shadow-[0_3px_8px_rgba(14,165,233,0.24)] transition duration-300 group-hover:-rotate-6 group-hover:scale-105 dark:drop-shadow-[0_0_8px_rgba(34,211,238,0.38)]" />
                 {unreadNotificationCount > 0 && (
-                  <span className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#A855F7] px-1 text-[11px] font-black leading-none text-white shadow-[0_0_16px_rgba(168,85,247,0.80)]">
+                  <span dir="ltr" className="absolute -right-1.5 -top-1.5 inline-flex h-[21px] min-w-[21px] items-center justify-center rounded-full border-2 border-white bg-[linear-gradient(135deg,#F43F5E,#D946EF_52%,#7C3AED)] px-1 text-[9px] font-black tabular-nums leading-none tracking-[-0.02em] text-white shadow-[0_5px_14px_rgba(217,70,239,0.48),0_0_0_1px_rgba(244,63,94,0.12)] dark:border-[#080F20] dark:shadow-[0_0_14px_rgba(244,114,182,0.62)]">
                     {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                   </span>
                 )}
@@ -180,7 +181,7 @@ export default function CustomerHeader({
                       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-sky-500 text-white shadow-[0_10px_28px_rgba(124,58,237,0.35)]"><Bell className="h-5 w-5" /></span>
                       <div><h2 className="font-black text-slate-950 dark:text-white">{t("notifications:previewTitle")}</h2><p className="mt-0.5 text-[10px] font-bold text-slate-400">{t("notifications:previewHint")}</p></div>
                     </div>
-                    {unreadNotificationCount > 0 ? <span className="relative rounded-full bg-violet-600 px-2.5 py-1 text-[10px] font-black text-white shadow-[0_6px_18px_rgba(124,58,237,0.3)]">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span> : null}
+                    {unreadNotificationCount > 0 ? <span dir="ltr" className="relative inline-flex min-h-6 min-w-6 items-center justify-center rounded-full border border-white/80 bg-[linear-gradient(135deg,#F43F5E,#D946EF_52%,#7C3AED)] px-2 text-[10px] font-black tabular-nums text-white shadow-[0_7px_18px_rgba(217,70,239,0.38)] dark:border-white/15">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span> : null}
                   </div>
 
                   <div className="max-h-[390px] overflow-y-auto">

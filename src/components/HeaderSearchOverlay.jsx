@@ -30,7 +30,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
         searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
       };
     });
-  }, [providedProducts]);
+  }, [providedProducts, t]);
 
   const shownProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -76,10 +76,12 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
     }
 
     const categoryTarget = product.groupId || product.categorySlug || product.categoryId;
-    const target = mode === "customer" && categoryTarget
-      ? `/customer/categories/${categoryTarget}`
-      : mode === "customer"
-        ? "/customer/dashboard#best-selling"
+    const customerBasePath = mode === "admin-user" ? "/admin/user" : "/customer";
+    const isAuthenticatedCatalog = mode === "customer" || mode === "admin-user";
+    const target = isAuthenticatedCatalog && categoryTarget
+      ? `${customerBasePath}/categories/${categoryTarget}`
+      : isAuthenticatedCatalog
+        ? `${customerBasePath}/dashboard#best-selling`
         : categoryTarget
           ? `/categories/${categoryTarget}`
           : "/categories";
@@ -193,6 +195,17 @@ function SearchProductCard({ product, onClick }) {
       <span className={`relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-gradient-to-br ${tone}`}>
         <span className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.38),transparent_32%),linear-gradient(180deg,transparent,rgba(2,6,23,0.34))]" />
         <Icon className="relative h-5 w-5 text-white drop-shadow-lg transition group-hover:scale-110" />
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="absolute inset-0 h-full w-full bg-white object-cover transition duration-300 group-hover:scale-105 dark:bg-[#111827]"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
       </span>
       <span className="block min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
