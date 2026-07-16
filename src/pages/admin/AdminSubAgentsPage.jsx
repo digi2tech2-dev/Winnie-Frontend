@@ -267,8 +267,9 @@ function AgentsTab({ agents, onEdit }) {
           </div>
           <div className="mt-3 grid gap-2 text-xs font-bold text-slate-500 md:grid-cols-2">
             <span dir="ltr">الكود: {agent.code || "-"}</span>
-            <span>العمولة: {agent.commissionPercent}%</span>
+            <span>العمولة: {agent.usingDefaultCommission ? `الافتراضي ${agent.defaultCommissionPercent}%` : `مخصص ${agent.referralCommissionPercentOverride}%`}</span>
             <span>المجموعة: {agent.group?.name || "-"}</span>
+            <span>المستخدمون المحالون: {agent.referredUsersCount}</span>
             <span>تاريخ القبول: {agent.approvedAtLabel || "-"}</span>
             <span>المعلقة: {formatTotals(agent.totalPendingCommissions)}</span>
             <span>المدفوعة: {formatTotals(agent.totalPaidCommissions)}</span>
@@ -379,29 +380,60 @@ function RejectModal({ busy, onClose, onSubmit, request }) {
 
 function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
   const [groupId, setGroupId] = useState(agent.group?.id || "");
-  const [percent, setPercent] = useState(String(agent.commissionPercent ?? 0));
+  const [useDefault, setUseDefault] = useState(agent.usingDefaultCommission !== false);
+  const [percent, setPercent] = useState(String(agent.referralCommissionPercentOverride ?? agent.commissionPercent ?? 0));
   const [status, setStatus] = useState(agent.status || "active");
+  const canEditResellerFields = agent.isSubAgent === true;
+  const percentNumber = Number(percent);
+  const percentInvalid = !useDefault && (percent === "" || !Number.isFinite(percentNumber) || percentNumber < 0 || percentNumber > 100);
+
+  const submit = () => {
+    const payload = useDefault
+      ? { useDefault: true }
+      : { commissionPercent: percentNumber };
+    if (canEditResellerFields) {
+      payload.groupId = groupId;
+      payload.status = status;
+    }
+    onSubmit(payload);
+  };
+
   return (
     <Modal title={`تعديل ${agent.name}`} onClose={onClose}>
-      <Field label="المجموعة المعيّنة">
-        <select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="input">
-          {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+      {canEditResellerFields ? (
+        <Field label="المجموعة المعيّنة">
+          <select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="input">
+            {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+          </select>
+        </Field>
+      ) : null}
+      <Field label="نسبة عمولة الإحالة">
+        <select value={useDefault ? "default" : "custom"} onChange={(event) => setUseDefault(event.target.value === "default")} className="input">
+          <option value="default">استخدام الافتراضي ({agent.defaultCommissionPercent}%)</option>
+          <option value="custom">نسبة مخصصة</option>
         </select>
       </Field>
-      <Field label="نسبة العمولة">
-        <input value={percent} onChange={(event) => setPercent(event.target.value)} type="number" min="0" max="100" step="0.01" className="input" />
-      </Field>
-      <Field label="الحالة">
-        <select value={status} onChange={(event) => setStatus(event.target.value)} className="input">
-          <option value="active">نشط</option>
-          <option value="inactive">غير نشط</option>
-        </select>
-      </Field>
+      {!useDefault ? (
+        <Field label="النسبة المخصصة">
+          <input value={percent} onChange={(event) => setPercent(event.target.value)} type="number" min="0" max="100" step="0.01" className="input" />
+        </Field>
+      ) : null}
+      {canEditResellerFields ? (
+        <Field label="الحالة">
+          <select value={status} onChange={(event) => setStatus(event.target.value)} className="input">
+            <option value="active">نشط</option>
+            <option value="inactive">غير نشط</option>
+          </select>
+        </Field>
+      ) : null}
+      <p className="text-xs font-bold text-slate-500">
+        النسبة الحالية: {agent.usingDefaultCommission ? `الافتراضي ${agent.defaultCommissionPercent}%` : `مخصص ${agent.referralCommissionPercentOverride}%`}
+      </p>
       <ModalActions
         busy={busy}
-        disabled={!groupId || percent === ""}
+        disabled={(canEditResellerFields && !groupId) || percentInvalid}
         onClose={onClose}
-        onSubmit={() => onSubmit({ groupId, commissionPercent: Number(percent), status })}
+        onSubmit={submit}
         submitLabel="حفظ"
       />
     </Modal>

@@ -47,7 +47,7 @@
   "submitSubAgent": "Submit sub-agent request",
   "referralWalletBehavior": "Referral commission behavior",
   "referralWalletDescription": "Eligible referral commissions are recorded as pending earnings after confirmed customer wallet top-ups.",
-  "commissionSetting": "Current backend commission setting: {{percent}}%.",
+  "commissionSetting": "Your current commission percent: {{percent}}%.",
   "inviteLink": "Invite link",
   "joinedThrough": "You joined through {{name}}.",
   "copyRegistrationLink": "Copy registration link",

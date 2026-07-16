@@ -11,7 +11,7 @@ import {
 } from "./adapters";
 import { normalizeAdminGroupRequest } from "./adminGroupRequests";
 import { normalizeAdminGroup } from "./adminGroups";
-import { normalizeReferralCommission, normalizeReferredUser } from "./referrals";
+import { buildReferralInviteLink, normalizeReferralCommission, normalizeReferredUser } from "./referrals";
 
 function normalizeTotals(items = []) {
   return asArray(items).map((item) => {
@@ -29,21 +29,34 @@ function normalizeTotals(items = []) {
 
 export function normalizeSubAgent(agent = {}) {
   const id = getItemId(agent);
+  const override = agent.referralCommissionPercentOverride;
+  const hasOverride = override !== undefined && override !== null;
+  const effectivePercent = toNumber(agent.commissionPercentEffective ?? agent.commissionPercent, 0);
+  const defaultPercent = toNumber(agent.defaultCommissionPercent, 1);
+  const code = agent.code || agent.referralCode || "";
   return {
     ...agent,
     id,
     userId: agent.userId || id,
-    active: agent.active === true,
+    active: agent.active !== false,
     approvedAt: agent.approvedAt || null,
     approvedAtLabel: agent.approvedAt ? formatDateTime(agent.approvedAt) : "",
-    code: agent.code || agent.referralCode || "",
-    commissionPercent: toNumber(agent.commissionPercent, 0),
+    code,
+    commissionPercent: effectivePercent,
+    commissionPercentEffective: effectivePercent,
+    commissionPercentLabel: hasOverride ? `Custom ${toNumber(override, 0)}%` : `Default ${defaultPercent}%`,
+    defaultCommissionPercent: defaultPercent,
     email: agent.email || "",
     group: normalizeAdminGroup(agent.group),
+    isSubAgent: agent.isSubAgent === true,
     name: agent.name || "User",
+    referredUsersCount: toNumber(agent.referredUsersCount, 0),
+    referralCommissionPercentOverride: hasOverride ? toNumber(override, 0) : null,
+    referralLink: agent.referralLink || buildReferralInviteLink(code),
     status: agent.status || (agent.active ? "active" : "inactive"),
     totalPaidCommissions: normalizeTotals(agent.totalPaidCommissions),
     totalPendingCommissions: normalizeTotals(agent.totalPendingCommissions),
+    usingDefaultCommission: agent.usingDefaultCommission !== false && !hasOverride,
   };
 }
 

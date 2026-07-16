@@ -96,28 +96,44 @@ export function normalizeReferralSummary(summary = {}) {
   const referralCode = String(summary.referralCode || "").trim();
   const referralLink = summary.referralLink || buildReferralInviteLink(referralCode);
   const totalCommission = asArray(summary.totalCommission).map(normalizeTotalCommission);
+  const effectiveCommissionPercent = toNumber(
+    summary.commissionPercentEffective ?? summary.settings?.depositCommissionPercentage,
+    0
+  );
+  const hasEffectiveCommissionPercent =
+    summary.commissionPercentEffective !== undefined ||
+    summary.settings?.depositCommissionPercentage !== undefined;
 
   return {
     ...summary,
     isSubAgent: summary.isSubAgent === true,
     agentProfile: {
       ...(summary.agentProfile || {}),
-      commissionPercent: toNumber(summary.agentProfile?.commissionPercent, 0),
+      commissionPercent: hasEffectiveCommissionPercent
+        ? effectiveCommissionPercent
+        : toNumber(summary.agentProfile?.commissionPercent, 0),
       code: summary.agentProfile?.code || referralCode,
       status: summary.agentProfile?.status || "inactive",
     },
+    commissionPercentEffective: effectiveCommissionPercent,
     inviteLink: referralLink,
     invitedUsersCount: toNumber(summary.invitedUsersCount ?? summary.invitedCount, 0),
     inviter: normalizePerson(summary.inviter),
     recentCommissions: asArray(summary.recentCommissions).map(normalizeReferralCommission),
     referralCode,
     referralLink,
+    referralCommissionPercentOverride:
+      summary.referralCommissionPercentOverride === null || summary.referralCommissionPercentOverride === undefined
+        ? null
+        : toNumber(summary.referralCommissionPercentOverride, 0),
     settings: {
       ...(summary.settings || {}),
-      depositCommissionPercentage: toNumber(summary.settings?.depositCommissionPercentage, 0),
+      depositCommissionPercentage: effectiveCommissionPercent,
+      defaultDepositCommissionPercentage: toNumber(summary.settings?.defaultDepositCommissionPercentage, 1),
       enabled: summary.settings?.enabled !== false,
     },
     totalCommission,
+    usingDefaultCommission: summary.usingDefaultCommission !== false,
   };
 }
 

@@ -47,7 +47,7 @@
   "submitSubAgent": "إرسال الطلب",
   "referralWalletBehavior": "أرباح الإحالة",
   "referralWalletDescription": "شارك كود الدعوة أو رابط الدعوة مع أصدقائك، وعند تسجيلهم وشحن محافظهم بنجاح يتم تسجيل عمولات الإحالة المؤهلة كأرباح معلقة.",
-  "commissionSetting": "العمولة الحالية في النظام: {{percent}}%.",
+  "commissionSetting": "نسبة عمولتك الحالية: {{percent}}%.",
   "inviteLink": "رابط الدعوة",
   "joinedThrough": "انضممت من خلال {{name}}.",
   "copyRegistrationLink": "انسخ الرابط",
