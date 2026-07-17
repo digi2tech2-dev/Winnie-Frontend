@@ -4,8 +4,10 @@ import {
   BadgeDollarSign,
   Clock3,
   Copy,
+  HandCoins,
   ImagePlus,
   Link2,
+  ReceiptText,
   Send,
   Share2,
   UserPlus,
@@ -24,7 +26,13 @@ import {
   GROUP_REQUEST_STATUS,
   GROUP_REQUEST_TYPES,
 } from "../../api/groupRequests";
-import { getMyReferralCommissions, getMyReferrals } from "../../api/referrals";
+import {
+  getMyReferralCommissions,
+  getMyReferralPayoutSummary,
+  getMyReferralPayouts,
+  getMyReferrals,
+  submitReferralPayout,
+} from "../../api/referrals";
 import { useAuth } from "../../context/AuthContext";
 
 const subAgentSlide = "/اسلايد وكيل.jpg";
@@ -37,17 +45,31 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
   const { showToast } = useToast();
   const { t } = useTranslation("subAgent");
   const [summary, setSummary] = useState(null);
+  const [payoutSummary, setPayoutSummary] = useState(null);
   const [commissions, setCommissions] = useState([]);
   const [commissionPagination, setCommissionPagination] = useState(null);
+  const [payouts, setPayouts] = useState([]);
+  const [payoutPagination, setPayoutPagination] = useState(null);
   const [requests, setRequests] = useState([]);
   const [requestPagination, setRequestPagination] = useState(null);
   const [proofImageFile, setProofImageFile] = useState(null);
   const [requestReason, setRequestReason] = useState("");
   const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
+  const [payoutMethod, setPayoutMethod] = useState("wallet_credit");
+  const [payoutCurrency, setPayoutCurrency] = useState("");
+  const [payoutMethodName, setPayoutMethodName] = useState("");
+  const [payoutNotes, setPayoutNotes] = useState("");
+  const [payoutAccountName, setPayoutAccountName] = useState("");
+  const [payoutAccountNumber, setPayoutAccountNumber] = useState("");
+  const [payoutPhone, setPayoutPhone] = useState("");
+  const [payoutWalletAddress, setPayoutWalletAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMoreCommissions, setLoadingMoreCommissions] = useState(false);
+  const [loadingMorePayouts, setLoadingMorePayouts] = useState(false);
   const [loadingMoreRequests, setLoadingMoreRequests] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingPayout, setSubmittingPayout] = useState(false);
   const [cancelingId, setCancelingId] = useState("");
   const [error, setError] = useState("");
 
@@ -60,9 +82,11 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     setLoading(true);
     setError("");
 
-    const [summaryResult, commissionsResult, requestsResult] = await Promise.allSettled([
+    const [summaryResult, payoutSummaryResult, commissionsResult, payoutsResult, requestsResult] = await Promise.allSettled([
       getMyReferrals(token),
+      getMyReferralPayoutSummary(token),
       getMyReferralCommissions(token, { page: 1, limit: COMMISSION_PAGE_SIZE }),
+      getMyReferralPayouts(token, { page: 1, limit: REQUEST_PAGE_SIZE }),
       getMyGroupRequests(token, { page: 1, limit: REQUEST_PAGE_SIZE }),
     ]);
 
@@ -70,6 +94,12 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       setSummary(summaryResult.value.summary);
     } else {
       setSummary(null);
+    }
+
+    if (payoutSummaryResult.status === "fulfilled") {
+      setPayoutSummary(payoutSummaryResult.value.summary);
+    } else {
+      setPayoutSummary(null);
     }
 
     if (commissionsResult.status === "fulfilled") {
@@ -88,7 +118,15 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       setRequestPagination(null);
     }
 
-    const failed = [summaryResult, commissionsResult, requestsResult].find((result) => result.status === "rejected");
+    if (payoutsResult.status === "fulfilled") {
+      setPayouts(payoutsResult.value.payouts);
+      setPayoutPagination(payoutsResult.value.pagination);
+    } else {
+      setPayouts([]);
+      setPayoutPagination(null);
+    }
+
+    const failed = [summaryResult, payoutSummaryResult, commissionsResult, payoutsResult, requestsResult].find((result) => result.status === "rejected");
     setError(failed?.reason?.userMessage || "");
     setLoading(false);
   }, [connectedCustomerPage, token]);
@@ -107,6 +145,11 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
   const invitedUsersCount = summary?.invitedUsersCount ?? 0;
   const commissionTotalLabel = getTotalCommissionLabel(summary, user?.currency);
   const commissionPercentage = summary?.settings?.depositCommissionPercentage ?? 0;
+  const payoutBalances = useMemo(() => payoutSummary?.availableBalances || [], [payoutSummary]);
+  const pendingPayoutBalances = useMemo(() => payoutSummary?.pendingPayoutBalances || [], [payoutSummary]);
+  const paidPayoutBalances = useMemo(() => payoutSummary?.paidPayoutBalances || [], [payoutSummary]);
+  const activePayoutCurrency = payoutCurrency || payoutBalances[0]?.currency || "";
+  const activePayoutBalance = payoutBalances.find((balance) => balance.currency === activePayoutCurrency) || payoutBalances[0] || null;
   const proofImagePreview = useMemo(() => (proofImageFile ? URL.createObjectURL(proofImageFile) : ""), [proofImageFile]);
 
   useEffect(() => {
@@ -114,6 +157,12 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
       if (proofImagePreview) URL.revokeObjectURL(proofImagePreview);
     };
   }, [proofImagePreview]);
+
+  useEffect(() => {
+    if (!payoutCurrency && payoutBalances.length) {
+      setPayoutCurrency(payoutBalances[0].currency);
+    }
+  }, [payoutBalances, payoutCurrency]);
 
   const copyText = async (text, title) => {
     if (!text) {
@@ -188,6 +237,62 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     }
   };
 
+  const submitPayoutRequest = async () => {
+    if (!token) {
+      showToast({ type: "error", title: t("loginRequiredTitle"), message: t("loginRequiredMessage") });
+      return;
+    }
+
+    if (!activePayoutBalance) {
+      showToast({ type: "warning", title: t("payoutNoBalanceTitle"), message: t("payoutNoBalanceMessage") });
+      return;
+    }
+
+    if (payoutMethod === "manual_external" && !payoutMethodName && !payoutNotes && !payoutAccountName && !payoutAccountNumber && !payoutPhone && !payoutWalletAddress) {
+      showToast({ type: "warning", title: t("payoutDetailsRequiredTitle"), message: t("payoutDetailsRequiredMessage") });
+      return;
+    }
+
+    setSubmittingPayout(true);
+    setError("");
+
+    try {
+      const result = await submitReferralPayout(token, {
+        method: payoutMethod,
+        currency: activePayoutBalance.currency,
+        amount: activePayoutBalance.amount,
+        payoutDetails: {
+          methodName: payoutMethod === "wallet_credit" ? t("walletCreditMethod") : (payoutMethodName || t("manualPayoutMethod")),
+          accountName: payoutAccountName,
+          accountNumber: payoutAccountNumber,
+          phone: payoutPhone,
+          walletAddress: payoutWalletAddress,
+          notes: payoutNotes,
+        },
+      });
+      showToast({
+        type: "success",
+        title: t("payoutSubmittedTitle"),
+        message: result.message || t("payoutSubmittedMessage"),
+      });
+      setPayoutModalOpen(false);
+      setPayoutMethod("wallet_credit");
+      setPayoutMethodName("");
+      setPayoutNotes("");
+      setPayoutAccountName("");
+      setPayoutAccountNumber("");
+      setPayoutPhone("");
+      setPayoutWalletAddress("");
+      await loadPageData();
+    } catch (requestError) {
+      const message = requestError.userMessage || t("payoutFailedMessage");
+      setError(message);
+      showToast({ type: "error", title: t("payoutFailedTitle"), message });
+    } finally {
+      setSubmittingPayout(false);
+    }
+  };
+
   const cancelRequest = async (request) => {
     if (!token || !request?.id || request.status !== GROUP_REQUEST_STATUS.PENDING) return;
 
@@ -255,6 +360,28 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     }
   };
 
+  const loadMorePayouts = async () => {
+    if (!token || !payoutPagination || payoutPagination.page >= payoutPagination.pages) return;
+
+    setLoadingMorePayouts(true);
+    try {
+      const result = await getMyReferralPayouts(token, {
+        page: payoutPagination.page + 1,
+        limit: payoutPagination.limit || REQUEST_PAGE_SIZE,
+      });
+      setPayouts((current) => [...current, ...result.payouts]);
+      setPayoutPagination(result.pagination);
+    } catch (requestError) {
+      showToast({
+        type: "error",
+        title: t("payoutsLoadFailedTitle"),
+        message: requestError.userMessage || t("common:errors.tryAgain"),
+      });
+    } finally {
+      setLoadingMorePayouts(false);
+    }
+  };
+
   if (!connectedCustomerPage) {
     return (
       <div className="space-y-6">
@@ -313,6 +440,67 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
               </div>
             </div>
           </article>
+
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+            <PayoutBalancesCard
+              balances={payoutBalances}
+              pendingBalances={pendingPayoutBalances}
+              paidBalances={paidPayoutBalances}
+            />
+            <div className="space-y-4">
+              <section className="flex flex-col items-center gap-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setPayoutModalOpen(true)}
+                  disabled={submittingPayout || !activePayoutBalance}
+                  className="interactive-ring inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 via-teal-600 to-sky-600 px-5 text-xs font-black text-white shadow-[0_12px_28px_rgba(16,185,129,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
+                >
+                  <HandCoins className="h-4 w-4" />
+                  {t("requestPayout")}
+                </button>
+                {activePayoutBalance ? (
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-300">
+                    {t("payoutAvailableHint", { amount: activePayoutBalance.amountLabel, currency: activePayoutBalance.currency })}
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                    {t("payoutNoBalanceMessage")}
+                  </span>
+                )}
+              </section>
+              <PayoutHistory
+                payouts={payouts}
+                onLoadMore={loadMorePayouts}
+                pagination={payoutPagination}
+                loadingMore={loadingMorePayouts}
+              />
+            </div>
+          </section>
+
+          {payoutModalOpen ? (
+            <ReferralPayoutModal
+              balances={payoutBalances}
+              currency={activePayoutCurrency}
+              method={payoutMethod}
+              methodName={payoutMethodName}
+              notes={payoutNotes}
+              accountName={payoutAccountName}
+              accountNumber={payoutAccountNumber}
+              phone={payoutPhone}
+              walletAddress={payoutWalletAddress}
+              onClose={() => !submittingPayout && setPayoutModalOpen(false)}
+              onCurrencyChange={setPayoutCurrency}
+              onMethodChange={setPayoutMethod}
+              onMethodNameChange={setPayoutMethodName}
+              onNotesChange={setPayoutNotes}
+              onAccountNameChange={setPayoutAccountName}
+              onAccountNumberChange={setPayoutAccountNumber}
+              onPhoneChange={setPayoutPhone}
+              onWalletAddressChange={setPayoutWalletAddress}
+              onSubmit={submitPayoutRequest}
+              submitting={submittingPayout}
+            />
+          ) : null}
 
           {requestModalOpen ? (
             <SubAgentRequestModal
@@ -477,6 +665,160 @@ function SubAgentRequestModal({
           <button type="button" onClick={onSubmit} disabled={submitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_26px_rgba(124,58,237,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
             <Send className="h-4 w-4" />
             {submitting ? t("submitting") : t("submitSubAgent")}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
+}
+
+function ReferralPayoutModal({
+  balances,
+  currency,
+  method,
+  methodName,
+  notes,
+  accountName,
+  accountNumber,
+  phone,
+  walletAddress,
+  onClose,
+  onCurrencyChange,
+  onMethodChange,
+  onMethodNameChange,
+  onNotesChange,
+  onAccountNameChange,
+  onAccountNumberChange,
+  onPhoneChange,
+  onWalletAddressChange,
+  onSubmit,
+  submitting,
+}) {
+  const { t } = useTranslation("subAgent");
+  const selectedBalance = balances.find((balance) => balance.currency === currency) || balances[0] || null;
+  const manualExternal = method === "manual_external";
+
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !submitting) onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onClose, submitting]);
+
+  const modal = (
+    <div
+      className="fixed inset-0 z-[175] grid place-items-center bg-slate-950/65 p-4 backdrop-blur-sm"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && !submitting && onClose()}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="referral-payout-title"
+        className="relative w-full max-w-[520px] overflow-hidden rounded-[24px] border-2 border-emerald-400/55 bg-white p-4 shadow-[0_24px_80px_rgba(16,185,129,0.28)] ring-1 ring-sky-300/35 sm:p-5 dark:border-emerald-400/45 dark:bg-[#111827] dark:shadow-[0_0_48px_rgba(16,185,129,0.22)]"
+      >
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-l from-emerald-600 via-teal-500 to-sky-400" />
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:opacity-50 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/[0.1]"
+          aria-label={t("common:actions.close")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start gap-3">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-600 to-sky-500 text-white shadow-[0_14px_30px_rgba(16,185,129,0.3)]">
+            <HandCoins className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 pe-8">
+            <h2 id="referral-payout-title" className="text-lg font-black text-slate-950 dark:text-white">{t("requestPayout")}</h2>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">{t("payoutModalDescription")}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {balances.length > 1 ? (
+            <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+              <span>{t("payoutCurrency")}</span>
+              <select
+                value={currency}
+                onChange={(event) => onCurrencyChange(event.target.value)}
+                className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
+              >
+                {balances.map((balance) => (
+                  <option key={balance.currency} value={balance.currency}>
+                    {balance.currency} - {balance.amountLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
+              {selectedBalance ? t("payoutSelectedBalance", { amount: selectedBalance.amountLabel, currency: selectedBalance.currency }) : t("payoutNoBalanceMessage")}
+            </div>
+          )}
+
+          <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+            <span>{t("payoutMethod")}</span>
+            <select
+              value={method}
+              onChange={(event) => onMethodChange(event.target.value)}
+              className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
+            >
+              <option value="wallet_credit">{t("walletCreditMethod")}</option>
+              <option value="manual_external">{t("manualPayoutMethod")}</option>
+            </select>
+          </label>
+
+          {manualExternal ? (
+            <div className="grid gap-3">
+              <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+                <span>{t("payoutMethodName")}</span>
+                <input
+                  value={methodName}
+                  onChange={(event) => onMethodNameChange(event.target.value)}
+                  className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
+                  placeholder={t("payoutMethodNamePlaceholder")}
+                />
+              </label>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+                  <span>{t("payoutAccountName")}</span>
+                  <input value={accountName} onChange={(event) => onAccountNameChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                </label>
+                <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+                  <span>{t("payoutAccountNumber")}</span>
+                  <input value={accountNumber} onChange={(event) => onAccountNumberChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                </label>
+                <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+                  <span>{t("payoutPhone")}</span>
+                  <input value={phone} onChange={(event) => onPhoneChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                </label>
+                <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
+                  <span>{t("payoutWalletAddress")}</span>
+                  <input value={walletAddress} onChange={(event) => onWalletAddressChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                </label>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/70 p-3 text-xs font-bold leading-6 text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-400/[0.06] dark:text-emerald-200">
+            {t("payoutFullBalanceHint")}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button type="button" onClick={onClose} disabled={submitting} className="h-11 rounded-xl border border-slate-200 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.05]">
+            {t("common:actions.cancel")}
+          </button>
+          <button type="button" onClick={onSubmit} disabled={submitting || !selectedBalance} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-sm font-black text-white shadow-[0_12px_26px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
+            <HandCoins className="h-4 w-4" />
+            {submitting ? t("submitting") : t("requestPayout")}
           </button>
         </div>
       </section>
@@ -738,6 +1080,132 @@ function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagin
         </button>
       )}
     </article>
+  );
+}
+
+function PayoutBalancesCard({ balances, pendingBalances, paidBalances }) {
+  const { t } = useTranslation("subAgent");
+
+  return (
+    <article className="rounded-[26px] border border-emerald-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(16,185,129,0.08)] dark:border-emerald-400/15 dark:bg-[#111827]">
+      <div className="flex items-center gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-600 to-sky-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]">
+          <ReceiptText className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("payoutSummaryTitle")}</h2>
+          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("payoutSummaryDescription")}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <BalanceGroup title={t("availablePayout")} rows={balances} emptyLabel={t("payoutNoBalanceMessage")} tone="emerald" />
+        <BalanceGroup title={t("pendingPayout")} rows={pendingBalances} emptyLabel={t("payoutNoPendingMessage")} tone="sky" />
+        <BalanceGroup title={t("paidPayout")} rows={paidBalances} emptyLabel={t("payoutNoPaidMessage")} tone="slate" />
+      </div>
+    </article>
+  );
+}
+
+function BalanceGroup({ emptyLabel, rows, title, tone = "emerald" }) {
+  const tones = {
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200",
+    sky: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200",
+    slate: "border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200",
+  };
+
+  return (
+    <div className={`rounded-2xl border p-3 ${tones[tone] || tones.emerald}`}>
+      <p className="text-xs font-black uppercase tracking-wide">{title}</p>
+      {rows.length ? (
+        <div className="mt-2 grid gap-2">
+          {rows.map((row) => (
+            <div key={`${title}:${row.currency}`} className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2 text-sm font-bold text-slate-900 dark:bg-[#0D1324] dark:text-white">
+              <span>{row.currency}</span>
+              <span>{row.amountLabel}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-xs font-semibold leading-5 opacity-80">{emptyLabel}</p>
+      )}
+    </div>
+  );
+}
+
+function PayoutHistory({ loadingMore, onLoadMore, pagination, payouts }) {
+  const { t } = useTranslation("subAgent");
+  const hasMore = pagination && pagination.page < pagination.pages;
+
+  return (
+    <article className="rounded-[26px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
+      <div className="flex items-center gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-slate-700 to-slate-500 text-white">
+          <ReceiptText className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("payoutHistoryTitle")}</h2>
+          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("payoutHistoryDescription")}</p>
+        </div>
+      </div>
+
+      {payouts.length ? (
+        <div className="mt-4 space-y-3">
+          {payouts.map((payout) => (
+            <div key={payout.id} className="rounded-2xl border border-slate-100 p-3 dark:border-white/10">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-slate-950 dark:text-white">{payout.amountLabel}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{payout.method === "wallet_credit" ? t("walletCreditMethod") : t("manualPayoutMethod")}</p>
+                </div>
+                <PayoutBadge status={payout.status} />
+              </div>
+              <div className="mt-2 grid gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                <span>{payout.createdAtLabel}</span>
+                {payout.rejectionReason ? <span>{t("payoutRejectionReason", { value: payout.rejectionReason })}</span> : null}
+                {payout.walletCreditAmountLabel ? <span>{t("payoutWalletCreditAmount", { value: payout.walletCreditAmountLabel })}</span> : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <SectionEmptyState
+          icon={ReceiptText}
+          tone="emerald"
+          title={t("payoutNoHistoryTitle")}
+          description={t("payoutNoHistoryDescription")}
+        />
+      )}
+
+      {hasMore && (
+        <button
+          type="button"
+          onClick={onLoadMore}
+          disabled={loadingMore}
+          className="interactive-ring mt-4 h-11 w-full rounded-xl border border-emerald-300/60 bg-white text-xs font-black text-emerald-700 disabled:cursor-wait disabled:opacity-70 dark:border-emerald-400/30 dark:bg-[#0D1324] dark:text-emerald-200"
+        >
+          {loadingMore ? t("loading") : t("loadMorePayouts")}
+        </button>
+      )}
+    </article>
+  );
+}
+
+function PayoutBadge({ status }) {
+  const { t } = useTranslation("subAgent");
+  const normalized = String(status || "pending").toLowerCase();
+  const styles = {
+    pending: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300",
+    paid: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+    approved: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+    rejected: "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300",
+    cancelled: "border-slate-300 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300",
+  };
+
+  return (
+    <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black ${styles[normalized] || styles.pending}`}>
+      {t(`payoutStatuses.${normalized}`, { defaultValue: normalized.replace(/_/g, " ") })}
+    </span>
   );
 }
 

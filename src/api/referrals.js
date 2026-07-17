@@ -137,6 +137,78 @@ export function normalizeReferralSummary(summary = {}) {
   };
 }
 
+export function normalizeReferralPayoutSummary(summary = {}) {
+  return {
+    ...summary,
+    availableBalances: asArray(summary.availableBalances).map(normalizeReferralPayoutBalance),
+    latestPayouts: asArray(summary.latestPayouts).map(normalizeReferralPayout),
+    paidPayoutBalances: asArray(summary.paidPayoutBalances).map(normalizeReferralPayoutBalance),
+    pendingPayoutBalances: asArray(summary.pendingPayoutBalances).map(normalizeReferralPayoutBalance),
+    payoutMode: summary.payoutMode || "full_currency_balance",
+    supportsPartialAmount: summary.supportsPartialAmount === true,
+  };
+}
+
+function normalizeReferralPayoutBalance(item = {}) {
+  const currency = String(item.currency || item._id || DEFAULT_CURRENCY).toUpperCase();
+  const amount = toNumber(item.amount ?? item.total, 0);
+
+  return {
+    ...item,
+    amount,
+    amountLabel: formatCurrency(amount, currency),
+    count: toNumber(item.count, 0),
+    currency,
+  };
+}
+
+export function normalizeReferralPayout(payout = {}) {
+  const id = getItemId(payout);
+  const requestedCurrency = String(payout.requestedCurrency || payout.currency || DEFAULT_CURRENCY).toUpperCase();
+  const walletCreditCurrency = payout.walletCreditCurrency ? String(payout.walletCreditCurrency).toUpperCase() : "";
+  const requestedAmount = toNumber(payout.requestedAmount ?? payout.amount, 0);
+  const lockedAmount = toNumber(payout.lockedAmount ?? requestedAmount, 0);
+  const walletCreditAmount = payout.walletCreditAmount === null || payout.walletCreditAmount === undefined
+    ? null
+    : toNumber(payout.walletCreditAmount, 0);
+  const lockedCommissionIds = asArray(payout.lockedCommissionIds).map((value) => String(value));
+
+  return {
+    ...payout,
+    id,
+    _id: payout._id ?? id,
+    adminNotes: payout.adminNotes || "",
+    amount: requestedAmount,
+    amountLabel: formatCurrency(requestedAmount, requestedCurrency),
+    createdAt: payout.createdAt || null,
+    createdAtLabel: payout.createdAt ? formatDateTime(payout.createdAt) : "",
+    currency: requestedCurrency,
+    fxRateUsed: payout.fxRateUsed ?? null,
+    fxSnapshotAt: payout.fxSnapshotAt || null,
+    lockedAmount,
+    lockedAmountLabel: formatCurrency(lockedAmount, requestedCurrency),
+    lockedCommissionCount: toNumber(payout.lockedCommissionCount ?? lockedCommissionIds.length, 0),
+    lockedCommissionIds,
+    method: String(payout.method || "").toLowerCase(),
+    payoutDetails: payout.payoutDetails || null,
+    paidAt: payout.paidAt || null,
+    paidAtLabel: payout.paidAt ? formatDateTime(payout.paidAt) : "",
+    rejectionReason: payout.rejectionReason || "",
+    requestedAmount,
+    requestedCurrency,
+    reviewedAt: payout.reviewedAt || null,
+    reviewedAtLabel: payout.reviewedAt ? formatDateTime(payout.reviewedAt) : "",
+    status: String(payout.status || "pending").toLowerCase(),
+    statusLabel: humanizeToken(String(payout.status || "pending"), "Pending"),
+    user: normalizePerson(payout.user || payout.userId),
+    userId: getItemId(payout.userId || payout.user),
+    walletCreditAmount,
+    walletCreditAmountLabel: walletCreditAmount === null ? "" : formatCurrency(walletCreditAmount, walletCreditCurrency || requestedCurrency),
+    walletCreditCurrency,
+    walletTransactionId: getItemId(payout.walletTransactionId || payout.walletTransaction),
+  };
+}
+
 export function normalizeReferralCodeValidation(result = {}) {
   return {
     ...result,
@@ -161,6 +233,15 @@ export async function getMySubAgent(token) {
   return {
     message: response.message,
     summary: normalizeReferralSummary(response.data || {}),
+  };
+}
+
+export async function getMyReferralPayoutSummary(token) {
+  const response = await apiRequest("/me/referrals/payout-summary", { token });
+
+  return {
+    message: response.message,
+    summary: normalizeReferralPayoutSummary(response.data || {}),
   };
 }
 
@@ -221,6 +302,43 @@ export async function getMySubAgentReferredUsers(token, query = {}) {
   };
 }
 
+export async function getMyReferralPayouts(token, query = {}) {
+  const response = await apiRequest("/me/referrals/payouts", {
+    token,
+    query,
+  });
+  const payouts = asArray(response.data?.payouts || response.data).map(normalizeReferralPayout);
+
+  return {
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page,
+      limit: query.limit,
+      total: payouts.length,
+    }),
+    payouts,
+  };
+}
+
+export async function submitReferralPayout(token, payload = {}) {
+  const response = await apiRequest("/me/referrals/payouts", {
+    method: "POST",
+    token,
+    body: compactPayload({
+      method: payload.method,
+      currency: payload.currency || payload.requestedCurrency,
+      amount: payload.amount,
+      requestedAmount: payload.requestedAmount,
+      payoutDetails: payload.payoutDetails,
+    }),
+  });
+
+  return {
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
 export async function submitSubAgentRequest(token, payload = {}) {
   if (payload.proofImageFile) {
     const formData = new FormData();
@@ -266,5 +384,79 @@ export async function validateReferralCode(code, options = {}) {
   return {
     message: response.message,
     result: normalizeReferralCodeValidation(response.data || {}),
+  };
+}
+
+export async function getAdminReferralPayouts(token, query = {}) {
+  const response = await apiRequest("/admin/referral-payouts", {
+    token,
+    query,
+  });
+  const payouts = asArray(response.data?.payouts || response.data).map(normalizeReferralPayout);
+
+  return {
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page,
+      limit: query.limit,
+      total: payouts.length,
+    }),
+    payouts,
+  };
+}
+
+export async function getAdminReferralPayout(token, id) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}`, { token });
+
+  return {
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
+export async function approveAdminReferralPayoutWalletCredit(token, id) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}/approve-wallet-credit`, {
+    method: "POST",
+    token,
+  });
+
+  return {
+    alreadyProcessed: response.data?.alreadyProcessed === true,
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
+export async function markAdminReferralPayoutPaid(token, id, payload = {}) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}/mark-paid`, {
+    method: "POST",
+    token,
+    body: compactPayload({
+      adminNotes: payload.adminNotes || payload.adminNote,
+    }),
+  });
+
+  return {
+    alreadyProcessed: response.data?.alreadyProcessed === true,
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
+export async function rejectAdminReferralPayout(token, id, payload = {}) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}/reject`, {
+    method: "POST",
+    token,
+    body: compactPayload({
+      reason: payload.reason || payload.rejectionReason,
+      rejectionReason: payload.rejectionReason || payload.reason,
+      adminNotes: payload.adminNotes || payload.adminNote,
+    }),
+  });
+
+  return {
+    alreadyProcessed: response.data?.alreadyProcessed === true,
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
   };
 }

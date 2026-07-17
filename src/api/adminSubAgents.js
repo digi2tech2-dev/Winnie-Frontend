@@ -11,7 +11,12 @@ import {
 } from "./adapters";
 import { normalizeAdminGroupRequest } from "./adminGroupRequests";
 import { normalizeAdminGroup } from "./adminGroups";
-import { buildReferralInviteLink, normalizeReferralCommission, normalizeReferredUser } from "./referrals";
+import {
+  buildReferralInviteLink,
+  normalizeReferralCommission,
+  normalizeReferralPayout,
+  normalizeReferredUser,
+} from "./referrals";
 
 function normalizeTotals(items = []) {
   return asArray(items).map((item) => {
@@ -171,5 +176,76 @@ export async function getSubAgentCommissions(token, query = {}) {
       total: commissions.length,
     }),
     commissions,
+  };
+}
+
+export async function getReferralPayouts(token, query = {}) {
+  const response = await apiRequest("/admin/referral-payouts", {
+    token,
+    query: compactObject(query),
+  });
+  const payouts = asArray(response.data?.payouts || response.data).map(normalizeReferralPayout);
+  return {
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page,
+      limit: query.limit,
+      total: payouts.length,
+    }),
+    payouts,
+  };
+}
+
+export async function getReferralPayout(token, id) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}`, {
+    token,
+  });
+  return {
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
+export async function approveReferralPayoutWalletCredit(token, id) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}/approve-wallet-credit`, {
+    method: "POST",
+    token,
+  });
+  return {
+    alreadyProcessed: response.data?.alreadyProcessed === true,
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
+export async function markReferralPayoutPaid(token, id, payload = {}) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}/mark-paid`, {
+    method: "POST",
+    token,
+    body: compactObject({
+      adminNotes: payload.adminNotes || payload.adminNote,
+    }),
+  });
+  return {
+    alreadyProcessed: response.data?.alreadyProcessed === true,
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
+  };
+}
+
+export async function rejectReferralPayout(token, id, payload = {}) {
+  const response = await apiRequest(`/admin/referral-payouts/${id}/reject`, {
+    method: "POST",
+    token,
+    body: compactObject({
+      reason: payload.reason || payload.rejectionReason,
+      rejectionReason: payload.rejectionReason || payload.reason,
+      adminNotes: payload.adminNotes || payload.adminNote,
+    }),
+  });
+  return {
+    alreadyProcessed: response.data?.alreadyProcessed === true,
+    message: response.message,
+    payout: normalizeReferralPayout(response.data?.payout || response.data || {}),
   };
 }

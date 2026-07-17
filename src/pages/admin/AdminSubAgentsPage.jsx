@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { BadgeDollarSign, CheckCircle2, Edit3, RefreshCw, UsersRound, XCircle } from "lucide-react";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { getAdminGroups } from "../../api/adminGroups";
 import {
+  approveReferralPayoutWalletCredit,
   approveSubAgentRequest,
+  getReferralPayouts,
   getSubAgentCommissions,
   getSubAgentReferredUsers,
   getSubAgentRequests,
   getSubAgents,
+  markReferralPayoutPaid,
   rejectSubAgentRequest,
+  rejectReferralPayout,
   updateSubAgent,
 } from "../../api/adminSubAgents";
 import { GROUP_REQUEST_STATUS } from "../../api/groupRequests";
@@ -20,7 +24,8 @@ const tabs = [
   ["requests", "الطلبات"],
   ["agents", "الوكلاء الفرعيون"],
   ["commissions", "العمولات"],
-  ["referred", "المستخدمون المُحالون"],
+  ["payouts", "طلبات السحب"],
+  ["referred", "المستخدمون المحالون"],
 ];
 
 export default function AdminSubAgentsPage() {
@@ -30,6 +35,7 @@ export default function AdminSubAgentsPage() {
   const [requests, setRequests] = useState([]);
   const [agents, setAgents] = useState([]);
   const [commissions, setCommissions] = useState([]);
+  const [payouts, setPayouts] = useState([]);
   const [groups, setGroups] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [referredUsers, setReferredUsers] = useState([]);
@@ -39,6 +45,8 @@ export default function AdminSubAgentsPage() {
   const [approveRequest, setApproveRequest] = useState(null);
   const [rejectRequest, setRejectRequest] = useState(null);
   const [editAgent, setEditAgent] = useState(null);
+  const [payoutReject, setPayoutReject] = useState(null);
+  const [selectedPayout, setSelectedPayout] = useState(null);
 
   const activeGroups = useMemo(() => groups.filter((group) => group.isActive), [groups]);
 
@@ -47,15 +55,17 @@ export default function AdminSubAgentsPage() {
     setLoading(true);
     setError("");
     try {
-      const [requestsResult, agentsResult, commissionsResult, groupsResult] = await Promise.all([
+      const [requestsResult, agentsResult, commissionsResult, payoutsResult, groupsResult] = await Promise.all([
         getSubAgentRequests(token, { page: 1, limit: 50 }),
         getSubAgents(token, { page: 1, limit: 50 }),
         getSubAgentCommissions(token, { page: 1, limit: 50 }),
+        getReferralPayouts(token, { page: 1, limit: 50 }),
         getAdminGroups(token),
       ]);
       setRequests(requestsResult.requests);
       setAgents(agentsResult.subAgents);
       setCommissions(commissionsResult.commissions);
+      setPayouts(payoutsResult.payouts);
       setGroups(groupsResult.groups);
       setSelectedAgentId((current) => current || agentsResult.subAgents[0]?.userId || "");
     } catch (requestError) {
@@ -132,12 +142,58 @@ export default function AdminSubAgentsPage() {
     }
   };
 
+  const approvePayout = async (payout) => {
+    if (!payout) return;
+    setBusy(`payout:${payout.id}:approve`);
+    try {
+      await approveReferralPayoutWalletCredit(token, payout.id);
+      showToast({ type: "success", title: "تم تحويل العمولة إلى المحفظة" });
+      setSelectedPayout(null);
+      await loadData();
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل التحويل", message: requestError.userMessage || "تعذر اعتماد طلب السحب." });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const markPaidPayout = async (payout, adminNotes = "") => {
+    if (!payout) return;
+    setBusy(`payout:${payout.id}:paid`);
+    try {
+      await markReferralPayoutPaid(token, payout.id, { adminNotes });
+      showToast({ type: "success", title: "تم تسجيل السحب كمدفوع" });
+      setSelectedPayout(null);
+      await loadData();
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل التحديث", message: requestError.userMessage || "تعذر تسجيل الطلب كمدفوع." });
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const rejectPayout = async (reason, adminNotes = "") => {
+    if (!payoutReject) return;
+    setBusy(`payout:${payoutReject.id}:reject`);
+    try {
+      await rejectReferralPayout(token, payoutReject.id, { reason, adminNotes });
+      showToast({ type: "warning", title: "تم رفض طلب السحب" });
+      setPayoutReject(null);
+      setSelectedPayout(null);
+      await loadData();
+    } catch (requestError) {
+      showToast({ type: "error", title: "فشل الرفض", message: requestError.userMessage || "تعذر رفض طلب السحب." });
+    } finally {
+      setBusy("");
+    }
+  };
+
   return (
     <div dir="rtl" className="space-y-4">
       <Header loading={loading} onRefresh={loadData} />
       {error ? <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</p> : null}
 
-      <div className="grid grid-cols-4 rounded-lg bg-slate-100 p-1 dark:bg-white/[0.06]">
+      <div className="grid grid-cols-5 rounded-lg bg-slate-100 p-1 dark:bg-white/[0.06]">
         {tabs.map(([key, label]) => (
           <button
             key={key}
@@ -165,6 +221,15 @@ export default function AdminSubAgentsPage() {
           ) : null}
           {tab === "commissions" ? (
             <CommissionsTab rows={commissions} />
+          ) : null}
+          {tab === "payouts" ? (
+            <PayoutsTab
+              onApprove={approvePayout}
+              onMarkPaid={markPaidPayout}
+              onReject={setPayoutReject}
+              onView={setSelectedPayout}
+              rows={payouts}
+            />
           ) : null}
           {tab === "referred" ? (
             <ReferredTab agents={agents} selectedAgentId={selectedAgentId} setSelectedAgentId={setSelectedAgentId} rows={referredUsers} />
@@ -196,6 +261,27 @@ export default function AdminSubAgentsPage() {
           groups={activeGroups}
           onClose={() => setEditAgent(null)}
           onSubmit={saveAgent}
+        />
+      ) : null}
+      {selectedPayout ? (
+        <PayoutDetailsModal
+          busy={busy === `payout:${selectedPayout.id}:approve` || busy === `payout:${selectedPayout.id}:paid`}
+          onApprove={() => approvePayout(selectedPayout)}
+          onClose={() => setSelectedPayout(null)}
+          onMarkPaid={() => markPaidPayout(selectedPayout)}
+          onReject={() => {
+            setPayoutReject(selectedPayout);
+            setSelectedPayout(null);
+          }}
+          payout={selectedPayout}
+        />
+      ) : null}
+      {payoutReject ? (
+        <PayoutRejectModal
+          busy={busy === `payout:${payoutReject.id}:reject`}
+          onClose={() => setPayoutReject(null)}
+          onSubmit={rejectPayout}
+          payout={payoutReject}
         />
       ) : null}
     </div>
@@ -315,6 +401,111 @@ function CommissionsTab({ rows }) {
         </table>
       </div>
     </Panel>
+  );
+}
+
+function PayoutsTab({ onApprove, onMarkPaid, onReject, onView, rows }) {
+  if (!rows.length) return <EmptyState icon={BadgeDollarSign} title="لا توجد طلبات سحب عمولات" description="ستظهر طلبات السحب هنا." />;
+  return (
+    <Panel>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[940px] text-sm">
+          <thead className="text-xs text-slate-500">
+            <tr className="border-b border-slate-100 dark:border-white/10">
+              <th className="py-2 text-start">المستخدم</th>
+              <th className="py-2 text-start">القيمة</th>
+              <th className="py-2 text-start">الطريقة</th>
+              <th className="py-2 text-start">الحالة</th>
+              <th className="py-2 text-start">تاريخ الطلب</th>
+              <th className="py-2 text-start">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id} className="border-b border-slate-100 last:border-b-0 dark:border-white/10">
+                <td className="py-3">
+                  <div className="min-w-0">
+                    <p className="font-bold dark:text-white">{row.user?.name || "-"}</p>
+                    <p className="truncate text-xs text-slate-500">{row.user?.email || row.user?.phone || "-"}</p>
+                  </div>
+                </td>
+                <td className="py-3 font-black text-emerald-600">{row.amountLabel}</td>
+                <td className="py-3">{row.method === "wallet_credit" ? "إلى المحفظة" : "سحب خارجي"}</td>
+                <td className="py-3"><Status status={row.status} /></td>
+                <td className="py-3 text-xs text-slate-500">{row.createdAtLabel}</td>
+                <td className="py-3">
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => onView(row)} className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-black dark:border-white/10 dark:text-white">عرض</button>
+                    {row.status === "pending" && row.method === "wallet_credit" ? (
+                      <button onClick={() => onApprove(row)} className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white">اعتماد المحفظة</button>
+                    ) : null}
+                    {row.status === "pending" && row.method === "manual_external" ? (
+                      <button onClick={() => onMarkPaid(row)} className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white">تم الدفع</button>
+                    ) : null}
+                    {row.status === "pending" ? (
+                      <button onClick={() => onReject(row)} className="h-9 rounded-lg bg-rose-500/10 px-3 text-xs font-black text-rose-700">رفض</button>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
+function PayoutDetailsModal({ busy, onApprove, onClose, onMarkPaid, onReject, payout }) {
+  return (
+    <Modal title={`طلب سحب ${payout.user?.name || "المستخدم"}`} onClose={onClose}>
+      <div className="space-y-2 text-xs font-bold text-slate-500">
+        <p>القيمة: {payout.amountLabel}</p>
+        <p>العملة: {payout.currency}</p>
+        <p>الطريقة: {payout.method === "wallet_credit" ? "إلى المحفظة" : "سحب خارجي"}</p>
+        <p>الحالة: {payout.statusLabel}</p>
+        <p>عدد العمولات المغلقة: {payout.lockedCommissionCount}</p>
+        {payout.walletCreditAmountLabel ? <p>المحوّل إلى المحفظة: {payout.walletCreditAmountLabel}</p> : null}
+        {payout.rejectionReason ? <p>سبب الرفض: {payout.rejectionReason}</p> : null}
+        {payout.payoutDetails ? <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-[11px] dark:bg-white/[0.04]">{JSON.stringify(payout.payoutDetails, null, 2)}</pre> : null}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={onClose} className="h-10 rounded-lg border border-slate-200 text-xs font-black dark:border-white/10 dark:text-white">إغلاق</button>
+        {payout.status === "pending" && payout.method === "wallet_credit" ? (
+          <button type="button" onClick={onApprove} disabled={busy} className="h-10 rounded-lg bg-emerald-600 text-xs font-black text-white">اعتماد المحفظة</button>
+        ) : null}
+        {payout.status === "pending" && payout.method === "manual_external" ? (
+          <button type="button" onClick={onMarkPaid} disabled={busy} className="h-10 rounded-lg bg-emerald-600 text-xs font-black text-white">تم الدفع</button>
+        ) : null}
+        {payout.status === "pending" ? (
+          <button type="button" onClick={onReject} disabled={busy} className="h-10 rounded-lg bg-rose-500/10 text-xs font-black text-rose-700">رفض</button>
+        ) : null}
+      </div>
+    </Modal>
+  );
+}
+
+function PayoutRejectModal({ busy, onClose, onSubmit, payout }) {
+  const [reason, setReason] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
+
+  return (
+    <Modal title={`رفض طلب ${payout.user?.name || "المستخدم"}`} onClose={onClose}>
+      <Field label="سبب الرفض">
+        <textarea value={reason} onChange={(event) => setReason(event.target.value)} className="input min-h-24" />
+      </Field>
+      <Field label="ملاحظات الإدارة">
+        <textarea value={adminNotes} onChange={(event) => setAdminNotes(event.target.value)} className="input min-h-20" />
+      </Field>
+      <ModalActions
+        busy={busy}
+        disabled={!reason.trim()}
+        onClose={onClose}
+        onSubmit={() => onSubmit(reason, adminNotes)}
+        submitLabel="رفض"
+        tone="danger"
+      />
+    </Modal>
   );
 }
 
@@ -539,3 +730,5 @@ function formatTotals(totals = []) {
   if (!totals.length) return "-";
   return totals.map((item) => item.amountLabel || `${item.amount} ${item.currency}`).join(" + ");
 }
+
+
