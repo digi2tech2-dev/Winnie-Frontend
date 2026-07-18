@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  adminManualMatchPayment,
   adminSyncPaymentStatus,
   getAdminPayment,
   getAdminPayments,
@@ -280,6 +281,40 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  const matchPayment = async (paymentId) => {
+    if (!token || actionKey) return;
+    const key = `${paymentId}:match`;
+    setActionKey(key);
+
+    try {
+      const result = await adminManualMatchPayment(token, paymentId, {
+        reason: "Admin manual match",
+      });
+      setSelectedPayment(result.payment);
+      showToast({
+        type: "success",
+        title: result.message || "تمت مطابقة الدفعة",
+        message: result.alreadyProcessed ? "تمت إضافة الرصيد سابقا." : "تمت إضافة الرصيد إلى محفظة العميل.",
+      });
+      await loadPayments();
+
+      try {
+        const details = await getAdminPayment(token, paymentId);
+        setSelectedPayment(details.payment);
+      } catch {
+        // The match result is already backend-confirmed.
+      }
+    } catch (requestError) {
+      const message = getErrorMessage(
+        requestError,
+        "تعذرت مطابقة الدفعة يدويا. تأكد أن الدفعة وصلت إلى بوابة الدفع وليست محظورة.",
+      );
+      showToast({ type: "error", title: "فشلت المطابقة", message });
+    } finally {
+      setActionKey("");
+    }
+  };
+
   return (
     <div dir="rtl" className="space-y-4 sm:space-y-5">
       <Header onRefresh={loadPayments} refreshing={loading} />
@@ -345,6 +380,7 @@ export default function AdminPaymentsPage() {
                   actionKey={actionKey}
                   key={payment.id}
                   onDetails={setSelectedPaymentId}
+                  onMatch={matchPayment}
                   onSync={syncPayment}
                   payment={payment}
                 />
@@ -391,6 +427,7 @@ export default function AdminPaymentsPage() {
         error={detailsError}
         loading={detailsLoading}
         onClose={closeDetails}
+        onMatch={matchPayment}
         onSync={syncPayment}
         payment={selectedPayment}
       />
@@ -529,8 +566,9 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
   );
 }
 
-function PaymentRow({ actionKey, onDetails, onSync, payment }) {
+function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
   const syncing = actionKey === `${payment.id}:sync`;
+  const matching = actionKey === `${payment.id}:match`;
 
   return (
     <article className="grid gap-3 px-4 py-4 lg:grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr] lg:items-center">
@@ -577,6 +615,17 @@ function PaymentRow({ actionKey, onDetails, onSync, payment }) {
             مزامنة
           </button>
         )}
+        {payment.canManualMatch && (
+          <button
+            type="button"
+            onClick={() => onMatch(payment.id)}
+            disabled={Boolean(actionKey)}
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
+          >
+            <CheckCircle2 className={`h-3.5 w-3.5 ${matching ? "animate-pulse" : ""}`} />
+            مطابقة
+          </button>
+        )}
       </div>
     </article>
   );
@@ -590,7 +639,7 @@ function StatusBadge({ label, status }) {
   );
 }
 
-function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payment }) {
+function PaymentDetailsPanel({ actionKey, error, loading, onClose, onMatch, onSync, payment }) {
   const closeButtonRef = useRef(null);
   const paymentId = payment?.id;
 
@@ -615,6 +664,7 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
 
   if (!payment) return null;
   const syncing = actionKey === `${payment.id}:sync`;
+  const matching = actionKey === `${payment.id}:match`;
 
   return createPortal(
     <div className="payment-details-overlay bg-slate-950/45 backdrop-blur-sm" role="presentation">
@@ -635,6 +685,17 @@ function PaymentDetailsPanel({ actionKey, error, loading, onClose, onSync, payme
               className="inline-flex h-10 items-center gap-2 rounded-2xl bg-violet-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              مزامنة
+            </button>
+          )}
+          {payment.canManualMatch && (
+            <button
+              type="button"
+              onClick={() => onMatch(payment.id)}
+              disabled={Boolean(actionKey)}
+              className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
+            >
+              <CheckCircle2 className={`h-4 w-4 ${matching ? "animate-pulse" : ""}`} />
               مطابقة
             </button>
           )}

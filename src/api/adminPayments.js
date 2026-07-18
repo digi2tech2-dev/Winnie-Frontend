@@ -126,6 +126,14 @@ export function normalizeAdminPayment(payment = {}) {
   const charge = normalizePaymentGatewayCharge(payment);
   const credited = Boolean(payment.creditedAt || payment.walletTransactionId);
   const gateway = String(payment.gateway || "").toUpperCase();
+  const gatewayCreated = Boolean(
+    payment.gatewayCreated ||
+    payment.gatewayPaymentId ||
+    payment.gatewayReference ||
+    payment.checkoutUrl,
+  );
+  const fallbackCanSync = gatewayCreated && SYNCABLE_GATEWAYS.has(gateway) && syncableStatuses.has(status) && !credited;
+  const terminalFailure = ["FAILED", "CANCELED", "EXPIRED"].includes(status);
 
   return {
     ...payment,
@@ -135,7 +143,10 @@ export function normalizeAdminPayment(payment = {}) {
     amount,
     amountLabel: formatCurrency(amount, currency, "ar-EG-u-nu-latn"),
     canceledAtLabel: payment.canceledAt ? formatDateTime(payment.canceledAt, "ar-EG-u-nu-latn") : "-",
-    canSync: SYNCABLE_GATEWAYS.has(gateway) && syncableStatuses.has(status),
+    canManualMatch: typeof payment.canManualMatch === "boolean"
+      ? payment.canManualMatch
+      : gatewayCreated && !terminalFailure && !credited,
+    canSync: typeof payment.canSync === "boolean" ? payment.canSync : fallbackCanSync,
     createdAtLabel: payment.createdAt ? formatDateTime(payment.createdAt, "ar-EG-u-nu-latn") : "-",
     credited,
     creditedAtLabel: payment.creditedAt ? formatDateTime(payment.creditedAt, "ar-EG-u-nu-latn") : "-",
@@ -145,6 +156,7 @@ export function normalizeAdminPayment(payment = {}) {
     feeAmount,
     feeAmountLabel: formatCurrency(feeAmount, currency, "ar-EG-u-nu-latn"),
     gateway,
+    gatewayCreated,
     gatewayLabel: gatewayLabels[gateway] || humanizeToken(gateway, "Gateway"),
     method: payment.method || "CARD",
     purpose: payment.purpose || "WALLET_TOPUP",
@@ -209,6 +221,21 @@ export async function adminSyncPaymentStatus(token, paymentId) {
   const response = await apiRequest(`/admin/payments/${paymentId}/sync-status`, {
     method: "POST",
     token,
+  });
+
+  return {
+    alreadyProcessed: Boolean(response.data?.alreadyProcessed),
+    message: response.message,
+    payment: normalizeAdminPayment(getPaymentFromResponse(response.data)),
+    providerStatus: response.data?.providerStatus || "",
+  };
+}
+
+export async function adminManualMatchPayment(token, paymentId, payload = {}) {
+  const response = await apiRequest(`/admin/payments/${paymentId}/manual-match`, {
+    method: "POST",
+    token,
+    body: payload,
   });
 
   return {
