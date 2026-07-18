@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Banknote,
   Clock3,
+  KeyRound,
   Loader2,
   MessageSquareWarning,
   RefreshCw,
@@ -18,6 +19,7 @@ import {
   updatePaymentRiskLimits,
   updateManagedAdminSetting,
 } from "../../api/adminSettings";
+import { updateAdminSecurityPin } from "../../api/adminSecurityPin";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
@@ -35,6 +37,13 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinError, setPinError] = useState("");
+  const [pinForm, setPinForm] = useState({
+    currentPin: "",
+    newPin: "",
+    confirmPin: "",
+  });
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -64,6 +73,11 @@ export default function AdminSettingsPage() {
       [key]: value,
     },
   }));
+  const setPin = (key, value) => {
+    const digits = String(value || "").replace(/\D/g, "").slice(0, 4);
+    setPinForm((current) => ({ ...current, [key]: digits }));
+    setPinError("");
+  };
 
   const save = async () => {
     if (busy) return;
@@ -89,6 +103,40 @@ export default function AdminSettingsPage() {
       showToast({ type: "error", title: "فشل حفظ الإعدادات", message });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const savePin = async () => {
+    if (pinBusy) return;
+
+    if (!pinForm.currentPin || !pinForm.newPin || !pinForm.confirmPin) {
+      setPinError("جميع حقول الرمز مطلوبة");
+      return;
+    }
+
+    if (!/^\d{4}$/.test(pinForm.newPin)) {
+      setPinError("يجب أن يتكون الرمز من 4 أرقام");
+      return;
+    }
+
+    if (pinForm.newPin !== pinForm.confirmPin) {
+      setPinError("الرمز الجديد وتأكيده غير متطابقين");
+      return;
+    }
+
+    setPinBusy(true);
+    setPinError("");
+
+    try {
+      await updateAdminSecurityPin(token, pinForm);
+      setPinForm({ currentPin: "", newPin: "", confirmPin: "" });
+      showToast({ type: "success", title: "تم تحديث رمز الدخول بنجاح" });
+    } catch {
+      const message = "تعذر تحديث رمز الدخول";
+      setPinError(message);
+      showToast({ type: "error", title: message });
+    } finally {
+      setPinBusy(false);
     }
   };
 
@@ -139,6 +187,33 @@ export default function AdminSettingsPage() {
             iconClassName="bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/20"
           >
             <SwitchField label="وضع الصيانة" checked={form.maintenanceMode} onChange={(value) => set("maintenanceMode", value)} />
+          </SettingsCard>
+
+          <SettingsCard
+            title="رمز الدخول لأدوات الأدمن"
+            description="تحديث رمز التأكيد المطلوب قبل فتح أدوات الأدمن."
+            icon={<KeyRound className="h-5 w-5" />}
+            iconClassName="bg-gradient-to-br from-sky-400 to-blue-500 shadow-blue-500/20"
+          >
+            <div className="grid gap-3 md:grid-cols-3">
+              <PinField label="الرمز الحالي" value={pinForm.currentPin} onChange={(value) => setPin("currentPin", value)} />
+              <PinField label="الرمز الجديد" value={pinForm.newPin} onChange={(value) => setPin("newPin", value)} />
+              <PinField label="تأكيد الرمز الجديد" value={pinForm.confirmPin} onChange={(value) => setPin("confirmPin", value)} />
+            </div>
+            {pinError && (
+              <p className="rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-200">
+                {pinError}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={pinBusy}
+              onClick={() => void savePin()}
+              className="interactive-ring inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-sky-500 to-blue-600 px-5 text-xs font-black text-white shadow-[0_12px_26px_rgba(37,99,235,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pinBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              حفظ الرمز
+            </button>
           </SettingsCard>
 
           <SettingsCard
@@ -228,11 +303,35 @@ function NumberField({ label, value, onChange, step = "any" }) {
   return <InputField label={label} min="0" step={step} type="number" value={value} onChange={onChange} />;
 }
 
-function InputField({ label, type = "text", value, onChange, min, step }) {
+function PinField({ label, value, onChange }) {
+  return (
+    <InputField
+      autoComplete="new-password"
+      inputMode="numeric"
+      label={label}
+      maxLength={4}
+      type="password"
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
+
+function InputField({ autoComplete, inputMode, label, maxLength, type = "text", value, onChange, min, step }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-[9px] font-black text-slate-600 dark:text-slate-300">{label}</span>
-      <input min={min} step={step} type={type} value={value} onChange={(event) => onChange(event.target.value)} className={input} />
+      <input
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        min={min}
+        step={step}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={input}
+      />
     </label>
   );
 }

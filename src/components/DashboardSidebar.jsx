@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
 import { iconMap } from "./icons";
+import { verifyAdminSecurityPin } from "../api/adminSecurityPin";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
-const temporaryAdminPin = "1111";
 const adminToolsUnlockedKey = "winnie-admin-tools-unlocked";
 const adminToolItems = [
   { label: "لوحة الأدمن", path: "/admin/tools/dashboard", icon: "LayoutDashboard", badge: "مركز" },
@@ -51,7 +51,7 @@ function getStoredAdminToolsUnlocked() {
 }
 
 export default function DashboardSidebar({ items, open, onClose, walletBalance, variant = "customer" }) {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation("common");
   const navigate = useNavigate();
@@ -76,6 +76,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
   const [visibleAdminPinIndex, setVisibleAdminPinIndex] = useState(null);
   const adminPinRevealTimeoutRef = useRef(null);
   const [adminGateError, setAdminGateError] = useState("");
+  const [adminGateVerifying, setAdminGateVerifying] = useState(false);
   const [adminExitConfirmOpen, setAdminExitConfirmOpen] = useState(false);
   const sidebarAvatarUrl = (isImageAvatar(user?.avatar) ? user.avatar : "") || profileAvatarUrl;
   const sidebarAvatarInitial = String(user?.avatar || user?.name || "W").slice(0, 1).toUpperCase();
@@ -164,33 +165,49 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
     navigate("/admin/tools/dashboard");
   };
 
-  const unlockAdminTools = (pin) => {
+  const unlockAdminTools = async (pin) => {
+    if (adminGateVerifying) return false;
+
     window.clearTimeout(adminPinRevealTimeoutRef.current);
     setVisibleAdminPinIndex(null);
 
-    if (pin.length !== 4 || pin !== temporaryAdminPin) {
-      setAdminGateError("الرقم السري غير صحيح. جرب 1111 مؤقتًا.");
+    if (pin.length !== 4 || !token) {
+      setAdminGateError("الرقم السري غير صحيح");
       return false;
     }
 
-    setAdminToolsUnlocked(true);
-    try {
-      sessionStorage.setItem(adminToolsUnlockedKey, "true");
-    } catch {
-      // Keep this as a UI-only temporary gate if session storage is unavailable.
-    }
-    setAdminToolsOpen(true);
-    setAdminUserNavOpen(false);
-    setAdminGateOpen(false);
-    setAdminGatePin("");
+    setAdminGateVerifying(true);
     setAdminGateError("");
-    navigate("/admin/tools/dashboard");
-    return true;
+
+    try {
+      const result = await verifyAdminSecurityPin(token, pin);
+      if (!result.valid) {
+        throw new Error("Invalid security PIN");
+      }
+      setAdminToolsUnlocked(true);
+      try {
+        sessionStorage.setItem(adminToolsUnlockedKey, "true");
+      } catch {
+        // Keep this as a UI-only temporary gate if session storage is unavailable.
+      }
+      setAdminToolsOpen(true);
+      setAdminUserNavOpen(false);
+      setAdminGateOpen(false);
+      setAdminGatePin("");
+      setAdminGateError("");
+      navigate("/admin/tools/dashboard");
+      return true;
+    } catch {
+      setAdminGateError("الرقم السري غير صحيح");
+      return false;
+    } finally {
+      setAdminGateVerifying(false);
+    }
   };
 
-  const handleAdminGateSubmit = (event) => {
+  const handleAdminGateSubmit = async (event) => {
     event.preventDefault();
-    unlockAdminTools(adminGatePin);
+    await unlockAdminTools(adminGatePin);
   };
 
   const closeAdminGate = () => {
@@ -216,7 +233,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
 
     adminPinRevealTimeoutRef.current = window.setTimeout(() => {
       setVisibleAdminPinIndex(null);
-      if (nextPin.length === 4) unlockAdminTools(nextPin);
+      if (nextPin.length === 4) void unlockAdminTools(nextPin);
     }, nextPin.length === 4 ? 140 : 650);
   };
 
@@ -554,6 +571,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
                     maxLength={4}
                     autoComplete="one-time-code"
                     aria-label="الرقم السري المكوّن من 4 أرقام"
+                    disabled={adminGateVerifying}
                     autoFocus
                     className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
                   />
@@ -589,7 +607,9 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="h-12 flex-1 rounded-2xl bg-[linear-gradient(135deg,#F59E0B,#22C55E,#38BDF8)] px-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(34,197,94,0.22)] transition hover:-translate-y-0.5"
+                  disabled={adminGateVerifying}
+                  aria-busy={adminGateVerifying}
+                  className="h-12 flex-1 rounded-2xl bg-[linear-gradient(135deg,#F59E0B,#22C55E,#38BDF8)] px-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(34,197,94,0.22)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   فتح أدوات الأدمن
                 </button>
