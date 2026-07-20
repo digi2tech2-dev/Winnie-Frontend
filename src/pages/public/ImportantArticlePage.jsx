@@ -1,7 +1,24 @@
 import { Link, Navigate, useLocation, useParams } from "react-router-dom";
-import { ArrowRight, CalendarDays, CheckCircle2, Mail, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  ExternalLink,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Sparkles,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getImportantArticle } from "../../data/importantLinks";
+
+const contactIcons = {
+  email: Mail,
+  phone: Phone,
+  whatsapp: MessageCircle,
+  location: MapPin,
+};
 
 export default function ImportantArticlePage({ articleSlug }) {
   const { slug } = useParams();
@@ -86,6 +103,39 @@ export default function ImportantArticlePage({ articleSlug }) {
                   <Mail className="h-4 w-4" />
                   {section.email}
                 </a>
+              </div>
+            )}
+            {section.contacts && (
+              <div className="mt-5 overflow-hidden rounded-lg border border-sky-100 bg-white/70 shadow-[0_12px_30px_rgba(14,165,233,0.08)] dark:border-white/10 dark:bg-[#0D1324]">
+                {section.contacts.map((contact) => {
+                  const ContactIcon = contactIcons[contact.type] || ExternalLink;
+                  const isExternal = /^https?:\/\//.test(contact.href);
+
+                  return (
+                    <a
+                      key={`${contact.type}-${contact.value}`}
+                      href={contact.href}
+                      target={isExternal ? "_blank" : undefined}
+                      rel={isExternal ? "noreferrer" : undefined}
+                      className="group flex items-center justify-between gap-4 border-b border-sky-100 px-4 py-4 text-start transition last:border-b-0 hover:bg-sky-50/80 dark:border-white/10 dark:hover:bg-white/5"
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#1A2335] dark:text-[#A78BFA]">
+                          <ContactIcon className="h-5 w-5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-black text-slate-950 dark:text-white">
+                            {contact.label}
+                          </span>
+                          <span className="mt-1 block break-words text-sm font-bold text-slate-600 dark:text-[#C4C9D4]">
+                            {contact.value}
+                          </span>
+                        </span>
+                      </span>
+                      <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-[#0EA5E9] dark:text-[#8A94A7]" />
+                    </a>
+                  );
+                })}
               </div>
             )}
             {section.bullets && (

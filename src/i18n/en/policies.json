@@ -215,11 +215,37 @@
       "title": "Contact Winnie Fun",
       "updated": "June 17, 2026",
       "intro": "Fast and clear support is an essential part of the digital top-up experience. This page explains the right channels to contact us and the details that help us solve your request accurately.",
-      "highlights": ["Order support", "Account follow-up", "Partnership inquiries"],
+      "highlights": ["Order support", "Phone and WhatsApp", "Location details"],
       "sections": [
         {
-          "heading": "Official email",
-          "body": ["You can contact us at Support.winniefun@gmail.com. Use this email for important requests such as payment problems, order reviews, legal inquiries, or privacy requests."]
+          "heading": "Official contact channels",
+          "body": ["Choose the channel that best matches your request. For urgent order or payment follow-up, include your order number and the email or phone linked to your account."],
+          "contacts": [
+            {
+              "type": "email",
+              "label": "Official email",
+              "value": "Support.winniefun@gmail.com",
+              "href": "mailto:Support.winniefun@gmail.com"
+            },
+            {
+              "type": "phone",
+              "label": "Phone",
+              "value": "+971 52 771 5868",
+              "href": "tel:+971527715868"
+            },
+            {
+              "type": "whatsapp",
+              "label": "WhatsApp",
+              "value": "+971 52 771 5868",
+              "href": "https://wa.me/971527715868"
+            },
+            {
+              "type": "location",
+              "label": "Location",
+              "value": "Open Winnie Fun location on Google Maps",
+              "href": "https://maps.app.goo.gl/REwk2zZKSiuyVAdLA?g_st=ic"
+            }
+          ]
         },
         {
           "heading": "What details should you include?",
