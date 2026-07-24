@@ -146,8 +146,8 @@ export default function PaymentMethodsPage() {
     : [...new Set(groups.map((group) => group.currency).filter(Boolean))];
 
   return (
-    <div dir="rtl" className="space-y-4">
-      <section className="flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
+    <div dir="rtl" className="admin-payment-methods-page space-y-4">
+      <section className="admin-payment-methods-hero flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
         <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white">
           <WalletCards className="h-5 w-5" />
         </span>
@@ -178,9 +178,9 @@ export default function PaymentMethodsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <div className="admin-payment-methods-stats grid grid-cols-2 gap-2 lg:grid-cols-4">
             {stats.map(({ label, value, icon: Icon }) => (
-              <article key={label} className="rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+              <article key={label} className="admin-payment-methods-stat rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
                 <Icon className="h-8 w-8 rounded-xl bg-violet-500/10 p-2 text-violet-600" />
                 <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG-u-nu-latn")}</strong>
                 <p className="text-[8px] font-black text-slate-400">{label}</p>
@@ -189,7 +189,7 @@ export default function PaymentMethodsPage() {
           </div>
 
           {groups.length ? (
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="admin-payment-groups-list grid gap-3 lg:grid-cols-2">
               {groups.map((group) => (
                 <PaymentGroupCard
                   key={group.id}

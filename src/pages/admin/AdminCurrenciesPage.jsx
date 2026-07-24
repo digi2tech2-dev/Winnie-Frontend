@@ -121,7 +121,7 @@ export default function AdminCurrenciesPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="admin-currencies-page space-y-4">
       <Header busy={busy} onCreate={() => setEditing(null)} />
 
       {error && (
@@ -130,7 +130,7 @@ export default function AdminCurrenciesPage() {
         </p>
       )}
 
-      <section className="rounded-[23px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
+      <section className="admin-currencies-search rounded-[23px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
         <h2 className="text-sm font-black dark:text-white">عملات الخلفية</h2>
         <label className="relative mt-3 block">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
@@ -149,7 +149,7 @@ export default function AdminCurrenciesPage() {
             {Array.from({ length: 6 }).map((_, index) => <SkeletonBlock key={index} className="h-44 rounded-[22px]" />)}
           </div>
         ) : filteredCurrencies.length ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="admin-currencies-list grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredCurrencies.map((currency) => (
               <CurrencyCard
                 key={currency.code}
@@ -200,7 +200,7 @@ export default function AdminCurrenciesPage() {
 
 function Header({ busy, onCreate }) {
   return (
-    <section className="flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
+    <section className="admin-currencies-hero flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white">
         <Coins className="h-5 w-5" />
       </span>
@@ -225,7 +225,7 @@ function CurrencyCard({ currency, onDelete, onEdit, onToggle }) {
   const fixed = currency.code === "USD";
 
   return (
-    <article className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
+    <article className="admin-currency-card rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
       <div className="flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-500/10 text-lg font-black text-violet-700 dark:text-violet-200">
           {currency.symbol}
@@ -242,7 +242,7 @@ function CurrencyCard({ currency, onDelete, onEdit, onToggle }) {
         )}
       </div>
 
-      <div className="mt-3 rounded-2xl bg-violet-50 p-3 dark:bg-violet-500/[0.08]">
+      <div className="admin-currency-rate mt-3 rounded-2xl bg-violet-50 p-3 dark:bg-violet-500/[0.08]">
         <p className="text-[8px] font-black text-violet-500">سعر المنصة مقابل 1 USD</p>
         <strong dir="ltr" className="mt-1 block text-right text-xl text-violet-700 dark:text-violet-300">
           {currency.platformRate.toLocaleString("en-US", { maximumFractionDigits: 6 })} {currency.code}
@@ -259,7 +259,7 @@ function CurrencyCard({ currency, onDelete, onEdit, onToggle }) {
         <span className="text-[8px] font-bold text-slate-400">{currency.updatedAtLabel}</span>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="admin-currency-actions mt-3 grid grid-cols-3 gap-2">
         <ActionButton icon={Pencil} label="تعديل" onClick={onEdit} />
         <ActionButton icon={Power} label={currency.isActive ? "تعطيل" : "تفعيل"} danger={currency.isActive} disabled={fixed && currency.isActive} onClick={onToggle} />
         <ActionButton icon={Trash2} label="حذف" danger onClick={onDelete} />

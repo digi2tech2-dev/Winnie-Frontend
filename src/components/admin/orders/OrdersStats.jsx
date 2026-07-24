@@ -44,13 +44,13 @@ export default function OrdersStats({ orders, total }) {
   };
 
   return (
-    <section aria-label="إحصائيات الطلبات" className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+    <section aria-label="إحصائيات الطلبات" className="admin-orders-stats grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
       {statConfig.map((item) => {
         const Icon = item.icon;
         return (
           <article
             key={item.key}
-            className={`relative min-h-[112px] overflow-hidden rounded-[20px] border p-3 shadow-[0_12px_30px_rgba(15,23,42,0.055)] sm:min-h-[128px] sm:rounded-[24px] sm:p-4 dark:shadow-[0_0_20px_rgba(139,92,246,0.10)] ${item.card}`}
+            className={`admin-orders-stat relative min-h-[112px] overflow-hidden rounded-[20px] border p-3 shadow-[0_12px_30px_rgba(15,23,42,0.055)] sm:min-h-[128px] sm:rounded-[24px] sm:p-4 dark:shadow-[0_0_20px_rgba(139,92,246,0.10)] ${item.card}`}
           >
             <span className={`absolute inset-y-3 right-0 w-1 rounded-l-full ${item.accent}`} aria-hidden="true" />
             <div className="flex items-start justify-between gap-2">

@@ -49,6 +49,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const [pendingMessage, setPendingMessage] = useState("");
   const [riskBlockedMessage, setRiskBlockedMessage] = useState("");
   const [receiptFile, setReceiptFile] = useState(null);
+  const [customFieldValues, setCustomFieldValues] = useState({});
   const [receiptInputKey, setReceiptInputKey] = useState(0);
   const [redirecting, setRedirecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,7 +64,10 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
 
       try {
         const result = await getCustomerPaymentMethod(methodId);
-        if (!cancelled) setMethod(result.method);
+        if (!cancelled) {
+          setMethod(result.method);
+          setCustomFieldValues({});
+        }
       } catch (requestError) {
         if (!cancelled) {
           setMethod(null);
@@ -95,6 +99,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const isManual = topUpFlow === "manual";
   const isOnline = topUpFlow === "online";
   const hostedCheckoutName = getHostedCheckoutName(method.gateway);
+  const customFields = Array.isArray(method.customFields) ? method.customFields : [];
   const gatewayChargeLabel = hostedCheckoutName
     ? t("topUp.paidViaProvider", { provider: hostedCheckoutName })
     : t("topUp.gatewayCharge");
@@ -210,6 +215,23 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
       return;
     }
 
+    const missingCustomField = customFields.find((field) => {
+      const value = customFieldValues[field.key];
+      return field.type === "image" ? !(value instanceof File) : !String(value ?? "").trim();
+    });
+    if (missingCustomField) {
+      setErrorMessage(`حقل "${missingCustomField.label}" مطلوب.`);
+      return;
+    }
+
+    const invalidNumberField = customFields.find((field) => (
+      field.type === "number" && !Number.isFinite(Number(customFieldValues[field.key]))
+    ));
+    if (invalidNumberField) {
+      setErrorMessage(`أدخل رقمًا صحيحًا في حقل "${invalidNumberField.label}".`);
+      return;
+    }
+
     if (isManual && !receiptFile) {
       setErrorMessage(t("topUp.receiptRequired"));
       return;
@@ -228,10 +250,21 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         formData.append("antiScamConfirmed", "true");
         formData.append("termsAccepted", "true");
         if (antiScamConfirmedAt) formData.append("antiScamConfirmedAt", antiScamConfirmedAt);
+        const submittedCustomFields = customFields.map((field) => {
+          const value = customFieldValues[field.key];
+          if (field.type === "image") {
+            formData.append(`customFieldFiles[${field.key}]`, value);
+            return { key: field.key, label: field.label, type: field.type, value: value.name };
+          }
+          return { key: field.key, label: field.label, type: field.type, value: String(value).trim() };
+        });
+        formData.append("customFields", JSON.stringify(submittedCustomFields));
+        formData.append("fields", JSON.stringify(Object.fromEntries(submittedCustomFields.map((field) => [field.key, field.value]))));
 
         const result = await createDepositRequest(token, formData);
         setAmount("");
         setReceiptFile(null);
+        setCustomFieldValues({});
         setReceiptInputKey((current) => current + 1);
         setRiskBlockedMessage("");
         setSuccessMessage(t("topUp.depositSubmitted", { amount: result.deposit.amountLabel }));
@@ -256,6 +289,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
         antiScamConfirmed: true,
         termsAccepted: true,
         antiScamConfirmedAt,
+        customFields: Object.fromEntries(customFields.map((field) => [field.key, customFieldValues[field.key]])),
       }, {
         idempotencyKey: makeIdempotencyKey("payment"),
       });
@@ -315,7 +349,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   return (
     <div
       dir="rtl"
-      className="-mx-4 -mt-6 min-h-[calc(100vh-124px)] overflow-hidden bg-[#F8FCFF] px-4 pb-10 pt-5 text-slate-950 dark:bg-[#020615] dark:text-white sm:-mx-6 sm:px-6 lg:-mx-8"
+      className="w-full overflow-x-clip rounded-[24px] bg-[#F8FCFF] pb-4 pt-1 text-slate-950 dark:bg-[#020615] dark:text-white"
     >
       <div className="mx-auto w-full max-w-[620px] space-y-3">
         <header className="rounded-[16px] border border-[#8B5CF6]/[0.14] bg-white/90 p-3 shadow-soft backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#080d1e]/[0.96] dark:shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
@@ -342,7 +376,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
 
         <form onSubmit={submitTopUp} className="rounded-[18px] border border-slate-200 bg-white/92 p-2.5 shadow-[0_16px_40px_rgba(14,165,233,0.10)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#080d1e]/[0.96] dark:shadow-[0_18px_48px_rgba(0,0,0,0.30)] sm:p-3">
           <section className="overflow-hidden rounded-[16px] border border-[#8B5CF6]/[0.14] bg-[linear-gradient(145deg,#F8FCFF,#FFFFFF_42%,#F5F3FF)] dark:border-[#8B5CF6]/[0.24] dark:bg-[linear-gradient(145deg,#111827,#080d1e_48%,#120a2e)]">
-            <div className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_180px] sm:p-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_112px] items-center gap-4 p-3 sm:grid-cols-[minmax(0,1fr)_132px] sm:gap-5 sm:p-4">
               <div className="flex min-w-0 flex-col justify-between gap-3">
                 <div className="flex items-start gap-2.5">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-[#8B5CF6] shadow-[0_10px_24px_rgba(139,92,246,0.12)] dark:bg-[#050918] dark:text-[#C084FC]">
@@ -389,6 +423,53 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
             </label>
           </section>
 
+          {customFields.length > 0 && (
+            <section className="mt-3 space-y-3 rounded-[18px] border border-violet-200/70 bg-gradient-to-br from-white to-violet-50/70 p-3 dark:border-violet-400/20 dark:from-[#080d1e] dark:to-violet-950/20">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">بيانات مطلوبة لإتمام العملية</h3>
+                <p className="mt-1 text-[10px] font-bold text-slate-500 dark:text-slate-400">جميع الحقول التالية إجبارية.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {customFields.map((field) => (
+                  field.type === "image" ? (
+                    <label key={field.key} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-violet-300 bg-white p-3 dark:border-violet-400/25 dark:bg-[#050918]">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-600"><Upload className="h-5 w-5" /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-black text-slate-800 dark:text-white">{field.label} <b className="text-rose-500">*</b></span>
+                        <span className="mt-1 block truncate text-[10px] font-bold text-slate-400">{customFieldValues[field.key]?.name || "اختر صورة"}</span>
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        required
+                        className="sr-only"
+                        onChange={(event) => {
+                          setCustomFieldValues((current) => ({ ...current, [field.key]: event.target.files?.[0] || null }));
+                          setErrorMessage("");
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <label key={field.key} className="block">
+                      <span className="mb-1.5 block text-xs font-black text-slate-700 dark:text-white">{field.label} <b className="text-rose-500">*</b></span>
+                      <input
+                        type={field.type === "number" ? "number" : "text"}
+                        inputMode={field.type === "number" ? "decimal" : undefined}
+                        required
+                        value={customFieldValues[field.key] ?? ""}
+                        onChange={(event) => {
+                          setCustomFieldValues((current) => ({ ...current, [field.key]: event.target.value }));
+                          setErrorMessage("");
+                        }}
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 dark:border-white/10 dark:bg-[#050918] dark:text-white"
+                      />
+                    </label>
+                  )
+                ))}
+              </div>
+            </section>
+          )}
+
           {isManual && (
             <section className="mt-3 rounded-[18px] border border-dashed border-[#8B5CF6]/30 bg-white/86 p-3 dark:border-[#A855F7]/25 dark:bg-[#050918]/70">
               <label className="flex cursor-pointer items-center gap-3">
@@ -416,18 +497,18 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
             </section>
           )}
 
-          <section className="mt-3 rounded-[16px] border border-[#8B5CF6]/[0.16] bg-[linear-gradient(135deg,rgba(139,92,246,0.12),rgba(255,255,255,0.94)_44%)] p-3 dark:border-[#8B5CF6]/[0.24] dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.46),rgba(8,13,30,0.98)_44%)]">
-            <div className="rounded-xl bg-white/85 p-3 dark:bg-[#050918]/80">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[11px] font-bold text-slate-500 dark:text-white/[0.48]">{t("topUp.totalPayable")}</p>
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#151136] text-white shadow-[0_12px_28px_rgba(139,92,246,0.24)]">
-                  <ReceiptText className="h-5 w-5" />
+          <section className="mt-3 rounded-[15px] border border-[#8B5CF6]/[0.16] bg-[linear-gradient(135deg,rgba(139,92,246,0.12),rgba(255,255,255,0.94)_44%)] p-2.5 dark:border-[#8B5CF6]/[0.24] dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.46),rgba(8,13,30,0.98)_44%)]">
+            <div className="rounded-xl bg-white/85 p-2.5 dark:bg-[#050918]/80">
+              <div className="flex items-center justify-between gap-2.5">
+                <p className="text-[10px] font-bold text-slate-500 dark:text-white/[0.48]">{t("topUp.totalPayable")}</p>
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#151136] text-white shadow-[0_10px_24px_rgba(139,92,246,0.22)]">
+                  <ReceiptText className="h-4 w-4" />
                 </span>
               </div>
-              <p dir="ltr" className="mt-1 text-3xl font-black leading-none text-slate-950 dark:text-white">
+              <p dir="ltr" className="mt-1 text-2xl font-black leading-none text-slate-950 dark:text-white">
                 {amountBreakdown.payableAmountLabel}
               </p>
-              <div className="mt-3 grid gap-2 text-right">
+              <div className="mt-2.5 grid gap-1.5 text-right">
                 <AmountBreakdownRow label={t("topUp.topUpAmount")} value={amountBreakdown.topUpAmountLabel} />
                 <AmountBreakdownRow
                   label={t("topUp.paymentFeeWithPercent", { percent: formatPercent(amountBreakdown.feePercent) })}
@@ -493,9 +574,9 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
             <button
               type="submit"
               disabled={submitting || redirecting}
-              className="interactive-ring mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#A855F7] px-4 text-sm font-black text-white shadow-[0_12px_30px_rgba(139,92,246,0.30)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="interactive-ring mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#A855F7] px-4 text-xs font-black text-white shadow-[0_10px_24px_rgba(139,92,246,0.26)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting || redirecting ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <CheckCircle2 className="h-[18px] w-[18px]" />}
+              {submitting || redirecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {redirecting ? t("common:states.redirecting") : submitting ? t("common:states.submitting") : isManual ? t("topUp.submitDeposit") : isOnline ? t("topUp.continueSecureCheckout") : t("topUp.notConnected")}
             </button>
           </section>
@@ -572,9 +653,9 @@ function AmountBreakdownRow({ label, value, tone = "slate" }) {
   const valueClass = tone === "sky" ? "text-sky-700 dark:text-sky-300" : "text-slate-900 dark:text-white";
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 dark:bg-white/[0.04]">
-      <span className="text-[11px] font-bold text-slate-500 dark:text-white/50">{label}</span>
-      <span dir="ltr" className={`text-sm font-black ${valueClass}`}>{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-2.5 py-1.5 dark:bg-white/[0.04]">
+      <span className="text-[10px] font-bold text-slate-500 dark:text-white/50">{label}</span>
+      <span dir="ltr" className={`text-xs font-black ${valueClass}`}>{value}</span>
     </div>
   );
 }
@@ -627,63 +708,22 @@ function PaymentDetails({ method, onCopyAccount }) {
 }
 
 function SelectedPaymentCard({ method }) {
-  const { t } = useTranslation("wallet");
-  const type = getPaymentVisualType(method);
-
-  if (type === "apple") {
-    return (
-      <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-slate-200 bg-[linear-gradient(145deg,#ffffff,#d9dbe2)] p-4 text-[#111827] shadow-[0_16px_34px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-[linear-gradient(145deg,#242733,#090b12_70%)] dark:text-white dark:shadow-[0_18px_38px_rgba(0,0,0,0.38)]">
-        <span className="absolute -left-7 -top-7 h-20 w-20 rounded-full bg-white/60 dark:bg-white/[0.08]" />
-        <span className="absolute -bottom-10 -right-8 hidden h-24 w-24 rounded-full bg-violet-500/10 dark:block" />
-        <p className="relative text-2xl font-black">Apple Pay</p>
-        <p className="relative mt-8 text-xs font-black text-slate-500 dark:text-white/60">{t("topUp.onlineIntent")}</p>
-      </div>
-    );
-  }
-
-  if (type === "mastercard") {
-    return (
-      <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-white/[0.12] bg-[linear-gradient(145deg,#27304f,#11172c)] p-4 text-white shadow-[0_16px_34px_rgba(15,23,42,0.22)]">
-        <span className="absolute -left-7 -bottom-7 h-24 w-24 rounded-full bg-[#eb001b]/16" />
-        <span className="absolute -right-7 -top-7 h-24 w-24 rounded-full bg-[#f79e1b]/16" />
-        <div className="relative flex items-start justify-between">
-          <span className="relative h-10 w-20">
-            <span className="absolute left-0 top-1 h-9 w-9 rounded-full bg-[#eb001b]" />
-            <span className="absolute left-7 top-1 h-9 w-9 rounded-full bg-[#f79e1b] mix-blend-screen" />
-          </span>
-          <span className="text-lg font-black leading-none text-white/[0.82]">)))</span>
-        </div>
-        <p className="relative mt-7 text-[11px] font-bold text-white/60">{method.account || "**** **** **** 4242"}</p>
-      </div>
-    );
-  }
-
-  if (type === "visa") {
-    return (
-      <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-blue-300/25 bg-[linear-gradient(145deg,#0d67ff,#082b9f)] p-4 text-white shadow-[0_16px_34px_rgba(15,23,42,0.22)]">
-        <span className="absolute -left-8 -bottom-8 h-24 w-24 rounded-full bg-white/12" />
-        <span className="absolute right-4 top-4 text-2xl font-black italic leading-none">VISA</span>
-        <span className="relative block h-7 w-10 rounded-md bg-[linear-gradient(145deg,#f7d66a,#d69f22)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]" />
-        <div className="relative mt-7 flex items-end justify-between text-white/75">
-          <p className="text-[11px] font-bold">{method.account || "**** 4242"}</p>
-          <span className="text-lg font-black leading-none">)))</span>
-        </div>
-      </div>
-    );
-  }
+  const image = method.imageUrl || method.image;
 
   return (
-    <div className="relative min-h-[112px] overflow-hidden rounded-[18px] border border-blue-300/25 bg-[linear-gradient(145deg,#0d67ff,#082b9f)] p-4 text-white shadow-[0_16px_34px_rgba(15,23,42,0.22)]">
-      <span className="absolute -left-8 -bottom-8 h-24 w-24 rounded-full bg-white/12" />
-      <div className="relative flex items-start justify-between gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/15">
-          {method.imageUrl || method.image ? <img src={method.imageUrl || method.image} alt="" className="h-full w-full object-contain p-1.5" /> : <CreditCard className="h-5 w-5" />}
-        </span>
-        <p className="min-w-0 truncate text-right text-lg font-black">{method.title}</p>
-      </div>
-      <div className="relative mt-7 flex items-end justify-between gap-3 text-white/75">
-        <p className="truncate text-[11px] font-bold">{method.account || method.bank || "Winnie Pay"}</p>
-        <span className="text-lg font-black leading-none">)))</span>
+    <div className="relative aspect-square w-[112px] shrink-0 rounded-[22px] bg-[linear-gradient(145deg,rgba(139,92,246,0.65),rgba(14,165,233,0.50))] p-px shadow-[0_14px_30px_rgba(76,29,149,0.16)] sm:w-[132px] dark:shadow-[0_16px_34px_rgba(0,0,0,0.30)]">
+      <div className="relative grid h-full w-full place-items-center overflow-hidden rounded-[21px] bg-white p-2 ring-1 ring-white/80 dark:bg-[#090d1d] dark:ring-white/5">
+        {image ? (
+          <img
+            src={image}
+            alt={method.title}
+            className="h-full w-full rounded-[15px] object-contain"
+          />
+        ) : (
+          <span className="grid h-full w-full place-items-center rounded-[15px] bg-gradient-to-br from-violet-500/10 to-sky-500/10">
+            <CreditCard className="h-9 w-9 text-[#8B5CF6] dark:text-[#C084FC]" aria-hidden="true" />
+          </span>
+        )}
       </div>
     </div>
   );

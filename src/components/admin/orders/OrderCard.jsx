@@ -12,7 +12,7 @@ export default function OrderCard({ order, onDetails }) {
   ];
 
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-slate-200/90 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.065)] transition duration-300 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-[0_20px_44px_rgba(124,58,237,0.11)] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.10)] dark:hover:border-[#A855F7]/35 dark:hover:bg-[#151E2D] sm:p-5">
+    <article className="admin-order-card group relative overflow-hidden rounded-[24px] border border-slate-200/90 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.065)] transition duration-300 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-[0_20px_44px_rgba(124,58,237,0.11)] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.10)] dark:hover:border-[#A855F7]/35 dark:hover:bg-[#151E2D] sm:p-5">
       <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#8B5CF6] via-[#3B82F6] to-[#22C55E] opacity-70" aria-hidden="true" />
 
       <div className="flex items-start justify-between gap-3 pt-1">
@@ -23,7 +23,7 @@ export default function OrderCard({ order, onDetails }) {
         <StatusBadge status={order.status} compact />
       </div>
 
-      <div className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-2.5 dark:border-white/[0.07] dark:bg-[#0B1220]/80">
+      <div className="admin-order-product mt-3 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-2.5 dark:border-white/[0.07] dark:bg-[#0B1220]/80">
         <img src={order.productImage} alt="" className="h-14 w-14 shrink-0 rounded-[14px] object-cover shadow-sm" />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-xs font-black leading-5 text-slate-800 sm:text-sm dark:text-slate-100">{order.product}</p>
@@ -37,7 +37,7 @@ export default function OrderCard({ order, onDetails }) {
         </div>
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2">
+      <dl className="admin-order-details mt-3 grid grid-cols-2 gap-2">
         {details.map((item, index) => {
           const Icon = item.icon;
           return (
@@ -57,14 +57,14 @@ export default function OrderCard({ order, onDetails }) {
         })}
       </dl>
 
-      <p className="mt-3 line-clamp-2 min-h-9 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-bold leading-5 text-slate-500 dark:border-white/[0.06] dark:bg-[#0B1220]/70 dark:text-slate-400">
+      <p className="admin-order-summary mt-3 line-clamp-2 min-h-9 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-bold leading-5 text-slate-500 dark:border-white/[0.06] dark:bg-[#0B1220]/70 dark:text-slate-400">
         {order.submittedFieldsSummary}
       </p>
 
       <button
         type="button"
         onClick={() => onDetails(order.id)}
-        className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 text-xs font-black text-[#7C3AED] transition hover:border-violet-300 hover:bg-violet-100 group-hover:shadow-[0_8px_22px_rgba(124,58,237,0.10)] dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-[#C084FC] dark:hover:bg-violet-500/15"
+        className="admin-order-details-button mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 text-xs font-black text-[#7C3AED] transition hover:border-violet-300 hover:bg-violet-100 group-hover:shadow-[0_8px_22px_rgba(124,58,237,0.10)] dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-[#C084FC] dark:hover:bg-violet-500/15"
       >
         التفاصيل
         <ArrowLeft className="h-4 w-4" />

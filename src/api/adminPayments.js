@@ -5,6 +5,7 @@ import {
   compactObject,
   formatCurrency,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   humanizeToken,
   normalizePagination,
@@ -185,6 +186,7 @@ export async function getAdminPayments(token, query = {}) {
     query: compactObject({
       page: query.page,
       limit: query.limit,
+      search: query.search,
       status: toBackendFilter(query.status),
       gateway: toBackendFilter(query.gateway),
       userId: query.userId,
@@ -199,7 +201,7 @@ export async function getAdminPayments(token, query = {}) {
 
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: payments.length,

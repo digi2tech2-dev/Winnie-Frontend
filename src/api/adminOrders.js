@@ -5,6 +5,7 @@ import {
   compactObject,
   formatCurrency,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   humanizeToken,
   normalizePagination,
@@ -283,7 +284,7 @@ export async function getAdminOrders(token, query = {}) {
   return {
     message: response.message,
     orders,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: orders.length,

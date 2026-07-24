@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
+  ArrowRight,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -16,9 +18,10 @@ import { getCustomerOrders } from "../../api/orders";
 import EmptyState from "../../components/EmptyState";
 import DateFilterPicker from "../../components/DateFilterPicker";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { toDateInputValue } from "../../data/adminDashboard";
 
-const pageSize = 20;
+const pageSize = 15;
 
 const statusClasses = {
   COMPLETED: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
@@ -60,6 +63,7 @@ const translatedStatusLabel = (t, order) =>
 
 export default function CustomerOrders({ basePath = "/customer" }) {
   const { token } = useAuth();
+  const { isArabic } = useLanguage();
   const { t } = useTranslation("orders");
   const [defaultFilters] = useState(createInitialFilters);
   const [filters, setFilters] = useState(defaultFilters);
@@ -84,6 +88,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
         if (!cancelled) {
           setOrders(result.orders);
           setPagination(result.pagination);
+          if (page !== result.pagination.page) setPage(result.pagination.page);
         }
       } catch (requestError) {
         if (!cancelled) {
@@ -159,6 +164,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
     if (key === "sort") return value !== defaultFilters.sort;
     return value !== defaultFilters[key] && value !== "";
   }).length;
+  const currentPage = pagination.page || page;
 
   const totalAmountLabel = useMemo(() => {
     const totalsByCurrency = filteredOrders.reduce((totals, order) => {
@@ -176,21 +182,21 @@ export default function CustomerOrders({ basePath = "/customer" }) {
   }, [filteredOrders, orders]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <section className="relative overflow-hidden rounded-[24px] border border-violet-200/80 bg-[radial-gradient(circle_at_12%_0%,rgba(125,211,252,0.34),transparent_38%),radial-gradient(circle_at_92%_16%,rgba(244,114,182,0.24),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(245,243,255,0.96)_52%,rgba(236,254,255,0.94))] p-4 shadow-[0_20px_55px_rgba(109,40,217,0.13)] sm:rounded-[32px] sm:p-6 dark:border-violet-300/15 dark:bg-[radial-gradient(circle_at_10%_0%,rgba(56,189,248,0.16),transparent_36%),radial-gradient(circle_at_94%_10%,rgba(236,72,153,0.14),transparent_32%),linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,20,58,0.97)_55%,rgba(8,47,73,0.94))] dark:shadow-[0_24px_65px_rgba(0,0,0,0.34)]">
+    <div className="space-y-4 sm:space-y-5">
+      <section className="relative overflow-hidden rounded-[20px] border border-white/15 bg-[radial-gradient(circle_at_12%_0%,rgba(125,211,252,0.22),transparent_38%),radial-gradient(circle_at_92%_16%,rgba(244,114,182,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.94),rgba(245,243,255,0.92)_52%,rgba(236,254,255,0.90))] p-4 shadow-[0_18px_48px_rgba(139,92,246,0.10)] ring-1 ring-white/5 sm:rounded-[24px] sm:p-5 dark:border-white/10 dark:bg-[radial-gradient(circle_at_10%_0%,rgba(56,189,248,0.10),transparent_36%),radial-gradient(circle_at_94%_10%,rgba(236,72,153,0.10),transparent_32%),linear-gradient(135deg,rgba(17,24,39,0.94),rgba(30,20,58,0.94)_55%,rgba(8,47,73,0.90))] dark:shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
         <span className="pointer-events-none absolute -left-10 -top-14 h-36 w-36 rounded-full border border-white/50 bg-white/20 blur-sm dark:border-white/5 dark:bg-cyan-300/5" />
         <span className="pointer-events-none absolute -bottom-16 right-1/3 h-36 w-36 rounded-full bg-violet-400/10 blur-3xl dark:bg-fuchsia-400/10" />
 
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <span className="mb-2 block h-1 w-12 rounded-full bg-gradient-to-l from-cyan-400 via-violet-500 to-fuchsia-500 shadow-[0_0_16px_rgba(139,92,246,0.42)]" />
+            <span className="mb-2 block h-1.5 w-16 rounded-full bg-gradient-to-l from-cyan-400 via-violet-500 to-fuchsia-500 shadow-[0_0_18px_rgba(139,92,246,0.32)]" />
             <h1 className="bg-gradient-to-l from-slate-950 via-violet-800 to-sky-700 bg-clip-text text-2xl font-black text-transparent sm:text-3xl dark:from-white dark:via-violet-200 dark:to-cyan-200">
               {t("list.title")}
             </h1>
-            <p className="mt-2 text-xs font-bold leading-6 text-slate-600 sm:text-sm dark:text-slate-300">{t("list.description")}</p>
+            <p className="mt-2 max-w-2xl text-xs font-semibold leading-6 text-slate-600 sm:text-sm dark:text-slate-300">{t("list.description")}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-            <span className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-300/70 bg-[linear-gradient(135deg,rgba(236,253,245,0.96),rgba(209,250,229,0.88))] px-3 text-xs font-black shadow-[0_10px_25px_rgba(16,185,129,0.13)] sm:px-4 sm:text-sm dark:border-emerald-300/20 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.42),rgba(6,95,70,0.22))] dark:shadow-[0_10px_28px_rgba(0,0,0,0.18)]">
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-[auto_auto] sm:items-center">
+            <span className="inline-flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-300/70 bg-[linear-gradient(135deg,rgba(236,253,245,0.96),rgba(209,250,229,0.88))] px-3 text-xs font-black shadow-[0_8px_20px_rgba(16,185,129,0.12)] sm:px-4 sm:text-sm dark:border-emerald-300/20 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.42),rgba(6,95,70,0.22))] dark:shadow-[0_8px_24px_rgba(0,0,0,0.16)]">
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-emerald-500 text-white shadow-[0_7px_16px_rgba(16,185,129,0.28)]">
                 <CircleDollarSign className="h-4 w-4" />
               </span>
@@ -201,7 +207,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             <button
               type="button"
               onClick={resetFilters}
-              className="interactive-ring inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border border-violet-200/80 bg-white/75 px-3 text-xs font-black text-violet-700 shadow-[0_10px_24px_rgba(124,58,237,0.09)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-white sm:px-4 sm:text-sm dark:border-white/10 dark:bg-white/[0.065] dark:text-violet-200 dark:hover:bg-white/[0.1]"
+              className="interactive-ring inline-flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-2xl border border-violet-200/80 bg-white/75 px-3 text-xs font-black text-violet-700 shadow-[0_8px_20px_rgba(124,58,237,0.08)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-white sm:px-4 sm:text-sm dark:border-white/10 dark:bg-white/[0.065] dark:text-violet-200 dark:hover:bg-white/[0.1]"
             >
               <RotateCcw className="h-4 w-4 shrink-0" />
               {t("list.resetFilters")}
@@ -219,7 +225,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
         <button
           type="button"
           onClick={() => setFiltersOpen((open) => !open)}
-          className="flex min-h-11 w-full items-center gap-1.5 px-3 text-right text-xs font-black text-slate-900 transition hover:bg-violet-50/50 sm:min-h-16 sm:gap-2 sm:px-4 sm:text-sm dark:text-slate-200 dark:hover:bg-white/[0.04]"
+          className="flex min-h-10 w-full items-center gap-1.5 px-3 text-right text-xs font-black text-slate-900 transition hover:bg-violet-50/50 sm:min-h-14 sm:gap-2 sm:px-4 sm:text-sm dark:text-slate-200 dark:hover:bg-white/[0.04]"
           aria-expanded={filtersOpen}
         >
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-[linear-gradient(135deg,#38BDF8,#8B5CF6)] text-white shadow-[0_8px_18px_rgba(56,189,248,0.18)] sm:h-9 sm:w-9 sm:rounded-2xl sm:shadow-[0_12px_28px_rgba(56,189,248,0.22)]">
@@ -236,7 +242,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
 
         <div className={`grid transition-[grid-template-rows] duration-300 ${filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
           <div className={filtersOpen ? "overflow-visible" : "overflow-hidden"}>
-        <div className="grid grid-cols-2 gap-2 border-t border-violet-100/80 p-2.5 sm:gap-3 sm:p-4 dark:border-white/10">
+        <div className="grid grid-cols-2 gap-2 border-t border-violet-100/80 p-2 sm:gap-2.5 sm:p-3.5 dark:border-white/10">
           <label className="relative col-span-2">
             <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8B5CF6] sm:right-4 sm:h-5 sm:w-5 dark:text-slate-400" />
             <input
@@ -244,7 +250,7 @@ export default function CustomerOrders({ basePath = "/customer" }) {
               value={filters.query}
               onChange={(event) => updateFilter("query", event.target.value)}
               placeholder={t("list.searchPlaceholder")}
-              className="h-9 w-full rounded-xl border border-[#D8B4FE]/70 bg-white px-9 text-[11px] font-bold text-slate-950 shadow-[0_8px_18px_rgba(59,130,246,0.06)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/80 focus:ring-2 focus:ring-[#8B5CF6]/15 sm:h-12 sm:rounded-2xl sm:px-12 sm:text-sm sm:shadow-[0_12px_28px_rgba(59,130,246,0.08)] sm:focus:ring-4 dark:border-white/10 dark:bg-white/[0.065] dark:text-white dark:shadow-none"
+              className="h-9 w-full rounded-xl border border-[#D8B4FE]/70 bg-white px-9 text-[11px] font-bold text-slate-950 shadow-[0_6px_14px_rgba(59,130,246,0.05)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/80 focus:ring-2 focus:ring-[#8B5CF6]/15 sm:h-10 sm:rounded-2xl sm:px-12 sm:text-sm sm:shadow-[0_8px_20px_rgba(59,130,246,0.06)] sm:focus:ring-4 dark:border-white/10 dark:bg-white/[0.065] dark:text-white dark:shadow-none"
             />
           </label>
 
@@ -289,17 +295,17 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             {filteredOrders.map((order) => (
               <article
                 key={order.id}
-                className="relative min-w-0 overflow-hidden rounded-[22px] border border-violet-200/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96)_55%,rgba(245,243,255,0.98))] p-4 shadow-[0_12px_32px_rgba(76,29,149,0.09)] dark:border-white/10 dark:bg-[linear-gradient(145deg,rgba(15,23,42,0.98),rgba(17,24,39,0.98))] dark:shadow-[0_14px_34px_rgba(0,0,0,0.24)]"
+                className="relative min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-[0_10px_24px_rgba(76,29,149,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80 dark:shadow-[0_12px_28px_rgba(0,0,0,0.18)]"
               >
-                <span className="pointer-events-none absolute -left-8 -top-10 h-24 w-24 rounded-full bg-violet-400/10 blur-2xl" />
+                <span className="pointer-events-none absolute -left-8 -top-10 h-24 w-24 rounded-full bg-violet-400/10 blur-2xl dark:bg-fuchsia-500/10" />
 
-                <div className="relative flex min-w-0 items-start justify-between gap-3">
+                <div className="relative flex min-w-0 items-start justify-between gap-2.5">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                      <span dir="ltr" className="text-[13px] font-black tracking-wide text-violet-700 dark:text-violet-300">
+                      <span dir="ltr" className="text-[11px] font-black tracking-wide text-violet-700 dark:text-violet-300">
                         {order.displayId}
                       </span>
-                      <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-black ${statusClasses[order.status] || "bg-slate-500/12 text-slate-600 dark:text-slate-300"}`}>
+                      <span className={`inline-flex items-center gap-2 rounded-full px-2 py-1 text-[10px] font-black ${statusClasses[order.status] || "bg-slate-500/12 text-slate-600 dark:text-slate-300"}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${statusDotClasses[order.status] || "bg-slate-400"}`} />
                         {translatedStatusLabel(t, order)}
                       </span>
@@ -308,17 +314,17 @@ export default function CustomerOrders({ basePath = "/customer" }) {
                       {order.productName}
                     </h2>
                   </div>
-                  <strong dir="ltr" className="shrink-0 rounded-xl bg-slate-950 px-2.5 py-2 text-[11px] font-black text-white shadow-lg shadow-slate-900/10 dark:bg-white dark:text-slate-950">
+                  <strong dir="ltr" className="shrink-0 rounded-2xl bg-slate-950 px-3 py-2 text-[11px] font-black text-white shadow-lg shadow-slate-900/10 dark:bg-white dark:text-slate-950">
                     {order.price}
                   </strong>
                 </div>
 
                 <div className="relative mt-3 flex items-center justify-between gap-3 border-t border-slate-200/80 pt-3 dark:border-white/10">
-                  <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  <span className="inline-flex min-w-0 items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
                     <CalendarDays className="h-3.5 w-3.5 shrink-0 text-violet-500" />
                     <span className="truncate">{order.dateLabel}</span>
                   </span>
-                  <span className="shrink-0 text-[11px] font-black text-slate-500 dark:text-slate-400">
+                  <span className="shrink-0 text-[10px] font-black text-slate-500 dark:text-slate-400">
                     {order.progress}%
                   </span>
                 </div>
@@ -326,13 +332,13 @@ export default function CustomerOrders({ basePath = "/customer" }) {
                 <div className="relative mt-2 flex items-center gap-3">
                   <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
                     <span
-                      className="block h-full rounded-full bg-[linear-gradient(90deg,#7C3AED,#38BDF8)] shadow-[0_0_10px_rgba(124,58,237,0.45)]"
+                      className="block h-full rounded-full bg-[linear-gradient(90deg,#7C3AED,#38BDF8)] shadow-[0_0_10px_rgba(124,58,237,0.28)]"
                       style={{ width: `${order.progress}%` }}
                     />
                   </span>
                   <Link
                     to={`${basePath}/order/${order.id}`}
-                    className="interactive-ring inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-violet-600 px-3 text-[11px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.24)] transition hover:bg-violet-700"
+                    className="interactive-ring inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-violet-600 px-3 text-[11px] font-black text-white shadow-[0_8px_18px_rgba(124,58,237,0.18)] transition hover:bg-violet-700"
                   >
                     {t("list.details")}
                     <ChevronLeft className="h-3.5 w-3.5" />
@@ -342,42 +348,42 @@ export default function CustomerOrders({ basePath = "/customer" }) {
             ))}
           </div>
 
-          <div className="glass-panel hidden overflow-hidden rounded-lg md:block">
+          <div className="glass-panel hidden overflow-hidden rounded-2xl bg-white/80 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:bg-slate-900/85 dark:shadow-[0_18px_40px_rgba(0,0,0,0.18)] md:block">
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] text-right text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-400">
+            <table className="w-full min-w-[680px] text-right text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50/90 text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-400">
                 <tr>
-                  <th className="px-5 py-4">{t("list.order")}</th>
-                  <th className="px-5 py-4">{t("list.product")}</th>
-                  <th className="px-5 py-4">{t("list.status")}</th>
-                  <th className="px-5 py-4">{t("list.price")}</th>
-                  <th className="px-5 py-4">{t("list.date")}</th>
-                  <th className="px-5 py-4">{t("list.progress")}</th>
-                  <th className="px-5 py-4">{t("list.action")}</th>
+                  <th className="px-3 py-2 text-left">{t("list.order")}</th>
+                  <th className="px-3 py-2">{t("list.product")}</th>
+                  <th className="px-3 py-2">{t("list.status")}</th>
+                  <th className="px-3 py-2">{t("list.price")}</th>
+                  <th className="px-3 py-2">{t("list.date")}</th>
+                  <th className="px-3 py-2">{t("list.progress")}</th>
+                  <th className="px-3 py-2">{t("list.action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-white/10">
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="transition hover:bg-slate-50 dark:hover:bg-white/[0.045]">
-                    <td className="px-5 py-4 font-black">{order.displayId}</td>
-                    <td className="px-5 py-4 font-semibold">{order.productName}</td>
-                    <td className="px-5 py-4">
-                      <span className={`rounded-md px-2.5 py-1 text-xs font-black ${statusClasses[order.status] || "bg-slate-500/12 text-slate-600 dark:text-slate-300"}`}>
+                    <td className="px-3 py-2 font-black">{order.displayId}</td>
+                    <td className="px-3 py-2 font-semibold">{order.productName}</td>
+                    <td className="px-3 py-2">
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-black ${statusClasses[order.status] || "bg-slate-500/12 text-slate-600 dark:text-slate-300"}`}>
                         {translatedStatusLabel(t, order)}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-black">{order.price}</td>
-                    <td className="px-5 py-4 text-slate-500 dark:text-slate-400">{order.dateLabel}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex min-w-[130px] items-center gap-2">
+                    <td className="px-3 py-2 font-black">{order.price}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{order.dateLabel}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex min-w-[110px] items-center gap-2">
                         <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
                           <span className="block h-full rounded-full bg-[linear-gradient(90deg,#7C3AED,#38BDF8)]" style={{ width: `${order.progress}%` }} />
                         </span>
-                        <span className="w-10 text-right text-xs font-black text-slate-500 dark:text-slate-400">{order.progress}%</span>
+                        <span className="w-10 text-right text-[10px] font-black text-slate-500 dark:text-slate-400">{order.progress}%</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <Link to={`${basePath}/order/${order.id}`} className="font-black text-pulse">
+                    <td className="px-3 py-2">
+                      <Link to={`${basePath}/order/${order.id}`} className="inline-flex rounded-xl px-2 py-1 text-[11px] font-black text-violet-700 transition hover:bg-violet-50 dark:hover:bg-white/[0.08] dark:text-violet-300">
                         {t("list.details")}
                       </Link>
                     </td>
@@ -398,30 +404,48 @@ export default function CustomerOrders({ basePath = "/customer" }) {
         />
       )}
 
-      {!loading && !error && pagination.pages > 1 && (
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
-          >
-            {t("common:actions.previous")}
-          </button>
-          <span className="text-sm font-black text-slate-500 dark:text-slate-400">
-            {t("common:pagination.pageOf", { page: pagination.page, pages: pagination.pages })}
-          </span>
-          <button
-            type="button"
-            disabled={page >= pagination.pages}
-            onClick={() => setPage((current) => Math.min(pagination.pages, current + 1))}
-            className="h-10 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
-          >
-            {t("common:actions.next")}
-          </button>
-        </div>
+      {!loading && !error && pagination.total > 0 && (
+        <OrdersPagination
+          current={currentPage}
+          total={pagination.pages}
+          onPageChange={setPage}
+          isArabic={isArabic}
+          label={t("common:pagination.pageOf", { page: currentPage, pages: pagination.pages })}
+        />
       )}
     </div>
+  );
+}
+
+function OrdersPagination({ current, total, onPageChange, isArabic, label }) {
+  const safeTotal = Math.max(1, total || 1);
+  const start = Math.max(1, Math.min(current - 2, Math.max(1, safeTotal - 4)));
+  const pages = Array.from({ length: Math.min(5, safeTotal) }, (_, index) => start + index);
+
+  return (
+    <nav className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white/85 p-1.5 shadow-[0_10px_20px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-white/[0.06]" aria-label={label}>
+      <OrderPageArrow disabled={current <= 1} onClick={() => onPageChange(current - 1)} icon={isArabic ? ArrowRight : ArrowLeft} />
+      {pages.map((number) => (
+        <button
+          type="button"
+          key={number}
+          aria-current={number === current ? "page" : undefined}
+          onClick={() => onPageChange(number)}
+          className={`grid h-8 min-w-8 place-items-center rounded-xl px-2 text-xs font-black transition sm:h-9 sm:min-w-9 sm:text-sm ${number === current ? "bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-[0_8px_18px_rgba(124,58,237,0.24)]" : "text-slate-500 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-400 dark:hover:bg-white/[0.08]"}`}
+        >
+          {number}
+        </button>
+      ))}
+      <OrderPageArrow disabled={current >= safeTotal} onClick={() => onPageChange(current + 1)} icon={isArabic ? ArrowLeft : ArrowRight} />
+    </nav>
+  );
+}
+
+function OrderPageArrow({ disabled, onClick, icon: Icon }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-700 disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-300 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:disabled:text-white/20 sm:h-9 sm:w-9">
+      <Icon className="h-4 w-4" />
+    </button>
   );
 }
 
@@ -444,7 +468,7 @@ function DateRangeFilter({ from, preset, to, onChange }) {
 function FilterSelect({ label, value, onChange, children }) {
   return (
     <label className="block">
-      <span className="mb-1 flex items-center gap-1 text-[9px] font-black text-slate-700 sm:mb-1.5 sm:gap-1.5 sm:text-xs dark:text-slate-400">
+      <span className="mb-1 flex items-center gap-1 text-[10px] font-black text-slate-700 sm:mb-1.5 sm:gap-1.5 sm:text-xs dark:text-slate-400">
         <span className="grid h-4 w-4 place-items-center rounded-md bg-[#EDE9FE] text-[#8B5CF6] sm:h-5 sm:w-5 sm:rounded-lg dark:bg-transparent">
           <Filter className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
         </span>

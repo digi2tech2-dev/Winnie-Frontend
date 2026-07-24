@@ -31,9 +31,10 @@ import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 const initialFilters = { query: "", mainCategoryId: "all", subCategoryId: "all", status: "all", linkType: "all", sort: "newest" };
-const productPageSize = 200;
+const productPageSize = 15;
 const safeTrim = (value) => String(value ?? "").trim();
 const optionalTrim = (value) => {
   const trimmed = safeTrim(value);
@@ -67,6 +68,7 @@ export default function ProductsManagementPage() {
   const [saving, setSaving] = useState("");
   const [actionId, setActionId] = useState("");
   const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [categoryModal, setCategoryModal] = useState({ open: false, type: "main", category: null });
   const [productModal, setProductModal] = useState({ open: false, product: null });
   const [providerLink, setProviderLink] = useState(emptyProviderLinkState);
@@ -96,7 +98,17 @@ export default function ProductsManagementPage() {
       const nextMainCategories = categoryResult.tree.mainCategories;
       const nextSubCategories = categoryResult.tree.subCategories;
       const nextLookup = buildAdminCategoryLookup([...nextMainCategories, ...nextSubCategories]);
-      const productResult = await getAdminProducts(token, { page: 1, limit: productPageSize }, nextLookup);
+      const productResult = await getAdminProducts(token, {
+        page,
+        limit: productPageSize,
+        search: appliedFilters.query.trim() || undefined,
+        category: appliedFilters.subCategoryId !== "all"
+          ? appliedFilters.subCategoryId
+          : appliedFilters.mainCategoryId === "all" ? undefined : appliedFilters.mainCategoryId,
+        status: appliedFilters.status === "all" ? undefined : appliedFilters.status,
+        linkType: appliedFilters.linkType === "all" ? undefined : appliedFilters.linkType,
+        sort: appliedFilters.sort,
+      }, nextLookup);
 
       setMainCategories(nextMainCategories);
       setSubCategories(nextSubCategories);
@@ -112,7 +124,7 @@ export default function ProductsManagementPage() {
       setInitialLoading(false);
       setProductsLoading(false);
     }
-  }, [token]);
+  }, [appliedFilters, page, token]);
 
   useEffect(() => {
     void loadCatalog();
@@ -124,10 +136,12 @@ export default function ProductsManagementPage() {
 
   const applyFilters = (event) => {
     event.preventDefault();
+    setPage(1);
     setAppliedFilters({ ...draftFilters });
   };
 
   const resetFilters = () => {
+    setPage(1);
     setDraftFilters({ ...initialFilters });
     setAppliedFilters({ ...initialFilters });
   };
@@ -492,13 +506,8 @@ export default function ProductsManagementPage() {
             ) : (
               <EmptyState icon={Search} title="لا توجد منتجات مطابقة" description="غيّر خيارات البحث أو أعد تعيين الفلاتر لعرض كل المنتجات المحملة." actionLabel="إعادة تعيين الفلاتر" onAction={resetFilters} />
             )}
+            <AdminPagination {...(pagination || {})} loading={productsLoading} onChange={setPage} />
           </section>
-
-          {pagination?.total > productPageSize && (
-            <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-800 dark:border-amber-400/15 dark:bg-amber-500/10 dark:text-amber-300">
-              يتم عرض أول {productPageSize} منتج من الخادم. تُطبّق الفلاتر الدقيقة داخل الصفحة المحملة.
-            </p>
-          )}
         </>
       )}
 

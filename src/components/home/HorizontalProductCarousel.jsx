@@ -34,7 +34,7 @@ export default function HorizontalProductCarousel({ children, label }) {
         ref={carouselRef}
         aria-label={label}
         dir="rtl"
-        className="homepage-product-carousel flex snap-x snap-proximity gap-3 overflow-x-auto px-1 pb-2 pt-1 sm:gap-4"
+        className="homepage-product-carousel flex snap-x snap-proximity gap-3 overflow-x-auto px-1 pb-1 pt-1 sm:gap-4"
       >
         {children}
       </div>

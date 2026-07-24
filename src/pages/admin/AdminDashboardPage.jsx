@@ -2,6 +2,7 @@ import {
   Activity,
   AlertTriangle,
   Boxes,
+  CalendarDays,
   Clock3,
   DollarSign,
   ExternalLink,
@@ -10,6 +11,7 @@ import {
   ReceiptText,
   RefreshCw,
   Server,
+  ShieldCheck,
   TrendingUp,
   Truck,
   Users,
@@ -337,7 +339,7 @@ function getOperationalAlerts(metrics = {}, failures = []) {
 }
 
 export default function AdminDashboardPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { showToast } = useToast();
   const [dashboard, setDashboard] = useState(null);
   const [error, setError] = useState("");
@@ -478,31 +480,24 @@ export default function AdminDashboardPage() {
     () => getOperationalAlerts(dashboard?.metrics || {}, dashboard?.failures || []),
     [dashboard],
   );
-
   return (
     <div dir="rtl" className="admin-dashboard space-y-3">
       <section className="admin-dashboard-top admin-platform-hero">
-        <span className="admin-platform-hero-orb admin-platform-hero-orb-one" aria-hidden="true" />
-        <span className="admin-platform-hero-orb admin-platform-hero-orb-two" aria-hidden="true" />
-
-        <div className="admin-dashboard-hero-copy admin-platform-hero-copy min-w-0">
-          <span className="admin-platform-hero-icon" aria-hidden="true">
-            <Server className="h-6 w-6" />
-          </span>
-          <div className="min-w-0">
-            <p className="admin-dashboard-kicker">
-              <i aria-hidden="true" />
-              مركز إدارة المنصة
-            </p>
-            <h1>لوحة الإدارة</h1>
-            <p className="admin-dashboard-refresh">
-              <Clock3 className="h-3.5 w-3.5" />
-              <span>آخر تحديث</span>
-              <bdi dir="ltr">{formatRefreshTime(dashboard?.refreshedAt)}</bdi>
-            </p>
-          </div>
+        <div className="admin-command-badge">
+          <ShieldCheck />
+          <span>لوحة القيادة الإدارية</span>
         </div>
-        <div className="admin-top-actions">
+        <div className="admin-command-meta">
+          <article>
+            <span>مرحبًا بعودتك</span>
+            <strong>{user?.name || user?.username || "مدير المنصة"}</strong>
+          </article>
+          <article>
+            <span><CalendarDays /> تاريخ اليوم</span>
+            <strong>{new Intl.DateTimeFormat("ar-EG-u-nu-latn", { dateStyle: "full" }).format(new Date())}</strong>
+          </article>
+        </div>
+        <div className="admin-command-actions">
           <span className="admin-dashboard-live-pill">
             <Activity className="h-4 w-4" />
             بيانات مباشرة
@@ -517,11 +512,16 @@ export default function AdminDashboardPage() {
             <RefreshCw className={`h-4.5 w-4.5 ${refreshing ? "animate-spin" : ""}`} />
             <span>{refreshing ? "جار التحديث" : "تحديث"}</span>
           </button>
+          <span className="admin-dashboard-refresh">
+            <Clock3 className="h-3.5 w-3.5" />
+            آخر تحديث
+            <bdi dir="ltr">{formatRefreshTime(dashboard?.refreshedAt)}</bdi>
+          </span>
         </div>
       </section>
 
       {error && (
-        <div className="rounded-lg border border-amber-500/25 bg-amber-500/12 px-4 py-3 text-sm font-bold text-amber-800 dark:text-amber-200">
+        <div className="admin-dashboard-error rounded-lg border border-amber-500/25 bg-amber-500/12 px-4 py-3 text-sm font-bold text-amber-800 dark:text-amber-200">
           {error}
         </div>
       )}
@@ -532,8 +532,13 @@ export default function AdminDashboardPage() {
           title="تحليلات الفترة"
           action={<DateRangePicker value={selectedRange} onChange={setSelectedRange} />}
         />
-        <section className="admin-metrics-grid mt-3">
-          {periodMetrics.map((metric) => (
+        <section className="admin-period-primary mt-3">
+          {periodMetrics.slice(0, 4).map((metric) => (
+            <MetricCard key={metric.id} metric={metric} rangeKey={selectedRange.key} />
+          ))}
+        </section>
+        <section className="admin-period-secondary mt-3">
+          {periodMetrics.slice(4).map((metric) => (
             <MetricCard key={metric.id} metric={metric} rangeKey={selectedRange.key} />
           ))}
         </section>
@@ -546,11 +551,16 @@ export default function AdminDashboardPage() {
         </DashboardPanel>
       ) : (
         <>
-          <section className="admin-metrics-grid">
-            {metrics.map((metric) => (
-              <MetricCard key={metric.id} metric={metric} rangeKey={dashboard?.refreshedAt || "live"} />
-            ))}
-          </section>
+          <DashboardPanel className="admin-operations-panel">
+            <PanelHeading icon={Activity} title="مؤشرات التشغيل" />
+            <section className="admin-operations-metrics mt-3">
+              {metrics.map((metric) => (
+                <MetricCard key={metric.id} metric={metric} rangeKey={dashboard?.refreshedAt || "live"} />
+              ))}
+            </section>
+          </DashboardPanel>
+
+          <ProvidersBalancesPanel providers={dashboard?.providers || []} />
 
           <section className="admin-overview-grid">
             <RecentOrdersPanel
@@ -569,10 +579,43 @@ export default function AdminDashboardPage() {
             onReject={(deposit) => reviewManualDeposit(deposit, "reject")}
           />
 
-          <ProvidersBalancesPanel providers={dashboard?.providers || []} />
+          <AdminQuickActions />
         </>
       )}
     </div>
+  );
+}
+
+function AdminQuickActions() {
+  const actions = [
+    { icon: Users, label: "إدارة المستخدمين", description: "العملاء والأرصدة وإجراءات الحساب", to: "/admin/tools/users" },
+    { icon: PackageOpen, label: "إدارة الطلبات", description: "مراجعة الطلبات وحالات التنفيذ", to: "/admin/tools/orders" },
+    { icon: WalletCards, label: "طلبات الدفع", description: "التحويلات وطلبات الشحن اليدوي", to: "/admin/tools/balance-requests" },
+    { icon: ReceiptText, label: "طرق الدفع", description: "إدارة مجموعات الدفع ووسائل التحويل", to: "/admin/tools/payment-methods" },
+    { icon: Boxes, label: "إدارة المنتجات", description: "المنتجات والأسعار وتوفر الخدمة", to: "/admin/tools/products" },
+    { icon: Server, label: "إدارة الموردين", description: "الموردون والأرصدة وحالة الاتصال", to: "/admin/tools/suppliers" },
+  ];
+
+  return (
+    <DashboardPanel className="admin-quick-actions-panel">
+      <PanelHeading icon={Server} title="أدوات الإدارة" />
+      <p className="admin-panel-intro">اختصارات مباشرة لأكثر أقسام لوحة الإدارة استخدامًا.</p>
+      <div className="admin-quick-actions-grid">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link key={action.to} to={action.to} className="admin-quick-action">
+              <span className="admin-quick-action-icon"><Icon /></span>
+              <span className="min-w-0 flex-1">
+                <strong>{action.label}</strong>
+                <small>{action.description}</small>
+              </span>
+              <ExternalLink className="admin-quick-action-arrow" />
+            </Link>
+          );
+        })}
+      </div>
+    </DashboardPanel>
   );
 }
 
@@ -645,15 +688,23 @@ function ProviderBalanceCard({ provider, index }) {
 
 function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
   const [receiptOrder, setReceiptOrder] = useState(null);
+  const pendingOrders = orders.filter((order) => ["pending", "processing", "manual_review"].includes(order.status)).length;
+  const completedOrders = orders.filter((order) => order.status === "completed").length;
 
   return (
     <>
-      <DashboardPanel className="admin-orders-panel">
+      <DashboardPanel className="admin-orders-panel admin-reference-orders-panel">
         <PanelHeading
           icon={PackageOpen}
           title="أحدث طلبات الشراء"
           action={<span className="admin-orders-count">{numberFormatter.format(orders.length)} طلب</span>}
         />
+        <p className="admin-orders-subtitle">عرض مختصر للعميل والمنتج وحالة الطلب.</p>
+        <div className="admin-orders-summary">
+          <span className="is-total">{numberFormatter.format(orders.length)} الكل</span>
+          <span className="is-completed">{numberFormatter.format(completedOrders)} مكتمل</span>
+          <span className="is-pending">{numberFormatter.format(pendingOrders)} قيد الانتظار</span>
+        </div>
         {orders.length ? (
           <div className="admin-orders-list">
             {orders.map((order) => {
@@ -665,7 +716,7 @@ function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
               return (
               <article key={order.id} className="admin-order-card">
                 <div className="admin-order-orb">
-                  <PackageOpen className="h-4.5 w-4.5" />
+                  <ReceiptText className="h-4.5 w-4.5" />
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -799,10 +850,11 @@ function ReceiptField({ dir, label, value }) {
 
 function ManualDepositsPanel({ actionKey, deposits, onApprove, onReject }) {
   const [receiptDeposit, setReceiptDeposit] = useState(null);
+  const pendingDeposits = deposits.filter((deposit) => deposit.status === "PENDING").length;
 
   return (
     <>
-      <DashboardPanel className="admin-orders-panel">
+      <DashboardPanel className="admin-orders-panel admin-reference-orders-panel admin-reference-deposits-panel">
         <PanelHeading
           icon={WalletCards}
           title="طلبات إضافة الرصيد اليدوي"
@@ -812,6 +864,11 @@ function ManualDepositsPanel({ actionKey, deposits, onApprove, onReject }) {
             </Link>
           }
         />
+        <p className="admin-orders-subtitle">متابعة أحدث طلبات الشحن اليدوي مع إبراز الطلبات التي ما زالت بانتظار المراجعة.</p>
+        <div className="admin-orders-summary">
+          <span className="is-pending">{numberFormatter.format(pendingDeposits)} معلّق</span>
+          <span className="is-total">{numberFormatter.format(deposits.length)} طلب</span>
+        </div>
         {deposits.length ? (
           <div className="admin-orders-list mt-3">
             {deposits.map((deposit) => {

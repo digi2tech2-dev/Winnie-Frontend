@@ -46,14 +46,16 @@ export function BrandName({
   const wrapperClass = inline
     ? "inline-flex items-baseline gap-1 align-baseline leading-none"
     : "inline-block text-center leading-none";
+  const brandText = forceArabic ? "ويني" : fullName ? "winnie" : "innie";
+  const funText = forceArabic ? "فن" : "Fun";
 
   return (
     <span dir="ltr" className={`${wrapperClass} ${className}`.trim()} aria-label={forceArabic ? "ويني فن" : "Winnie Fun"}>
-      <span className={`${classes.name} winnie-brand-name ${inline ? "inline-block" : "block"} truncate font-black italic tracking-wide`}>
-        {forceArabic ? "ويني" : fullName ? "winnie" : "innie"}
+      <span data-brand-text={brandText} className={`${classes.name} winnie-brand-name ${inline ? "inline-block" : "block"} truncate font-black italic tracking-wide`}>
+        {brandText}
       </span>
-      <span className={`${classes.fun} winnie-brand-name winnie-brand-fun ${inline ? "inline-block" : "block"} font-black uppercase text-[#A855F7]`}>
-        {forceArabic ? "فن" : "Fun"}
+      <span data-brand-text={funText} className={`${classes.fun} winnie-brand-name winnie-brand-fun ${inline ? "inline-block" : "block"} font-black uppercase text-[#A855F7]`}>
+        {funText}
       </span>
     </span>
   );

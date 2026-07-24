@@ -19,6 +19,7 @@ import {
 } from "../../api/adminSubAgents";
 import { GROUP_REQUEST_STATUS } from "../../api/groupRequests";
 import { useAuth } from "../../context/AuthContext";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 const tabs = [
   ["requests", "الطلبات"],
@@ -27,6 +28,9 @@ const tabs = [
   ["payouts", "طلبات السحب"],
   ["referred", "المستخدمون المحالون"],
 ];
+const pageSize = 15;
+const initialPages = { requests: 1, agents: 1, commissions: 1, payouts: 1, referred: 1 };
+const emptyPagination = { page: 1, limit: pageSize, total: 0, pages: 1 };
 
 export default function AdminSubAgentsPage() {
   const { token } = useAuth();
@@ -47,6 +51,16 @@ export default function AdminSubAgentsPage() {
   const [editAgent, setEditAgent] = useState(null);
   const [payoutReject, setPayoutReject] = useState(null);
   const [selectedPayout, setSelectedPayout] = useState(null);
+  const [pages, setPages] = useState(initialPages);
+  const [paginations, setPaginations] = useState({
+    requests: emptyPagination,
+    agents: emptyPagination,
+    commissions: emptyPagination,
+    payouts: emptyPagination,
+    referred: emptyPagination,
+  });
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
 
   const activeGroups = useMemo(() => groups.filter((group) => group.isActive), [groups]);
 
@@ -56,16 +70,23 @@ export default function AdminSubAgentsPage() {
     setError("");
     try {
       const [requestsResult, agentsResult, commissionsResult, payoutsResult, groupsResult] = await Promise.all([
-        getSubAgentRequests(token, { page: 1, limit: 50 }),
-        getSubAgents(token, { page: 1, limit: 50 }),
-        getSubAgentCommissions(token, { page: 1, limit: 50 }),
-        getReferralPayouts(token, { page: 1, limit: 50 }),
+        getSubAgentRequests(token, { page: pages.requests, limit: pageSize, search: appliedSearch }),
+        getSubAgents(token, { page: pages.agents, limit: pageSize, search: appliedSearch }),
+        getSubAgentCommissions(token, { page: pages.commissions, limit: pageSize, search: appliedSearch }),
+        getReferralPayouts(token, { page: pages.payouts, limit: pageSize, search: appliedSearch }),
         getAdminGroups(token),
       ]);
       setRequests(requestsResult.requests);
       setAgents(agentsResult.subAgents);
       setCommissions(commissionsResult.commissions);
       setPayouts(payoutsResult.payouts);
+      setPaginations((current) => ({
+        ...current,
+        requests: requestsResult.pagination,
+        agents: agentsResult.pagination,
+        commissions: commissionsResult.pagination,
+        payouts: payoutsResult.pagination,
+      }));
       setGroups(groupsResult.groups);
       setSelectedAgentId((current) => current || agentsResult.subAgents[0]?.userId || "");
     } catch (requestError) {
@@ -75,7 +96,7 @@ export default function AdminSubAgentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [showToast, token]);
+  }, [appliedSearch, pages.agents, pages.commissions, pages.payouts, pages.requests, showToast, token]);
 
   useEffect(() => {
     void loadData();
@@ -88,14 +109,15 @@ export default function AdminSubAgentsPage() {
         return;
       }
       try {
-        const result = await getSubAgentReferredUsers(token, selectedAgentId, { page: 1, limit: 50 });
+        const result = await getSubAgentReferredUsers(token, selectedAgentId, { page: pages.referred, limit: pageSize, search: appliedSearch });
         setReferredUsers(result.referredUsers);
+        setPaginations((current) => ({ ...current, referred: result.pagination }));
       } catch {
         setReferredUsers([]);
       }
     };
     void loadReferred();
-  }, [selectedAgentId, token]);
+  }, [appliedSearch, pages.referred, selectedAgentId, token]);
 
   const approve = async (values) => {
     if (!approveRequest) return;
@@ -189,8 +211,14 @@ export default function AdminSubAgentsPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="admin-subagents-page space-y-4">
       <Header loading={loading} onRefresh={loadData} />
+      <form onSubmit={(event) => { event.preventDefault(); setPages((current) => ({ ...current, [tab]: 1 })); setAppliedSearch(search.trim()); }} className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
+        <label className="relative min-w-0 flex-1">
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث في القسم الحالي" className="h-11 w-full rounded-xl bg-slate-50 px-3 text-xs font-black dark:bg-[#0B1220] dark:text-white" />
+        </label>
+        <button type="submit" className="h-11 rounded-xl bg-violet-600 px-5 text-xs font-black text-white">بحث</button>
+      </form>
       {error ? <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</p> : null}
 
       <div className="grid grid-cols-5 rounded-lg bg-slate-100 p-1 dark:bg-white/[0.06]">
@@ -236,6 +264,11 @@ export default function AdminSubAgentsPage() {
           ) : null}
         </>
       )}
+      <AdminPagination
+        {...paginations[tab]}
+        loading={loading}
+        onChange={(nextPage) => setPages((current) => ({ ...current, [tab]: nextPage }))}
+      />
 
       {approveRequest ? (
         <ApproveModal
@@ -290,7 +323,7 @@ export default function AdminSubAgentsPage() {
 
 function Header({ loading, onRefresh }) {
   return (
-    <section className="flex items-center gap-3 rounded-lg border border-violet-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
+    <section className="admin-subagents-hero flex items-center gap-3 rounded-lg border border-violet-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
       <BadgeDollarSign className="h-9 w-9 rounded-lg bg-violet-500/10 p-2 text-violet-600" />
       <div className="min-w-0 flex-1">
         <h1 className="text-xl font-black dark:text-white">نظام الوكلاء الفرعيين</h1>
@@ -669,7 +702,7 @@ function Field({ children, label }) {
 }
 
 function Panel({ children }) {
-  return <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]">{children}</section>;
+  return <section className="admin-subagents-panel rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]">{children}</section>;
 }
 
 function RowTitle({ subtitle, title }) {

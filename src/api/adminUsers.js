@@ -5,6 +5,7 @@ import {
   compactObject,
   formatCurrency,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   humanizeToken,
   normalizePagination,
@@ -87,7 +88,7 @@ export async function getAdminUsers(token, query = {}) {
 
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: users.length,

@@ -38,6 +38,7 @@ import {
 import { getAdminUserWalletTransactions } from "../../api/adminWallet";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 const statusOptions = [
   { value: "all", label: "الكل" },
@@ -185,7 +186,8 @@ export default function AdminUsersPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, pages: 1 });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -237,13 +239,14 @@ export default function AdminUsersPage() {
         const matchesStatus = statusFilter === "all" || result.user.displayStatus.toLowerCase() === statusFilter.toLowerCase() || result.user.status === statusFilter;
         const nextUsers = matchesStatus ? await attachFundingStatus(token, [result.user]) : [];
         setUsers(nextUsers);
-        setPagination({ page: 1, limit: 20, total: nextUsers.length, pages: 1 });
+        setPagination({ page: 1, limit: 15, total: nextUsers.length, pages: 1 });
         return;
       }
 
       const result = await getAdminUsers(token, {
-        page: 1,
-        limit: 20,
+        page,
+        limit: 15,
+        search: trimmedSearch,
         email: trimmedSearch,
         status: statusFilter === "all" ? undefined : statusFilter,
         includeDeleted: statusFilter === "all" || statusFilter === "deleted",
@@ -259,7 +262,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [appliedSearch, showToast, sortBy, statusFilter, token]);
+  }, [appliedSearch, page, showToast, sortBy, statusFilter, token]);
 
   useEffect(() => {
     loadUsers();
@@ -279,6 +282,7 @@ export default function AdminUsersPage() {
   }, [pagination.total, users]);
 
   const resetFilters = () => {
+    setPage(1);
     setSearch("");
     setAppliedSearch("");
     setStatusFilter("all");
@@ -455,6 +459,7 @@ export default function AdminUsersPage() {
         className="admin-users-filter-panel admin-users-toolbar"
         onSubmit={(event) => {
           event.preventDefault();
+          setPage(1);
           setAppliedSearch(search.trim());
         }}
       >
@@ -589,6 +594,7 @@ export default function AdminUsersPage() {
             <div className="admin-user-empty-log">لا يوجد مستخدمون مطابقون للفلاتر الحالية</div>
           )}
         </div>
+        <AdminPagination {...pagination} loading={loading} onChange={setPage} />
       </section>
 
       {actionMenuUser && actionMenuAnchor && (

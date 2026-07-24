@@ -154,6 +154,25 @@ export default function AdminLayout() {
     runNotificationAction("read-all", () => markAllNotificationsRead(token))
   ), [runNotificationAction, token]);
 
+  const handleHeaderNotificationsOpened = useCallback(async () => {
+    if (!token || unreadNotificationCount <= 0) return;
+    const unreadIds = notificationItems.filter((item) => item.unread && item.id).map((item) => item.id);
+    setUnreadNotificationCount(0);
+    setNotificationItems((items) => items.map((item) => ({ ...item, unread: false })));
+    try {
+      await markAllNotificationsRead(token);
+      const remaining = await getUnreadNotificationCount(token);
+      if (remaining > 0 && unreadIds.length) {
+        await Promise.allSettled(unreadIds.map((id) => markNotificationRead(token, id)));
+      }
+    } catch {
+      if (unreadIds.length) {
+        await Promise.allSettled(unreadIds.map((id) => markNotificationRead(token, id)));
+      }
+    }
+    await refreshNotifications({ showLoading: false });
+  }, [notificationItems, refreshNotifications, token, unreadNotificationCount]);
+
   const handleDeleteNotification = useCallback((id) => (
     runNotificationAction(`delete:${id}`, () => deleteNotification(token, id))
   ), [runNotificationAction, token]);
@@ -187,7 +206,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div dir="rtl" lang="ar" className={`admin-app-shell min-h-screen overflow-x-hidden text-slate-950 dark:text-[#C4C9D4] ${isAdminToolsPage ? "admin-tools-mode" : ""}`}>
+    <div dir="rtl" lang="ar" className={`winnie-app-shell admin-app-shell min-h-screen overflow-x-hidden text-slate-950 dark:text-[#C4C9D4] ${isAdminToolsPage ? "admin-tools-mode" : ""}`}>
       <div dir="ltr" className="flex min-h-screen flex-row-reverse">
         <DashboardSidebar
           items={adminNavItems}
@@ -196,32 +215,38 @@ export default function AdminLayout() {
           walletBalance={walletSummary?.balanceLabel || "$0.00"}
           variant="admin"
         />
-        <div dir="rtl" className="admin-app-content min-w-0 flex-1">
+        <div dir="rtl" className="winnie-app-content admin-app-content min-w-0 flex-1">
           <AdminHeader
             fixed={isAdminToolsPage}
+            notificationItems={notificationItems}
+            notificationsLoading={notificationsLoading}
+            onNotificationsOpened={handleHeaderNotificationsOpened}
+            onOpenNotification={handleOpenNotification}
             onOpenSidebar={() => setSidebarOpen(true)}
             searchProducts={searchProducts}
             unreadNotificationCount={unreadNotificationCount}
           />
-          <main className={`admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[108px] sm:pt-[118px]" : "pb-28 pt-5 sm:pt-6 xl:pb-12"}`}>
+          <main className={`winnie-page-canvas admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[108px] sm:pt-[118px]" : "pb-28 pt-5 sm:pt-6 xl:pb-12"}`}>
             <BackButton fallbackPath="/admin/user/dashboard" hiddenPaths={["/", "/admin/user/dashboard", "/admin/user/profile", "/admin/tools/dashboard"]} />
-            <Outlet
-              context={{
-                navigate,
-                notifications: notificationItems,
-                notificationAction,
-                notificationActionsSupported: true,
-                notificationsError,
-                notificationsLoading,
-                onDeleteNotification: handleDeleteNotification,
-                onMarkAllNotificationsRead: handleMarkAllNotificationsRead,
-                onMarkNotificationRead: handleMarkNotificationRead,
-                onOpenNotification: handleOpenNotification,
-                onWalletRefresh: refreshWallet,
-                refreshNotifications,
-                unreadNotificationCount,
-              }}
-            />
+            <div className="winnie-page-stage">
+              <Outlet
+                context={{
+                  navigate,
+                  notifications: notificationItems,
+                  notificationAction,
+                  notificationActionsSupported: true,
+                  notificationsError,
+                  notificationsLoading,
+                  onDeleteNotification: handleDeleteNotification,
+                  onMarkAllNotificationsRead: handleMarkAllNotificationsRead,
+                  onMarkNotificationRead: handleMarkNotificationRead,
+                  onOpenNotification: handleOpenNotification,
+                  onWalletRefresh: refreshWallet,
+                  refreshNotifications,
+                  unreadNotificationCount,
+                }}
+              />
+            </div>
           </main>
           {isAdminToolsPage ? (
             <SiteFooter legalOnly className="pb-8" />

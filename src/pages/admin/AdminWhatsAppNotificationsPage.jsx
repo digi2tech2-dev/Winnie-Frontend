@@ -118,8 +118,8 @@ export default function AdminWhatsAppNotificationsPage() {
   }, "تم تحديث السجلات");
 
   return (
-    <div dir="rtl" className="mx-auto max-w-[1180px] space-y-4 pb-8 text-right">
-      <section className="rounded-[24px] border border-emerald-100 bg-white/95 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
+    <div dir="rtl" className="admin-whatsapp-page mx-auto max-w-[1180px] space-y-4 pb-8 text-right">
+      <section className="admin-whatsapp-hero rounded-[24px] border border-emerald-100 bg-white/95 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
@@ -250,7 +250,7 @@ export default function AdminWhatsAppNotificationsPage() {
 
 function Panel({ title, children }) {
   return (
-    <section className="rounded-[24px] border border-slate-200 bg-white/95 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
+    <section className="admin-whatsapp-panel rounded-[24px] border border-slate-200 bg-white/95 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
       <h2 className="mb-3 text-base font-black text-slate-950 dark:text-white">{title}</h2>
       {children}
     </section>
@@ -274,7 +274,7 @@ function Input({ label, value, onChange, placeholder = "", dir = "rtl" }) {
 
 function StatusRow({ label, value, tone = "muted" }) {
   return (
-    <div className="mb-2 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="admin-whatsapp-status-row mb-2 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.04]">
       <span className="font-bold text-slate-500 dark:text-slate-400">{label}</span>
       <Badge tone={tone}>{value || "-"}</Badge>
     </div>

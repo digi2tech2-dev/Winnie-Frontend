@@ -5,6 +5,7 @@ import {
   compactObject,
   formatCurrency,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   humanizeToken,
   normalizePagination,
@@ -91,7 +92,7 @@ export async function getAdminDeposits(token, query = {}) {
   return {
     deposits,
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: deposits.length,

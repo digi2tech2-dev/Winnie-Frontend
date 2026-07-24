@@ -257,7 +257,7 @@ export default function SuppliersManagementPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="admin-suppliers-page space-y-4">
       <Header onAdd={() => { setFormError(""); setForm(null); }} onRefresh={() => loadSuppliers()} refreshing={initialLoading} />
 
       {initialLoading ? (
@@ -266,9 +266,9 @@ export default function SuppliersManagementPage() {
         <EmptyState icon={AlertTriangle} title="تعذر تحميل الموردين" description={loadError} actionLabel="حاول مجددًا" onAction={() => loadSuppliers()} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <div className="admin-suppliers-stats grid grid-cols-2 gap-2 lg:grid-cols-4">
             {stats.map(({ label, value, icon: Icon }) => (
-              <article key={label} className="rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+              <article key={label} className="admin-suppliers-stat rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
                 <Icon className="h-8 w-8 rounded-xl bg-violet-500/10 p-2 text-violet-600" />
                 <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG-u-nu-latn")}</strong>
                 <p className="text-[8px] font-black text-slate-400">{label}</p>
@@ -286,7 +286,7 @@ export default function SuppliersManagementPage() {
           />
 
           {suppliers.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="admin-suppliers-list grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {suppliers.map((supplier) => (
                 <SupplierCard
                   key={supplier.id}
@@ -345,7 +345,7 @@ export default function SuppliersManagementPage() {
 
 function Header({ onAdd, onRefresh, refreshing }) {
   return (
-    <section className="flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-sky-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
+    <section className="admin-suppliers-hero flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-sky-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><Server className="h-5 w-5" /></span>
       <div className="min-w-0 flex-1">
         <h1 className="text-2xl font-black dark:text-white">إدارة الموردين</h1>

@@ -1,6 +1,6 @@
 export function SkeletonBlock({ className = "" }) {
   return (
-    <div className={`animate-pulse rounded-lg bg-slate-200/80 dark:bg-[#1A2335] ${className}`} />
+    <div className={`winnie-skeleton rounded-xl bg-slate-200/80 dark:bg-[#1A2335] ${className}`} />
   );
 }
 

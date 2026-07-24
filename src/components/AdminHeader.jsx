@@ -1,10 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Menu, Moon, SunMedium } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Bell, ChevronLeft, Menu, Moon, SunMedium } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { BrandName } from "./Brand";
 import HeaderSearchOverlay from "./HeaderSearchOverlay";
+import { iconMap } from "./icons";
+import { getNotificationIconName } from "../utils/notificationNavigation";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
@@ -21,15 +23,44 @@ function isImageAvatar(avatar) {
   return typeof avatar === "string" && /^(https?:|data:image|\/)/.test(avatar);
 }
 
-export default function AdminHeader({ fixed = true, onOpenSidebar, searchProducts = [], unreadNotificationCount = 0 }) {
+export default function AdminHeader({
+  fixed = true,
+  notificationItems = [],
+  notificationsLoading = false,
+  onNotificationsOpened,
+  onOpenNotification,
+  onOpenSidebar,
+  searchProducts = [],
+  unreadNotificationCount = 0,
+}) {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(getStoredProfileAvatar);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef(null);
   const headerAvatarUrl = profileAvatarUrl || (isImageAvatar(user?.avatar) ? user.avatar : "") || "/hero-winnie-fun.png";
   const isDarkTheme = theme === "dark";
   const switchTheme = () => setTheme(isDarkTheme ? "light" : "dark");
+  const latestNotifications = useMemo(() => (
+    [...notificationItems]
+      .sort((left, right) => (Date.parse(right.createdAt || right.date || "") || 0) - (Date.parse(left.createdAt || left.date || "") || 0))
+      .slice(0, 5)
+  ), [notificationItems]);
+  const closeNotifications = useCallback(() => setNotificationsOpen(false), []);
+  const toggleNotifications = () => {
+    if (notificationsOpen) {
+      closeNotifications();
+      return;
+    }
+    setNotificationsOpen(true);
+    if (unreadNotificationCount > 0) void onNotificationsOpened?.();
+  };
+  const openNotification = (notification) => {
+    closeNotifications();
+    onOpenNotification?.(notification, { markRead: false });
+  };
 
   useEffect(() => {
     const refreshAvatar = () => setProfileAvatarUrl(getStoredProfileAvatar());
@@ -42,6 +73,22 @@ export default function AdminHeader({ fixed = true, onOpenSidebar, searchProduct
       window.removeEventListener(profileAvatarChangedEvent, refreshAvatar);
     };
   }, []);
+
+  useEffect(() => {
+    if (!notificationsOpen) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (!notificationsRef.current?.contains(event.target)) closeNotifications();
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") closeNotifications();
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [closeNotifications, notificationsOpen]);
 
   useEffect(() => {
     const openSearchFromPage = () => setSearchOpen(true);
@@ -78,21 +125,40 @@ export default function AdminHeader({ fixed = true, onOpenSidebar, searchProduct
             )}
           </button>
 
-          <button
-            type="button"
-            className="group relative isolate grid h-11 w-11 place-items-center overflow-visible rounded-2xl border border-sky-200/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(224,242,254,0.92)_48%,rgba(237,233,254,0.94))] text-sky-600 shadow-[0_10px_26px_rgba(14,165,233,0.16),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:text-violet-600 hover:shadow-[0_14px_30px_rgba(124,58,237,0.18),0_0_20px_rgba(34,211,238,0.16)] dark:border-cyan-300/20 dark:bg-[linear-gradient(145deg,rgba(8,15,32,0.96),rgba(12,31,52,0.94)_48%,rgba(40,20,70,0.92))] dark:text-cyan-300 dark:shadow-[0_0_22px_rgba(34,211,238,0.12)] dark:hover:border-fuchsia-400/45 dark:hover:text-fuchsia-300 sm:h-12 sm:w-12"
-            aria-label="الإشعارات"
-            title="الإشعارات"
-            onClick={() => navigate("/admin/user/notifications")}
-          >
-            <span aria-hidden="true" className="absolute inset-1.5 -z-10 rounded-xl bg-white/45 opacity-70 transition group-hover:bg-white/70 dark:bg-white/[0.04] dark:group-hover:bg-fuchsia-400/[0.08]" />
-            <Bell className="h-6 w-6 stroke-[2] drop-shadow-[0_3px_8px_rgba(14,165,233,0.24)] transition duration-300 group-hover:-rotate-6 group-hover:scale-105 dark:drop-shadow-[0_0_8px_rgba(34,211,238,0.38)]" />
-            {unreadNotificationCount > 0 && (
-              <span dir="ltr" className="absolute -right-1.5 -top-1.5 inline-flex h-[21px] min-w-[21px] items-center justify-center rounded-full border-2 border-white bg-[linear-gradient(135deg,#F43F5E,#D946EF_52%,#7C3AED)] px-1 text-[9px] font-black tabular-nums leading-none tracking-[-0.02em] text-white shadow-[0_5px_14px_rgba(217,70,239,0.48),0_0_0_1px_rgba(244,63,94,0.12)] dark:border-[#080F20] dark:shadow-[0_0_14px_rgba(244,114,182,0.62)]">
-                {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
-              </span>
+          <div ref={notificationsRef} className="relative">
+            <button
+              type="button"
+              className="group relative isolate grid h-11 w-11 place-items-center overflow-visible rounded-2xl border border-sky-200/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(224,242,254,0.92)_48%,rgba(237,233,254,0.94))] text-sky-600 shadow-[0_10px_26px_rgba(14,165,233,0.16),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:text-violet-600 dark:border-cyan-300/20 dark:bg-[#081529] dark:text-cyan-300 sm:h-12 sm:w-12"
+              aria-expanded={notificationsOpen}
+              aria-haspopup="dialog"
+              aria-label="الإشعارات"
+              title="الإشعارات"
+              onClick={toggleNotifications}
+            >
+              <Bell className="h-6 w-6 stroke-[2]" />
+              {unreadNotificationCount > 0 && <span dir="ltr" className="absolute -right-1.5 -top-1.5 inline-flex h-[21px] min-w-[21px] items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-rose-500 via-fuchsia-500 to-violet-600 px-1 text-[9px] font-black text-white dark:border-[#080F20]">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}
+            </button>
+
+            {notificationsOpen && (
+              <div dir="rtl" role="dialog" aria-label="آخر الإشعارات" className="customer-notifications-popover absolute left-0 top-[calc(100%+12px)] z-[90] w-[min(420px,calc(100vw-24px))] overflow-hidden rounded-[28px] border border-violet-200/80 bg-white/95 text-right shadow-[0_28px_80px_rgba(76,29,149,0.28)] backdrop-blur-2xl dark:border-violet-400/20 dark:bg-[linear-gradient(160deg,rgba(15,18,38,0.98),rgba(7,11,25,0.98))]">
+                <div className="flex items-center justify-between border-b border-violet-100 bg-gradient-to-l from-violet-50 to-sky-50 px-4 py-4 dark:border-white/10 dark:from-violet-500/15 dark:to-sky-500/10">
+                  <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-sky-500 text-white"><Bell className="h-5 w-5" /></span><div><h2 className="font-black text-slate-950 dark:text-white">آخر الإشعارات</h2><p className="mt-0.5 text-[10px] font-bold text-slate-400">آخر التحديثات على لوحة الإدارة</p></div></div>
+                </div>
+                <div className="max-h-[390px] overflow-y-auto">
+                  {notificationsLoading ? <p className="px-4 py-8 text-center text-sm font-bold text-slate-400">جارٍ تحميل الإشعارات...</p> : latestNotifications.length ? latestNotifications.map((notification) => {
+                    const Icon = iconMap[getNotificationIconName(notification)] || Bell;
+                    return (
+                      <button key={notification.id} type="button" onClick={() => openNotification(notification)} className={`group relative flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3.5 text-right transition last:border-b-0 hover:bg-violet-50/80 dark:border-white/10 dark:hover:bg-white/[0.055] ${notification.unread ? "bg-violet-50/70 dark:bg-violet-500/10" : ""}`}>
+                        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white ${notification.unread ? "bg-gradient-to-br from-violet-600 via-fuchsia-500 to-sky-500" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}><Icon className="h-5 w-5" /></span>
+                        <span className="min-w-0 flex-1"><strong className="block truncate text-sm text-slate-950 dark:text-white">{notification.title}</strong><span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">{notification.message}</span><span className="mt-1 block text-[10px] font-bold text-slate-400">{notification.time}</span></span>
+                      </button>
+                    );
+                  }) : <p className="px-4 py-8 text-center text-sm font-bold text-slate-400">لا توجد إشعارات حاليًا</p>}
+                </div>
+                <button type="button" onClick={() => { closeNotifications(); navigate("/admin/user/notifications"); }} className="flex w-full items-center justify-center gap-2 border-t border-violet-100 bg-gradient-to-r from-violet-50 to-sky-50 px-4 py-3.5 text-sm font-black text-violet-700 dark:border-white/10 dark:from-violet-500/15 dark:to-sky-500/10 dark:text-violet-200">عرض كل الإشعارات <ChevronLeft className="h-4 w-4" /></button>
+              </div>
             )}
-          </button>
+          </div>
         </div>
 
         <div className="winnie-mobile-right-actions col-start-3 row-start-1 flex items-center justify-self-end gap-2 sm:gap-3">

@@ -17,14 +17,14 @@ export default function RecentAdditionsSection({ items = [], onSelect, onViewAll
   );
 
   return (
-    <section id="recent-additions" dir={isArabic ? "rtl" : "ltr"} className="space-y-5">
-      <div className="flex items-start justify-between gap-4">
+    <section id="recent-additions" dir={isArabic ? "rtl" : "ltr"} className="homepage-compact-products space-y-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="relative text-xl font-black tracking-normal text-slate-950 dark:text-white sm:text-2xl ltr:pl-3 rtl:pr-3">
-            <span className="absolute top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#ec4899,#7c3aed,#22d3ee)] ltr:left-0 rtl:right-0" />
+          <h2 className="relative text-lg font-black tracking-normal text-slate-950 dark:text-white sm:text-xl ltr:pl-3 rtl:pr-3">
+            <span className="absolute top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#ec4899,#7c3aed,#22d3ee)] ltr:left-0 rtl:right-0" />
             {t("recentlyAdded.title")}
           </h2>
-          <p className="mt-2 text-xs font-bold leading-5 text-slate-500 dark:text-slate-400 sm:text-sm">
+          <p className="mt-1 text-[11px] font-bold leading-4 text-slate-500 dark:text-slate-400 sm:text-xs">
             {t("recentlyAdded.subtitle")}
           </p>
         </div>

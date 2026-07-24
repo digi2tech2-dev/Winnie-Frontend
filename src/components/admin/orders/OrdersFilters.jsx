@@ -29,11 +29,11 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
   };
 
   return (
-    <section className="overflow-visible rounded-[24px] border border-slate-200/90 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.12)]">
+    <section className="admin-orders-filters overflow-visible rounded-[24px] border border-slate-200/90 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-[0_0_22px_rgba(139,92,246,0.12)]">
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex min-h-[68px] w-full items-center gap-3 px-4 text-right transition hover:bg-slate-50/80 sm:px-5 dark:hover:bg-[#1A2335]"
+        className="admin-orders-filters-toggle flex min-h-[68px] w-full items-center gap-3 px-4 text-right transition hover:bg-slate-50/80 sm:px-5 dark:hover:bg-[#1A2335]"
         aria-expanded={isOpen}
         aria-controls="orders-filters-content"
       >

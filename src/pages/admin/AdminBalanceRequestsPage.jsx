@@ -20,6 +20,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 import { SkeletonBlock } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 const statusMeta = {
   PENDING: ["قيد الانتظار", "bg-orange-500/10 text-orange-700 dark:text-orange-300"],
@@ -59,7 +60,8 @@ export default function AdminBalanceRequestsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedDepositId = searchParams.get("details") || "";
   const [requests, setRequests] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, pages: 1 });
+  const [page, setPage] = useState(1);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -83,8 +85,8 @@ export default function AdminBalanceRequestsPage() {
     setError("");
     try {
       const result = await getAdminDeposits(token, {
-        page: 1,
-        limit: 20,
+        page,
+        limit: 15,
         search: applied.query,
         status: applied.status === "all" ? undefined : applied.status,
       });
@@ -98,7 +100,7 @@ export default function AdminBalanceRequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [applied, showToast, token]);
+  }, [applied, page, showToast, token]);
 
   useEffect(() => {
     loadRequests();
@@ -183,16 +185,16 @@ export default function AdminBalanceRequestsPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="admin-balance-requests-page space-y-4">
       <Header onRefresh={loadRequests} refreshing={loading} />
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+      <div className="admin-balance-requests-stats grid grid-cols-2 gap-2 xl:grid-cols-4">
         <Stat icon={ReceiptText} label="إجمالي الطلبات" value={counts.total} tone="violet" />
         <Stat icon={Clock3} label="بانتظار المراجعة" value={counts.pending} tone="sky" />
         <Stat icon={CheckCircle2} label="الطلبات المقبولة" value={counts.approved} tone="emerald" />
         <Stat icon={ShieldX} label="الطلبات المرفوضة" value={counts.rejected} tone="rose" />
       </div>
 
-      <section className="overflow-hidden rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
+      <section className="admin-balance-requests-filters overflow-hidden rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
         <button onClick={() => setFiltersOpen((open) => !open)} className="flex h-14 w-full items-center gap-2 px-4 text-right">
           <Filter className="h-4 w-4 text-violet-500" />
           <b className="flex-1 text-sm font-black dark:text-white">الفلاتر</b>
@@ -202,6 +204,7 @@ export default function AdminBalanceRequestsPage() {
           <form
             onSubmit={(event) => {
               event.preventDefault();
+              setPage(1);
               setApplied({ query: query.trim(), status });
             }}
             className="overflow-hidden"
@@ -239,12 +242,13 @@ export default function AdminBalanceRequestsPage() {
           {Array.from({ length: 4 }).map((_, index) => <SkeletonBlock key={index} className="h-64 rounded-[23px]" />)}
         </div>
       ) : requests.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="admin-balance-requests-list grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {requests.map((request) => <RequestCard key={request.id} request={request} onDetails={() => setSelected(request)} />)}
         </div>
       ) : (
         <EmptyState icon={ReceiptText} title="لا توجد طلبات إضافة رصيد" description="ستظهر هنا طلبات إضافة الرصيد اليدوية التي يرسلها العملاء." />
       )}
+      <AdminPagination {...pagination} loading={loading} onChange={setPage} />
 
       <RequestDetails
         actionKey={actionKey}
@@ -267,7 +271,7 @@ export default function AdminBalanceRequestsPage() {
 
 function Header({ onRefresh, refreshing }) {
   return (
-    <section className="flex flex-col gap-4 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 sm:flex-row sm:items-center dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
+    <section className="admin-balance-requests-hero flex flex-col gap-4 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 sm:flex-row sm:items-center dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><WalletCards className="h-5 w-5" /></span>
       <div className="min-w-0 flex-1">
         <h1 className="text-xl font-black leading-tight dark:text-white sm:text-2xl">طلبات إضافة الرصيد</h1>
@@ -294,7 +298,7 @@ function Stat({ icon: Icon, label, value, tone }) {
     violet: "bg-violet-500/10 text-violet-600",
   }[tone];
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
+    <article className="admin-balance-requests-stat rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
       <div className="flex items-center gap-2">
         <Icon className={`h-8 w-8 shrink-0 rounded-xl p-2 sm:h-9 sm:w-9 sm:p-2.5 ${style}`} />
         <b className="block text-xl leading-none dark:text-white sm:text-2xl">{Number(value || 0).toLocaleString("ar-EG-u-nu-latn")}</b>
@@ -311,7 +315,7 @@ function Badge({ status }) {
 
 function RequestCard({ request, onDetails }) {
   return (
-    <article className="rounded-[20px] border border-slate-200 bg-white p-3 shadow-[0_12px_28px_rgba(15,23,42,0.045)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
+    <article className="admin-balance-request-card rounded-[20px] border border-slate-200 bg-white p-3 shadow-[0_12px_28px_rgba(15,23,42,0.045)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-black dark:text-white sm:text-base">{request.user?.name || "مستخدم غير معروف"}</h2>

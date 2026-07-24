@@ -5,6 +5,7 @@ import {
   formatCurrency,
   formatDate,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   humanizeToken,
   normalizePagination,
@@ -149,11 +150,16 @@ export async function getCustomerOrders(token, query = {}) {
 
   return {
     orders,
-    pagination: normalizePagination(response.pagination, {
-      page: query.page,
-      limit: query.limit,
-      total: orders.length,
-    }),
+    pagination: normalizePagination(
+      findPaginationMetadata(response.pagination)
+        || findPaginationMetadata(response.data)
+        || findPaginationMetadata(response.raw),
+      {
+        page: query.page,
+        limit: query.limit,
+        total: orders.length,
+      },
+    ),
     message: response.message,
   };
 }

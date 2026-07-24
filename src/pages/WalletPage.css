@@ -1,0 +1,387 @@
+.wallet-page {
+  background:
+    radial-gradient(circle at 50% 0%, rgb(139 92 246 / 0.07), transparent 34rem),
+    #f8faff;
+}
+
+.customer-app-main:has(.wallet-page) {
+  padding-bottom: 0;
+}
+
+.wallet-page .wallet-balance-card,
+.wallet-page .wallet-section-card,
+.wallet-page .wallet-stat-card,
+.wallet-page .wallet-security-card {
+  border: 1px solid rgb(124 58 237 / 0.16);
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 10px 32px rgb(76 29 149 / 0.07);
+  backdrop-filter: blur(16px);
+}
+
+.wallet-page .wallet-security-illustration {
+  display: block;
+  width: clamp(60px, 11vw, 86px);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 8px 14px rgb(91 33 182 / 0.2));
+}
+
+.wallet-page .wallet-balance-card {
+  background:
+    radial-gradient(circle at 12% 48%, rgb(139 92 246 / 0.18), transparent 14rem),
+    linear-gradient(135deg, rgb(255 255 255 / 0.98), rgb(248 245 255 / 0.94));
+}
+
+.wallet-page .wallet-illustration {
+  display: block;
+  grid-area: illustration;
+  justify-self: center;
+  width: clamp(84px, 15vw, 146px);
+  aspect-ratio: 3 / 2;
+  filter: drop-shadow(0 12px 18px rgb(91 33 182 / 0.24));
+}
+
+.wallet-page .wallet-balance-layout {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.72fr) minmax(108px, 0.9fr) clamp(84px, 15vw, 146px);
+  grid-template-areas: "action info illustration";
+  align-items: center;
+  gap: clamp(0.35rem, 1.5vw, 1rem);
+}
+
+.wallet-page .wallet-history-button {
+  grid-area: action;
+  align-self: end;
+  justify-self: start;
+  max-width: 150px;
+}
+
+.wallet-page .wallet-balance-info {
+  grid-area: info;
+}
+
+.wallet-page .wallet-stat-card,
+.wallet-page .wallet-security-feature {
+  border: 1px solid rgb(124 58 237 / 0.14);
+  background: rgb(255 255 255 / 0.82);
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.wallet-page .wallet-security-feature {
+  border-radius: 15px;
+}
+
+.wallet-page .wallet-stat-card {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(139 92 246 / 0.09), transparent 52%),
+    linear-gradient(145deg, rgb(255 255 255 / 0.98), rgb(249 250 255 / 0.94));
+  box-shadow:
+    0 8px 24px rgb(76 29 149 / 0.06),
+    inset 0 1px 0 rgb(255 255 255 / 0.96);
+}
+
+.wallet-page .wallet-stat-card::before {
+  position: absolute;
+  z-index: -1;
+  inset: 4px;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgb(139 92 246 / 0.06);
+  border-radius: 12px;
+}
+
+.wallet-page .wallet-stat-card::after {
+  position: absolute;
+  inset-block: 25%;
+  inset-inline-start: 0;
+  width: 2px;
+  content: "";
+  border-radius: 999px;
+  background: linear-gradient(#60a5fa, #8b5cf6, #d946ef);
+  opacity: 0.72;
+}
+
+.wallet-page .wallet-stat-icon {
+  border: 1px solid rgb(139 92 246 / 0.12);
+  background: linear-gradient(145deg, rgb(245 243 255 / 0.98), rgb(237 233 254 / 0.78));
+}
+
+.wallet-page .wallet-stat-label {
+  letter-spacing: -0.01em;
+}
+
+.wallet-page .wallet-icon-box {
+  color: #7c3aed;
+  background: rgb(124 58 237 / 0.09);
+  box-shadow: inset 0 0 0 1px rgb(124 58 237 / 0.08);
+}
+
+.wallet-page .wallet-accent-line {
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-start: 50%;
+  width: 42px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, #8b5cf6, #d946ef);
+  box-shadow: 0 4px 12px rgb(139 92 246 / 0.24);
+}
+
+.wallet-page .wallet-payment-heading {
+  isolation: isolate;
+  border-color: rgb(139 92 246 / 0.2);
+  background:
+    radial-gradient(circle at 50% -40%, rgb(139 92 246 / 0.14), transparent 55%),
+    linear-gradient(135deg, rgb(255 255 255 / 0.98), rgb(250 248 255 / 0.94) 55%, rgb(246 250 255 / 0.96));
+  box-shadow:
+    0 12px 30px rgb(76 29 149 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.92);
+}
+
+.wallet-page .wallet-payment-heading::before {
+  position: absolute;
+  z-index: -1;
+  inset: 5px;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgb(139 92 246 / 0.08);
+  border-radius: 13px;
+}
+
+.wallet-page .wallet-payment-heading-content {
+  padding-block-start: 0.35rem;
+}
+
+.wallet-page .wallet-stat-value--unavailable {
+  color: rgb(100 116 139 / 0.82);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.wallet-page .payment-method-fallback {
+  border: 1px solid rgb(124 58 237 / 0.08);
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.98), rgb(246 248 255 / 0.94));
+}
+
+.wallet-page .payment-method-image {
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+}
+
+.wallet-page .payment-method-card {
+  border-color: rgb(124 58 237 / 0.16);
+  background:
+    radial-gradient(circle at 50% -20%, rgb(139 92 246 / 0.11), transparent 48%),
+    linear-gradient(160deg, rgb(255 255 255 / 0.98), rgb(248 249 255 / 0.94));
+  box-shadow:
+    0 8px 22px rgb(76 29 149 / 0.07),
+    inset 0 1px 0 rgb(255 255 255 / 0.92);
+}
+
+.wallet-page .payment-method-card--image {
+  min-height: 76px;
+  gap: 0.25rem;
+  padding: 4px;
+}
+
+.wallet-page .payment-method-card--image .payment-method-logo-shell {
+  aspect-ratio: 2 / 1;
+  min-height: 0;
+}
+
+.wallet-page .payment-method-card--fallback {
+  min-height: 70px;
+  gap: 0.25rem;
+  padding: 0.375rem;
+}
+
+.wallet-page .payment-method-card--fallback .payment-method-logo-shell {
+  min-height: 38px;
+}
+
+.wallet-page .payment-method-logo-shell {
+  border-color: rgb(139 92 246 / 0.1);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.95);
+}
+
+.wallet-page .payment-method-name {
+  color: #334155;
+}
+
+.wallet-page .payment-method-label-shell {
+  border: 1px solid rgb(139 92 246 / 0.08);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgb(250 248 255 / 0.82), rgb(246 249 255 / 0.72));
+}
+
+.wallet-page .payment-method-label-accent {
+  background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+  opacity: 0.65;
+}
+
+.wallet-page .payment-brand {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.5rem, 1.8vw, 0.68rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.wallet-page .payment-brand--default {
+  color: #6d28d9;
+}
+
+.wallet-page .wallet-security-card {
+  background:
+    radial-gradient(circle at 5% 20%, rgb(139 92 246 / 0.17), transparent 16rem),
+    rgb(255 255 255 / 0.92);
+}
+
+@media (hover: hover) {
+  .wallet-page .wallet-stat-card:hover,
+  .wallet-page .wallet-security-feature:hover {
+    border-color: rgb(124 58 237 / 0.35);
+    box-shadow: 0 10px 24px rgb(76 29 149 / 0.08);
+    transform: translateY(-2px);
+  }
+}
+
+html.dark .wallet-page {
+  background:
+    radial-gradient(circle at 50% 0%, rgb(124 58 237 / 0.12), transparent 36rem),
+    #050817;
+}
+
+html.dark .wallet-page .wallet-balance-card,
+html.dark .wallet-page .wallet-section-card,
+html.dark .wallet-page .wallet-stat-card,
+html.dark .wallet-page .wallet-security-card {
+  border-color: rgb(167 139 250 / 0.2);
+  background-color: rgb(12 17 35 / 0.92);
+  box-shadow: 0 16px 42px rgb(0 0 0 / 0.28);
+}
+
+html.dark .wallet-page .wallet-balance-card {
+  background:
+    radial-gradient(circle at 12% 48%, rgb(109 40 217 / 0.3), transparent 16rem),
+    linear-gradient(135deg, rgb(15 20 40 / 0.98), rgb(7 11 27 / 0.98));
+}
+
+html.dark .wallet-page .wallet-security-card {
+  background:
+    radial-gradient(circle at 5% 20%, rgb(109 40 217 / 0.28), transparent 17rem),
+    rgb(10 15 31 / 0.96);
+}
+
+html.dark .wallet-page .wallet-security-feature {
+  border-color: rgb(255 255 255 / 0.09);
+  background: rgb(255 255 255 / 0.035);
+}
+
+html.dark .wallet-page .wallet-stat-card {
+  border-color: rgb(167 139 250 / 0.18);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(139 92 246 / 0.17), transparent 54%),
+    linear-gradient(145deg, rgb(17 22 43 / 0.98), rgb(10 14 30 / 0.98));
+  box-shadow:
+    0 10px 28px rgb(0 0 0 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+html.dark .wallet-page .wallet-stat-card::before {
+  border-color: rgb(196 181 253 / 0.07);
+}
+
+html.dark .wallet-page .wallet-stat-icon {
+  border-color: rgb(196 181 253 / 0.12);
+  background: linear-gradient(145deg, rgb(124 58 237 / 0.2), rgb(76 29 149 / 0.16));
+}
+
+html.dark .wallet-page .wallet-payment-heading {
+  border-color: rgb(167 139 250 / 0.25);
+  background:
+    radial-gradient(circle at 50% -45%, rgb(139 92 246 / 0.24), transparent 58%),
+    linear-gradient(135deg, rgb(17 22 43 / 0.98), rgb(10 14 31 / 0.98));
+  box-shadow:
+    0 14px 34px rgb(0 0 0 / 0.26),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+html.dark .wallet-page .wallet-payment-heading::before {
+  border-color: rgb(196 181 253 / 0.09);
+}
+
+html.dark .wallet-page .wallet-stat-value--unavailable {
+  color: rgb(255 255 255 / 0.46);
+}
+
+html.dark .wallet-page .payment-method-fallback {
+  border-color: rgb(255 255 255 / 0.08);
+  background: linear-gradient(145deg, #ffffff, #eef2f7);
+}
+
+html.dark .wallet-page .payment-method-card {
+  border-color: rgb(139 92 246 / 0.25);
+  background:
+    radial-gradient(circle at 50% -16%, rgb(139 92 246 / 0.2), transparent 50%),
+    linear-gradient(155deg, rgb(18 23 45 / 0.98), rgb(8 12 28 / 0.98));
+  box-shadow:
+    0 10px 26px rgb(0 0 0 / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+html.dark .wallet-page .payment-method-name {
+  color: #e5e7eb;
+}
+
+html.dark .wallet-page .payment-method-label-shell {
+  border-color: rgb(167 139 250 / 0.12);
+  background: linear-gradient(145deg, rgb(124 58 237 / 0.12), rgb(30 27 75 / 0.2));
+}
+
+@media (max-width: 639px) {
+  .wallet-page .payment-method-label-shell {
+    min-height: 0;
+    padding-block: 0.3rem;
+  }
+
+  .wallet-page .payment-method-card--fallback {
+    min-height: 66px;
+  }
+}
+
+@media (max-width: 479px) {
+  .wallet-page .wallet-payment-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .wallet-page .wallet-illustration {
+    width: clamp(78px, 26vw, 102px);
+  }
+
+  .wallet-page .wallet-balance-layout {
+    grid-template-columns: minmax(72px, 0.72fr) minmax(92px, 0.9fr) clamp(78px, 26vw, 102px);
+    gap: 0.25rem;
+  }
+
+  .wallet-page .wallet-history-button {
+    max-width: 92px;
+    padding-inline: 0.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallet-page .wallet-stat-card,
+  .wallet-page .wallet-security-feature,
+  .wallet-page .payment-method-card {
+    transition: none;
+  }
+}

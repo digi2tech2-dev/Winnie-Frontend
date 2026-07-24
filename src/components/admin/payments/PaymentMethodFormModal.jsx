@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
-import { ImagePlus, Save, X } from "lucide-react";
+import { Hash, ImagePlus, Plus, Save, Trash2, Type, X } from "lucide-react";
 import { PAYMENT_GATEWAYS } from "../../../api/paymentMethods";
 
 const methodTypes = ["MANUAL", "ONLINE", "CARD", "WALLET", "BANK_TRANSFER", "CRYPTO"];
@@ -35,6 +35,7 @@ function Content({ method, defaultGroupId, groups, onClose, onSave }) {
     active: method?.active ?? method?.isActive ?? true,
     bank: method?.bank || "",
     currency: method?.currency || selectedGroup?.currency || "USD",
+    customFields: Array.isArray(method?.customFields) ? method.customFields : [],
     description: method?.description || "",
     fee: method?.fee ?? 0,
     gateway: method?.gateway || "",
@@ -67,10 +68,18 @@ function Content({ method, defaultGroupId, groups, onClose, onSave }) {
 
   const save = () => {
     if (!form.name.trim() || !form.groupId) return;
+    if (form.customFields.some((field) => !String(field.label || "").trim())) return;
     onSave({
       ...form,
       active: form.active,
       currency: String(form.currency || "USD").toUpperCase(),
+      customFields: form.customFields.map((field, index) => ({
+        key: field.key || `custom_${index + 1}`,
+        label: String(field.label || "").trim(),
+        type: field.type || "text",
+        required: true,
+        sortOrder: index,
+      })),
       currencies: [String(form.currency || "USD").toUpperCase()],
       fee: Number(form.fee) || 0,
       image: form.image || method?.image || "",
@@ -145,6 +154,63 @@ function Content({ method, defaultGroupId, groups, onClose, onSave }) {
             <span className="mb-1 block text-[9px] font-black text-slate-500">تعليمات الدفع</span>
             <textarea value={form.instructions} onChange={(event) => set("instructions", event.target.value)} className={`${input} min-h-20 py-2`} />
           </label>
+
+          <section className="space-y-3 rounded-2xl border border-violet-200 bg-violet-50/60 p-3 sm:col-span-2 dark:border-violet-400/20 dark:bg-violet-500/10">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-black text-slate-900 dark:text-white">الحقول المطلوبة من المستخدم</h3>
+                <p className="mt-1 text-[9px] font-bold text-slate-500 dark:text-slate-300">يمكن إضافة نص أو رقم أو صورة، وجميع الحقول المضافة إجبارية.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("customFields", [...form.customFields, { key: `custom_${Date.now()}`, label: "", type: "text", required: true }])}
+                className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white"
+              >
+                <Plus className="h-4 w-4" />
+                إضافة حقل
+              </button>
+            </div>
+
+            {form.customFields.map((field, index) => {
+              const FieldIcon = field.type === "number" ? Hash : field.type === "image" ? ImagePlus : Type;
+              return (
+                <div key={field.key || index} className="grid gap-2 rounded-2xl border border-white bg-white p-2.5 shadow-sm sm:grid-cols-[1fr_150px_40px] dark:border-white/10 dark:bg-[#0B1220]">
+                  <label>
+                    <span className="mb-1 block text-[8px] font-black text-slate-500">اسم الحقل الظاهر للمستخدم</span>
+                    <div className="relative">
+                      <FieldIcon className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+                      <input
+                        value={field.label || ""}
+                        onChange={(event) => set("customFields", form.customFields.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))}
+                        placeholder="مثال: رقم التحويل"
+                        className={`${input} pe-9`}
+                      />
+                    </div>
+                  </label>
+                  <SelectField
+                    label="نوع البيانات"
+                    value={field.type || "text"}
+                    onChange={(value) => set("customFields", form.customFields.map((item, itemIndex) => itemIndex === index ? { ...item, type: value } : item))}
+                  >
+                    <option value="text">نص</option>
+                    <option value="number">رقم</option>
+                    <option value="image">صورة</option>
+                  </SelectField>
+                  <button
+                    type="button"
+                    aria-label="حذف الحقل"
+                    title="حذف الحقل"
+                    onClick={() => set("customFields", form.customFields.filter((_, itemIndex) => itemIndex !== index))}
+                    className="mt-auto grid h-11 w-10 place-items-center rounded-xl bg-rose-500/10 text-rose-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+
+            {!form.customFields.length && <p className="rounded-xl border border-dashed border-violet-200 p-3 text-center text-[9px] font-bold text-slate-400 dark:border-white/10">لم تتم إضافة حقول مخصصة لهذه الطريقة.</p>}
+          </section>
 
           <label className="flex cursor-pointer items-center gap-2 rounded-2xl border border-dashed p-2 dark:border-white/10">
             <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-xl bg-slate-50">

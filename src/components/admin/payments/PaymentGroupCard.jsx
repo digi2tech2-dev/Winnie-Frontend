@@ -18,7 +18,7 @@ export default function PaymentGroupCard({
   const [open, setOpen] = useState(false);
 
   return (
-    <article className="overflow-hidden rounded-[23px] border border-slate-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
+    <article className="admin-payment-group-card overflow-hidden rounded-[23px] border border-slate-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
       <div className="p-3.5">
         <div className="flex items-center gap-3">
           <span className="payment-admin-logo-shell grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl p-1.5">
@@ -34,7 +34,7 @@ export default function PaymentGroupCard({
           </span>
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
+        <div className="admin-payment-group-actions mt-3 grid grid-cols-3 gap-1.5">
           <Button icon={Plus} label="إضافة طريقة" onClick={() => onAddMethod(group)} />
           <Button icon={ChevronDown} label="عرض" onClick={() => setOpen((value) => !value)} />
           <Button icon={Pencil} label="تعديل" onClick={() => onEdit(group)} />

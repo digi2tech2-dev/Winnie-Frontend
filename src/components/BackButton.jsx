@@ -40,12 +40,12 @@ export default function BackButton({
   };
 
   return (
-    <div dir="ltr" className={`mb-4 flex justify-end ${className}`}>
+    <div dir="ltr" className={`winnie-back-button mb-4 flex justify-end ${className}`}>
       <button
         type="button"
         onClick={goBack}
         dir="rtl"
-        className="interactive-ring inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#8B5CF6]/20 bg-white/90 px-4 text-sm font-black text-[#7C3AED] shadow-[0_12px_28px_rgba(139,92,246,0.12)] backdrop-blur-xl transition hover:border-[#8B5CF6]/40 hover:bg-[#F5F3FF] dark:border-white/10 dark:bg-[#111827]/90 dark:text-[#C084FC] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
+        className="interactive-ring winnie-back-button-control inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#8B5CF6]/20 bg-white/90 px-5 text-sm font-black text-[#7C3AED] shadow-[0_12px_28px_rgba(139,92,246,0.12)] backdrop-blur-xl transition hover:border-[#8B5CF6]/40 hover:bg-[#F5F3FF] dark:border-white/10 dark:bg-[#111827]/90 dark:text-[#C084FC] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
         aria-label={t("actions.backAria")}
         title={t("actions.backAria")}
       >

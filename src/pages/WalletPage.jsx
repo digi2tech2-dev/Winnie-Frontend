@@ -1,17 +1,30 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, ChevronLeft, CreditCard, ReceiptText, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  Clock3,
+  CreditCard,
+  LockKeyhole,
+  ReceiptText,
+  ShieldCheck,
+  WalletCards,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
+import { formatDateTime } from "../api/adapters";
 import { getCustomerPaymentMethods } from "../api/paymentMethods";
 import { getWalletSummary } from "../api/wallet";
 import AntiScamSafetyConfirmationModal from "../components/AntiScamSafetyConfirmationModal";
 import { useAuth } from "../context/AuthContext";
+import "./WalletPage.css";
 
 export default function WalletPage({ basePath = "/customer" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useAuth();
-  const { t } = useTranslation("wallet");
+  const { t, i18n } = useTranslation("wallet");
+  const direction = i18n.dir(i18n.resolvedLanguage);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,10 +112,10 @@ export default function WalletPage({ basePath = "/customer" }) {
 
   return (
     <div
-      dir="rtl"
-      className="-mx-4 -mt-3 min-h-[calc(100vh-112px)] overflow-hidden bg-[#F8FCFF] px-4 pb-10 pt-5 text-slate-950 dark:bg-[#020615] dark:text-white sm:-mx-6 sm:px-6 lg:-mx-8"
+      dir={direction}
+      className="wallet-page -mx-4 px-3 pb-0 pt-2 text-slate-950 dark:text-white sm:-mx-6 sm:px-6 sm:pt-3 lg:-mx-8 lg:px-8"
     >
-      <div className="mx-auto w-full max-w-[900px] space-y-5">
+      <div className="mx-auto w-full max-w-[820px] space-y-3 sm:space-y-4">
         {insufficientFunds && (
           <InsufficientFundsNotice
             currency={wallet?.currency}
@@ -110,18 +123,17 @@ export default function WalletPage({ basePath = "/customer" }) {
           />
         )}
         <BalancePanel error={error} loading={loading} onShowTransactions={showTransactions} wallet={wallet} />
+        <WalletStatistics loading={loading} wallet={wallet} />
 
-        <section className="space-y-4">
-          <div className="space-y-1.5 text-right">
-            <div className="inline-flex items-center gap-2.5">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#F5F3FF] text-[#8B5CF6] dark:bg-[#8B5CF6]/16 dark:text-[#E9D5FF]">
-                <CreditCard className="h-5 w-5" />
-              </span>
-              <h2 className="text-2xl font-black text-slate-950 dark:text-white">{t("summary.paymentMethodsTitle")}</h2>
+        <section className="space-y-2.5 sm:space-y-3">
+          <div className="wallet-section-card wallet-payment-heading relative overflow-hidden rounded-[18px] px-3 py-3 text-center sm:px-4 sm:py-3.5">
+            <span className="wallet-accent-line" aria-hidden="true" />
+            <div className="wallet-payment-heading-content relative mx-auto min-w-0">
+              <h2 className="text-sm font-black leading-5 text-slate-950 dark:text-white sm:text-base">{t("summary.paymentMethodsTitle")}</h2>
+              <p className="mt-0.5 text-[10px] font-semibold leading-4 text-slate-500 dark:text-white/55 sm:text-xs">
+                {t("summary.paymentMethodsDescription")}
+              </p>
             </div>
-            <p className="max-w-2xl text-sm font-semibold leading-7 text-slate-500 dark:text-white/[0.46] sm:text-base">
-              {t("summary.paymentMethodsDescription")}
-            </p>
           </div>
 
           {paymentMethodsLoading ? (
@@ -129,7 +141,7 @@ export default function WalletPage({ basePath = "/customer" }) {
               <p className="text-sm font-black text-slate-600 dark:text-white/70">{t("summary.loadingPaymentMethods")}</p>
             </div>
           ) : paymentMethods.length > 0 ? (
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="wallet-payment-grid grid grid-cols-4 gap-1.5 sm:gap-2.5">
               {paymentMethods.map((method) => (
                 <PaymentMethodCard
                   key={method.id}
@@ -201,142 +213,213 @@ function formatWalletAmount(value) {
 
 function BalancePanel({ error, loading, onShowTransactions, wallet }) {
   const { t } = useTranslation("wallet");
-  const balanceLabel = wallet?.balanceLabel || "$0.00";
+  const balanceLabel = wallet?.balanceLabel || t("summary.unavailable");
   const currency = wallet?.currency || "";
 
   return (
-    <section className="relative overflow-hidden rounded-[20px] border border-[#8B5CF6]/[0.16] bg-white/90 p-4 shadow-soft backdrop-blur-xl dark:border-[#8B5CF6]/[0.24] dark:bg-[#080b1d] dark:shadow-[0_14px_42px_rgba(0,0,0,0.34)] sm:p-5">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.28),rgba(4,8,24,0)_42%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
-      <div className="relative flex flex-row items-center justify-between gap-4 sm:gap-6">
-        <div className="min-w-0 flex-1 text-right">
-          <p className="text-sm font-bold text-slate-500 dark:text-white/[0.68] sm:text-base">{t("summary.currentBalance")}</p>
-          <div className="mt-2">
-            <p dir="ltr" className="text-[clamp(2rem,6vw,3.25rem)] font-black leading-none text-slate-950 dark:text-white">{loading ? "..." : balanceLabel}</p>
-            <p className="mt-1.5 text-base font-bold text-slate-500 dark:text-white/70 sm:text-lg">{currency}</p>
+    <section className="wallet-balance-card relative overflow-hidden rounded-[18px] p-3 sm:p-4">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.22),rgba(4,8,24,0)_44%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
+      <div className="wallet-balance-layout relative">
+        <button
+          type="button"
+          onClick={onShowTransactions}
+          className="wallet-history-button interactive-ring inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white/75 px-2.5 text-[9px] font-black text-slate-600 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)] backdrop-blur dark:border-white/10 dark:bg-[#060a18]/[0.82] dark:text-white/60 sm:h-9 sm:px-3 sm:text-[11px]"
+        >
+          <ReceiptText className="h-3.5 w-3.5 shrink-0 text-[#8B5CF6]" />
+          <span className="line-clamp-2">{t("summary.showTransactions")}</span>
+        </button>
+
+        <div className="wallet-balance-info min-w-0 text-center">
+          <p className="text-[13px] font-bold text-slate-500 dark:text-white/[0.68] sm:text-sm">{t("summary.currentBalance")}</p>
+          <div className="mt-1.5">
+            <p dir="ltr" className="break-words text-[clamp(1.65rem,5vw,2.55rem)] font-black leading-none text-slate-950 dark:text-white">{loading ? t("summary.loadingShort") : balanceLabel}</p>
+            <p className="mt-1 text-xs font-bold text-slate-500 dark:text-white/70 sm:text-sm">{currency}</p>
           </div>
-          {error && (
-            <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/12 px-3 py-2 text-xs font-bold leading-5 text-amber-700 dark:text-amber-300">
-              {error}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={onShowTransactions}
-            className="interactive-ring mt-4 inline-flex h-10 min-w-[176px] items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/75 px-4 text-xs font-black text-slate-600 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)] backdrop-blur dark:border-white/10 dark:bg-[#060a18]/[0.82] dark:text-white/60 sm:text-sm"
-          >
-            <ReceiptText className="h-4 w-4 text-[#8B5CF6]" />
-            {t("summary.showTransactions")}
-          </button>
         </div>
 
         <WalletIllustration />
       </div>
+      {error && (
+        <p className="relative mt-2 rounded-xl border border-amber-400/30 bg-amber-400/12 px-3 py-2 text-xs font-bold leading-5 text-amber-700 dark:text-amber-300">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function WalletStatistics({ loading, wallet }) {
+  const { t, i18n } = useTranslation("wallet");
+  const lastTransaction = wallet?.recentTransactions?.[0];
+  const dateLocale = i18n.resolvedLanguage?.startsWith("ar") ? "ar-EG-u-nu-latn" : "en-US";
+  const items = [
+    {
+      icon: Clock3,
+      label: t("summary.lastTransaction"),
+      value: lastTransaction?.date
+        ? formatDateTime(lastTransaction.date, dateLocale, {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })
+        : t("summary.unavailable"),
+    },
+    {
+      icon: WalletCards,
+      label: t("summary.totalDeposits"),
+      value: wallet?.totalDepositsLabel || t("summary.unavailable"),
+    },
+    {
+      icon: ReceiptText,
+      label: t("summary.transactionCount"),
+      value: wallet?.transactionCount ?? t("summary.unavailable"),
+    },
+  ];
+
+  return (
+    <section className="wallet-stat-grid grid grid-cols-3 gap-2 sm:gap-3" aria-label={t("summary.walletStatistics")}>
+      {items.map(({ icon: Icon, label, value }) => (
+        <article key={label} className="wallet-stat-card relative min-w-0 overflow-hidden rounded-[16px] px-2.5 py-2.5 sm:px-3 sm:py-3">
+          <div className="wallet-stat-content relative flex min-w-0 items-center gap-2 sm:gap-2.5">
+            <span className="wallet-icon-box wallet-stat-icon grid h-8 w-8 shrink-0 place-items-center rounded-[10px] sm:h-9 sm:w-9">
+              <Icon className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 text-start">
+              <p className="wallet-stat-label line-clamp-1 text-[9px] font-bold leading-4 text-slate-500 dark:text-white/55 sm:text-[11px]">{label}</p>
+              <p
+                className={`wallet-stat-value mt-0.5 line-clamp-2 text-[10px] font-black leading-[1.35] sm:text-[11px] ${value === t("summary.unavailable") ? "wallet-stat-value--unavailable" : "text-slate-950 dark:text-white"}`}
+                title={String(value)}
+              >
+                {loading ? t("summary.loadingShort") : value}
+              </p>
+            </div>
+          </div>
+        </article>
+      ))}
     </section>
   );
 }
 
 function WalletIllustration() {
   return (
-    <div className="relative h-[132px] w-[156px] shrink-0 sm:h-[158px] sm:w-[206px]" aria-hidden="true">
-      <div className="absolute left-[38px] top-1 h-[56px] w-[98px] -rotate-12 overflow-hidden rounded-[13px] border border-white/[0.12] bg-[linear-gradient(140deg,#342082,#101936)] shadow-[0_12px_28px_rgba(74,31,189,0.42)] sm:left-[48px] sm:h-[66px] sm:w-[116px]">
-        <span className="absolute right-4 top-3 text-xl font-black text-white/[0.55]">W</span>
-        <span className="absolute bottom-3 left-3 h-5 w-14 rounded-lg bg-white/10 sm:w-[72px]" />
-        <span className="absolute left-3 top-3 h-4 w-10 rounded-lg bg-[#6552d9]/[0.45]" />
-      </div>
-
-      <div className="absolute bottom-4 left-[22px] h-[88px] w-[128px] -rotate-6 rounded-[18px] border border-[#bd8cff]/[0.45] bg-[linear-gradient(145deg,#8a32ff,#5d24e8_58%,#32106e)] shadow-[0_16px_34px_rgba(119,44,255,0.48)] sm:left-[28px] sm:h-[106px] sm:w-[156px]">
-        <span className="absolute inset-x-3 top-3 h-4 rounded-full bg-white/10" />
-        <span className="absolute bottom-2.5 left-4 h-3.5 w-20 rounded-full bg-black/[0.12] sm:w-28" />
-        <span className="absolute -right-1.5 top-9 flex h-9 w-[46px] items-center rounded-xl border border-white/[0.14] bg-[linear-gradient(135deg,#b557ff,#7132da)] p-1.5 shadow-[0_10px_20px_rgba(68,25,150,0.35)] sm:top-11 sm:h-10 sm:w-[52px]">
-          <span className="grid h-6 w-6 place-items-center rounded-full border border-white/[0.16] bg-white/[0.14] sm:h-7 sm:w-7" />
-        </span>
-      </div>
-
-      <WalletCoin className="absolute bottom-3 left-0 h-9 w-9 text-[9px] sm:h-10 sm:w-10" />
-      <WalletCoin className="absolute left-[168px] top-14 hidden h-9 w-9 text-[9px] sm:grid" />
-      <WalletCoin className="absolute bottom-9 left-[140px] h-8 w-8 text-[8px] sm:bottom-10 sm:left-[154px] sm:h-9 sm:w-9 sm:text-[9px]" />
-    </div>
-  );
-}
-
-function WalletCoin({ className }) {
-  return (
-    <span
-      className={`${className} grid place-items-center rounded-full border border-white/[0.18] bg-[linear-gradient(145deg,#a855f7,#5b21b6)] text-[12px] font-black text-white shadow-[0_14px_34px_rgba(139,92,246,0.5)]`}
-    >
-      $
+    <span className="wallet-illustration" aria-hidden="true">
+      <img
+        src="/wallet-3d.png"
+        alt=""
+        className="h-full w-full object-contain"
+        decoding="async"
+      />
     </span>
   );
 }
 
 function PaymentMethodCard({ method, onSelect, selected = false }) {
-  const imageUrl = method.image ? (method.imageUrl || method.image) : "";
-  const tone = getPaymentMethodTone(method);
+  const imageUrl =
+    method.imageUrl ||
+    method.logoUrl ||
+    method.providerLogo ||
+    method.image ||
+    method.icon ||
+    method.logo ||
+    "";
+  const providerName = method.title || method.name;
+  const providerInitials = getProviderInitials(providerName);
 
   return (
     <button
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`payment-method-card payment-method-tone-${tone} group relative flex min-h-[122px] min-w-0 cursor-pointer flex-col items-center gap-1.5 overflow-hidden rounded-[18px] border p-1.5 text-center outline-none transition duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8FCFF] dark:focus-visible:ring-offset-[#020615] sm:min-h-[78px] sm:flex-row sm:gap-3 sm:rounded-[20px] sm:p-2.5 sm:text-start ${selected ? "payment-method-selected" : ""}`}
+      aria-label={providerName}
+      title={providerName}
+      disabled={method.active === false || method.enabled === false}
+      className={`payment-method-card ${imageUrl ? "payment-method-card--image" : "payment-method-card--fallback"} group relative flex min-w-0 cursor-pointer flex-col items-center overflow-hidden rounded-[14px] border text-center outline-none transition duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8FCFF] disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-[#020615] ${selected ? "payment-method-selected" : ""}`}
     >
-      <span className="payment-method-logo-shell flex h-[68px] w-full shrink-0 items-center justify-center rounded-[13px] p-1.5 sm:h-16 sm:w-[72px] sm:rounded-[15px] sm:p-2">
-        {imageUrl ? <img src={imageUrl} alt="" aria-hidden="true" loading="lazy" className="payment-method-image h-full w-full object-contain" /> : null}
-      </span>
-      <span className="payment-method-label-shell flex min-w-0 w-full flex-1 flex-col justify-center sm:block sm:flex-1">
-        <span className={`payment-method-name line-clamp-2 block text-[13px] font-black leading-[17px] sm:truncate sm:text-[15px] sm:leading-normal ${selected ? "payment-method-selected-name" : ""}`}>
-          {method.title || method.name}
+      <span className="payment-method-logo-shell relative flex w-full min-h-0 flex-1 items-center justify-center rounded-[11px]">
+        <span className="payment-method-fallback absolute inset-0 grid place-items-center rounded-[10px]" aria-hidden="true">
+          <ProviderBrandFallback name={providerName} initials={providerInitials} />
         </span>
-        <span className="mt-1 flex items-center justify-center gap-1 sm:mt-2 sm:justify-start sm:gap-1.5" aria-hidden="true">
-          <span className="payment-method-dot h-1.5 w-1.5 shrink-0 rounded-full" />
-          <span className="h-px w-4 rounded-full bg-slate-200 dark:bg-white/10 sm:w-7" />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="payment-method-image relative z-[1] h-full w-full object-contain"
+            onError={(event) => {
+              event.currentTarget.hidden = true;
+            }}
+          />
+        ) : null}
+      </span>
+      <span className="payment-method-label-shell relative flex min-w-0 w-full flex-col justify-center px-1.5 py-1.5">
+        <span className="payment-method-label-accent mx-auto mb-1 h-px w-5 rounded-full" aria-hidden="true" />
+        <span className={`payment-method-name line-clamp-2 block text-[clamp(0.55rem,2.5vw,0.68rem)] font-black leading-[1.2] sm:text-xs ${selected ? "payment-method-selected-name" : ""}`}>
+          {providerName}
         </span>
       </span>
-      <span className={`payment-method-check absolute left-2 top-2 grid h-5 w-5 shrink-0 place-items-center rounded-full sm:static sm:h-7 sm:w-7 ${selected ? "payment-method-check-selected" : ""}`} aria-hidden="true">
-        {selected ? <Check className="h-3 w-3 sm:h-4 sm:w-4" strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-full sm:h-2 sm:w-2" />}
-      </span>
+      {selected ? (
+        <span className="payment-method-check payment-method-check-selected absolute inset-inline-end-1.5 top-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full" aria-hidden="true">
+          <Check className="h-2.5 w-2.5" strokeWidth={3} />
+        </span>
+      ) : null}
     </button>
   );
 }
 
-function getPaymentMethodTone(method = {}) {
-  const value = `${method.title || ""} ${method.name || ""}`.toLowerCase();
-  if (value.includes("apple")) return "apple";
-  if (value.includes("paypal")) return "paypal";
-  if (value.includes("vodafone") || value.includes("فودافون")) return "vodafone";
-  if (value.includes("insta") || value.includes("انيستا") || value.includes("انستا")) return "instapay";
-  return "default";
+function ProviderBrandFallback({ initials, name }) {
+  return (
+    <span className="payment-brand payment-brand--default inline-flex items-center gap-1" title={name} aria-label={name}>
+      <CreditCard className="h-3.5 w-3.5" />
+      <span>{initials}</span>
+    </span>
+  );
+}
+
+function getProviderInitials(name = "") {
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "PM";
+  return words.slice(0, 2).map((word) => word[0]).join("");
 }
 
 function SecurityPanel() {
   const { t } = useTranslation("wallet");
 
   return (
-    <section
-      dir="ltr"
-      className="flex items-center gap-3 rounded-[15px] border border-[#8B5CF6]/[0.12] bg-[linear-gradient(135deg,rgba(139,92,246,0.14),rgba(255,255,255,0.96)_44%,rgba(255,255,255,0.96))] p-4 shadow-soft dark:bg-[linear-gradient(135deg,rgba(67,30,154,0.58),rgba(8,13,30,0.98)_44%,rgba(8,13,30,0.98))] dark:shadow-[0_16px_42px_rgba(0,0,0,0.3)]"
-    >
-      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-[14px] bg-[#151136] shadow-[inset_0_0_22px_rgba(139,92,246,0.28)]">
-        <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[linear-gradient(145deg,#a855f7,#5b21b6)] text-white shadow-[0_12px_28px_rgba(139,92,246,0.34)]">
-          <ShieldCheck className="h-6 w-6" />
+    <section className="wallet-security-card rounded-[18px] p-3 sm:p-3.5">
+      <div className="flex items-center gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] bg-[#151136] shadow-[inset_0_0_18px_rgba(139,92,246,0.24)] sm:h-14 sm:w-14">
+          <span className="grid h-9 w-9 place-items-center rounded-[11px] bg-[linear-gradient(145deg,#a855f7,#5b21b6)] text-white shadow-[0_10px_22px_rgba(139,92,246,0.28)] sm:h-11 sm:w-11 sm:rounded-[13px]">
+            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6" />
+          </span>
         </span>
-      </span>
 
-      <div dir="rtl" className="min-w-0 flex-1 text-center sm:text-right">
-        <h2 className="text-lg font-black text-slate-950 dark:text-white sm:text-xl">{t("summary.securityTitle")}</h2>
-        <p className="mt-1 text-xs font-semibold leading-6 text-slate-500 dark:text-white/[0.58] sm:text-[13px]">
-          {t("summary.securityDescription")}
-        </p>
+        <div className="min-w-0 flex-1 text-start">
+          <h2 className="text-sm font-black text-slate-950 dark:text-white sm:text-base">{t("summary.securityTitle")}</h2>
+          <p className="mt-0.5 max-w-[34rem] text-[9px] font-semibold leading-4 text-slate-500 dark:text-white/[0.58] sm:text-[11px]">
+            {t("summary.securityDescription")}
+          </p>
+        </div>
+
+        <span className="wallet-security-illustration shrink-0" aria-hidden="true">
+          <img src="/security-3d.png" alt="" className="h-full w-full object-contain" decoding="async" />
+        </span>
       </div>
-
-      <button
-        type="button"
-        className="interactive-ring grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#8B5CF6]/20 bg-white text-[#8B5CF6] dark:bg-[#080d20]"
-        aria-label={t("summary.securityDetails")}
-        title={t("summary.securityDetails")}
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
+      <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:gap-2">
+        {[
+          [LockKeyhole, t("summary.securityPrivacy"), t("summary.securityPrivacyDescription")],
+          [Activity, t("summary.securityMonitoring"), t("summary.securityMonitoringDescription")],
+          [ShieldCheck, t("summary.securityEncryption"), t("summary.securityEncryptionDescription")],
+        ].map(([Icon, title, description]) => (
+          <article key={title} className="wallet-security-feature min-w-0 p-2 text-start">
+            <Icon className="h-4 w-4 text-violet-500" />
+            <h3 className="mt-1.5 text-[10px] font-black text-slate-900 dark:text-white sm:text-xs">{title}</h3>
+            <p className="mt-0.5 line-clamp-2 text-[8px] font-semibold leading-3.5 text-slate-500 dark:text-white/50 sm:text-[10px]">{description}</p>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

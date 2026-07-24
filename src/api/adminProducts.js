@@ -4,6 +4,7 @@ import {
   asArray,
   compactObject,
   formatCurrency,
+  findPaginationMetadata,
   getItemId,
   normalizePagination,
   resolveBackendAssetUrl,
@@ -417,7 +418,12 @@ export async function getAdminProducts(token, query = {}, categoryLookup = new M
   const response = await apiRequest("/admin/products", {
     query: compactObject({
       page: query.page || 1,
-      limit: query.limit || 200,
+      limit: query.limit || 15,
+      search: query.search,
+      category: query.category,
+      status: query.status,
+      linkType: query.linkType,
+      sort: query.sort,
     }),
     token,
   });
@@ -425,9 +431,9 @@ export async function getAdminProducts(token, query = {}, categoryLookup = new M
 
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page || 1,
-      limit: query.limit || 200,
+      limit: query.limit || 15,
       total: products.length,
     }),
     products,

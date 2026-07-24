@@ -13,7 +13,7 @@ export default function SupplierSearchProducts({
   const [query, setQuery] = useState("");
 
   return (
-    <section className="rounded-[24px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
+    <section className="admin-suppliers-search rounded-[24px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
       <h2 className="text-sm font-black dark:text-white">البحث في منتجات الموردين</h2>
       <form
         onSubmit={(event) => {

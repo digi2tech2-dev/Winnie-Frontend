@@ -25,6 +25,20 @@ function isDataUrl(value) {
   return /^data:/i.test(String(value || ""));
 }
 
+function normalizeCustomFields(fields = []) {
+  return asArray(fields)
+    .map((field, index) => {
+      const type = ["text", "number", "image"].includes(String(field?.type || "").toLowerCase())
+        ? String(field.type).toLowerCase()
+        : "text";
+      const label = String(field?.label || field?.name || "").trim();
+      const key = String(field?.key || `custom_${index + 1}`).trim().replace(/[^\w-]/g, "_");
+      return label ? { key, label, type, required: true, sortOrder: toNumber(field?.sortOrder, index) } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.sortOrder - right.sortOrder);
+}
+
 export function generatePaymentSettingId(prefix = "pm") {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return `${prefix}-${crypto.randomUUID()}`;
@@ -41,7 +55,15 @@ export function normalizePaymentMethod(method = {}, group = {}, index = 0) {
   const account = method.account || method.accountNumber || method.walletNumber || method.iban || "";
   const bank = method.bank || method.network || (gateway ? gateway : "");
   const type = String(method.type || method.methodType || (gateway ? "ONLINE" : "MANUAL")).toUpperCase();
-  const image = isDataUrl(method.image || method.icon) ? "" : (method.image || method.icon || method.logo || "");
+  const imageSource =
+    method.imageUrl ||
+    method.logoUrl ||
+    method.providerLogo ||
+    method.image ||
+    method.icon ||
+    method.logo ||
+    "";
+  const image = isDataUrl(imageSource) ? "" : imageSource;
 
   return {
     id,
@@ -52,12 +74,13 @@ export function normalizePaymentMethod(method = {}, group = {}, index = 0) {
     currency: currencies[0] || "USD",
     currencies,
     customerVisible: method.customerVisible !== false,
+    customFields: normalizeCustomFields(method.customFields || method.inputFields),
     description: method.description || method.instructions || "",
     fee: toNumber(method.fee ?? method.feePercentage, 0),
     gateway,
     groupId,
     image,
-    imageUrl: resolveBackendAssetUrl(image) || image || "/logo.png",
+    imageUrl: resolveBackendAssetUrl(image) || "",
     instructions: method.instructions || method.description || "",
     isActive,
     maxAmount: method.maxAmount === undefined || method.maxAmount === null ? null : toNumber(method.maxAmount, 0),
@@ -76,7 +99,15 @@ export function normalizePaymentGroup(group = {}, index = 0) {
   const id = getItemId(group, group.key || group.slug || `pay-${index + 1}`);
   const currency = String(group.currency || "USD").toUpperCase();
   const isActive = group.isActive !== false && group.active !== false;
-  const image = isDataUrl(group.image || group.icon) ? "" : (group.image || group.icon || group.logo || "");
+  const imageSource =
+    group.imageUrl ||
+    group.logoUrl ||
+    group.providerLogo ||
+    group.image ||
+    group.icon ||
+    group.logo ||
+    "";
+  const image = isDataUrl(imageSource) ? "" : imageSource;
   const normalizedGroup = {
     id,
     _id: group._id ?? id,
@@ -84,7 +115,7 @@ export function normalizePaymentGroup(group = {}, index = 0) {
     currency,
     description: group.description || "",
     image,
-    imageUrl: resolveBackendAssetUrl(image) || image || "/logo.png",
+    imageUrl: resolveBackendAssetUrl(image) || "",
     isActive,
     methods: [],
     name: group.name || group.title || "Payment group",
@@ -149,6 +180,7 @@ export function buildPaymentMethodSetting(method = {}) {
     currencies,
     currency: currencies[0] || "USD",
     customerVisible: method.customerVisible !== false,
+    customFields: normalizeCustomFields(method.customFields || method.inputFields),
     description: method.description || "",
     fee: toNumber(method.fee, 0),
     gateway,
@@ -191,7 +223,20 @@ export async function uploadPaymentImage(token, file) {
     body: formData,
   });
 
-  return response.data?.path || "";
+  const uploaded = response.data;
+  if (typeof uploaded === "string") return uploaded;
+
+  return (
+    uploaded?.path ||
+    uploaded?.url ||
+    uploaded?.imageUrl ||
+    uploaded?.secureUrl ||
+    uploaded?.secure_url ||
+    uploaded?.location ||
+    uploaded?.file?.path ||
+    uploaded?.file?.url ||
+    ""
+  );
 }
 
 export async function getPublicPaymentSettings() {

@@ -386,7 +386,7 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
     return (
       <div className="space-y-6">
         <HeroPanel />
-        <section className="glass-panel rounded-lg p-5">
+        <section className="glass-panel rounded-lg p-4">
           <h1 className="text-xl font-black text-slate-950 dark:text-white">{t("customerWorkspaceTitle")}</h1>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
             {t("customerWorkspaceDescription")}
@@ -410,7 +410,7 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
         <LoadingGrid />
       ) : (
         <>
-          <section className="grid grid-cols-3 gap-2 sm:gap-4">
+          <section className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <MetricCard icon={Share2} label={t("inviteCode")} tone="violet" value={referralCode || t("common:states.unavailable")} />
             <MetricCard icon={UserPlus} label={t("invitedUsers")} tone="sky" value={String(invitedUsersCount)} />
             <MetricCard icon={BadgeDollarSign} label={t("creditedCommission")} tone="emerald" value={commissionTotalLabel} />
@@ -425,11 +425,11 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
             />
           </section>
 
-          <article className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-l from-emerald-50 via-white to-sky-50 p-4 shadow-[0_14px_36px_rgba(16,185,129,0.09)] dark:border-emerald-400/15 dark:bg-[linear-gradient(120deg,rgba(16,185,129,0.10),rgba(17,24,39,0.96),rgba(14,165,233,0.08))] sm:p-5">
+          <article className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-l from-emerald-50 via-white to-sky-50 p-3.5 shadow-[0_14px_36px_rgba(16,185,129,0.09)] dark:border-emerald-400/15 dark:bg-[linear-gradient(120deg,rgba(16,185,129,0.10),rgba(17,24,39,0.96),rgba(14,165,233,0.08))] sm:p-3.5">
             <span aria-hidden="true" className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-sky-300/20 blur-3xl" />
-            <div className="relative flex items-start gap-4">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-white shadow-[0_12px_26px_rgba(16,185,129,0.25)]">
-                <WalletCards className="h-6 w-6" />
+            <div className="relative flex items-start gap-2.5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-white shadow-[0_12px_26px_rgba(16,185,129,0.25)]">
+                <WalletCards className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-black text-slate-950 dark:text-white">{t("referralWalletBehavior")}</h2>
@@ -441,7 +441,7 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
             </div>
           </article>
 
-          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <section className="grid gap-2.5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <PayoutBalancesCard
               balances={payoutBalances}
               pendingBalances={pendingPayoutBalances}
@@ -453,9 +453,9 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
                   type="button"
                   onClick={() => setPayoutModalOpen(true)}
                   disabled={submittingPayout || !activePayoutBalance}
-                  className="interactive-ring inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 via-teal-600 to-sky-600 px-5 text-xs font-black text-white shadow-[0_12px_28px_rgba(16,185,129,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
+                  className="interactive-ring inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 via-teal-600 to-sky-600 px-4 text-xs font-black text-white shadow-[0_12px_28px_rgba(16,185,129,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
                 >
-                  <HandCoins className="h-4 w-4" />
+                  <HandCoins className="h-3.5 w-3.5" />
                   {t("requestPayout")}
                 </button>
                 {activePayoutBalance ? (
@@ -515,7 +515,7 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
             />
           ) : null}
 
-          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <section className="grid gap-2.5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <CommissionHistory
               commissions={commissions}
               onLoadMore={loadMoreCommissions}
@@ -528,9 +528,9 @@ export default function CustomerSubAgent({ basePath = "/customer" }) {
                   type="button"
                   onClick={() => setRequestModalOpen(true)}
                   disabled={submitting || Boolean(pendingSubAgentRequest)}
-                  className="interactive-ring inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-[#7C3AED] via-[#A855F7] to-[#0EA5E9] px-5 text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
+                  className="interactive-ring inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-[#7C3AED] via-[#A855F7] to-[#0EA5E9] px-4 text-xs font-black text-white shadow-[0_12px_28px_rgba(124,58,237,0.28)] disabled:cursor-not-allowed disabled:opacity-65"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-3.5 w-3.5" />
                   {pendingSubAgentRequest ? t("waitingAdmin") : t("submitSubAgent")}
                 </button>
                 {pendingSubAgentRequest ? (
@@ -603,7 +603,7 @@ function SubAgentRequestModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="sub-agent-request-title"
-        className="relative w-full max-w-[430px] overflow-hidden rounded-[24px] border-2 border-violet-400/55 bg-white p-4 shadow-[0_24px_80px_rgba(124,58,237,0.32)] ring-1 ring-sky-300/35 sm:p-5 dark:border-violet-400/45 dark:bg-[#111827] dark:shadow-[0_0_48px_rgba(139,92,246,0.28)]"
+        className="relative w-full max-w-[430px] overflow-hidden rounded-[24px] border-2 border-violet-400/55 bg-white p-4 shadow-[0_24px_80px_rgba(124,58,237,0.32)] ring-1 ring-sky-300/35 sm:p-4 dark:border-violet-400/45 dark:bg-[#111827] dark:shadow-[0_0_48px_rgba(139,92,246,0.28)]"
       >
         <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-l from-violet-600 via-fuchsia-500 to-sky-400" />
         <button
@@ -616,12 +616,12 @@ function SubAgentRequestModal({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="flex items-start gap-3">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#0EA5E9] text-white shadow-[0_14px_30px_rgba(124,58,237,0.3)]">
-            <Send className="h-5 w-5" />
+        <div className="flex items-start gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#0EA5E9] text-white shadow-[0_14px_30px_rgba(124,58,237,0.3)]">
+            <Send className="h-4.5 w-4.5" />
           </span>
           <div className="min-w-0 pe-8">
-            <h2 id="sub-agent-request-title" className="text-lg font-black text-slate-950 dark:text-white">{t("subAgentRequest")}</h2>
+            <h2 id="sub-agent-request-title" className="text-base font-black text-slate-950 dark:text-white">{t("subAgentRequest")}</h2>
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">{t("subAgentDescription")}</p>
           </div>
         </div>
@@ -632,7 +632,7 @@ function SubAgentRequestModal({
           onChange={(event) => onReasonChange(event.target.value.slice(0, 1000))}
           placeholder={t("subAgentPlaceholder")}
           disabled={submitting}
-          className="mt-4 min-h-[108px] w-full resize-none rounded-2xl border border-violet-200 bg-slate-50 p-3 text-sm font-bold leading-6 text-slate-950 outline-none transition focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-70 dark:border-violet-400/20 dark:bg-[#0D1324] dark:text-white"
+          className="mt-4 min-h-[96px] w-full resize-none rounded-2xl border border-violet-200 bg-slate-50 p-3 text-sm font-bold leading-6 text-slate-950 outline-none transition focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/10 disabled:cursor-not-allowed disabled:opacity-70 dark:border-violet-400/20 dark:bg-[#0D1324] dark:text-white"
         />
         <label className="mt-3 block cursor-pointer overflow-hidden rounded-2xl border border-dashed border-sky-300 bg-sky-50/70 p-3 transition hover:border-violet-400 hover:bg-violet-50/70 dark:border-sky-400/25 dark:bg-sky-400/[0.06] dark:hover:bg-violet-400/[0.08]">
           <input
@@ -642,8 +642,8 @@ function SubAgentRequestModal({
             disabled={submitting}
             onChange={(event) => pickProofImage(event.target.files?.[0])}
           />
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-sky-600 shadow-sm dark:bg-white/10 dark:text-sky-200">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-sky-600 shadow-sm dark:bg-white/10 dark:text-sky-200">
               {proofImagePreview ? (
                 <img src={proofImagePreview} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -651,18 +651,18 @@ function SubAgentRequestModal({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-xs font-black text-slate-900 dark:text-white">{t("proofImageLabel")}</span>
+              <span className="block text-[10px] font-black text-slate-900 dark:text-white">{t("proofImageLabel")}</span>
               <span className="mt-1 block truncate text-[11px] font-bold text-slate-500 dark:text-slate-400">
                 {proofImageFile?.name || t("proofImageHint")}
               </span>
             </span>
           </div>
         </label>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <button type="button" onClick={onClose} disabled={submitting} className="h-11 rounded-xl border border-slate-200 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.05]">
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={onClose} disabled={submitting} className="h-10 rounded-xl border border-slate-200 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.05]">
             {t("common:actions.cancel")}
           </button>
-          <button type="button" onClick={onSubmit} disabled={submitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_26px_rgba(124,58,237,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
+          <button type="button" onClick={onSubmit} disabled={submitting} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-xs font-black text-white shadow-[0_12px_26px_rgba(124,58,237,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
             <Send className="h-4 w-4" />
             {submitting ? t("submitting") : t("submitSubAgent")}
           </button>
@@ -718,7 +718,7 @@ function ReferralPayoutModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="referral-payout-title"
-        className="relative w-full max-w-[520px] overflow-hidden rounded-[24px] border-2 border-emerald-400/55 bg-white p-4 shadow-[0_24px_80px_rgba(16,185,129,0.28)] ring-1 ring-sky-300/35 sm:p-5 dark:border-emerald-400/45 dark:bg-[#111827] dark:shadow-[0_0_48px_rgba(16,185,129,0.22)]"
+        className="relative w-full max-w-[520px] overflow-hidden rounded-[24px] border-2 border-emerald-400/55 bg-white p-4 shadow-[0_24px_80px_rgba(16,185,129,0.28)] ring-1 ring-sky-300/35 sm:p-4 dark:border-emerald-400/45 dark:bg-[#111827] dark:shadow-[0_0_48px_rgba(16,185,129,0.22)]"
       >
         <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-l from-emerald-600 via-teal-500 to-sky-400" />
         <button
@@ -731,12 +731,12 @@ function ReferralPayoutModal({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="flex items-start gap-3">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-600 to-sky-500 text-white shadow-[0_14px_30px_rgba(16,185,129,0.3)]">
-            <HandCoins className="h-5 w-5" />
+        <div className="flex items-start gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-600 to-sky-500 text-white shadow-[0_14px_30px_rgba(16,185,129,0.3)]">
+            <HandCoins className="h-4.5 w-4.5" />
           </span>
           <div className="min-w-0 pe-8">
-            <h2 id="referral-payout-title" className="text-lg font-black text-slate-950 dark:text-white">{t("requestPayout")}</h2>
+            <h2 id="referral-payout-title" className="text-base font-black text-slate-950 dark:text-white">{t("requestPayout")}</h2>
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">{t("payoutModalDescription")}</p>
           </div>
         </div>
@@ -748,7 +748,7 @@ function ReferralPayoutModal({
               <select
                 value={currency}
                 onChange={(event) => onCurrencyChange(event.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
+                className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
               >
                 {balances.map((balance) => (
                   <option key={balance.currency} value={balance.currency}>
@@ -768,7 +768,7 @@ function ReferralPayoutModal({
             <select
               value={method}
               onChange={(event) => onMethodChange(event.target.value)}
-              className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
+              className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
             >
               <option value="wallet_credit">{t("walletCreditMethod")}</option>
               <option value="manual_external">{t("manualPayoutMethod")}</option>
@@ -776,32 +776,32 @@ function ReferralPayoutModal({
           </label>
 
           {manualExternal ? (
-            <div className="grid gap-3">
+            <div className="grid gap-2.5">
               <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
                 <span>{t("payoutMethodName")}</span>
                 <input
                   value={methodName}
                   onChange={(event) => onMethodNameChange(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
+                  className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white"
                   placeholder={t("payoutMethodNamePlaceholder")}
                 />
               </label>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2.5 md:grid-cols-2">
                 <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
                   <span>{t("payoutAccountName")}</span>
-                  <input value={accountName} onChange={(event) => onAccountNameChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                  <input value={accountName} onChange={(event) => onAccountNameChange(event.target.value)} className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
                 </label>
                 <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
                   <span>{t("payoutAccountNumber")}</span>
-                  <input value={accountNumber} onChange={(event) => onAccountNumberChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                  <input value={accountNumber} onChange={(event) => onAccountNumberChange(event.target.value)} className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
                 </label>
                 <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
                   <span>{t("payoutPhone")}</span>
-                  <input value={phone} onChange={(event) => onPhoneChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                  <input value={phone} onChange={(event) => onPhoneChange(event.target.value)} className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
                 </label>
                 <label className="block text-xs font-black text-slate-500 dark:text-slate-400">
                   <span>{t("payoutWalletAddress")}</span>
-                  <input value={walletAddress} onChange={(event) => onWalletAddressChange(event.target.value)} className="mt-1 h-11 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
+                  <input value={walletAddress} onChange={(event) => onWalletAddressChange(event.target.value)} className="mt-1 h-10 w-full rounded-2xl border border-emerald-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-400/20 dark:bg-[#0D1324] dark:text-white" />
                 </label>
               </div>
             </div>
@@ -813,10 +813,10 @@ function ReferralPayoutModal({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <button type="button" onClick={onClose} disabled={submitting} className="h-11 rounded-xl border border-slate-200 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.05]">
+          <button type="button" onClick={onClose} disabled={submitting} className="h-10 rounded-xl border border-slate-200 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/[0.05]">
             {t("common:actions.cancel")}
           </button>
-          <button type="button" onClick={onSubmit} disabled={submitting || !selectedBalance} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-sm font-black text-white shadow-[0_12px_26px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
+          <button type="button" onClick={onSubmit} disabled={submitting || !selectedBalance} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-xs font-black text-white shadow-[0_12px_26px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:opacity-65">
             <HandCoins className="h-4 w-4" />
             {submitting ? t("submitting") : t("requestPayout")}
           </button>
@@ -831,16 +831,16 @@ function ReferralPayoutModal({
 function LoadingGrid() {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
         {Array.from({ length: 3 }).map((_, index) => (
           <SkeletonBlock key={index} className="h-32" />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         <SkeletonBlock className="h-64 lg:col-span-2" />
         <SkeletonBlock className="h-64" />
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <SkeletonBlock className="h-72" />
         <SkeletonBlock className="h-72" />
       </div>
@@ -869,8 +869,8 @@ function MetricCard({ icon: Icon, label, tone = "violet", value }) {
   const colors = tones[tone] || tones.violet;
 
   return (
-    <article className={`min-w-0 rounded-[20px] border p-2.5 text-center shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-5 sm:text-start ${colors.card}`}>
-      <span className={`mx-auto grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br text-white sm:mx-0 sm:h-11 sm:w-11 sm:rounded-2xl ${colors.icon}`}>
+    <article className={`min-w-0 rounded-[20px] border p-2.5 text-center shadow-[0_12px_30px_rgba(15,23,42,0.06)] sm:p-3.5 sm:text-start ${colors.card}`}>
+      <span className={`mx-auto grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br text-white sm:mx-0 sm:h-10 sm:w-10 sm:rounded-2xl ${colors.icon}`}>
         <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </span>
       <p className="mt-2 min-h-8 text-[10px] font-bold leading-4 text-slate-500 dark:text-slate-400 sm:mt-4 sm:min-h-0 sm:text-sm sm:font-semibold sm:leading-5">{label}</p>
@@ -883,15 +883,15 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
   const { t } = useTranslation("subAgent");
 
   return (
-    <article className="relative block w-full min-w-0 overflow-hidden rounded-[22px] border border-violet-200/70 bg-white p-3.5 shadow-[0_18px_46px_rgba(124,58,237,0.09)] dark:border-violet-400/15 dark:bg-[#111827] sm:rounded-[26px] sm:p-5 lg:col-span-2">
+    <article className="relative block w-full min-w-0 overflow-hidden rounded-[22px] border border-violet-200/70 bg-white p-3 shadow-[0_18px_46px_rgba(124,58,237,0.09)] dark:border-violet-400/15 dark:bg-[#111827] sm:rounded-[26px] sm:p-3.5 lg:col-span-2">
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-violet-600 via-fuchsia-500 to-sky-400" />
-      <div className="flex items-center gap-3">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-[0_12px_26px_rgba(124,58,237,0.26)]">
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-[0_12px_26px_rgba(124,58,237,0.26)]">
           <Share2 className="h-5 w-5" />
         </span>
         <div>
           <h2 className="text-base font-black text-slate-950 dark:text-white">{t("inviteLink")}</h2>
-          <p dir="ltr" className="mt-0.5 break-all text-base font-black tracking-wider text-violet-700 dark:text-violet-300 sm:text-lg">{referralCode || t("common:states.unavailable")}</p>
+          <p dir="ltr" className="mt-0.5 break-all text-sm font-black tracking-wider text-violet-700 dark:text-violet-300 sm:text-base">{referralCode || t("common:states.unavailable")}</p>
         </div>
       </div>
 
@@ -901,12 +901,12 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
         </p>
       )}
 
-      <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:mt-5 md:grid-cols-2">
+      <div className="mt-3 grid w-full grid-cols-1 gap-2 sm:mt-4 md:grid-cols-2">
         <button
           type="button"
           onClick={() => onCopy(referralLink, t("referralLinkCopied"))}
           disabled={!referralLink}
-          className="interactive-ring flex min-h-[76px] w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2.5 text-left text-sm font-black text-sky-900 shadow-[0_8px_20px_rgba(14,165,233,0.07)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-sky-400/15 dark:bg-sky-400/[0.07] dark:text-sky-100 sm:gap-3 sm:px-4"
+          className="interactive-ring flex min-h-[60px] w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-sky-200/80 bg-sky-50/70 px-3 py-2 text-left text-xs font-black text-sky-900 shadow-[0_8px_20px_rgba(14,165,233,0.07)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-sky-400/15 dark:bg-sky-400/[0.07] dark:text-sky-100 sm:gap-3 sm:px-4"
         >
           <span className="flex min-w-0 flex-col">
             <span>{t("copyRegistrationLink")}</span>
@@ -921,7 +921,7 @@ function InviteCard({ inviter, onCopy, referralCode, referralLink }) {
           type="button"
           onClick={() => onCopy(referralCode, t("inviteCodeCopied"))}
           disabled={!referralCode}
-          className="interactive-ring flex min-h-[76px] w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-violet-200/80 bg-violet-50/80 px-3 py-2.5 text-left text-sm font-black text-violet-800 shadow-[0_8px_20px_rgba(139,92,246,0.08)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-violet-400/15 dark:bg-violet-400/[0.08] dark:text-violet-100 sm:gap-3 sm:px-4"
+          className="interactive-ring flex min-h-[60px] w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-violet-200/80 bg-violet-50/80 px-3 py-2 text-left text-xs font-black text-violet-800 shadow-[0_8px_20px_rgba(139,92,246,0.08)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-violet-400/15 dark:bg-violet-400/[0.08] dark:text-violet-100 sm:gap-3 sm:px-4"
         >
           <span className="flex min-w-0 flex-col">
             <span>{t("copyCodeOnly")}</span>
@@ -941,12 +941,12 @@ function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination })
   const hasMore = pagination && pagination.page < pagination.pages;
 
   return (
-    <article className="rounded-[26px] border border-emerald-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(16,185,129,0.08)] dark:border-emerald-400/15 dark:bg-[#111827]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]"><BadgeDollarSign className="h-5 w-5" /></span>
+    <article className="rounded-[26px] border border-emerald-200/70 bg-white p-4 shadow-[0_18px_46px_rgba(16,185,129,0.08)] dark:border-emerald-400/15 dark:bg-[#111827]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]"><BadgeDollarSign className="h-4.5 w-4.5" /></span>
           <div>
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("commissionHistory")}</h2>
+          <h2 className="text-base font-black text-slate-950 dark:text-white">{t("commissionHistory")}</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
             {t("commissionHistoryDescription")}
           </p>
@@ -955,9 +955,9 @@ function CommissionHistory({ commissions, loadingMore, onLoadMore, pagination })
       </div>
 
       {commissions.length ? (
-        <div className="mt-5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-100 dark:divide-white/10 dark:border-white/10">
+        <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-100 dark:divide-white/10 dark:border-white/10">
           {commissions.map((commission) => (
-            <div key={commission.id} className="bg-white px-3 py-3 dark:bg-[#0D1324]">
+            <div key={commission.id} className="bg-white px-3 py-2.5 dark:bg-[#0D1324]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black text-slate-950 dark:text-white">
@@ -1006,12 +1006,12 @@ function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagin
   const hasMore = pagination && pagination.page < pagination.pages;
 
   return (
-    <article className="rounded-[26px] border border-sky-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(14,165,233,0.08)] dark:border-sky-400/15 dark:bg-[#111827]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)]"><Clock3 className="h-5 w-5" /></span>
+    <article className="rounded-[26px] border border-sky-200/70 bg-white p-3 shadow-[0_18px_46px_rgba(14,165,233,0.08)] dark:border-sky-400/15 dark:bg-[#111827]">
+      <div className="flex items-center justify-between gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)]"><Clock3 className="h-4.5 w-4.5" /></span>
           <div>
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("requestStatus")}</h2>
+          <h2 className="text-base font-black text-slate-950 dark:text-white">{t("requestStatus")}</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
             {t("requestStatusDescription")}
           </p>
@@ -1020,9 +1020,9 @@ function RequestTimeline({ cancelingId, loadingMore, onCancel, onLoadMore, pagin
       </div>
 
       {requests.length ? (
-        <div className="mt-5 space-y-3">
+        <div className="mt-4 space-y-2.5">
           {requests.map((request) => (
-            <div key={request.id} className="rounded-lg border border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#0D1324]">
+            <div key={request.id} className="rounded-lg border border-slate-100 bg-white p-2.5 dark:border-white/10 dark:bg-[#0D1324]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-black text-slate-950 dark:text-white">{request.requestTypeLabel}</p>
@@ -1087,13 +1087,13 @@ function PayoutBalancesCard({ balances, pendingBalances, paidBalances }) {
   const { t } = useTranslation("subAgent");
 
   return (
-    <article className="rounded-[26px] border border-emerald-200/70 bg-white p-5 shadow-[0_18px_46px_rgba(16,185,129,0.08)] dark:border-emerald-400/15 dark:bg-[#111827]">
-      <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-600 to-sky-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]">
-          <ReceiptText className="h-5 w-5" />
+    <article className="rounded-[26px] border border-emerald-200/70 bg-white p-4 shadow-[0_18px_46px_rgba(16,185,129,0.08)] dark:border-emerald-400/15 dark:bg-[#111827]">
+      <div className="flex items-center gap-2">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-600 to-sky-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]">
+          <ReceiptText className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("payoutSummaryTitle")}</h2>
+          <h2 className="text-base font-black text-slate-950 dark:text-white">{t("payoutSummaryTitle")}</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("payoutSummaryDescription")}</p>
         </div>
       </div>
@@ -1120,7 +1120,7 @@ function BalanceGroup({ emptyLabel, rows, title, tone = "emerald" }) {
       {rows.length ? (
         <div className="mt-2 grid gap-2">
           {rows.map((row) => (
-            <div key={`${title}:${row.currency}`} className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2 text-sm font-bold text-slate-900 dark:bg-[#0D1324] dark:text-white">
+            <div key={`${title}:${row.currency}`} className="flex items-center justify-between gap-2.5 rounded-xl bg-white/80 px-3 py-2 text-sm font-bold text-slate-900 dark:bg-[#0D1324] dark:text-white">
               <span>{row.currency}</span>
               <span>{row.amountLabel}</span>
             </div>
@@ -1138,13 +1138,13 @@ function PayoutHistory({ loadingMore, onLoadMore, pagination, payouts }) {
   const hasMore = pagination && pagination.page < pagination.pages;
 
   return (
-    <article className="rounded-[26px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
-      <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-slate-700 to-slate-500 text-white">
-          <ReceiptText className="h-5 w-5" />
+    <article className="rounded-[26px] border border-slate-200/80 bg-white p-3.5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-slate-700 to-slate-500 text-white">
+          <ReceiptText className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-lg font-black text-slate-950 dark:text-white">{t("payoutHistoryTitle")}</h2>
+          <h2 className="text-base font-black text-slate-950 dark:text-white">{t("payoutHistoryTitle")}</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("payoutHistoryDescription")}</p>
         </div>
       </div>
@@ -1182,7 +1182,7 @@ function PayoutHistory({ loadingMore, onLoadMore, pagination, payouts }) {
           type="button"
           onClick={onLoadMore}
           disabled={loadingMore}
-          className="interactive-ring mt-4 h-11 w-full rounded-xl border border-emerald-300/60 bg-white text-xs font-black text-emerald-700 disabled:cursor-wait disabled:opacity-70 dark:border-emerald-400/30 dark:bg-[#0D1324] dark:text-emerald-200"
+          className="interactive-ring mt-4 h-10 w-full rounded-xl border border-emerald-300/60 bg-white text-xs font-black text-emerald-700 disabled:cursor-wait disabled:opacity-70 dark:border-emerald-400/30 dark:bg-[#0D1324] dark:text-emerald-200"
         >
           {loadingMore ? t("loading") : t("loadMorePayouts")}
         </button>
@@ -1216,8 +1216,8 @@ function SectionEmptyState({ description, icon: Icon, title, tone = "sky" }) {
   };
 
   return (
-    <div className="mt-5 rounded-[20px] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-7 text-center dark:border-white/10 dark:bg-white/[0.025]">
-      <span className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br text-white ${tones[tone] || tones.sky}`}>
+    <div className="mt-4 rounded-[20px] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-center dark:border-white/10 dark:bg-white/[0.025]">
+      <span className={`mx-auto grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br text-white ${tones[tone] || tones.sky}`}>
         <Icon className="h-5 w-5" />
       </span>
       <h3 className="mt-3 text-sm font-black text-slate-900 dark:text-white">{title}</h3>

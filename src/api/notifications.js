@@ -3,6 +3,7 @@ import {
   asArray,
   compactObject,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   humanizeToken,
   normalizePagination,
@@ -20,22 +21,54 @@ const typeMap = {
 
 export function normalizeNotification(notification = {}) {
   const id = getItemId(notification);
-  const backendType = String(notification.type || "system").toLowerCase();
+  const metadata = notification.data || notification.metadata || notification.meta || {};
+  const backendType = String(
+    notification.type || notification.eventType || notification.category || metadata.type || "system",
+  ).toLowerCase();
   const priority = String(notification.priority || "normal").toLowerCase();
   const isRead = Boolean(notification.isRead ?? notification.read);
+  const entityType =
+    notification.entityType
+    || notification.resourceType
+    || notification.relatedModel
+    || metadata.entityType
+    || metadata.resourceType
+    || "";
+  const entityId =
+    notification.entityId
+    || notification.resourceId
+    || notification.relatedId
+    || notification.orderId
+    || notification.paymentId
+    || notification.depositId
+    || notification.requestId
+    || metadata.entityId
+    || metadata.resourceId
+    || metadata.orderId
+    || metadata.paymentId
+    || metadata.depositId
+    || metadata.requestId
+    || null;
 
   return {
     ...notification,
     id,
     _id: notification._id ?? id,
     backendType,
-    entityId: notification.entityId || null,
-    entityType: notification.entityType || "",
+    entityId,
+    entityType,
     level: priority === "high" ? "warning" : "info",
     message: notification.message || "",
     priority,
     readAt: notification.readAt || null,
-    route: notification.route || "",
+    route:
+      notification.route
+      || notification.actionUrl
+      || notification.url
+      || notification.link
+      || metadata.route
+      || metadata.actionUrl
+      || "",
     time: formatDateTime(notification.createdAt || notification.date),
     title: notification.title || humanizeToken(backendType, "Notification"),
     type: typeMap[backendType] || "account",
@@ -55,11 +88,16 @@ export async function getNotifications(token, query = {}) {
   return {
     notifications,
     unreadCount,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(
+      findPaginationMetadata(response.pagination)
+        || findPaginationMetadata(payload)
+        || findPaginationMetadata(response.raw),
+      {
       page: query.page,
       limit: query.limit,
       total: notifications.length,
-    }),
+      },
+    ),
     message: response.message,
   };
 }

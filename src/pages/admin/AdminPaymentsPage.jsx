@@ -26,7 +26,7 @@ import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
-const pageSize = 20;
+const pageSize = 15;
 
 const initialFilters = {
   search: "",
@@ -90,6 +90,7 @@ function shortValue(value, length = 10) {
 
 function buildBackendQuery(filters) {
   return {
+    search: filters.search.trim() || undefined,
     dateFrom: filters.dateFrom ? new Date(`${filters.dateFrom}T00:00:00`).toISOString() : undefined,
     dateTo: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`).toISOString() : undefined,
     gateway: filters.gateway,
@@ -316,10 +317,10 @@ export default function AdminPaymentsPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-4 sm:space-y-5">
+    <div dir="rtl" className="admin-payments-page space-y-4 sm:space-y-5">
       <Header onRefresh={loadPayments} refreshing={loading} />
 
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+      <div className="admin-payments-stats grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <Stat icon={ReceiptText} label="إجمالي المدفوعات" value={stats.total} tone="violet" />
         <Stat icon={Clock3} label="تحتاج إلى إجراء" value={stats.pending} tone="amber" />
         <Stat icon={CheckCircle2} label="المدفوعات الناجحة" value={stats.succeeded} tone="emerald" />
@@ -363,8 +364,8 @@ export default function AdminPaymentsPage() {
         {loading ? (
           <PaymentsLoadingState />
         ) : visiblePayments.length > 0 ? (
-          <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
-            <div className="hidden grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr] gap-3 border-b border-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-400 dark:border-white/10 lg:grid">
+          <div className="admin-payments-list overflow-hidden rounded-[24px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
+            <div className="admin-payments-table-head hidden grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr] gap-3 border-b border-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-wide text-slate-400 dark:border-white/10 lg:grid">
               <span>الدفعة</span>
               <span>المستخدم</span>
               <span>بوابة الدفع</span>
@@ -374,7 +375,7 @@ export default function AdminPaymentsPage() {
               <span>إضافة الرصيد</span>
               <span>الإجراءات</span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-white/10">
+            <div className="admin-payments-rows divide-y divide-slate-100 dark:divide-white/10">
               {visiblePayments.map((payment) => (
                 <PaymentRow
                   actionKey={actionKey}
@@ -437,7 +438,7 @@ export default function AdminPaymentsPage() {
 
 function Header({ onRefresh, refreshing }) {
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white via-sky-50/80 to-violet-50/80 p-5 shadow-[0_18px_48px_rgba(124,58,237,0.09)] sm:p-6 dark:border-white/[0.08] dark:bg-[linear-gradient(135deg,#111827,#0D1324_58%,#17152A)] dark:shadow-[0_0_26px_rgba(139,92,246,0.14)]">
+    <section className="admin-payments-hero relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white via-sky-50/80 to-violet-50/80 p-5 shadow-[0_18px_48px_rgba(124,58,237,0.09)] sm:p-6 dark:border-white/[0.08] dark:bg-[linear-gradient(135deg,#111827,#0D1324_58%,#17152A)] dark:shadow-[0_0_26px_rgba(139,92,246,0.14)]">
       <div className="relative flex items-center gap-3">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
           <ReceiptText className="h-6 w-6" />
@@ -477,7 +478,7 @@ function Stat({ icon: Icon, label, value, tone }) {
   };
 
   return (
-    <article className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]">
+    <article className="admin-payments-stat rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]">
       <div className={`mb-3 inline-grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br ${tones[tone] || tones.violet}`}>
         <Icon className="h-5 w-5" />
       </div>
@@ -496,7 +497,7 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
   };
 
   return (
-    <section className="overflow-visible rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
+    <section className="admin-payments-filters overflow-visible rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
@@ -571,12 +572,12 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
   const matching = actionKey === `${payment.id}:match`;
 
   return (
-    <article className="grid gap-3 px-4 py-4 lg:grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr] lg:items-center">
-      <div className="min-w-0">
+    <article className="admin-payment-entry grid gap-3 px-4 py-4 lg:grid-cols-[1fr_1.2fr_0.9fr_0.9fr_1fr_1fr_0.8fr_0.8fr] lg:items-center">
+      <div className="admin-payment-reference min-w-0">
         <p className="font-mono text-xs font-black text-slate-950 dark:text-white">{payment.displayId}</p>
         <p className="mt-1 text-[10px] font-bold text-slate-400">{payment.createdAtLabel}</p>
       </div>
-      <div className="min-w-0">
+      <div className="admin-payment-customer min-w-0">
         <p className="truncate text-xs font-black text-slate-800 dark:text-white">{payment.userName}</p>
         <p className="truncate text-[10px] font-bold text-slate-400">{payment.userEmail || shortValue(payment.userId, 12)}</p>
       </div>
@@ -584,18 +585,18 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
         {payment.gatewayLabel}
       </span>
       <StatusBadge status={payment.status} label={payment.statusLabel} />
-      <div>
+      <div className="admin-payment-amount">
         <p className="text-xs font-black text-slate-950 dark:text-white">{payment.requestedAmountLabel}</p>
         <p className="text-[10px] font-bold text-slate-400">المبلغ المطلوب</p>
       </div>
-      <div>
+      <div className="admin-payment-gateway-amount">
         <p className="text-xs font-black text-slate-950 dark:text-white">{payment.gatewayAmountLabel}</p>
         <p className="text-[10px] font-bold text-slate-400">{payment.exchangeRateSource || "بوابة الدفع"}</p>
       </div>
       <span className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${payment.credited ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : "bg-slate-500/10 text-slate-500 dark:text-slate-300"}`}>
         {payment.credited ? "أُضيف الرصيد" : "لم يُضف الرصيد"}
       </span>
-      <div className="flex flex-wrap gap-2">
+      <div className="admin-payment-actions flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => onDetails(payment.id)}

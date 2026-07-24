@@ -182,7 +182,7 @@ export default function GroupsManagementPage() {
   };
 
   return (
-    <div dir={dir} className="space-y-4">
+    <div dir={dir} className="admin-groups-page space-y-4">
       <Header busy={busy} labels={labels} onCreate={() => setEditing(null)} onRefresh={loadGroups} />
 
       {error && (
@@ -199,12 +199,12 @@ export default function GroupsManagementPage() {
         <Skeleton />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <div className="admin-groups-stats grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             {stats.map((stat) => <Stat key={stat.label} locale={locale} {...stat} />)}
           </div>
 
           {groups.length ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="admin-groups-list grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {groups.map((group) => (
                 <GroupCard
                   key={group.id}
@@ -252,7 +252,7 @@ export default function GroupsManagementPage() {
 
 function Header({ busy, labels, onCreate, onRefresh }) {
   return (
-    <section className="flex flex-wrap items-center gap-3 rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
+    <section className="admin-groups-hero flex flex-wrap items-center gap-3 rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white to-violet-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
       <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white">
         <UsersRound className="h-5 w-5" />
       </span>
@@ -291,7 +291,7 @@ function Stat({ label, value, icon: Icon, tone, locale }) {
   };
 
   return (
-    <article className="rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+    <article className="admin-groups-stat rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
       <Icon className={`h-8 w-8 rounded-xl p-2 ${colors[tone]}`} />
       <strong className="mt-2 block text-2xl font-black dark:text-white">{Number(value || 0).toLocaleString(locale)}</strong>
       <p className="text-[9px] font-black text-slate-400">{label}</p>

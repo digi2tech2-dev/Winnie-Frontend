@@ -19,10 +19,10 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
   if (!bestSellingItems.length) return null;
 
   return (
-    <section id="best-selling" dir={isArabic ? "rtl" : "ltr"} className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="relative text-xl font-black tracking-normal text-slate-950 dark:text-white sm:text-2xl">
-          <span className="absolute top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#F43F5E,#7C3AED,#38BDF8)] shadow-[0_0_14px_rgba(124,58,237,0.30)] ltr:-left-3 rtl:-right-3" />
+    <section id="best-selling" dir={isArabic ? "rtl" : "ltr"} className="homepage-compact-products space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="relative text-lg font-black tracking-normal text-slate-950 dark:text-white sm:text-xl">
+          <span className="absolute top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#F43F5E,#7C3AED,#38BDF8)] shadow-[0_0_14px_rgba(124,58,237,0.30)] ltr:-left-3 rtl:-right-3" />
           {t("homePage.bestSellers")}
         </h2>
         {onViewAll ? (

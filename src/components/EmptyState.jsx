@@ -13,8 +13,8 @@ export default function EmptyState({
   const resolvedDescription = description || t("empty.defaultDescription");
 
   return (
-    <div className="glass-panel grid place-items-center rounded-lg p-8 text-center">
-      <span className="grid h-16 w-16 place-items-center rounded-lg bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
+    <div className="glass-panel winnie-empty-state grid place-items-center overflow-hidden rounded-[28px] p-8 text-center">
+      <span className="winnie-empty-state-icon grid h-16 w-16 place-items-center rounded-2xl bg-royal/12 text-royal dark:bg-pulse/15 dark:text-pulse">
         <Icon className="h-8 w-8" />
       </span>
       <h2 className="mt-5 text-2xl font-black">{resolvedTitle}</h2>

@@ -2,7 +2,7 @@ import { Pencil, Power, RefreshCw, Trash2 } from "lucide-react";
 
 export default function PaymentMethodCard({ method, onEdit, onDelete, onRefresh, onToggle }) {
   return (
-    <article className="rounded-2xl border border-slate-100 bg-slate-50/70 p-2.5 dark:border-white/[0.06] dark:bg-[#0B1220]">
+    <article className="admin-payment-method-card rounded-2xl border border-slate-100 bg-slate-50/70 p-2.5 dark:border-white/[0.06] dark:bg-[#0B1220]">
       <div className="flex items-center gap-2.5">
         <span className="payment-admin-logo-shell grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl p-1.5">
           <img src={method.imageUrl || method.image || "/logo.png"} alt={method.name} className="h-full w-full object-contain" />

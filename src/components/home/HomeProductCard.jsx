@@ -37,14 +37,14 @@ export default function HomeProductCard({ product, index = 0, onSelect, reserveP
       whileTap={{ scale: 0.985 }}
       onClick={handleSelect}
       onKeyDown={handleKeyDown}
-      className="group flex min-w-0 cursor-pointer flex-col items-center text-center outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-4 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950"
+      className="homepage-product-card group flex min-w-0 cursor-pointer flex-col items-center text-center outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-4 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950"
     >
-      <div className="flex aspect-square w-full items-center justify-center">
+      <div className="homepage-product-card__visual flex aspect-square w-full items-center justify-center">
         {product.image && !imageFailed ? (
           <img
             src={product.image}
             alt={product.name || product.title || ""}
-            className="h-auto max-h-full w-full object-contain transition-[transform,filter] duration-200 ease-out motion-safe:group-hover:-translate-y-[3px] motion-safe:group-hover:scale-[1.03] motion-safe:group-hover:brightness-105"
+            className="homepage-product-card__image h-auto max-h-full w-full object-contain transition-[transform,filter] duration-200 ease-out motion-safe:group-hover:-translate-y-[3px] motion-safe:group-hover:scale-[1.03] motion-safe:group-hover:brightness-105"
             loading="lazy"
             onError={() => setImageFailed(true)}
           />

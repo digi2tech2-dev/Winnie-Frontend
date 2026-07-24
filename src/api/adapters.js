@@ -7,6 +7,15 @@ export function asArray(value) {
   if (Array.isArray(value?.items)) return value.items;
   if (Array.isArray(value?.results)) return value.results;
   if (Array.isArray(value?.products)) return value.products;
+  if (Array.isArray(value?.users)) return value.users;
+  if (Array.isArray(value?.supervisors)) return value.supervisors;
+  if (Array.isArray(value?.payments)) return value.payments;
+  if (Array.isArray(value?.deposits)) return value.deposits;
+  if (Array.isArray(value?.subAgents)) return value.subAgents;
+  if (Array.isArray(value?.commissions)) return value.commissions;
+  if (Array.isArray(value?.payouts)) return value.payouts;
+  if (Array.isArray(value?.requests)) return value.requests;
+  if (Array.isArray(value?.referredUsers)) return value.referredUsers;
   if (Array.isArray(value?.categories)) return value.categories;
   if (Array.isArray(value?.orders)) return value.orders;
   if (Array.isArray(value?.transactions)) return value.transactions;
@@ -25,12 +34,61 @@ export function compactObject(payload = {}) {
 
 export function normalizePagination(pagination, fallback = {}) {
   const source = pagination || {};
-  const page = toNumber(source.page ?? fallback.page, 1);
-  const limit = toNumber(source.limit ?? fallback.limit, 20);
-  const total = toNumber(source.total ?? fallback.total, 0);
-  const pages = Math.max(1, toNumber(source.pages ?? fallback.pages, Math.ceil(total / limit) || 1));
+  const page = toNumber(
+    source.page ?? source.currentPage ?? source.pageNumber ?? fallback.page,
+    1,
+  );
+  const limit = toNumber(
+    source.limit ?? source.perPage ?? source.pageSize ?? source.itemsPerPage ?? fallback.limit,
+    20,
+  );
+  const total = toNumber(
+    source.total
+      ?? source.totalItems
+      ?? source.totalCount
+      ?? source.totalRecords
+      ?? source.totalDocs
+      ?? source.totalTransactions
+      ?? source.count
+      ?? fallback.total,
+    0,
+  );
+  const pages = Math.max(
+    1,
+    toNumber(
+      source.pages
+        ?? source.totalPages
+        ?? source.pageCount
+        ?? source.numberOfPages
+        ?? source.lastPage
+        ?? fallback.pages,
+      source.hasNextPage === true || source.hasNext === true
+        ? page + 1
+        : Math.ceil(total / limit) || 1,
+    ),
+  );
 
   return { page, limit, total, pages };
+}
+
+export function findPaginationMetadata(value, depth = 0, visited = new Set()) {
+  if (!value || typeof value !== "object" || depth > 4 || visited.has(value)) return null;
+  visited.add(value);
+
+  const paginationKeys = new Set([
+    "page", "currentPage", "pageNumber", "pages", "totalPages", "pageCount",
+    "numberOfPages", "lastPage", "hasNext", "hasNextPage", "total", "totalItems",
+    "totalCount", "totalRecords", "totalDocs", "totalTransactions", "count",
+  ]);
+  if (Object.keys(value).some((key) => paginationKeys.has(key))) return value;
+
+  for (const child of Object.values(value)) {
+    if (child && typeof child === "object" && !Array.isArray(child)) {
+      const match = findPaginationMetadata(child, depth + 1, visited);
+      if (match) return match;
+    }
+  }
+  return null;
 }
 
 export function getItemId(item, fallback = "") {
@@ -47,14 +105,17 @@ export function toDateValue(value) {
   return date && !Number.isNaN(date.getTime()) ? date : null;
 }
 
-export function formatDateTime(value, locale = "en-US") {
+export function formatDateTime(value, locale = "en-US", options = null) {
   const date = toDateValue(value);
   if (!date) return "Unknown date";
 
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return new Intl.DateTimeFormat(
+    locale,
+    options || {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  ).format(date);
 }
 
 export function formatDate(value, locale = "en-US") {
@@ -88,14 +149,15 @@ export function resolveBackendAssetUrl(path) {
     : path && typeof path === "object"
       ? path.url || path.secureUrl || path.secure_url || path.path || path.location || path.src
       : path;
-  const value = String(source || "").trim();
+  const value = String(source || "").trim().replace(/\\/g, "/");
   if (!value) return "";
-  if (/^https?:\/\//i.test(value) || /^data:/i.test(value)) return value;
-  if (!/^\/?uploads\//i.test(value)) return value;
+  if (/^https?:\/\//i.test(value) || /^data:/i.test(value) || /^blob:/i.test(value)) return value;
 
   const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
   const apiUrl = new URL(apiBaseUrl);
-  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  const uploadsIndex = value.toLowerCase().indexOf("uploads/");
+  if (uploadsIndex === -1) return value;
+  const normalizedPath = `/${value.slice(uploadsIndex)}`;
   return `${apiUrl.origin}${normalizedPath}`;
 }
 

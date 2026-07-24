@@ -22,7 +22,7 @@ export default function SupplierCard({
       : "unknown";
 
   return (
-    <article className="rounded-[23px] border border-slate-200/90 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
+    <article className="admin-supplier-card rounded-[23px] border border-slate-200/90 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
       <div className="flex items-start gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-sm font-black text-white">
           {supplier.name.slice(0, 1).toUpperCase()}

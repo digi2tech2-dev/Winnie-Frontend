@@ -5,6 +5,7 @@ import {
   DEFAULT_CURRENCY,
   formatCurrency,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   normalizePagination,
   toNumber,
@@ -73,7 +74,7 @@ export async function getSubAgentRequests(token, query = {}) {
   const requests = asArray(response.data?.requests || response.data).map(normalizeAdminGroupRequest);
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: requests.length,
@@ -124,7 +125,7 @@ export async function getSubAgents(token, query = {}) {
   const subAgents = asArray(response.data?.subAgents || response.data).map(normalizeSubAgent);
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: subAgents.length,
@@ -153,7 +154,7 @@ export async function getSubAgentReferredUsers(token, userId, query = {}) {
   const referredUsers = asArray(response.data?.referredUsers || response.data).map(normalizeReferredUser);
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: referredUsers.length,
@@ -170,7 +171,7 @@ export async function getSubAgentCommissions(token, query = {}) {
   const commissions = asArray(response.data?.commissions || response.data).map(normalizeReferralCommission);
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: commissions.length,
@@ -187,7 +188,7 @@ export async function getReferralPayouts(token, query = {}) {
   const payouts = asArray(response.data?.payouts || response.data).map(normalizeReferralPayout);
   return {
     message: response.message,
-    pagination: normalizePagination(response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
       page: query.page,
       limit: query.limit,
       total: payouts.length,

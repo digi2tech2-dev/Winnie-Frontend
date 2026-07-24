@@ -4,6 +4,7 @@ import {
   compactObject,
   formatDate,
   formatDateTime,
+  findPaginationMetadata,
   getItemId,
   normalizePagination,
 } from "./adapters";
@@ -145,7 +146,7 @@ export async function listSupervisors(token, params = {}) {
 
   return {
     message: response.message,
-    pagination: normalizePagination(data.pagination || response.pagination, {
+    pagination: normalizePagination(findPaginationMetadata(response.raw) || data.pagination || response.pagination, {
       page: params.page,
       limit: params.limit,
       total: supervisors.length,

@@ -141,8 +141,8 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-5 pb-2">
-      <section className="relative isolate overflow-hidden rounded-[30px] border border-violet-300/20 bg-[linear-gradient(125deg,#4c1d95_0%,#6d28d9_42%,#2563eb_100%)] p-5 text-white shadow-[0_20px_50px_rgba(76,29,149,0.24)] sm:p-7">
+    <div dir="rtl" className="admin-settings-page space-y-5 pb-2">
+      <section className="admin-settings-hero relative isolate overflow-hidden rounded-[30px] border border-violet-300/20 bg-[linear-gradient(125deg,#4c1d95_0%,#6d28d9_42%,#2563eb_100%)] p-5 text-white shadow-[0_20px_50px_rgba(76,29,149,0.24)] sm:p-7">
         <div className="absolute -left-16 -top-20 -z-10 h-52 w-52 rounded-full bg-cyan-300/20 blur-3xl" />
         <div className="absolute -bottom-24 right-20 -z-10 h-52 w-52 rounded-full bg-fuchsia-400/25 blur-3xl" />
         <div className="flex items-center gap-4">
@@ -250,7 +250,7 @@ export default function AdminSettingsPage() {
         </section>
       )}
 
-      <div className="sticky bottom-4 z-20 rounded-[22px] border border-violet-200/70 bg-white/85 p-2.5 shadow-[0_18px_50px_rgba(76,29,149,0.18)] backdrop-blur-xl dark:border-violet-400/20 dark:bg-[#0b1220]/90">
+      <div className="admin-settings-savebar sticky bottom-4 z-20 rounded-[22px] border border-violet-200/70 bg-white/85 p-2.5 shadow-[0_18px_50px_rgba(76,29,149,0.18)] backdrop-blur-xl dark:border-violet-400/20 dark:bg-[#0b1220]/90">
         <button
           type="button"
           disabled={busy || loading}
@@ -267,7 +267,7 @@ export default function AdminSettingsPage() {
 
 function SettingsCard({ children, description, icon, iconClassName, title }) {
   return (
-    <article className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-[#111827]/95">
+    <article className="admin-settings-card overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-[#111827]/95">
       <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-l from-slate-50 to-white px-4 py-4 dark:border-white/[0.07] dark:from-white/[0.035] dark:to-transparent sm:px-5">
         <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white shadow-lg ${iconClassName}`}>{icon}</span>
         <div>
@@ -289,7 +289,7 @@ const sectionTones = {
 
 function FieldSection({ children, className = "", contentClassName = "", icon, title, tone }) {
   return (
-    <div className={`rounded-[22px] border p-3.5 ${sectionTones[tone]} ${className}`}>
+    <div className={`admin-settings-field-section rounded-[22px] border p-3.5 ${sectionTones[tone]} ${className}`}>
       <div className="mb-3 flex items-center gap-2 text-xs font-black">
         <span className="grid h-7 w-7 place-items-center rounded-xl bg-white/80 shadow-sm dark:bg-white/10">{icon}</span>
         {title}
@@ -352,7 +352,7 @@ function SwitchField({ checked, label, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-[18px] border px-4 py-2.5 text-right transition-colors ${checked ? "border-violet-200 bg-violet-50 dark:border-violet-400/20 dark:bg-violet-400/[0.08]" : "border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-white/[0.035]"}`}
+      className={`admin-settings-switch flex min-h-14 w-full items-center justify-between gap-3 rounded-[18px] border px-4 py-2.5 text-right transition-colors ${checked ? "border-violet-200 bg-violet-50 dark:border-violet-400/20 dark:bg-violet-400/[0.08]" : "border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-white/[0.035]"}`}
     >
       <span>
         <span className="block text-right text-xs font-black text-slate-800 dark:text-slate-100">{label}</span>

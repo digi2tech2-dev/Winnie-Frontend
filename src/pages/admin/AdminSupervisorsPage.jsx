@@ -17,9 +17,14 @@ import { useToast } from "../../components/ToastProvider";
 import { SkeletonBlock } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 export default function AdminSupervisorsPage() {
   const [supervisors, setSupervisors] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, pages: 1 });
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [permissionGroups, setPermissionGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,14 +43,15 @@ export default function AdminSupervisorsPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await listSupervisors(token, { page: 1, limit: 20, status: "active" });
+      const result = await listSupervisors(token, { page, limit: 15, search: appliedSearch, email: appliedSearch, status: "active" });
       setSupervisors(result.supervisors);
+      setPagination(result.pagination);
     } catch (err) {
       setError(err.userMessage || err.message || "تعذر تحميل المشرفين");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [appliedSearch, page, token]);
 
   useEffect(() => {
     loadSupervisors();
@@ -121,8 +127,15 @@ export default function AdminSupervisorsPage() {
   };
 
   return (
-    <div dir="rtl" className="space-y-4">
+    <div dir="rtl" className="space-y-3">
       <PageHeader onAdd={() => setWizard({ stage: "search" })} />
+      <form onSubmit={(event) => { event.preventDefault(); setPage(1); setAppliedSearch(search.trim()); }} className="flex gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-white/10 dark:bg-[#111827]">
+        <label className="relative min-w-0 flex-1">
+          <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-500" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث بالاسم أو البريد الإلكتروني" className="h-9 w-full rounded-lg bg-slate-50 pe-8 ps-2.5 text-[10px] font-black dark:bg-[#0B1220] dark:text-white" />
+        </label>
+        <button type="submit" className="h-9 rounded-lg bg-violet-600 px-4 text-[10px] font-black text-white">بحث</button>
+      </form>
       {loading ? <Loading /> : error ? (
         <EmptyState icon={ShieldCheck} title="تعذر تحميل المشرفين" description={error} actionLabel="إعادة المحاولة" onAction={loadSupervisors} />
       ) : supervisors.length ? (
@@ -132,6 +145,7 @@ export default function AdminSupervisorsPage() {
               <SupervisorCard key={supervisor.id} supervisor={supervisor} logCount={supervisor.logsCount} onPermissions={() => setWizard({ stage: "permissions", candidate: supervisor })} onLogs={() => setLogsFor(supervisor)} onDelete={() => setDeleting(supervisor)} />
             ))}
           </div>
+          <AdminPagination {...pagination} loading={loading} onChange={setPage} />
           <button type="button" onClick={() => setLogsFor(null)} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 text-xs font-black text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-300"><ClipboardList className="h-4 w-4" />سجلات عمليات المشرفين كلها</button>
         </>
       ) : <EmptyState icon={ShieldCheck} title="لا يوجد مشرفون" actionLabel="إضافة مشرف" onAction={() => setWizard({ stage: "search" })} />}
@@ -146,14 +160,14 @@ export default function AdminSupervisorsPage() {
 }
 
 function PageHeader({ onAdd }) {
-  return <section className="flex items-center gap-3 rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white to-violet-50 p-5 shadow-[0_16px_40px_rgba(124,58,237,0.08)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><UserCog className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h1 className="text-2xl font-black dark:text-white">إدارة المشرفين</h1><p className="mt-0.5 text-[9px] font-bold text-slate-400">الصلاحيات وسجلات عمليات فريق الإدارة</p></div><button type="button" onClick={onAdd} className="inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white"><Plus className="h-4 w-4" />إضافة مشرف</button></section>;
+  return <section className="flex items-center gap-2.5 rounded-[20px] border border-violet-200/70 bg-gradient-to-l from-white to-violet-50 p-3.5 shadow-[0_10px_28px_rgba(124,58,237,0.07)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><UserCog className="h-4 w-4" /></span><div className="min-w-0 flex-1"><h1 className="text-lg font-black leading-tight dark:text-white">إدارة المشرفين</h1><p className="mt-0.5 truncate text-[8px] font-bold text-slate-400">الصلاحيات وسجلات عمليات فريق الإدارة</p></div><button type="button" onClick={onAdd} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-violet-600 px-2.5 text-[8px] font-black text-white"><Plus className="h-3.5 w-3.5" />إضافة مشرف</button></section>;
 }
 
 function SupervisorCard({ supervisor, logCount, onPermissions, onLogs, onDelete }) {
-  return <article className="rounded-[23px] border border-slate-200 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 text-sm font-black text-white">{supervisor.avatarInitial || supervisor.name.slice(0, 1)}</span><div className="min-w-0 flex-1"><h2 className="truncate text-sm font-black dark:text-white">{supervisor.name}</h2><p dir="ltr" className="mt-0.5 truncate text-right text-[9px] font-bold text-slate-400">{supervisor.email}</p></div><span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[8px] font-black text-emerald-700 dark:text-emerald-300">{supervisor.isActive ? "مفعل" : "غير مفعل"}</span></div><div className="mt-3 grid grid-cols-3 gap-2"><Mini label="الصلاحيات" value={supervisor.permissionsCount ?? supervisor.permissions.length} /><Mini label="آخر ظهور" value={supervisor.lastSeen} /><Mini label="السجلات" value={logCount} /></div><div className="mt-3 grid grid-cols-3 gap-1.5"><CardButton icon={Pencil} label="الصلاحيات" onClick={onPermissions} /><CardButton icon={Activity} label="السجلات" onClick={onLogs} /><CardButton icon={Trash2} label="حذف" danger onClick={onDelete} /></div></article>;
+  return <article className="rounded-[18px] border border-slate-200 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]"><div className="flex items-start gap-2.5"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 text-xs font-black text-white">{supervisor.avatarInitial || supervisor.name.slice(0, 1)}</span><div className="min-w-0 flex-1"><h2 className="truncate text-xs font-black dark:text-white">{supervisor.name}</h2><p dir="ltr" className="mt-0.5 truncate text-right text-[8px] font-bold text-slate-400">{supervisor.email}</p></div><span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[7px] font-black text-emerald-700 dark:text-emerald-300">{supervisor.isActive ? "مفعل" : "غير مفعل"}</span></div><div className="mt-2.5 grid grid-cols-3 gap-1.5"><Mini label="الصلاحيات" value={supervisor.permissionsCount ?? supervisor.permissions.length} /><Mini label="آخر ظهور" value={supervisor.lastSeen} /><Mini label="السجلات" value={logCount} /></div><div className="mt-2.5 grid grid-cols-3 gap-1.5"><CardButton icon={Pencil} label="الصلاحيات" onClick={onPermissions} /><CardButton icon={Activity} label="السجلات" onClick={onLogs} /><CardButton icon={Trash2} label="حذف" danger onClick={onDelete} /></div></article>;
 }
-function Mini({ label, value }) { return <div className="min-w-0 rounded-xl bg-slate-50 p-2 dark:bg-[#0B1220]"><p className="text-[7px] font-black text-slate-400">{label}</p><p className="mt-1 truncate text-[9px] font-black dark:text-white">{typeof value === "number" ? value.toLocaleString("ar-EG-u-nu-latn") : value}</p></div>; }
-function CardButton({ icon: Icon, label, danger, onClick }) { return <button type="button" onClick={onClick} className={`inline-flex h-9 items-center justify-center gap-1 rounded-xl text-[8px] font-black ${danger ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-violet-500/10 text-violet-700 dark:text-violet-300"}`}><Icon className="h-3.5 w-3.5" />{label}</button>; }
+function Mini({ label, value }) { return <div className="min-w-0 rounded-lg bg-slate-50 p-1.5 dark:bg-[#0B1220]"><p className="text-[6px] font-black text-slate-400">{label}</p><p className="mt-0.5 truncate text-[8px] font-black dark:text-white">{typeof value === "number" ? value.toLocaleString("ar-EG-u-nu-latn") : value}</p></div>; }
+function CardButton({ icon: Icon, label, danger, onClick }) { return <button type="button" onClick={onClick} className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg text-[7px] font-black ${danger ? "bg-rose-500/10 text-rose-700 dark:text-rose-300" : "bg-violet-500/10 text-violet-700 dark:text-violet-300"}`}><Icon className="h-3 w-3" />{label}</button>; }
 
 function SupervisorWizard(props) {
   if (props.state?.stage === "permissions") return <SupervisorPermissionsModal {...props} />;

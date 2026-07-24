@@ -53,6 +53,7 @@ export default function CustomerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isAboutPage = location.pathname === "/customer/about";
+  const isWalletTopUpPage = location.pathname.startsWith("/customer/wallet/top-up/");
   const usesFullFooter = location.pathname === "/customer/dashboard";
   const identityVerificationRequired = user?.identityVerificationRequired === true;
   const showIdentityPrompt = identityVerificationRequired && !authLoading && (!identityPromptDismissed || identityPromptForced);
@@ -205,18 +206,16 @@ export default function CustomerLayout() {
     runNotificationAction("read-all", () => markAllNotificationsRead(token))
   ), [runNotificationAction, token]);
 
-  const handleMarkNotificationsRead = useCallback(async (ids = []) => {
-    const uniqueIds = [...new Set(ids.filter(Boolean))];
-    if (!token || !uniqueIds.length) return;
-
-    setNotificationAction("read-preview");
+  const handleHeaderNotificationsOpened = useCallback(async () => {
+    if (!token || unreadNotificationCount <= 0) return;
+    setUnreadNotificationCount(0);
+    setNotificationItems((items) => items.map((item) => ({ ...item, unread: false })));
     try {
-      await Promise.allSettled(uniqueIds.map((id) => markNotificationRead(token, id)));
+      await markAllNotificationsRead(token);
+    } catch {
       await refreshNotifications({ showLoading: false });
-    } finally {
-      setNotificationAction("");
     }
-  }, [refreshNotifications, token]);
+  }, [refreshNotifications, token, unreadNotificationCount]);
 
   const handleDeleteNotification = useCallback((id) => (
     runNotificationAction(`delete:${id}`, () => deleteNotification(token, id))
@@ -264,7 +263,7 @@ export default function CustomerLayout() {
   }, [t]);
 
   return (
-    <div className="customer-app-shell min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
+    <div className="winnie-app-shell customer-app-shell min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
       <div dir="ltr" className="flex min-h-screen flex-row-reverse">
         <DashboardSidebar
           items={customerNavItems}
@@ -273,11 +272,11 @@ export default function CustomerLayout() {
           walletBalance={walletSummary?.balanceLabel || "$0.00"}
           variant="customer"
         />
-        <div dir={language === "ar" ? "rtl" : "ltr"} className="customer-app-content min-w-0 flex-1">
+        <div dir={language === "ar" ? "rtl" : "ltr"} className="winnie-app-content customer-app-content min-w-0 flex-1">
           <CustomerHeader
             notificationItems={notificationItems}
             notificationsLoading={notificationsLoading}
-            onMarkVisibleNotificationsRead={handleMarkNotificationsRead}
+            onNotificationsOpened={handleHeaderNotificationsOpened}
             onOpenNotification={handleOpenNotification}
             onOpenSidebar={() => setSidebarOpen(true)}
             searchResults={searchResults}
@@ -287,32 +286,42 @@ export default function CustomerLayout() {
           <main
             className={
               isAboutPage
-                ? "pb-28 pt-4 sm:pt-6 xl:pb-12"
-                : "customer-app-main mx-auto w-full max-w-[1440px] px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 xl:pb-12"
+                ? "winnie-page-canvas pb-28 pt-4 sm:pt-6 xl:pb-12"
+                : `winnie-page-canvas customer-app-main mx-auto w-full max-w-[1440px] px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${
+                    usesFullFooter ? "customer-home-main pb-4 sm:pb-5 xl:pb-6" : "pb-28 xl:pb-12"
+                  }`
             }
           >
             <BackButton
               className={isAboutPage ? "mx-auto max-w-[1120px] px-4 sm:px-6 lg:px-8" : ""}
               fallbackPath="/customer/dashboard"
-              hiddenPaths={["/", "/customer/dashboard", "/admin/user/dashboard", "/customer/profile"]}
+              hiddenPaths={[
+                "/",
+                "/customer/dashboard",
+                "/admin/user/dashboard",
+                "/customer/profile",
+                ...(isWalletTopUpPage ? [location.pathname] : []),
+              ]}
             />
-            <Outlet
-              context={{
-                navigate,
-                notifications: notificationItems,
-                notificationAction,
-                notificationActionsSupported: true,
-                notificationsError,
-                notificationsLoading,
-                onDeleteNotification: handleDeleteNotification,
-                onMarkAllNotificationsRead: handleMarkAllNotificationsRead,
-                onMarkNotificationRead: handleMarkNotificationRead,
-                onOpenNotification: handleOpenNotification,
-                onWalletRefresh: refreshWallet,
-                refreshNotifications,
-                unreadNotificationCount,
-              }}
-            />
+            <div className="winnie-page-stage">
+              <Outlet
+                context={{
+                  navigate,
+                  notifications: notificationItems,
+                  notificationAction,
+                  notificationActionsSupported: true,
+                  notificationsError,
+                  notificationsLoading,
+                  onDeleteNotification: handleDeleteNotification,
+                  onMarkAllNotificationsRead: handleMarkAllNotificationsRead,
+                  onMarkNotificationRead: handleMarkNotificationRead,
+                  onOpenNotification: handleOpenNotification,
+                  onWalletRefresh: refreshWallet,
+                  refreshNotifications,
+                  unreadNotificationCount,
+                }}
+              />
+            </div>
           </main>
           <SiteFooter simple={!usesFullFooter} className="pb-28 xl:pb-8" />
           <CustomerBottomNav />
