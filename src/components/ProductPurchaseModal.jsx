@@ -302,7 +302,7 @@ export default function ProductPurchaseModal({
     const submittedFieldValues = hasOrderFields ? { ...fieldValues } : {};
     if (xenaProduct) {
       if (xenaTargetFieldKey !== XENA_TARGET_FIELD_KEY) {
-        delete submittedFieldValues[xenaTargetFieldKey];
+        submittedFieldValues[xenaTargetFieldKey] = xenaTargetUid;
       }
       submittedFieldValues[XENA_TARGET_FIELD_KEY] = xenaTargetUid;
     }
