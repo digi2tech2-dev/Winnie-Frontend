@@ -222,7 +222,11 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
                   <InfoItem label="المورد" value={order.provider} icon={CloudCog} />
                   <InfoItem label="رمز المورد" value={order.providerCode || "-"} icon={Hash} dir="ltr" />
                   <InfoItem label="معرّف طلب المورد" value={order.providerOrderId} icon={Hash} dir="ltr" />
+                  {order.providerRequestId && <InfoItem label="معرّف تتبع المورد" value={order.providerRequestId} icon={Hash} dir="ltr" />}
                   <InfoItem label="حالة المورد" value={order.providerStatusLabel || "-"} icon={ShieldAlert} />
+                  {order.providerErrorCode && <InfoItem label="كود خطأ المورد" value={order.providerErrorCode} icon={ShieldAlert} dir="ltr" />}
+                  {order.providerErrorMessage && <InfoItem label="رسالة المورد" value={order.providerErrorMessage} icon={ShieldAlert} wide />}
+                  {order.providerMessage && <InfoItem label="ملاحظة المورد" value={order.providerMessage} icon={ShieldAlert} wide />}
                   <InfoItem label="عدد المحاولات" value={String(order.retryCount)} icon={RefreshCw} dir="ltr" />
                   <InfoItem label="المتبقي" value={String(order.remains)} icon={Package} dir="ltr" />
                   <InfoItem label="وقت المزامنة" value={order.supplierSync} icon={RefreshCw} wide />

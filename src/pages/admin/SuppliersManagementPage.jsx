@@ -18,6 +18,7 @@ import SupplierFormModal from "../../components/admin/suppliers/SupplierFormModa
 import SupplierProductsModal from "../../components/admin/suppliers/SupplierProductsModal";
 import SupplierSearchProducts from "../../components/admin/suppliers/SupplierSearchProducts";
 import SupplierToolsModal from "../../components/admin/suppliers/SupplierToolsModal";
+import XenaSupplierModal from "../../components/admin/suppliers/XenaSupplierModal";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -50,6 +51,7 @@ export default function SuppliersManagementPage() {
   const [providerProductsTotal, setProviderProductsTotal] = useState(0);
   const [productsState, setProductsState] = useState(emptyProductsState);
   const [toolsFor, setToolsFor] = useState(null);
+  const [xenaFor, setXenaFor] = useState(null);
   const [globalSearch, setGlobalSearch] = useState({
     error: "",
     loading: false,
@@ -299,6 +301,7 @@ export default function SuppliersManagementPage() {
                   onTest={testConnection}
                   onToggle={requestToggle}
                   onTools={setToolsFor}
+                  onXena={setXenaFor}
                   productCountLabel="فتح الكتالوج"
                   supplier={supplier}
                 />
@@ -328,6 +331,12 @@ export default function SuppliersManagementPage() {
         onClose={() => setToolsFor(null)}
         onGetBalance={(supplier) => getAdminProviderBalance(token, supplier.id)}
         supplier={toolsFor}
+      />
+      <XenaSupplierModal
+        onClose={() => setXenaFor(null)}
+        onUpdated={() => loadSuppliers({ silent: true })}
+        supplier={xenaFor}
+        token={token}
       />
       <ConfirmDialog
         busy={Boolean(actionKey)}

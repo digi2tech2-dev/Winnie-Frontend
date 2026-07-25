@@ -3,8 +3,10 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  CheckCircle2,
   CircleUserRound,
   Loader2,
+  Search,
   ShieldCheck,
   X,
   Zap,
@@ -13,7 +15,14 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import { verifyProductTarget } from "../api/catalog";
 import { createCustomerOrderQuote } from "../api/orders";
+import {
+  isXenaProduct,
+  normalizeXenaTargetUid,
+  validateXenaTargetUid,
+  XENA_TARGET_FIELD_KEY,
+} from "../utils/xena";
 import "./ProductPurchaseModal.css";
 
 export default function ProductPurchaseModal({
@@ -33,9 +42,18 @@ export default function ProductPurchaseModal({
   const packages = Array.isArray(product.packages) ? product.packages : [];
   const minQuantity = Math.max(1, Number(product.minQty) || 1);
   const maxQuantity = Math.max(minQuantity, Number(product.maxQty) || 999);
+  const productId = product?._id || product?.id || product?.productId;
+  const xenaProduct = isXenaProduct(product);
   const [quantity, setQuantity] = useState(minQuantity);
   const [accountId, setAccountId] = useState("");
   const [fieldValues, setFieldValues] = useState(() => createInitialFieldValues(orderFields));
+  const [xenaVerification, setXenaVerification] = useState({
+    error: "",
+    loading: false,
+    targetUid: "",
+    user: null,
+    valid: false,
+  });
   const [selectedPackageIndex, setSelectedPackageIndex] = useState(0);
   const [localError, setLocalError] = useState("");
   const [quote, setQuote] = useState(null);
@@ -58,7 +76,13 @@ export default function ProductPurchaseModal({
   const walletBalance = Number(user?.walletBalance ?? quote?.walletBalance ?? 0);
   const balanceLabel = formatPlainAmount(walletBalance);
   const quantityWarning = getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
-  const displayError = localError || submitError || quantityWarning || quoteError;
+  const xenaTargetUid = normalizeXenaTargetUid(fieldValues[XENA_TARGET_FIELD_KEY]);
+  const xenaVerified = !xenaProduct || (
+    xenaVerification.valid
+    && xenaVerification.targetUid === xenaTargetUid
+    && Boolean(xenaTargetUid)
+  );
+  const displayError = localError || xenaVerification.error || submitError || quantityWarning || quoteError;
   const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const hasOrderFields = orderFields.length > 0;
   const showFallbackAccountInput = !hasOrderFields;
@@ -76,11 +100,13 @@ export default function ProductPurchaseModal({
     && (quoteForQuantity.canSubmit !== false || quoteForQuantity.hasEnoughBalance === false);
   const confirmDisabled = submitting
     || quoteLoading
+    || xenaVerification.loading
     || Boolean(quoteError)
     || !quoteAllowsSubmit
     || !isQuantityWithinBounds
     || missingRequiredField
-    || missingFallbackAccount;
+    || missingFallbackAccount
+    || (xenaProduct && !xenaVerified);
 
   useEffect(() => {
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -96,7 +122,6 @@ export default function ProductPurchaseModal({
   }, []);
 
   useEffect(() => {
-    const productId = product?._id || product?.id || product?.productId;
     const numericQuantity = Number(quantity);
 
     if (!token || !productId || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
@@ -133,7 +158,32 @@ export default function ProductPurchaseModal({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [product, quantity, t, token]);
+  }, [productId, quantity, t, token]);
+
+  useEffect(() => {
+    setXenaVerification({
+      error: "",
+      loading: false,
+      targetUid: "",
+      user: null,
+      valid: false,
+    });
+  }, [productId]);
+
+  useEffect(() => {
+    if (!xenaProduct) return;
+    setXenaVerification((current) => {
+      if (!current.targetUid && !current.error) return current;
+      if (current.valid && current.targetUid === xenaTargetUid) return current;
+      return {
+        error: "",
+        loading: false,
+        targetUid: "",
+        user: null,
+        valid: false,
+      };
+    });
+  }, [xenaProduct, xenaTargetUid]);
 
   const changeQuantity = (value) => {
     setQuantity(String(value).replace(/[^\d]/g, ""));
@@ -143,6 +193,54 @@ export default function ProductPurchaseModal({
   const changeOrderField = (key, value) => {
     setFieldValues((current) => ({ ...current, [key]: value }));
     setLocalError("");
+  };
+
+  const verifyXenaTarget = async () => {
+    if (!xenaProduct || xenaVerification.loading) return;
+    const validation = validateXenaTargetUid(xenaTargetUid);
+
+    if (!validation.valid) {
+      setXenaVerification({
+        error: validation.message,
+        loading: false,
+        targetUid: "",
+        user: null,
+        valid: false,
+      });
+      return;
+    }
+
+    setXenaVerification((current) => ({ ...current, error: "", loading: true }));
+    try {
+      const result = await verifyProductTarget(token, productId, validation.targetUid);
+
+      if (!result.valid) {
+        setXenaVerification({
+          error: getXenaCustomerErrorMessage({ code: "XENA_TARGET_INVALID" }, isArabic),
+          loading: false,
+          targetUid: "",
+          user: null,
+          valid: false,
+        });
+        return;
+      }
+
+      setXenaVerification({
+        error: "",
+        loading: false,
+        targetUid: result.targetUid || validation.targetUid,
+        user: result.user,
+        valid: true,
+      });
+    } catch (error) {
+      setXenaVerification({
+        error: getXenaCustomerErrorMessage(error, isArabic),
+        loading: false,
+        targetUid: "",
+        user: null,
+        valid: false,
+      });
+    }
   };
 
   const submit = (event) => {
@@ -162,6 +260,18 @@ export default function ProductPurchaseModal({
     if (missingField) {
       setLocalError(t("purchase.requiredField", { label: getOrderFieldLabel(missingField, isArabic) }));
       return;
+    }
+
+    if (xenaProduct) {
+      const validation = validateXenaTargetUid(xenaTargetUid);
+      if (!validation.valid) {
+        setLocalError(validation.message);
+        return;
+      }
+      if (!xenaVerified) {
+        setLocalError("Verify Xena ID before confirming.");
+        return;
+      }
     }
 
     const cleanAccountId = accountId.trim();
@@ -186,11 +296,16 @@ export default function ProductPurchaseModal({
     }
 
     setLocalError("");
+    const submittedFieldValues = hasOrderFields ? { ...fieldValues } : {};
+    if (xenaProduct) {
+      submittedFieldValues[XENA_TARGET_FIELD_KEY] = xenaTargetUid;
+    }
+
     onConfirm({
       product,
       quantity: numericQuantity,
       accountId: cleanAccountId,
-      orderFieldsValues: hasOrderFields ? fieldValues : {},
+      orderFieldsValues: submittedFieldValues,
       selectedPackage,
       totalLabel: displayTotal,
       quote: quoteForQuantity,
@@ -318,11 +433,22 @@ export default function ProductPurchaseModal({
               icon={CircleUserRound}
               label={getOrderFieldLabel(field, isArabic)}
             >
-              <DynamicOrderInput
-                field={field}
-                value={fieldValues[field.key] ?? ""}
-                onChange={(value) => changeOrderField(field.key, value)}
-              />
+              {xenaProduct && field.key === XENA_TARGET_FIELD_KEY ? (
+                <XenaTargetInput
+                  field={field}
+                  isArabic={isArabic}
+                  onChange={(value) => changeOrderField(field.key, value)}
+                  onVerify={verifyXenaTarget}
+                  value={fieldValues[field.key] ?? ""}
+                  verification={xenaVerification}
+                />
+              ) : (
+                <DynamicOrderInput
+                  field={field}
+                  value={fieldValues[field.key] ?? ""}
+                  onChange={(value) => changeOrderField(field.key, value)}
+                />
+              )}
             </PurchaseRow>
           )) : showFallbackAccountInput ? (
             <PurchaseRow icon={CircleUserRound} label={t("purchase.accountPlayerId")}>
@@ -411,6 +537,48 @@ function DynamicOrderInput({ field, value, onChange }) {
       onChange={(event) => onChange(event.target.value)}
       placeholder={field.placeholder}
     />
+  );
+}
+
+function XenaTargetInput({ field, isArabic, onChange, onVerify, value, verification }) {
+  const normalizedValue = normalizeXenaTargetUid(value);
+  const verified = verification.valid && verification.targetUid === normalizedValue && Boolean(normalizedValue);
+  const user = verification.user || {};
+
+  return (
+    <div className="buy-xena-field">
+      <div className="buy-xena-field__control">
+        <input
+          className="buy-dynamic-input buy-xena-field__input"
+          type="text"
+          inputMode="numeric"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={field.placeholder || "001234"}
+          dir="ltr"
+        />
+        <button
+          type="button"
+          className={`buy-xena-field__verify${verified ? " is-verified" : ""}`}
+          onClick={onVerify}
+          disabled={verification.loading || !normalizedValue}
+        >
+          {verification.loading ? <Loader2 className="is-spinning" /> : verified ? <CheckCircle2 /> : <Search />}
+          <span>{verified ? (isArabic ? "Verified" : "Verified") : (isArabic ? "Verify" : "Verify")}</span>
+        </button>
+      </div>
+      {verified && (
+        <div className="buy-xena-field__result" dir={isArabic ? "rtl" : "ltr"}>
+          {user.avatar && <img src={user.avatar} alt="" />}
+          <div>
+            <strong dir="ltr">{verification.targetUid}</strong>
+            {(user.nickname || user.country) && (
+              <span>{[user.nickname, user.country].filter(Boolean).join(" - ")}</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -596,6 +764,21 @@ function formatCurrencyAmount(value, currency = "USD") {
 
 function formatAmount(value) {
   return formatPlainAmount(value);
+}
+
+function getXenaCustomerErrorMessage(error = {}) {
+  const code = String(error.code || error.payload?.code || "").toUpperCase();
+  const map = {
+    XENA_CONNECTION_REQUIRED: "Service is temporarily unavailable.",
+    XENA_MALFORMED_RESPONSE: "Verification is temporarily unavailable.",
+    XENA_PROVIDER_AUTH_FAILED: "Service is temporarily unavailable.",
+    XENA_RATE_LIMITED: "Please try again later.",
+    XENA_REAUTHENTICATION_REQUIRED: "Service is temporarily unavailable.",
+    XENA_TARGET_INVALID: "Xena ID is invalid.",
+    XENA_VERIFICATION_UNAVAILABLE: "Verification is temporarily unavailable.",
+  };
+
+  return map[code] || error.userMessage || "Verification is temporarily unavailable.";
 }
 
 function useViewportFitScale(ref, margin = 10, minScale = 0.45) {

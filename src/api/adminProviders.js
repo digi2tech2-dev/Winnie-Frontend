@@ -194,6 +194,69 @@ export function normalizeProviderSyncResult(data = {}) {
   };
 }
 
+export function normalizeXenaStatus(data = {}) {
+  return {
+    displayName: data.displayName || "",
+    lastCheckedAt: data.lastCheckedAt || null,
+    lastCheckedAtLabel: data.lastCheckedAt ? formatDateTime(data.lastCheckedAt, "ar-EG-u-nu-latn") : "-",
+    lastErrorCode: data.lastErrorCode || "",
+    lastErrorMessage: data.lastErrorMessage || "",
+    maskedUsername: data.maskedUsername || "",
+    needsReconnect: Boolean(data.needsReconnect),
+    status: data.status || "unknown",
+    tokenExpiresAt: data.tokenExpiresAt || null,
+    tokenExpiresAtLabel: data.tokenExpiresAt ? formatDateTime(data.tokenExpiresAt, "ar-EG-u-nu-latn") : "-",
+  };
+}
+
+export function normalizeXenaBalance(data = {}) {
+  const value = data.balance;
+  const balance = value === undefined || value === null || typeof value === "object" ? "" : String(value);
+  const checkedAt = data.checkedAt || new Date().toISOString();
+
+  return {
+    balance,
+    checkedAt,
+    checkedAtLabel: formatDateTime(checkedAt, "ar-EG-u-nu-latn"),
+    currency: data.currency || null,
+    requestId: data.requestId || "",
+    source: data.source || "xena_live",
+  };
+}
+
+export function normalizeXenaProductConfig(data = {}) {
+  return {
+    externalProductId: data.externalProductId || "xena-dynamic-recharge",
+    isActive: data.isActive !== false,
+    maxAmount: data.maxAmount ?? "",
+    minAmount: data.minAmount ?? "",
+    name: data.name || "Xena Dynamic Recharge (Any Amount)",
+    orderField: data.orderField || {
+      key: "target_uid",
+      label: "Xena ID",
+      required: true,
+      type: "text",
+    },
+    providerUnitPrice: data.providerUnitPrice === undefined || data.providerUnitPrice === null
+      ? ""
+      : String(data.providerUnitPrice),
+  };
+}
+
+export function normalizeXenaTargetVerification(data = {}) {
+  const user = data.user && typeof data.user === "object" ? data.user : {};
+  return {
+    targetUid: data.targetUid === undefined || data.targetUid === null ? "" : String(data.targetUid),
+    valid: data.valid === true,
+    user: data.valid === true ? {
+      avatar: user.avatar || null,
+      country: user.country || null,
+      nickname: user.nickname || "",
+      uid: user.uid === undefined || user.uid === null ? "" : String(user.uid),
+    } : null,
+  };
+}
+
 function buildProviderPayload(values = {}, { includeBlankToken = false } = {}) {
   const features = normalizeFeatureList(values.supportedFeaturesText ?? values.supportedFeatures);
   const apiToken = String(values.apiToken ?? values.credential ?? "").trim();
@@ -366,5 +429,117 @@ export async function syncAdminProviderProducts(token, id) {
   return {
     message: response.message,
     result: normalizeProviderSyncResult(response.data || {}),
+  };
+}
+
+export async function getXenaStatus(token, providerId) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/status`, { token });
+  return {
+    message: response.message,
+    status: normalizeXenaStatus(response.data || {}),
+  };
+}
+
+export async function challengeXena(token, providerId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/challenge`, {
+    body: {
+      displayName: payload.displayName,
+      password: payload.password,
+      username: payload.username,
+    },
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    status: normalizeXenaStatus(response.data || {}),
+  };
+}
+
+export async function reconnectXena(token, providerId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/reconnect`, {
+    body: {
+      displayName: payload.displayName,
+      password: payload.password,
+      username: payload.username,
+    },
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    status: normalizeXenaStatus(response.data || {}),
+  };
+}
+
+export async function verifyXenaOtp(token, providerId, code) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/verify`, {
+    body: { code },
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    status: normalizeXenaStatus(response.data || {}),
+  };
+}
+
+export async function refreshXenaBalance(token, providerId) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/balance/refresh`, {
+    method: "POST",
+    token,
+  });
+  return {
+    balance: normalizeXenaBalance(response.data || {}),
+    message: response.message,
+  };
+}
+
+export async function getXenaProductConfig(token, providerId) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/product-config`, { token });
+  return {
+    config: normalizeXenaProductConfig(response.data || {}),
+    message: response.message,
+  };
+}
+
+export async function updateXenaProductConfig(token, providerId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/product-config`, {
+    body: {
+      isActive: payload.isActive,
+      maxAmount: payload.maxAmount,
+      minAmount: payload.minAmount,
+      name: payload.name,
+      providerUnitPrice: payload.providerUnitPrice,
+    },
+    method: "PATCH",
+    token,
+  });
+  return {
+    config: normalizeXenaProductConfig(response.data || {}),
+    message: response.message,
+  };
+}
+
+export async function syncXenaProduct(token, providerId) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/sync-product`, {
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function adminVerifyXenaTarget(token, providerId, targetUid) {
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/verify-target`, {
+    body: { targetUid },
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    verification: normalizeXenaTargetVerification(response.data || {}),
   };
 }

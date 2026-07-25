@@ -193,6 +193,28 @@ export async function getCustomerProduct(token, productId) {
   return normalizeProduct(response.data || {});
 }
 
+export async function verifyProductTarget(token, productId, targetUid) {
+  const response = await apiRequest(`/products/${productId}/target-verification`, {
+    body: { targetUid },
+    method: "POST",
+    token,
+  });
+  const data = response.data || {};
+  const user = data.user && typeof data.user === "object" ? data.user : {};
+
+  return {
+    message: response.message,
+    targetUid: data.targetUid === undefined || data.targetUid === null ? "" : String(data.targetUid),
+    user: data.valid === true ? {
+      avatar: user.avatar || null,
+      country: user.country || null,
+      nickname: user.nickname || "",
+      uid: user.uid === undefined || user.uid === null ? "" : String(user.uid),
+    } : null,
+    valid: data.valid === true,
+  };
+}
+
 export async function getCustomerCatalog(token, query = {}) {
   const [categories, productResult] = await Promise.all([
     getCategories(),

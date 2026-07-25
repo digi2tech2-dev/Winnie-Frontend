@@ -1,4 +1,5 @@
-import { Activity, Archive, Ban, Boxes, CircleDollarSign, Pencil, RefreshCw, Stethoscope } from "lucide-react";
+import { Activity, Archive, Ban, Boxes, CircleDollarSign, Pencil, PlugZap, RefreshCw, Stethoscope } from "lucide-react";
+import { isXenaProvider } from "../../../utils/xena";
 import ConnectionStatusBadge from "./ConnectionStatusBadge";
 
 export default function SupplierCard({
@@ -11,10 +12,12 @@ export default function SupplierCard({
   onTest,
   onToggle,
   onTools,
+  onXena,
   productCountLabel = "كتالوج المورد",
   supplier,
 }) {
   const busy = actionKey.startsWith(`${supplier.id}:`);
+  const xena = isXenaProvider(supplier);
   const connectionStatus = actionKey === `${supplier.id}:test`
     ? "testing"
     : connectionResult
@@ -59,6 +62,7 @@ export default function SupplierCard({
         <ActionButton busy={actionKey === `${supplier.id}:test`} disabled={busy} icon={Activity} label="اختبار" onClick={() => onTest(supplier)} />
         <ActionButton disabled={busy} icon={Boxes} label="المنتجات" onClick={() => onProducts(supplier)} />
         <ActionButton busy={actionKey === `${supplier.id}:sync`} disabled={busy || !supplier.active} icon={RefreshCw} label="مزامنة" onClick={() => onSync(supplier)} />
+        {xena && <ActionButton disabled={busy} icon={PlugZap} label="Xena" onClick={() => onXena?.(supplier)} />}
         <ActionButton disabled={busy} icon={Stethoscope} label="الأدوات" onClick={() => onTools(supplier)} />
         <ActionButton disabled={busy} icon={Pencil} label="تعديل" onClick={() => onEdit(supplier)} />
         <ActionButton disabled={busy} icon={CircleDollarSign} label="الرصيد" onClick={() => onTools(supplier)} />

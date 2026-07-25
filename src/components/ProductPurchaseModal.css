@@ -652,6 +652,86 @@ select.buy-dynamic-input option {
   color: #0f172a;
 }
 
+.buy-xena-field {
+  display: grid;
+  gap: 10px;
+}
+
+.buy-xena-field__control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.buy-xena-field__input {
+  padding-left: 18px;
+}
+
+.buy-xena-field__verify {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  min-height: 54px;
+  gap: 6px;
+  padding: 0 14px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(124, 58, 237, 0.86);
+  border: 1px solid rgba(192, 132, 252, 0.52);
+  border-radius: 16px;
+  transition:
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.buy-xena-field__verify:not(:disabled):hover {
+  transform: translateY(-1px);
+  background: rgba(109, 40, 217, 0.94);
+}
+
+.buy-xena-field__verify:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.buy-xena-field__verify.is-verified {
+  background: rgba(16, 185, 129, 0.88);
+  border-color: rgba(110, 231, 183, 0.56);
+}
+
+.buy-xena-field__verify svg {
+  width: 17px;
+  height: 17px;
+}
+
+.buy-xena-field__result {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  color: #bbf7d0;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.24);
+  border-radius: 14px;
+}
+
+.buy-xena-field__result img {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.buy-xena-field__result strong,
+.buy-xena-field__result span {
+  display: block;
+}
+
 .buy-modal__error {
   margin: 15px 0 0;
   padding: 11px 14px;
