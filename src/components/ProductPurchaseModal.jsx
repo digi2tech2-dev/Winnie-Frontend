@@ -23,6 +23,7 @@ import {
   isXenaProduct,
   normalizeXenaTargetUid,
   validateXenaTargetUid,
+  XENA_LEGACY_TARGET_FIELD_KEY,
   XENA_TARGET_FIELD_KEY,
 } from "../utils/xena";
 import "./ProductPurchaseModal.css";
@@ -85,6 +86,9 @@ export default function ProductPurchaseModal({
     && xenaVerification.targetUid === xenaTargetUid
     && Boolean(xenaTargetUid)
   );
+  const requiredFieldValues = xenaProduct
+    ? buildXenaCompatibleFieldValues(orderFields, fieldValues, xenaTargetUid)
+    : fieldValues;
   const displayError = localError || xenaVerification.error || submitError || quantityWarning || quoteError;
   const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const hasOrderFields = orderFields.length > 0;
@@ -92,7 +96,7 @@ export default function ProductPurchaseModal({
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
   const productImage = getProductImage(product);
   const missingRequiredField = orderFields.some(
-    (field) => field.required !== false && !String(fieldValues[field.key] ?? "").trim(),
+    (field) => field.required !== false && !String(requiredFieldValues[field.key] ?? "").trim(),
   );
   const missingFallbackAccount = !hasOrderFields && requireAccountId && !accountId.trim();
   const isQuantityWithinBounds = Number.isInteger(numericQuantity)
@@ -256,8 +260,11 @@ export default function ProductPurchaseModal({
       return;
     }
 
+    const submitFieldValues = xenaProduct
+      ? buildXenaCompatibleFieldValues(orderFields, fieldValues, xenaTargetUid)
+      : fieldValues;
     const missingField = orderFields.find(
-      (field) => field.required !== false && !String(fieldValues[field.key] ?? "").trim(),
+      (field) => field.required !== false && !String(submitFieldValues[field.key] ?? "").trim(),
     );
 
     if (missingField) {
@@ -299,7 +306,7 @@ export default function ProductPurchaseModal({
     }
 
     setLocalError("");
-    const submittedFieldValues = hasOrderFields ? { ...fieldValues } : {};
+    const submittedFieldValues = hasOrderFields ? { ...submitFieldValues } : {};
     if (xenaProduct) {
       if (xenaTargetFieldKey !== XENA_TARGET_FIELD_KEY) {
         submittedFieldValues[xenaTargetFieldKey] = xenaTargetUid;
@@ -618,6 +625,21 @@ function getProductOrderFields(product = {}) {
 
 function createInitialFieldValues(fields) {
   return fields.reduce((values, field) => ({ ...values, [field.key]: "" }), {});
+}
+
+function buildXenaCompatibleFieldValues(fields, values, targetUid) {
+  const normalizedTargetUid = normalizeXenaTargetUid(targetUid);
+  const nextValues = { ...(values || {}) };
+
+  if (!normalizedTargetUid) return nextValues;
+
+  nextValues[XENA_TARGET_FIELD_KEY] = normalizedTargetUid;
+
+  if (fields.some((field) => String(field?.key || "").trim() === XENA_LEGACY_TARGET_FIELD_KEY)) {
+    nextValues[XENA_LEGACY_TARGET_FIELD_KEY] = normalizedTargetUid;
+  }
+
+  return nextValues;
 }
 
 function getOrderFieldLabel(field, isArabic) {
