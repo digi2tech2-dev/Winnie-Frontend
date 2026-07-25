@@ -18,6 +18,8 @@ import { useAuth } from "../context/AuthContext";
 import { verifyProductTarget } from "../api/catalog";
 import { createCustomerOrderQuote } from "../api/orders";
 import {
+  getXenaTargetFieldKey,
+  isXenaTargetFieldKey,
   isXenaProduct,
   normalizeXenaTargetUid,
   validateXenaTargetUid,
@@ -44,6 +46,7 @@ export default function ProductPurchaseModal({
   const maxQuantity = Math.max(minQuantity, Number(product.maxQty) || 999);
   const productId = product?._id || product?.id || product?.productId;
   const xenaProduct = isXenaProduct(product);
+  const xenaTargetFieldKey = xenaProduct ? getXenaTargetFieldKey(orderFields) : XENA_TARGET_FIELD_KEY;
   const [quantity, setQuantity] = useState(minQuantity);
   const [accountId, setAccountId] = useState("");
   const [fieldValues, setFieldValues] = useState(() => createInitialFieldValues(orderFields));
@@ -76,7 +79,7 @@ export default function ProductPurchaseModal({
   const walletBalance = Number(user?.walletBalance ?? quote?.walletBalance ?? 0);
   const balanceLabel = formatPlainAmount(walletBalance);
   const quantityWarning = getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
-  const xenaTargetUid = normalizeXenaTargetUid(fieldValues[XENA_TARGET_FIELD_KEY]);
+  const xenaTargetUid = normalizeXenaTargetUid(fieldValues[xenaTargetFieldKey]);
   const xenaVerified = !xenaProduct || (
     xenaVerification.valid
     && xenaVerification.targetUid === xenaTargetUid
@@ -298,6 +301,9 @@ export default function ProductPurchaseModal({
     setLocalError("");
     const submittedFieldValues = hasOrderFields ? { ...fieldValues } : {};
     if (xenaProduct) {
+      if (xenaTargetFieldKey !== XENA_TARGET_FIELD_KEY) {
+        delete submittedFieldValues[xenaTargetFieldKey];
+      }
       submittedFieldValues[XENA_TARGET_FIELD_KEY] = xenaTargetUid;
     }
 
@@ -433,7 +439,7 @@ export default function ProductPurchaseModal({
               icon={CircleUserRound}
               label={getOrderFieldLabel(field, isArabic)}
             >
-              {xenaProduct && field.key === XENA_TARGET_FIELD_KEY ? (
+              {xenaProduct && field.key === xenaTargetFieldKey ? (
                 <XenaTargetInput
                   field={field}
                   isArabic={isArabic}
@@ -601,6 +607,10 @@ function getProductOrderFields(product = {}) {
   const orderFields = Array.isArray(product.orderFields)
     ? product.orderFields.map((field) => normalize(field, "key"))
     : [];
+  if (isXenaProduct(product) && orderFields.some((field) => field.isActive && isXenaTargetFieldKey(field.key))) {
+    return orderFields.filter((field) => field.isActive && field.key);
+  }
+
   const source = dynamicFields.some((field) => field.isActive && field.key) ? dynamicFields : orderFields;
 
   return source.filter((field) => field.isActive && field.key);

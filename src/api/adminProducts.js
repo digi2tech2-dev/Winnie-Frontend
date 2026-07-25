@@ -12,6 +12,9 @@ import {
 } from "./adapters";
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "url", "email", "tel", "date"]);
+const XENA_PROVIDER_CODE = "xena-recharge";
+const XENA_EXTERNAL_PRODUCT_ID = "xena-dynamic-recharge";
+const XENA_TARGET_FIELD_KEY = "target_uid";
 const safeTrim = (value) => String(value ?? "").trim();
 const optionalTrim = (value) => {
   const trimmed = safeTrim(value);
@@ -88,6 +91,33 @@ function hasOwn(value, key) {
 
 function normalizeStatusValue(value) {
   return safeTrim(value).toLowerCase();
+}
+
+function isXenaAdminProductLike(product = {}) {
+  const provider = product.provider && typeof product.provider === "object" ? product.provider : {};
+  const providerProduct = product.providerProduct && typeof product.providerProduct === "object" ? product.providerProduct : {};
+  const providerSignals = [
+    product.providerCode,
+    product.providerSlug,
+    product.providerName,
+    provider.code,
+    provider.slug,
+    provider.name,
+  ].map(normalizeStatusValue);
+  const productSignals = [
+    product.providerProductExternalId,
+    product.externalProductId,
+    providerProduct.externalProductId,
+  ].map(normalizeStatusValue);
+
+  return providerSignals.some((value) => value === XENA_PROVIDER_CODE || value === "xena recharge")
+    || productSignals.includes(XENA_EXTERNAL_PRODUCT_ID);
+}
+
+function hasXenaTargetField(fields = []) {
+  return asArray(fields).some((field) =>
+    normalizeStatusValue(field.key || field.name) === XENA_TARGET_FIELD_KEY,
+  );
 }
 
 function mapStatusToIsActive(value) {
@@ -482,6 +512,19 @@ export async function updateAdminProduct(token, id, values = {}, categoryLookup 
   const updatePayload = previousProduct
     ? buildAdminProductUpdatePayload({ ...values, image: payload.image }, previousProduct)
     : buildAdminProductUpdatePayload(payload);
+  const fieldsSource = values.orderFields ?? values.extraFields;
+
+  if (
+    fieldsSource !== undefined
+    && updatePayload.orderFields !== undefined
+    && (
+      isXenaAdminProductLike(values)
+      || isXenaAdminProductLike(previousProduct)
+      || hasXenaTargetField(fieldsSource)
+    )
+  ) {
+    updatePayload.dynamicFields = buildDynamicFields(fieldsSource);
+  }
 
   if (import.meta.env.DEV) {
     const hasStatus = hasOwn(values, "status");

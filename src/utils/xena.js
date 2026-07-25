@@ -1,6 +1,7 @@
 export const XENA_PROVIDER_CODE = "xena-recharge";
 export const XENA_EXTERNAL_PRODUCT_ID = "xena-dynamic-recharge";
 export const XENA_TARGET_FIELD_KEY = "target_uid";
+export const XENA_LEGACY_TARGET_FIELD_KEY = "account_id";
 
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
@@ -40,11 +41,27 @@ export function isXenaProduct(product = {}) {
   const providerProductMatch = normalizeText(product.providerProductExternalId) === XENA_EXTERNAL_PRODUCT_ID
     || normalizeText(providerProduct.externalProductId) === XENA_EXTERNAL_PRODUCT_ID
     || normalizeText(product.externalProductId) === XENA_EXTERNAL_PRODUCT_ID;
-  const fieldMatch = orderFields.some((field) =>
+  const targetFieldMatch = orderFields.some((field) =>
     normalizeText(field.key || field.name) === XENA_TARGET_FIELD_KEY,
   );
+  const legacyFieldMatch = orderFields.some((field) =>
+    normalizeText(field.key || field.name) === XENA_LEGACY_TARGET_FIELD_KEY,
+  );
 
-  return providerProductMatch || (providerMatch && fieldMatch) || fieldMatch;
+  return providerProductMatch || (providerMatch && (targetFieldMatch || legacyFieldMatch)) || targetFieldMatch;
+}
+
+export function isXenaTargetFieldKey(key) {
+  const normalized = normalizeText(key);
+  return normalized === XENA_TARGET_FIELD_KEY || normalized === XENA_LEGACY_TARGET_FIELD_KEY;
+}
+
+export function getXenaTargetFieldKey(fields = []) {
+  const targetField = fields.find((field) => normalizeText(field?.key || field?.name) === XENA_TARGET_FIELD_KEY);
+  if (targetField) return String(targetField.key || targetField.name || XENA_TARGET_FIELD_KEY);
+
+  const legacyField = fields.find((field) => normalizeText(field?.key || field?.name) === XENA_LEGACY_TARGET_FIELD_KEY);
+  return legacyField ? String(legacyField.key || legacyField.name || XENA_LEGACY_TARGET_FIELD_KEY) : XENA_TARGET_FIELD_KEY;
 }
 
 export function normalizeXenaTargetUid(value) {
