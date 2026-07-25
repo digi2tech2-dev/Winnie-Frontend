@@ -44,7 +44,7 @@ export function isXenaProduct(product = {}) {
     normalizeText(field.key || field.name) === XENA_TARGET_FIELD_KEY,
   );
 
-  return providerProductMatch || (providerMatch && fieldMatch);
+  return providerProductMatch || (providerMatch && fieldMatch) || fieldMatch;
 }
 
 export function normalizeXenaTargetUid(value) {
