@@ -86,8 +86,9 @@ export default function ProductPurchaseModal({
     && xenaVerification.targetUid === xenaTargetUid
     && Boolean(xenaTargetUid)
   );
+  const verifiedXenaUid = xenaProduct && xenaVerified ? xenaTargetUid : "";
   const requiredFieldValues = xenaProduct
-    ? buildXenaCompatibleFieldValues(orderFields, fieldValues, xenaTargetUid)
+    ? buildXenaCompatibleFieldValues(fieldValues, verifiedXenaUid)
     : fieldValues;
   const displayError = localError || xenaVerification.error || submitError || quantityWarning || quoteError;
   const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
@@ -95,8 +96,9 @@ export default function ProductPurchaseModal({
   const showFallbackAccountInput = !hasOrderFields;
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
   const productImage = getProductImage(product);
-  const missingRequiredField = orderFields.some(
-    (field) => field.required !== false && !String(requiredFieldValues[field.key] ?? "").trim(),
+  const missingRequiredField = orderFields.some((field) =>
+    field.required !== false
+    && !isRequiredFieldFilledForPurchase(field, requiredFieldValues, verifiedXenaUid),
   );
   const missingFallbackAccount = !hasOrderFields && requireAccountId && !accountId.trim();
   const isQuantityWithinBounds = Number.isInteger(numericQuantity)
@@ -198,7 +200,18 @@ export default function ProductPurchaseModal({
   };
 
   const changeOrderField = (key, value) => {
-    setFieldValues((current) => ({ ...current, [key]: value }));
+    setFieldValues((current) => {
+      if (xenaProduct && isXenaTargetFieldKey(key)) {
+        return {
+          ...current,
+          [key]: value,
+          [XENA_TARGET_FIELD_KEY]: value,
+          [XENA_LEGACY_TARGET_FIELD_KEY]: value,
+        };
+      }
+
+      return { ...current, [key]: value };
+    });
     setLocalError("");
   };
 
@@ -232,10 +245,16 @@ export default function ProductPurchaseModal({
         return;
       }
 
+      const verifiedUid = normalizeXenaTargetUid(result.targetUid || validation.targetUid);
+      setFieldValues((current) => ({
+        ...current,
+        [XENA_TARGET_FIELD_KEY]: verifiedUid,
+        [XENA_LEGACY_TARGET_FIELD_KEY]: verifiedUid,
+      }));
       setXenaVerification({
         error: "",
         loading: false,
-        targetUid: result.targetUid || validation.targetUid,
+        targetUid: verifiedUid,
         user: result.user,
         valid: true,
       });
@@ -260,11 +279,13 @@ export default function ProductPurchaseModal({
       return;
     }
 
+    const currentVerifiedXenaUid = xenaProduct && xenaVerified ? xenaTargetUid : "";
     const submitFieldValues = xenaProduct
-      ? buildXenaCompatibleFieldValues(orderFields, fieldValues, xenaTargetUid)
+      ? buildXenaCompatibleFieldValues(fieldValues, currentVerifiedXenaUid)
       : fieldValues;
-    const missingField = orderFields.find(
-      (field) => field.required !== false && !String(submitFieldValues[field.key] ?? "").trim(),
+    const missingField = orderFields.find((field) =>
+      field.required !== false
+      && !isRequiredFieldFilledForPurchase(field, submitFieldValues, currentVerifiedXenaUid),
     );
 
     if (missingField) {
@@ -308,10 +329,8 @@ export default function ProductPurchaseModal({
     setLocalError("");
     const submittedFieldValues = hasOrderFields ? { ...submitFieldValues } : {};
     if (xenaProduct) {
-      if (xenaTargetFieldKey !== XENA_TARGET_FIELD_KEY) {
-        submittedFieldValues[xenaTargetFieldKey] = xenaTargetUid;
-      }
       submittedFieldValues[XENA_TARGET_FIELD_KEY] = xenaTargetUid;
+      submittedFieldValues[XENA_LEGACY_TARGET_FIELD_KEY] = xenaTargetUid;
     }
 
     onConfirm({
@@ -627,19 +646,22 @@ function createInitialFieldValues(fields) {
   return fields.reduce((values, field) => ({ ...values, [field.key]: "" }), {});
 }
 
-function buildXenaCompatibleFieldValues(fields, values, targetUid) {
+function buildXenaCompatibleFieldValues(values, targetUid) {
   const normalizedTargetUid = normalizeXenaTargetUid(targetUid);
   const nextValues = { ...(values || {}) };
 
   if (!normalizedTargetUid) return nextValues;
 
   nextValues[XENA_TARGET_FIELD_KEY] = normalizedTargetUid;
-
-  if (fields.some((field) => String(field?.key || "").trim() === XENA_LEGACY_TARGET_FIELD_KEY)) {
-    nextValues[XENA_LEGACY_TARGET_FIELD_KEY] = normalizedTargetUid;
-  }
+  nextValues[XENA_LEGACY_TARGET_FIELD_KEY] = normalizedTargetUid;
 
   return nextValues;
+}
+
+function isRequiredFieldFilledForPurchase(field, values, verifiedXenaUid = "") {
+  const key = String(field?.key || "").trim();
+  if (verifiedXenaUid && isXenaTargetFieldKey(key)) return true;
+  return Boolean(String(values?.[key] ?? "").trim());
 }
 
 function getOrderFieldLabel(field, isArabic) {
