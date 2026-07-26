@@ -96,13 +96,13 @@ function Content({ group, currencies, onClose, onSave }) {
 function Shell({ title, onClose, onSave, children }) {
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4">
-      <section className="flex max-h-[92dvh] w-full max-w-[560px] flex-col rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
+      <section className="flex max-h-[92dvh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
         <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <h2 className="flex-1 text-sm font-black dark:text-white">{title}</h2>
           <button type="button" onClick={onClose}><X className="h-4 w-4" /></button>
         </header>
-        <div className="overflow-y-auto p-4">{children}</div>
-        <footer className="sticky bottom-0 grid grid-cols-2 gap-2 border-t bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+        <div className="min-h-0 overflow-y-auto overscroll-contain p-4">{children}</div>
+        <footer className="sticky bottom-0 grid shrink-0 grid-cols-2 gap-2 border-t bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
           <button type="button" onClick={onClose} className="h-11 rounded-xl border text-[10px] font-black dark:border-white/10 dark:text-white">إلغاء</button>
           <button type="button" onClick={onSave} className="inline-flex h-11 items-center justify-center gap-1 rounded-xl bg-violet-600 text-[10px] font-black text-white">
             <Save className="h-4 w-4" />

@@ -80,7 +80,7 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
 
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4">
-      <section className="flex max-h-[92dvh] w-full max-w-[620px] flex-col rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
+      <section className="flex max-h-[92dvh] w-full max-w-[620px] flex-col overflow-hidden rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
         <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <Server className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
@@ -92,7 +92,7 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
           </button>
         </header>
 
-        <form id="supplier-form" onSubmit={submit} className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2">
+        <form id="supplier-form" onSubmit={submit} className="grid min-h-0 gap-3 overflow-y-auto overscroll-contain p-4 sm:grid-cols-2">
           <Field label="اسم المورد">
             <input value={form.name} onChange={(event) => update("name", event.target.value)} className={inputClassName} />
           </Field>
@@ -140,7 +140,7 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
           {(error || backendError) && <p className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 sm:col-span-2 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">{error || backendError}</p>}
         </form>
 
-        <footer className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+        <footer className="sticky bottom-0 grid shrink-0 grid-cols-2 gap-2 border-t border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
           <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-xl border border-slate-200 text-[10px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-white">
             إلغاء
           </button>

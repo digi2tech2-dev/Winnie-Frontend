@@ -6,6 +6,7 @@ import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
 import { useFavorites } from "../../context/FavoritesContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
+import { isProductVisibleInStore } from "../../utils/productAvailability";
 
 export default function CustomerFavorites({ basePath = "/customer" }) {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function CustomerFavorites({ basePath = "/customer" }) {
     onSuccess: outletContext.onWalletRefresh,
     token,
   });
+  const visibleFavorites = favorites.filter(isProductVisibleInStore);
 
   return (
     <div dir={i18n.language?.startsWith("ar") ? "rtl" : "ltr"} className="compact-favorites-page space-y-4">
@@ -34,9 +36,9 @@ export default function CustomerFavorites({ basePath = "/customer" }) {
         </div>
       </header>
 
-      {favorites.length ? (
+      {visibleFavorites.length ? (
         <section className="marketplace-product-grid">
-          {favorites.map((product, index) => (
+          {visibleFavorites.map((product, index) => (
             <HomeProductCard
               key={product.id || product._id || product.productId || product.slug || product.name}
               product={product}

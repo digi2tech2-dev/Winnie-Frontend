@@ -26,7 +26,7 @@ export default function SupplierProductsModal({
       className="fixed inset-0 z-[130] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4"
       onMouseDown={(event) => event.target === event.currentTarget && !syncBusy && onClose()}
     >
-      <section className="flex max-h-[90dvh] w-full max-w-[760px] flex-col rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
+      <section className="flex max-h-[90dvh] w-full max-w-[760px] flex-col overflow-hidden rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
         <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <Boxes className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
@@ -104,7 +104,7 @@ export default function SupplierProductsModal({
         </div>
 
         {pagination?.pages > 1 && (
-          <footer className="flex items-center justify-between border-t border-slate-100 p-3 dark:border-white/[0.07]">
+          <footer className="flex shrink-0 items-center justify-between border-t border-slate-100 p-3 dark:border-white/[0.07]">
             <button type="button" disabled={loading || pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)} className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[9px] font-black text-slate-600 disabled:opacity-50 dark:border-white/10 dark:text-slate-300">
               <ChevronRight className="h-3.5 w-3.5" />
               السابق

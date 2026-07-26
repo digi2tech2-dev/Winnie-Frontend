@@ -5,7 +5,7 @@ export default function ProductSettings({ value, onChange }) {
   return (
     <Section title="إعدادات المنتج" description="تحكم في الظهور وإتاحة الشراء داخل المتجر">
       <div className="space-y-4">
-        <SettingRow icon={ShieldCheck} title="حالة المنتج" description="غير متوفر يظهر للعميل مع سعر مشطوب">
+        <SettingRow icon={ShieldCheck} title="حالة المنتج" description="غير متوفر يظهر للعميل فقط عند تفعيل خيار الإظهار">
           <select value={value.status} onChange={(event) => onChange("status", event.target.value)} className={selectClassName}>
             <option value="available">متوفر</option><option value="unavailable">غير متوفر</option>
           </select>
@@ -20,7 +20,7 @@ export default function ProductSettings({ value, onChange }) {
 
       {value.status === "unavailable" && (
         <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-[10px] font-bold leading-6 text-rose-700 dark:border-rose-400/15 dark:bg-rose-500/10 dark:text-rose-300">
-          سيظهر المنتج بوسم أحمر “غير متوفر”، وسيكون السعر مشطوبًا ولن يُسمح بفتح صفحة الطلب أو الشراء.
+          عند اختيار «نعم» للإظهار سيظهر المنتج بوسم أحمر «غير متوفر» وسعر مشطوب، ولن تفتح نافذة الطلب أو الشحن. وعند اختيار «لا» سيختفي من قوائم العملاء.
         </div>
       )}
     </Section>

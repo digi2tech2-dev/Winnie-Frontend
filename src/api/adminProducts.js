@@ -12,6 +12,8 @@ import {
 } from "./adapters";
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "url", "email", "tel", "date"]);
+const PRODUCT_SYNC_PREFERENCES_PREFIX = "winnie-admin-product-sync:";
+const PRODUCT_AVAILABILITY_PREFERENCES_PREFIX = "winnie-admin-product-availability:";
 const safeTrim = (value) => String(value ?? "").trim();
 const optionalTrim = (value) => {
   const trimmed = safeTrim(value);
@@ -70,6 +72,84 @@ function firstNonEmpty(...values) {
   return values.find((value) => value !== undefined && value !== null && safeTrim(value) !== "");
 }
 
+function firstBoolean(...values) {
+  return values.find((value) => typeof value === "boolean");
+}
+
+function getProductSyncPreferences(productId) {
+  if (!productId || typeof window === "undefined") return {};
+
+  try {
+    const stored = window.localStorage.getItem(`${PRODUCT_SYNC_PREFERENCES_PREFIX}${productId}`);
+    const parsed = stored ? JSON.parse(stored) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function setProductSyncPreferences(productId, preferences = {}) {
+  if (!productId || typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(`${PRODUCT_SYNC_PREFERENCES_PREFIX}${productId}`, JSON.stringify({
+      syncLimits: Boolean(preferences.syncLimits),
+      syncName: Boolean(preferences.syncName),
+      syncPrice: Boolean(preferences.syncPrice),
+    }));
+  } catch {
+    // Backend persistence remains the source of truth when storage is unavailable.
+  }
+}
+
+function clearProductSyncPreferences(productId) {
+  if (!productId || typeof window === "undefined") return;
+
+  try {
+    window.localStorage.removeItem(`${PRODUCT_SYNC_PREFERENCES_PREFIX}${productId}`);
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+}
+
+function getProductAvailabilityPreferences(productId) {
+  if (!productId || typeof window === "undefined") return {};
+
+  try {
+    const stored = window.localStorage.getItem(`${PRODUCT_AVAILABILITY_PREFERENCES_PREFIX}${productId}`);
+    const parsed = stored ? JSON.parse(stored) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function setProductAvailabilityPreferences(productId, values = {}) {
+  if (!productId || typeof window === "undefined") return;
+
+  const status = normalizeStatusValue(values.status);
+  if (!["available", "unavailable"].includes(status)) return;
+
+  try {
+    window.localStorage.setItem(`${PRODUCT_AVAILABILITY_PREFERENCES_PREFIX}${productId}`, JSON.stringify({
+      paused: Boolean(firstBoolean(values.paused, values.isPaused)),
+      status,
+    }));
+  } catch {
+    // The backend-compatible flags still keep the product behavior correct.
+  }
+}
+
+function clearProductAvailabilityPreferences(productId) {
+  if (!productId || typeof window === "undefined") return;
+
+  try {
+    window.localStorage.removeItem(`${PRODUCT_AVAILABILITY_PREFERENCES_PREFIX}${productId}`);
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+}
+
 function toPayloadId(value) {
   const id = toId(value);
   return /^[a-f0-9]{24}$/i.test(id) ? id : undefined;
@@ -94,7 +174,10 @@ function mapStatusToIsActive(value) {
   const status = normalizeStatusValue(value);
 
   if (["available", "active", "متوفر"].includes(status)) return true;
-  if (["unavailable", "inactive", "disabled", "غير متوفر"].includes(status)) return false;
+  // "Unavailable" must remain an active catalog record. Pausing it below
+  // prevents purchases, while visibleInStore independently controls hiding.
+  if (["unavailable", "غير متوفر"].includes(status)) return true;
+  if (["inactive", "disabled"].includes(status)) return false;
 
   return undefined;
 }
@@ -154,6 +237,13 @@ function buildDynamicFields(fields = []) {
     required: field.required,
     type: field.type,
   }));
+}
+
+function getEditableFieldsSource(form = {}) {
+  if (Array.isArray(form.extraFields)) return form.extraFields;
+  if (Array.isArray(form.orderFields)) return form.orderFields;
+  if (Array.isArray(form.dynamicFields)) return form.dynamicFields;
+  return undefined;
 }
 
 function stableStringify(value) {
@@ -226,15 +316,69 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
   const hasSubCategory = Boolean(category && parentId);
   const isActive = product.isActive !== false;
   const visibleInStore = product.visibleInStore !== false;
-  const isPaused = product.isPaused === true || product.paused === true;
+  const backendIsPaused = product.isPaused === true || product.paused === true;
   const backendStatus = String(product.status || "").toLowerCase();
-  const productStatus = !isActive || backendStatus === "unavailable" ? "unavailable" : "available";
+  const savedAvailabilityPreferences = getProductAvailabilityPreferences(id);
+  const savedStatus = normalizeStatusValue(savedAvailabilityPreferences.status);
+  const productStatus = !isActive || backendStatus === "unavailable" || savedStatus === "unavailable"
+    ? "unavailable"
+    : "available";
+  const isPaused = ["available", "unavailable"].includes(savedStatus)
+    ? Boolean(savedAvailabilityPreferences.paused)
+    : backendIsPaused;
   const priceValue = toDecimalString(firstNonEmpty(product.finalPrice, product.basePrice, product.price, 0));
   const provider = product.provider && typeof product.provider === "object" ? product.provider : null;
   const providerProduct = product.providerProduct && typeof product.providerProduct === "object" ? product.providerProduct : null;
-  const isProviderLinked = Boolean(product.provider || product.providerProduct || product.isLinked || product.currentProviderName || product.currentProviderProductName);
+  const providerSettings = [
+    product.providerLink,
+    product.providerSettings,
+    product.providerSync,
+    product.syncSettings,
+  ].find((value) => value && typeof value === "object") || {};
+  const savedSyncPreferences = getProductSyncPreferences(id);
+  const pricingMode = String(product.pricingMode || "").toLowerCase();
+  const syncPriceFromProvider = firstBoolean(
+    product.syncPriceFromProvider,
+    product.syncPriceWithProvider,
+    product.syncPrice,
+    providerSettings.syncPrice,
+    providerProduct?.syncPrice,
+    savedSyncPreferences.syncPrice,
+    pricingMode === "sync" ? true : pricingMode === "manual" ? false : undefined,
+  ) ?? false;
+  const syncLimitsFromProvider = firstBoolean(
+    product.syncLimitsFromProvider,
+    product.syncLimits,
+    providerSettings.syncLimits,
+    providerProduct?.syncLimits,
+    savedSyncPreferences.syncLimits,
+  ) ?? false;
+  const syncNameFromProvider = firstBoolean(
+    product.syncNameFromProvider,
+    product.syncName,
+    providerSettings.syncName,
+    providerProduct?.syncName,
+    savedSyncPreferences.syncName,
+  ) ?? false;
+  const isProviderLinked = Boolean(
+    product.provider
+    || product.providerId
+    || product.providerProduct
+    || product.providerProductId
+    || product.isLinked
+    || product.currentProviderName
+    || product.currentProviderProductName
+    || String(product.fulfillmentMode || product.executionType || "").toUpperCase() === "AUTO",
+  );
   const supplierPrice = toDecimalString(
-    firstNonEmpty(product.providerPrice, product.supplierPrice, providerProduct?.rawPrice, product.rawPrice),
+    firstNonEmpty(
+      product.providerPrice,
+      product.supplierPrice,
+      providerProduct?.supplierPrice,
+      providerProduct?.rawPrice,
+      providerProduct?.price,
+      product.rawPrice,
+    ),
   );
 
   return {
@@ -264,17 +408,23 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     nameEn: product.nameEn || product.name || "Untitled product",
     originalPrice: toDecimalString(firstNonEmpty(product.originalPrice, product.providerPrice, product.basePrice, product.price, priceValue)),
     paused: isPaused,
-    providerId: toId(product.provider),
+    providerId: toId(product.provider) || toId(product.providerId),
     providerName: provider?.name || product.currentProviderName || "",
     providerProductActive: providerProduct?.isActive === undefined ? null : providerProduct.isActive !== false,
-    providerProductExternalId: providerProduct?.externalProductId || "",
-    providerProductId: toId(product.providerProduct),
+    providerProductExternalId: providerProduct?.externalProductId || product.providerProductExternalId || product.externalProductId || "",
+    providerProductId: toId(product.providerProduct) || toId(product.providerProductId),
     providerProductLastSyncedAt: providerProduct?.lastSyncedAt || null,
-    providerProductMaxQty: providerProduct?.maxQty ?? null,
-    providerProductMinQty: providerProduct?.minQty ?? null,
-    providerProductName: providerProduct?.translatedName || providerProduct?.rawName || product.currentProviderProductName || "",
-    syncPriceWithProvider: product.syncPriceWithProvider !== false,
-    pricingMode: product.pricingMode || (isProviderLinked ? "sync" : "manual"),
+    providerProductMaxQty: providerProduct?.maxQty ?? product.providerProductMaxQty ?? null,
+    providerProductMinQty: providerProduct?.minQty ?? product.providerProductMinQty ?? null,
+    providerProductName: providerProduct?.translatedName || providerProduct?.rawName || providerProduct?.name || product.providerProductName || product.currentProviderProductName || "",
+    syncLimits: syncLimitsFromProvider,
+    syncLimitsFromProvider,
+    syncName: syncNameFromProvider,
+    syncNameFromProvider,
+    syncPrice: syncPriceFromProvider,
+    syncPriceFromProvider,
+    syncPriceWithProvider: syncPriceFromProvider,
+    pricingMode: product.pricingMode || (syncPriceFromProvider ? "sync" : "manual"),
     status: productStatus,
     subCategoryId: hasSubCategory ? categoryId : "",
     supplierPrice,
@@ -316,31 +466,39 @@ export function buildAdminProductPayload(form = {}, options = {}) {
     : typeof form.visible === "boolean"
       ? form.visible
       : undefined;
-  const isPaused = typeof form.isPaused === "boolean"
+  const requestedIsPaused = typeof form.isPaused === "boolean"
     ? form.isPaused
     : typeof form.paused === "boolean"
       ? form.paused
       : undefined;
+  const isUnavailable = hasStatus && ["unavailable", "غير متوفر"].includes(normalizeStatusValue(form.status));
+  const isPaused = isUnavailable ? true : requestedIsPaused;
   const category = firstNonEmpty(
     toPayloadId(form.subCategoryId),
     toPayloadId(form.mainCategoryId),
     toPayloadId(form.category),
     toPayloadId(form.categoryId),
   );
-  const priceValue = firstNonEmpty(form.basePrice, form.finalPrice, form.price);
-  const minQty = firstNonEmpty(form.minQty, form.min);
-  const maxQty = firstNonEmpty(form.maxQty, form.max);
-  const fieldsSource = form.orderFields ?? form.extraFields;
+  // The admin form edits finalPrice/min/max. Prefer those canonical form values
+  // over the API aliases that may still contain the product's previous values.
+  const priceValue = firstNonEmpty(form.finalPrice, form.basePrice, form.price);
+  const minQty = firstNonEmpty(form.min, form.minQty);
+  const maxQty = firstNonEmpty(form.max, form.maxQty);
+  // extraFields is the live value edited in the admin form. The spread product
+  // object may still contain an old orderFields array, so it must not win here.
+  const fieldsSource = getEditableFieldsSource(form);
   const orderFields = includeOrderFields && fieldsSource !== undefined ? buildOrderFields(fieldsSource) : undefined;
   const dynamicFields = includeDynamicFields && fieldsSource !== undefined ? buildDynamicFields(fieldsSource) : undefined;
   const image = toPayloadImage(form.image);
   const linkType = String(form.linkType || "").toLowerCase();
-  const pricingMode = form.pricingMode || (linkType === "automatic" ? "sync" : linkType === "manual" ? "manual" : undefined);
-  const syncPriceWithProvider = typeof form.syncPriceWithProvider === "boolean"
-    ? form.syncPriceWithProvider
-    : typeof form.syncPriceFromProvider === "boolean"
-      ? form.syncPriceFromProvider
+  const syncPriceWithProvider = typeof form.syncPriceFromProvider === "boolean"
+    ? form.syncPriceFromProvider
+    : typeof form.syncPriceWithProvider === "boolean"
+      ? form.syncPriceWithProvider
       : undefined;
+  const pricingMode = typeof syncPriceWithProvider === "boolean"
+    ? syncPriceWithProvider ? "sync" : "manual"
+    : form.pricingMode || (linkType === "automatic" ? "sync" : linkType === "manual" ? "manual" : undefined);
 
   return compactObject({
     name: optionalTrim(firstNonEmpty(form.nameAr, form.name, form.nameEn, form.title)),
@@ -384,6 +542,7 @@ export function buildAdminProductUpdatePayload(form = {}, previousProduct = null
 
   if (!previousProduct) {
     if (hasStatus && typeof mappedIsActive === "boolean") nextPayload.isActive = mappedIsActive;
+    if (["unavailable", "غير متوفر"].includes(normalizeStatusValue(form.status))) nextPayload.isPaused = true;
     return nextPayload;
   }
 
@@ -400,6 +559,7 @@ export function buildAdminProductUpdatePayload(form = {}, previousProduct = null
   }, {});
 
   if (hasStatus && typeof mappedIsActive === "boolean") diffPayload.isActive = mappedIsActive;
+  if (["unavailable", "غير متوفر"].includes(normalizeStatusValue(form.status))) diffPayload.isPaused = true;
 
   return diffPayload;
 }
@@ -457,6 +617,7 @@ export async function createAdminProduct(token, values = {}, categoryLookup = ne
 
   const createdProduct = getProductFromResponse(response);
   const createdId = getItemId(createdProduct);
+  setProductAvailabilityPreferences(createdId, values);
 
   if (createdId && Array.isArray(payload.dynamicFields) && payload.dynamicFields.length) {
     const dynamicResponse = await apiRequest(`/admin/products/${createdId}`, {
@@ -482,7 +643,7 @@ export async function updateAdminProduct(token, id, values = {}, categoryLookup 
   const updatePayload = previousProduct
     ? buildAdminProductUpdatePayload({ ...values, image: payload.image }, previousProduct)
     : buildAdminProductUpdatePayload(payload);
-  const fieldsSource = values.orderFields ?? values.extraFields;
+  const fieldsSource = getEditableFieldsSource(values);
 
   if (fieldsSource !== undefined && updatePayload.orderFields !== undefined) {
     updatePayload.dynamicFields = buildDynamicFields(fieldsSource);
@@ -514,6 +675,7 @@ export async function updateAdminProduct(token, id, values = {}, categoryLookup 
     method: "PATCH",
     token,
   });
+  setProductAvailabilityPreferences(id, values);
 
   return {
     message: response.message,
@@ -538,6 +700,7 @@ export async function deleteAdminProduct(token, id, categoryLookup = new Map()) 
     method: "DELETE",
     token,
   });
+  clearProductAvailabilityPreferences(id);
 
   return {
     message: response.message,
@@ -643,10 +806,20 @@ export async function linkAdminProductProvider(token, productId, payload = {}, c
     method: "PATCH",
     token,
   });
+  setProductSyncPreferences(productId, {
+    syncLimits: payload.syncLimits,
+    syncName: payload.syncName,
+    syncPrice: payload.syncPrice,
+  });
 
   return {
     message: response.message,
-    product: normalizeAdminProduct(getProductFromResponse(response), 0, categoryLookup),
+    product: normalizeAdminProduct({
+      ...getProductFromResponse(response),
+      syncLimits: firstBoolean(getProductFromResponse(response).syncLimits, payload.syncLimits),
+      syncName: firstBoolean(getProductFromResponse(response).syncName, payload.syncName),
+      syncPrice: firstBoolean(getProductFromResponse(response).syncPrice, payload.syncPrice),
+    }, 0, categoryLookup),
   };
 }
 
@@ -656,6 +829,7 @@ export async function unlinkAdminProductProvider(token, productId, categoryLooku
     method: "PATCH",
     token,
   });
+  clearProductSyncPreferences(productId);
 
   return {
     message: response.message,

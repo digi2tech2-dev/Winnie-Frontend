@@ -19,6 +19,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { getAdminDashboardData } from "../../api/adminDashboard";
 import { approveDeposit, rejectDeposit } from "../../api/adminDeposits";
@@ -31,6 +32,7 @@ import {
   PanelHeading,
 } from "../../components/admin/dashboard/DashboardPieces";
 import DateRangePicker from "../../components/admin/dashboard/DateRangePicker";
+import ProfitPeriodChart from "../../components/admin/dashboard/ProfitPeriodChart";
 import { useToast } from "../../components/ToastProvider";
 import {
   compactDateFormatter,
@@ -223,17 +225,6 @@ function buildPeriodMetrics(range, summary) {
 
   return [
     {
-      accent: "admin-metric-card--wallets",
-      change: getSummaryChange(cards, "totalRevenueUsd"),
-      description: "الإيرادات من الطلبات المكتملة داخل الفترة المحددة",
-      icon: DollarSign,
-      id: "period-revenue",
-      label: "إجمالي الإيرادات (USD)",
-      tone: "admin-metric-tone-wallets",
-      unavailable: getSummaryValue(cards, "totalRevenueUsd") === null,
-      value: formatSummaryValue(getSummaryValue(cards, "totalRevenueUsd"), "currency"),
-    },
-    {
       accent: "admin-metric-card--completed",
       change: getSummaryChange(cards, "netProfitUsd"),
       description: "الأرباح من الطلبات المكتملة داخل الفترة المحددة",
@@ -243,6 +234,17 @@ function buildPeriodMetrics(range, summary) {
       tone: "admin-metric-tone-completed",
       unavailable: getSummaryValue(cards, "netProfitUsd") === null,
       value: formatSummaryValue(getSummaryValue(cards, "netProfitUsd"), "currency"),
+    },
+    {
+      accent: "admin-metric-card--wallets",
+      change: getSummaryChange(cards, "totalRevenueUsd"),
+      description: "الإيرادات من الطلبات المكتملة داخل الفترة المحددة",
+      icon: DollarSign,
+      id: "period-revenue",
+      label: "إجمالي الإيرادات (USD)",
+      tone: "admin-metric-tone-wallets",
+      unavailable: getSummaryValue(cards, "totalRevenueUsd") === null,
+      value: formatSummaryValue(getSummaryValue(cards, "totalRevenueUsd"), "currency"),
     },
     {
       accent: "admin-metric-card--orders",
@@ -358,7 +360,12 @@ export default function AdminDashboardPage() {
 
     setError("");
     setRefreshing(true);
-    setDashboard((current) => (current ? { ...current, periodSummary: null, refreshedAt: null } : null));
+    setDashboard((current) => (current ? {
+      ...current,
+      periodSummary: null,
+      profitSeries: [],
+      refreshedAt: null,
+    } : null));
 
     try {
       const result = await getAdminDashboardData(token, {
@@ -579,43 +586,15 @@ export default function AdminDashboardPage() {
             onReject={(deposit) => reviewManualDeposit(deposit, "reject")}
           />
 
-          <AdminQuickActions />
+          <ProfitPeriodChart
+            loading={refreshing}
+            range={selectedRange}
+            series={dashboard?.profitSeries || []}
+            total={getSummaryValue(dashboard?.periodSummary?.cards, "netProfitUsd")}
+          />
         </>
       )}
     </div>
-  );
-}
-
-function AdminQuickActions() {
-  const actions = [
-    { icon: Users, label: "إدارة المستخدمين", description: "العملاء والأرصدة وإجراءات الحساب", to: "/admin/tools/users" },
-    { icon: PackageOpen, label: "إدارة الطلبات", description: "مراجعة الطلبات وحالات التنفيذ", to: "/admin/tools/orders" },
-    { icon: WalletCards, label: "طلبات الدفع", description: "التحويلات وطلبات الشحن اليدوي", to: "/admin/tools/balance-requests" },
-    { icon: ReceiptText, label: "طرق الدفع", description: "إدارة مجموعات الدفع ووسائل التحويل", to: "/admin/tools/payment-methods" },
-    { icon: Boxes, label: "إدارة المنتجات", description: "المنتجات والأسعار وتوفر الخدمة", to: "/admin/tools/products" },
-    { icon: Server, label: "إدارة الموردين", description: "الموردون والأرصدة وحالة الاتصال", to: "/admin/tools/suppliers" },
-  ];
-
-  return (
-    <DashboardPanel className="admin-quick-actions-panel">
-      <PanelHeading icon={Server} title="أدوات الإدارة" />
-      <p className="admin-panel-intro">اختصارات مباشرة لأكثر أقسام لوحة الإدارة استخدامًا.</p>
-      <div className="admin-quick-actions-grid">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <Link key={action.to} to={action.to} className="admin-quick-action">
-              <span className="admin-quick-action-icon"><Icon /></span>
-              <span className="min-w-0 flex-1">
-                <strong>{action.label}</strong>
-                <small>{action.description}</small>
-              </span>
-              <ExternalLink className="admin-quick-action-arrow" />
-            </Link>
-          );
-        })}
-      </div>
-    </DashboardPanel>
   );
 }
 
@@ -626,14 +605,14 @@ function ProvidersBalancesPanel({ providers }) {
   );
 
   return (
-    <DashboardPanel>
+    <DashboardPanel className="admin-provider-balances-panel">
       <PanelHeading
         icon={Server}
         title="أرصدة الموردين"
         action={<span className="rounded-full bg-teal-500/12 px-3 py-1 text-[11px] font-black text-teal-700 dark:text-teal-300">{numberFormatter.format(providers.length)} مورد</span>}
       />
       {sortedProviders.length ? (
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="admin-provider-balances-grid mt-3 grid gap-3">
           {sortedProviders.map((provider, index) => (
             <ProviderBalanceCard key={provider.id || provider.slug || provider.name} provider={provider} index={index} />
           ))}
@@ -661,7 +640,7 @@ function ProviderBalanceCard({ provider, index }) {
       : "border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-300";
 
   return (
-    <article className={`relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br ${palette} p-4 shadow-[0_16px_36px_rgba(15,23,42,0.07)] dark:border-white/10`}>
+    <article className={`admin-provider-balance-card relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br ${palette} p-4 shadow-[0_16px_36px_rgba(15,23,42,0.07)] dark:border-white/10`}>
       <div className="pointer-events-none absolute -left-10 -top-12 h-28 w-28 rounded-full bg-white/40 blur-2xl dark:bg-white/5" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -673,7 +652,7 @@ function ProviderBalanceCard({ provider, index }) {
         </span>
       </div>
 
-      <div className="relative mt-4 rounded-xl border border-white/60 bg-white/70 px-3 py-3 text-right shadow-inner dark:border-white/10 dark:bg-slate-950/30">
+      <div className="admin-provider-balance-value relative mt-4 rounded-xl border border-white/60 bg-white/70 px-3 py-3 text-right shadow-inner dark:border-white/10 dark:bg-slate-950/30">
         <p className="text-[11px] font-black text-slate-500 dark:text-slate-400">الرصيد الحالي</p>
         <p dir="ltr" className={`mt-1 text-right text-xl font-black ${hasError ? "text-rose-700 dark:text-rose-300" : "text-slate-950 dark:text-white"}`}>
           {provider.balanceLabel || "غير متاح"}
@@ -688,8 +667,29 @@ function ProviderBalanceCard({ provider, index }) {
 
 function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
   const [receiptOrder, setReceiptOrder] = useState(null);
+  const [orderConfirmation, setOrderConfirmation] = useState(null);
   const pendingOrders = orders.filter((order) => ["pending", "processing", "manual_review"].includes(order.status)).length;
   const completedOrders = orders.filter((order) => order.status === "completed").length;
+
+  useEffect(() => {
+    if ((!receiptOrder && !orderConfirmation) || typeof document === "undefined") return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [orderConfirmation, receiptOrder]);
+
+  const confirmOrderAction = async () => {
+    if (!orderConfirmation || actionKey) return;
+    const { action, order } = orderConfirmation;
+    if (action === "approve") {
+      await onApprove(order);
+    } else {
+      await onReject(order);
+    }
+    setOrderConfirmation(null);
+  };
 
   return (
     <>
@@ -706,7 +706,11 @@ function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
           <span className="is-pending">{numberFormatter.format(pendingOrders)} قيد الانتظار</span>
         </div>
         {orders.length ? (
-          <div className="admin-orders-list">
+          <div
+            className="admin-orders-list admin-dashboard-feed-scroll"
+            tabIndex={0}
+            aria-label="قائمة أحدث طلبات الشراء القابلة للتمرير"
+          >
             {orders.map((order) => {
               const reviewable = ["pending", "processing", "manual_review"].includes(order.status);
               const busy = actionKey.endsWith(`:${order.id}`);
@@ -751,7 +755,7 @@ function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
                     <>
                       <button
                         type="button"
-                        onClick={() => onApprove(order)}
+                        onClick={() => setOrderConfirmation({ action: "approve", order })}
                         disabled={busy}
                         className="admin-action-icon-button grid shrink-0 place-items-center border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-55 dark:text-emerald-300"
                         aria-label="قبول طلب الشراء"
@@ -761,7 +765,7 @@ function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => onReject(order)}
+                        onClick={() => setOrderConfirmation({ action: "reject", order })}
                         disabled={busy}
                         className="admin-action-icon-button grid shrink-0 place-items-center border border-rose-500/25 bg-rose-500/10 text-rose-700 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-55 dark:text-rose-300"
                         aria-label="رفض طلب الشراء"
@@ -789,61 +793,167 @@ function RecentOrdersPanel({ actionKey, onApprove, onReject, orders }) {
         )}
       </DashboardPanel>
 
-      {receiptOrder ? (
-        <div
-          className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/80 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => event.target === event.currentTarget && setReceiptOrder(null)}
-        >
-          <section className="w-full max-w-lg overflow-hidden rounded-[24px] bg-white p-4 shadow-2xl dark:bg-[#111827]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black text-violet-600 dark:text-violet-300">WINNIE FUN</p>
-                <h3 className="mt-1 text-base font-black text-slate-950 dark:text-white">إيصال طلب الشراء</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReceiptOrder(null)}
-                className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 dark:bg-white/10 dark:text-white"
-                aria-label="إغلاق الإيصال"
-                title="إغلاق"
-              >
-                <XCircle className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="my-4 border-t border-dashed border-slate-200 dark:border-white/10" />
-            <div className="grid grid-cols-2 gap-2">
-              <ReceiptField label="رقم الطلب" value={receiptOrder.displayId || receiptOrder.id} dir="ltr" />
-              <ReceiptField label="الحالة" value={orderStatusLabels[receiptOrder.status] || receiptOrder.statusLabel} />
-              <ReceiptField label="العميل" value={receiptOrder.username || receiptOrder.userEmail || "-"} />
-              <ReceiptField label="المنتج" value={receiptOrder.product || "-"} />
-              <ReceiptField label="الكمية" value={numberFormatter.format(receiptOrder.quantity || 1)} />
-              <ReceiptField label="الإجمالي" value={receiptOrder.amountLabel || "-"} dir="ltr" />
-              <ReceiptField label="معرّف اللاعب/الحساب" value={receiptOrder.playerId || "-"} dir="ltr" />
-              <ReceiptField label="التاريخ" value={receiptOrder.createdAtLabel || "-"} />
-            </div>
-            {receiptOrder.submittedFields?.length ? (
-              <div className="mt-3 rounded-2xl bg-slate-50 p-3 dark:bg-slate-950/40">
-                <p className="mb-2 text-[10px] font-black text-slate-400">بيانات الطلب</p>
-                {receiptOrder.submittedFields.map((field) => (
-                  <div key={field.key} className="flex items-start justify-between gap-3 py-1 text-xs">
-                    <span className="font-bold text-slate-500 dark:text-slate-400">{field.label}</span>
-                    <span dir="ltr" className="break-all text-right font-black text-slate-900 dark:text-white">{field.valueLabel}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </section>
-        </div>
-      ) : null}
+      <PurchaseReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
+      <DashboardOrderConfirmation
+        confirmation={orderConfirmation}
+        busy={Boolean(orderConfirmation && actionKey === `${orderConfirmation.action}:${orderConfirmation.order.id}`)}
+        onCancel={() => setOrderConfirmation(null)}
+        onConfirm={confirmOrderAction}
+      />
     </>
   );
 }
 
-function ReceiptField({ dir, label, value }) {
+function DashboardOrderConfirmation({ busy, confirmation, onCancel, onConfirm }) {
+  if (!confirmation) return null;
+
+  const rejecting = confirmation.action === "reject";
+  const order = confirmation.order;
+
+  return createPortal(
+    <div
+      dir="rtl"
+      className="fixed inset-0 z-[2600] flex min-h-[100dvh] items-center justify-center bg-slate-950/75 p-3 backdrop-blur-[6px] sm:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="dashboard-order-confirm-title"
+        className="max-h-[calc(100dvh-24px)] w-full max-w-[320px] overflow-y-auto rounded-[18px] border border-white/60 bg-white p-3 text-center shadow-[0_26px_75px_rgba(15,23,42,0.38)] dark:border-white/10 dark:bg-[#111827]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span className={`mx-auto grid h-10 w-10 place-items-center rounded-xl ${rejecting ? "bg-rose-500/10 text-rose-600 dark:text-rose-300" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"}`}>
+          {rejecting ? <AlertTriangle className="h-5 w-5" /> : <PackageCheck className="h-5 w-5" />}
+        </span>
+
+        <h2 id="dashboard-order-confirm-title" className="mt-2 text-xs font-black text-slate-950 dark:text-white">
+          {rejecting ? "تأكيد رفض الطلب" : "تأكيد قبول الطلب"}
+        </h2>
+        <p className="mt-1.5 text-[8px] font-bold leading-5 text-slate-500 dark:text-slate-300">
+          هل تريد فعلًا {rejecting ? "رفض" : "قبول"} الطلب{" "}
+          <b dir="ltr" className="text-slate-800 dark:text-white">{order.displayId || order.id}</b>
+          {rejecting ? " وإرجاع قيمته إلى محفظة العميل؟" : " وتسجيله كمكتمل؟"}
+        </p>
+
+        <div className="mt-2 rounded-[11px] border border-slate-100 bg-slate-50/80 p-2 text-right dark:border-white/[0.06] dark:bg-slate-950/35">
+          <p className="truncate text-[8px] font-black text-slate-800 dark:text-white">{order.product || "منتج"}</p>
+          <p dir="ltr" className="mt-0.5 text-right text-[8px] font-black text-violet-600 dark:text-violet-300">{order.amountLabel || "-"}</p>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="h-9 rounded-[10px] border border-slate-200 bg-white text-[8px] font-black text-slate-600 disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
+          >
+            إلغاء
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] text-[8px] font-black text-white shadow-lg disabled:opacity-60 ${rejecting ? "bg-gradient-to-l from-rose-600 to-red-500 shadow-rose-500/20" : "bg-gradient-to-l from-emerald-600 to-green-500 shadow-emerald-500/20"}`}
+          >
+            {busy ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
+            {busy ? "جارٍ التنفيذ..." : rejecting ? "تأكيد الرفض" : "تأكيد القبول"}
+          </button>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
+function PurchaseReceiptModal({ onClose, order }) {
+  if (!order) return null;
+
+  return createPortal(
+    <div
+      dir="rtl"
+      className="fixed inset-0 z-[2500] flex min-h-[100dvh] items-center justify-center bg-slate-950/75 p-3 backdrop-blur-[6px] sm:p-5"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="purchase-receipt-title"
+        className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[22px] border border-white/60 bg-white shadow-[0_32px_95px_rgba(15,23,42,0.42)] sm:rounded-[26px] dark:border-white/10 dark:bg-[#111827]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-violet-600 via-blue-500 to-cyan-400" aria-hidden="true" />
+
+        <header className="flex shrink-0 items-center gap-3 border-b border-dashed border-slate-200 bg-gradient-to-l from-violet-50/90 to-white px-3 py-3.5 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(124,58,237,0.12),rgba(17,24,39,0.98))]">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] bg-gradient-to-br from-violet-600 to-blue-500 text-white shadow-[0_8px_20px_rgba(109,40,217,0.25)]">
+            <ReceiptText className="h-4.5 w-4.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[8px] font-black tracking-[0.14em] text-violet-600 dark:text-violet-300">WINNIE FUN</p>
+            <h3 id="purchase-receipt-title" className="mt-0.5 text-[13px] font-black text-slate-950 dark:text-white">
+              إيصال طلب الشراء
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-slate-200 bg-white/80 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
+            aria-label="إغلاق الإيصال"
+            title="إغلاق"
+          >
+            <XCircle className="h-4 w-4" />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <ReceiptField label="رقم الطلب" value={order.displayId || order.id} dir="ltr" />
+            <ReceiptField label="الحالة" value={orderStatusLabels[order.status] || order.statusLabel} tone="status" />
+            <ReceiptField label="العميل" value={order.username || order.userEmail || "-"} />
+            <ReceiptField label="المنتج" value={order.product || "-"} />
+            <ReceiptField label="الكمية" value={numberFormatter.format(order.quantity || 1)} />
+            <ReceiptField label="الإجمالي" value={order.amountLabel || "-"} dir="ltr" tone="total" />
+            <ReceiptField label="معرّف اللاعب/الحساب" value={order.playerId || "-"} dir="ltr" />
+            <ReceiptField label="التاريخ" value={order.createdAtLabel || "-"} />
+          </div>
+
+          {order.submittedFields?.length ? (
+            <div className="mt-3 rounded-[14px] border border-slate-100 bg-slate-50/80 p-3 dark:border-white/[0.06] dark:bg-slate-950/35">
+              <p className="mb-1.5 text-[8px] font-black text-slate-400">بيانات الطلب</p>
+              {order.submittedFields.map((field) => (
+                <div key={field.key} className="flex items-start justify-between gap-3 border-b border-slate-200/60 py-1.5 text-[9px] last:border-0 dark:border-white/[0.06]">
+                  <span className="font-bold text-slate-500 dark:text-slate-400">{field.label}</span>
+                  <span dir="ltr" className="break-all text-right font-black text-slate-900 dark:text-white">{field.valueLabel}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <p className="mt-3 text-center text-[7px] font-bold text-slate-400">
+            شكرًا لاستخدامك منصة WINNIE FUN
+          </p>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
+function ReceiptField({ dir, label, tone, value }) {
+  const valueColor = tone === "total"
+    ? "text-violet-700 dark:text-violet-300"
+    : tone === "status"
+      ? "text-emerald-700 dark:text-emerald-300"
+      : "text-slate-900 dark:text-white";
+
   return (
-    <div className="min-w-0 rounded-xl bg-slate-50 p-3 dark:bg-slate-950/40">
-      <p className="text-[9px] font-black text-slate-400">{label}</p>
-      <p dir={dir} className="mt-1 break-words text-xs font-black text-slate-900 dark:text-white">{value}</p>
+    <div className="min-w-0 rounded-[13px] border border-slate-100 bg-slate-50/80 p-2.5 dark:border-white/[0.06] dark:bg-slate-950/35">
+      <p className="text-[8px] font-black text-slate-400">{label}</p>
+      <p dir={dir} className={`mt-1 break-words text-[10px] font-black leading-5 ${valueColor}`}>{value}</p>
     </div>
   );
 }
@@ -870,7 +980,11 @@ function ManualDepositsPanel({ actionKey, deposits, onApprove, onReject }) {
           <span className="is-total">{numberFormatter.format(deposits.length)} طلب</span>
         </div>
         {deposits.length ? (
-          <div className="admin-orders-list mt-3">
+          <div
+            className="admin-orders-list admin-dashboard-feed-scroll mt-3"
+            tabIndex={0}
+            aria-label="قائمة طلبات إضافة الرصيد اليدوي القابلة للتمرير"
+          >
             {deposits.map((deposit) => {
               const pending = deposit.status === "PENDING";
               const busy = actionKey.endsWith(`deposit:${deposit.id}`);

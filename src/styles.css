@@ -112,9 +112,9 @@
   .homepage-product-carousel {
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-inline: auto;
+    overscroll-behavior-inline: contain;
     overscroll-behavior-block: auto;
-    touch-action: pan-y pinch-zoom;
+    touch-action: pan-x pan-y pinch-zoom;
     overflow-y: clip;
   }
 
@@ -1633,6 +1633,37 @@ html.dark .admin-dashboard-main .admin-metric-card {
     -webkit-appearance: none;
   }
 
+  /* Keep search copy compact and the submit action stable across every
+     public, customer, admin, and modal search form. */
+  input[type="search"]::placeholder,
+  label:has(> svg.lucide-search) > input::placeholder,
+  input[placeholder*="بحث"]::placeholder,
+  input[placeholder*="ابحث"]::placeholder,
+  input[placeholder*="search" i]::placeholder {
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  form:has(
+    input[type="search"],
+    input[placeholder*="بحث"],
+    input[placeholder*="ابحث"],
+    input[placeholder*="search" i]
+  ) > button[type="submit"] {
+    box-sizing: border-box;
+    width: 4.5rem;
+    min-width: 4.5rem;
+    max-width: 4.5rem;
+    flex: 0 0 4.5rem;
+    padding-inline: 0.5rem !important;
+    overflow: hidden;
+    font-size: 0.625rem !important;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   html.dark label:has(> svg.lucide-search) > svg.lucide-search {
     border-color: rgb(168 85 247 / 0.42);
     background: rgb(139 92 246 / 0.16);
@@ -1645,6 +1676,29 @@ html.dark .admin-dashboard-main .admin-metric-card {
     background: rgb(139 92 246 / 0.16);
     color: #C4B5FD !important;
     box-shadow: 0 0 12px rgb(124 58 237 / 0.14);
+  }
+
+  @media (max-width: 640px) {
+    input[type="search"]::placeholder,
+    label:has(> svg.lucide-search) > input::placeholder,
+    input[placeholder*="بحث"]::placeholder,
+    input[placeholder*="ابحث"]::placeholder,
+    input[placeholder*="search" i]::placeholder {
+      font-size: 0.625rem !important;
+    }
+
+    form:has(
+      input[type="search"],
+      input[placeholder*="بحث"],
+      input[placeholder*="ابحث"],
+      input[placeholder*="search" i]
+    ) > button[type="submit"] {
+      width: 4rem;
+      min-width: 4rem;
+      max-width: 4rem;
+      flex-basis: 4rem;
+      font-size: 0.58rem !important;
+    }
   }
 
   .glass-panel {
@@ -4294,7 +4348,7 @@ html.dark .admin-app-shell::before {
 @media (min-width: 1280px) {
   .customer-app-shell,
   .admin-app-shell {
-    --dashboard-sidebar-width: 284px;
+    --dashboard-sidebar-width: 260px;
     --dashboard-content-gutter: clamp(1.25rem, 2.6vw, 2.5rem);
   }
 
@@ -6614,7 +6668,7 @@ html.dark .admin-user-drawer-footer button {
   display: grid;
   padding: 16px;
   place-items: center;
-  z-index: 190;
+  z-index: 280;
   backdrop-filter: blur(6px);
 }
 
@@ -6627,6 +6681,44 @@ html.dark .admin-user-drawer-footer button {
   padding: 20px;
   text-align: center;
   width: min(100%, 460px);
+}
+
+@media (max-width: 640px) {
+  .admin-user-confirm-layer {
+    align-items: center;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-right: max(10px, env(safe-area-inset-right));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+  }
+
+  .admin-user-confirm {
+    max-height: calc(
+      100dvh - max(20px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom))
+    );
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 16px;
+    border-radius: 20px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-user-confirm div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-user-confirm button {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 359px) {
+  .admin-user-confirm div {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .admin-user-confirm-icon,
@@ -7448,9 +7540,11 @@ html:not(.dark) .admin-tools-mode .admin-products-search-icon {
 }
 
 html:not(.dark) .admin-tools-mode .admin-products-table-heading {
-  background: linear-gradient(180deg, #f4f1ff, #eef7ff) !important;
+  background:
+    linear-gradient(90deg, rgba(224, 242, 254, 0.82), rgba(245, 243, 255, 0.94) 48%, rgba(250, 245, 255, 0.86)) !important;
   color: #475569 !important;
-  border-bottom: 1px solid rgba(124, 58, 237, 0.12) !important;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
 html:not(.dark) .admin-tools-mode .admin-products-section > div.divide-y {
@@ -9128,8 +9222,99 @@ html.dark .admin-user-drawer-layer {
 }
 
 .dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link[aria-current="page"] {
-  border-inline-start-width: 3px;
-  border-inline-start-color: rgb(196 181 253 / 0.95);
+  border-inline-start-width: 2px;
+  border-inline-start-color: rgb(255 255 255 / 0.82);
+}
+
+/* Compact sidebar navigation cards. */
+.dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link {
+  height: 40px !important;
+  min-height: 40px;
+  gap: 8px !important;
+  padding-inline: 8px !important;
+  border: 1px solid rgb(148 163 184 / 0.18) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.88), rgb(248 250 252 / 0.72)) !important;
+  color: #475569 !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.92),
+    0 4px 12px rgb(15 23 42 / 0.035) !important;
+  font-size: 12px !important;
+}
+
+.dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link:hover {
+  border-color: rgb(139 92 246 / 0.32) !important;
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.96), rgb(239 246 255 / 0.90)) !important;
+  color: #6d28d9 !important;
+  box-shadow: 0 7px 18px rgb(124 58 237 / 0.10) !important;
+}
+
+.dashboard-sidebar[data-sidebar-variant] .admin-user-nav-icon {
+  width: 27px !important;
+  height: 27px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: rgb(124 58 237 / 0.09) !important;
+  color: #7c3aed !important;
+  box-shadow: inset 0 0 0 1px rgb(124 58 237 / 0.10);
+}
+
+.dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link[aria-current="page"] {
+  border-color: rgb(139 92 246 / 0.62) !important;
+  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 48%, #2563eb 100%) !important;
+  color: #fff !important;
+  box-shadow:
+    0 9px 22px rgb(109 40 217 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.18) !important;
+}
+
+.dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link[aria-current="page"] .admin-user-nav-icon {
+  background: rgb(255 255 255 / 0.16) !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.20);
+}
+
+.sidebar--user > nav > * + *,
+.sidebar--admin .sidebar-admin-menu .admin-user-nav-link + .admin-user-nav-link {
+  margin-top: 6px !important;
+}
+
+.sidebar--admin .sidebar-admin-menu a:not(.admin-user-nav-link):not(.admin-user-wallet-card) {
+  min-height: 36px;
+  border-radius: 11px !important;
+  font-size: 12px !important;
+}
+
+html.dark .dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link {
+  border-color: rgb(255 255 255 / 0.075) !important;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.045), rgb(124 58 237 / 0.035)) !important;
+  color: #aab3c2 !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.035),
+    0 5px 14px rgb(0 0 0 / 0.10) !important;
+}
+
+html.dark .dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link:hover {
+  border-color: rgb(168 85 247 / 0.30) !important;
+  background: linear-gradient(135deg, rgb(124 58 237 / 0.16), rgb(37 99 235 / 0.10)) !important;
+  color: #ede9fe !important;
+}
+
+html.dark .dashboard-sidebar[data-sidebar-variant] .admin-user-nav-icon {
+  background: rgb(139 92 246 / 0.13) !important;
+  color: #c4b5fd !important;
+  box-shadow: inset 0 0 0 1px rgb(196 181 253 / 0.10);
+}
+
+html.dark .dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link[aria-current="page"] {
+  border-color: rgb(192 132 252 / 0.42) !important;
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 52%, #1d4ed8 100%) !important;
+  color: #fff !important;
+}
+
+html.dark .dashboard-sidebar[data-sidebar-variant] .admin-user-nav-link[aria-current="page"] .admin-user-nav-icon {
+  background: rgb(255 255 255 / 0.14) !important;
+  color: #fff !important;
 }
 
 .dashboard-sidebar :is(a, button):focus-visible {
@@ -13058,6 +13243,16 @@ html.dark .winnie-mobile-topbar-shell {
   transform: translateX(3px);
 }
 
+.profile-hero-back .winnie-back-button-control {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1;
+}
+
 .winnie-empty-state {
   min-height: 260px;
   position: relative;
@@ -13181,8 +13376,9 @@ html.dark .winnie-skeleton::after {
   }
 
   .winnie-back-button-control {
-    height: 42px;
-    padding-inline: 16px;
+    width: 36px;
+    height: 36px;
+    padding-inline: 0;
   }
 
   .winnie-empty-state {
@@ -15121,6 +15317,103 @@ html.dark .admin-users-page .admin-user-date-cell {
   height: 32px;
 }
 
+.admin-orders-filters form .admin-orders-search-control {
+  position: relative;
+  display: block;
+  margin-bottom: 0 !important;
+}
+
+.admin-orders-search-control .admin-orders-search-icon {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 7px;
+  bottom: auto;
+  left: auto;
+  box-sizing: border-box;
+  width: 27px;
+  height: 27px;
+  padding: 6px;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.10);
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  border-radius: 9px;
+  filter: drop-shadow(0 2px 5px rgba(124, 58, 237, 0.18));
+  transform: translateY(-50%);
+  transition: color 180ms ease, filter 180ms ease, transform 180ms ease;
+}
+
+.admin-orders-filters form .admin-orders-search-control input {
+  padding-right: 42px !important;
+  padding-left: 10px !important;
+}
+
+.admin-orders-user-id-input::placeholder {
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+.admin-orders-search-field:focus-within .admin-orders-search-control .admin-orders-search-icon {
+  color: #2563eb;
+  filter: drop-shadow(0 2px 7px rgba(37, 99, 235, 0.28));
+  transform: translateY(-50%) scale(1.06);
+}
+
+html.dark .admin-orders-search-control .admin-orders-search-icon {
+  color: #d8b4fe;
+  background: rgba(139, 92, 246, 0.16);
+  border-color: rgba(168, 85, 247, 0.36);
+  filter: drop-shadow(0 2px 6px rgba(168, 85, 247, 0.26));
+}
+
+html.dark .admin-orders-search-field:focus-within .admin-orders-search-control .admin-orders-search-icon {
+  color: #f0abfc;
+  filter: drop-shadow(0 2px 8px rgba(217, 70, 239, 0.34));
+}
+
+@media (max-width: 640px) {
+  .admin-orders-user-id-input::placeholder {
+    font-size: 0.625rem !important;
+  }
+}
+
+.admin-payment-methods-page :where(.admin-payment-group-name, .admin-payment-method-name) {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-payment-methods-page :where(.admin-payment-group-description, .admin-payment-method-description) {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-payment-methods-page :where(.admin-payment-group-status, .admin-payment-method-status) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.admin-payment-methods-page .admin-payment-method-details p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.admin-payment-methods-page .admin-payment-method-details b {
+  overflow-wrap: anywhere;
+}
+
 .admin-currencies-page .admin-currencies-search {
   padding: 9px !important;
   border-radius: 15px !important;
@@ -15253,6 +15546,23 @@ html.dark .admin-users-page .admin-user-date-cell {
 
   .admin-payment-methods-page .admin-payment-group-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-payment-methods-page :where(.admin-payment-group-header, .admin-payment-method-header) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+  }
+
+  .admin-payment-methods-page :where(.admin-payment-group-status, .admin-payment-method-status) {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-top: 1px;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-details {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .admin-currencies-page .admin-currency-card {
@@ -15604,6 +15914,21 @@ html.dark .admin-users-page .admin-user-date-cell {
   padding: 9px !important;
 }
 
+.admin-products-page-shell .admin-products-mobile-card.admin-product-item-mobile-card {
+  padding: 6px !important;
+}
+
+.admin-products-page-shell .admin-products-price-value {
+  color: #10b981 !important;
+  direction: ltr !important;
+  unicode-bidi: isolate;
+  max-width: 100% !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
 .admin-products-page-shell .admin-products-mobile-card.space-y-3 > :not([hidden]) ~ :not([hidden]) {
   margin-top: 6px !important;
 }
@@ -15688,6 +16013,46 @@ html.dark .admin-users-page .admin-user-date-cell {
   height: 33px;
   border-radius: 9px;
   font-size: 8.5px;
+}
+
+.admin-suppliers-page .admin-suppliers-search-form {
+  align-items: stretch;
+}
+
+.admin-suppliers-page .admin-suppliers-search-field {
+  min-width: 0;
+}
+
+.admin-suppliers-page .admin-suppliers-search-submit {
+  display: inline-flex;
+  min-width: 72px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.admin-suppliers-page .admin-suppliers-search-submit svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+}
+
+@media (max-width: 560px) {
+  .admin-suppliers-page .admin-suppliers-search-form {
+    gap: 6px;
+  }
+
+  .admin-suppliers-page .admin-suppliers-search-submit {
+    min-width: 64px;
+    padding-inline: 7px !important;
+  }
+
+  .admin-suppliers-page .admin-suppliers-search-submit svg {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
 }
 
 .admin-suppliers-page .admin-suppliers-list {
@@ -15817,21 +16182,166 @@ html.dark .admin-users-page .admin-user-date-cell {
   }
 
   .admin-suppliers-page .admin-suppliers-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px !important;
   }
 
   .admin-suppliers-page .admin-supplier-card {
-    padding: 7px !important;
+    padding: 11px !important;
+    overflow: hidden;
+    border-color: rgba(124, 58, 237, 0.16) !important;
+    border-radius: 18px !important;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.07), transparent 36%),
+      #fff !important;
+    box-shadow: 0 14px 34px rgba(76, 29, 149, 0.08) !important;
+  }
+
+  html.dark .admin-suppliers-page .admin-supplier-card {
+    border-color: rgba(139, 92, 246, 0.18) !important;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.13), transparent 38%),
+      #111827 !important;
+  }
+
+  .admin-suppliers-page .admin-supplier-card-head {
+    align-items: center;
+    gap: 9px !important;
+    min-height: 44px;
+  }
+
+  .admin-suppliers-page .admin-supplier-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 9px 22px rgba(124, 58, 237, 0.22);
+  }
+
+  .admin-suppliers-page .admin-supplier-name {
+    font-size: 13px !important;
+    line-height: 1.4;
+  }
+
+  .admin-suppliers-page .admin-supplier-code {
+    display: inline-block;
+    max-width: 100%;
+    margin-top: 2px !important;
+    padding: 2px 6px;
+    color: #64748b !important;
+    font-size: 8.5px !important;
+    background: rgba(148, 163, 184, 0.09);
+    border-radius: 999px;
+  }
+
+  .admin-suppliers-page .admin-supplier-main-status {
+    flex: 0 0 auto;
+  }
+
+  .admin-suppliers-page .admin-supplier-main-status > span {
+    padding: 5px 8px;
+    font-size: 8px;
+  }
+
+  .admin-suppliers-page .admin-supplier-primary-facts {
+    display: none !important;
+  }
+
+  .admin-suppliers-page .admin-supplier-network-facts {
+    display: none !important;
+  }
+
+  .admin-suppliers-page .admin-supplier-info {
+    min-height: 51px;
+    padding: 8px !important;
+    border: 1px solid rgba(148, 163, 184, 0.10);
     border-radius: 11px !important;
   }
 
-  .admin-suppliers-page .admin-supplier-card > div:nth-of-type(2) {
-    grid-template-columns: 1fr;
+  .admin-suppliers-page .admin-supplier-info-label {
+    color: #64748b !important;
+    font-size: 8px !important;
   }
 
-  .admin-suppliers-page .admin-supplier-card > div:last-child {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .admin-suppliers-page .admin-supplier-info-value {
+    color: #334155 !important;
+    font-size: 10px !important;
+    line-height: 1.55 !important;
+  }
+
+  .admin-suppliers-page .admin-supplier-catalog-info .admin-supplier-info-value {
+    color: #7c3aed !important;
+  }
+
+  .admin-suppliers-page .admin-supplier-url-info .admin-supplier-info-value {
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: isolate;
+  }
+
+  .admin-suppliers-page .admin-supplier-features {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px !important;
+    padding: 7px 8px !important;
+    line-height: 1.45 !important;
+    border-color: rgba(124, 58, 237, 0.11) !important;
+    border-radius: 11px !important;
+  }
+
+  .admin-suppliers-page .admin-supplier-features > span {
+    color: #7c3aed;
+    font-size: 8px;
+    font-weight: 950;
+  }
+
+  .admin-suppliers-page .admin-supplier-features > b {
+    min-width: 0;
+    overflow: hidden;
+    color: #475569;
+    font-size: 9px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-suppliers-page .admin-supplier-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px !important;
+    margin-top: 9px !important;
+    padding-top: 9px;
+    border-top: 1px solid rgba(124, 58, 237, 0.10);
+  }
+
+  .admin-suppliers-page .admin-supplier-action {
+    min-height: 35px !important;
+    gap: 4px;
+    padding-inline: 5px;
+    border-radius: 10px !important;
+    font-size: 9px !important;
+    white-space: nowrap;
+  }
+
+  .admin-suppliers-page .admin-supplier-action svg {
+    flex: 0 0 auto;
+    width: 13px;
+    height: 13px;
+  }
+
+  html.dark .admin-suppliers-page .admin-supplier-code,
+  html.dark .admin-suppliers-page .admin-supplier-info-label {
+    color: #94a3b8 !important;
+  }
+
+  html.dark .admin-suppliers-page .admin-supplier-info-value,
+  html.dark .admin-suppliers-page .admin-supplier-features > b {
+    color: #e2e8f0 !important;
+  }
+
+  html.dark .admin-suppliers-page .admin-supplier-catalog-info .admin-supplier-info-value,
+  html.dark .admin-suppliers-page .admin-supplier-features > span {
+    color: #c4b5fd !important;
   }
 
   .admin-subagents-page .admin-subagents-panel {
@@ -15848,6 +16358,11 @@ html.dark .admin-users-page .admin-user-date-cell {
   max-width: 1280px;
   padding-top: 14px !important;
   padding-inline: clamp(12px, 1.8vw, 24px) !important;
+}
+
+.customer-app-shell .customer-app-main.customer-profile-main,
+.admin-app-main:has(.customer-profile-page) {
+  padding-top: 0 !important;
 }
 
 .customer-app-shell .customer-app-main > .back-button,
@@ -15928,6 +16443,12 @@ html.dark .admin-users-page .admin-user-date-cell {
   .customer-app-shell .customer-dashboard-home .wf-reviews-carousel {
     padding-bottom: 22px;
   }
+
+  /* Reduce only the gap between customer reviews and the company footer. */
+  .customer-app-shell .customer-home-footer {
+    margin-top: -56px;
+  }
+
 }
 
 /* Product artwork must stay standalone everywhere. Admin-uploaded transparent
@@ -15968,4 +16489,1907 @@ html.dark .admin-users-page .admin-user-date-cell {
   border-radius: 0 !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
+}
+
+/* Customer mobile resilience: prevent page-level horizontal overflow and keep
+   long content clear of the fixed mobile navigation. */
+html,
+body,
+#root {
+  max-width: 100%;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Hide the browser's page scrollbar without disabling vertical scrolling. */
+html,
+body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.customer-app-shell,
+.customer-app-content,
+.customer-app-main,
+.customer-app-main .winnie-page-stage,
+.customer-app-main .winnie-page-stage > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Profile and wallet intentionally extend across the layout gutters. Keeping
+   the generic max-width here shifts their negative-margin canvas to one side. */
+.customer-app-main .winnie-page-stage > :where(.customer-profile-page, .wallet-page) {
+  max-width: none;
+}
+
+.customer-app-main .winnie-page-stage :where(img, video, canvas, svg) {
+  max-width: 100%;
+}
+
+.customer-app-main .winnie-page-stage :where(p, li, dd, td, th, label, a, button) {
+  overflow-wrap: anywhere;
+}
+
+.anti-scam-scroll {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  .customer-app-shell .customer-app-main {
+    padding-right: max(10px, env(safe-area-inset-right)) !important;
+    padding-bottom: calc(6.75rem + env(safe-area-inset-bottom)) !important;
+    padding-left: max(10px, env(safe-area-inset-left)) !important;
+  }
+
+  /* The profile artwork is intentionally full-bleed and uses -mx-4. Keep its
+     original 16px canvas so generic mobile gutters do not distort the form. */
+  .customer-app-shell .customer-profile-main {
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+  }
+
+  .customer-profile-main .winnie-page-stage > .customer-profile-page {
+    max-width: none;
+  }
+
+  .customer-profile-page :where(label, button) {
+    overflow-wrap: normal;
+  }
+
+  .customer-bottom-nav {
+    right: max(8px, env(safe-area-inset-right)) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+  }
+
+  .anti-scam-overlay {
+    align-items: stretch;
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-right: max(6px, env(safe-area-inset-right));
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    padding-left: max(6px, env(safe-area-inset-left));
+  }
+
+  .anti-scam-dialog {
+    height: auto;
+    max-height: calc(
+      100dvh - max(6px, env(safe-area-inset-top)) - max(6px, env(safe-area-inset-bottom))
+    );
+    margin: auto;
+    border-radius: 16px;
+  }
+
+  .anti-scam-scroll {
+    min-height: 0;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .winnie-mobile-topbar.site-header-warm {
+    padding-inline: 6px !important;
+  }
+
+  .winnie-mobile-topbar-shell {
+    gap: 4px !important;
+    padding-inline: 6px !important;
+  }
+
+  .winnie-mobile-left-actions,
+  .winnie-mobile-right-actions {
+    gap: 3px !important;
+  }
+
+  .winnie-mobile-left-actions > button,
+  .winnie-mobile-left-actions > a,
+  .winnie-mobile-left-actions > div,
+  .winnie-mobile-left-actions > div > button,
+  .winnie-mobile-right-actions > button,
+  .winnie-mobile-right-actions > a,
+  .winnie-mobile-right-actions > div,
+  .winnie-mobile-right-actions > div > button {
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .primary-header-brand img,
+  .primary-header-brand > span:first-child {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .primary-header-brand .winnie-brand-name {
+    max-width: 58px;
+    font-size: 1rem !important;
+  }
+
+  .customer-bottom-nav {
+    padding-inline: 4px;
+  }
+
+  .customer-bottom-nav > div {
+    gap: 0;
+  }
+}
+
+/* Compact admin order details on phones. */
+@media (max-width: 640px) {
+  .admin-order-detail-overlay {
+    align-items: stretch;
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-right: max(6px, env(safe-area-inset-right));
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    padding-left: max(6px, env(safe-area-inset-left));
+  }
+
+  .admin-order-detail-modal {
+    max-height: calc(
+      100dvh - max(6px, env(safe-area-inset-top)) - max(6px, env(safe-area-inset-bottom))
+    );
+    margin: auto;
+    border-radius: 18px;
+  }
+
+  .admin-order-detail-header {
+    padding: 10px !important;
+  }
+
+  .admin-order-detail-header > div {
+    gap: 8px;
+  }
+
+  .admin-order-detail-header > div > span {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+
+  .admin-order-detail-header h2 {
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .admin-order-detail-header button {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+
+  .admin-order-detail-body {
+    padding: 8px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .admin-order-detail-section {
+    margin-bottom: 8px;
+    padding: 9px !important;
+    border-radius: 15px;
+  }
+
+  .admin-order-detail-section > div:first-child {
+    margin-bottom: 8px;
+  }
+
+  .admin-order-detail-section > div:first-child > span {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+
+  .admin-order-detail-product {
+    gap: 8px;
+    padding: 7px;
+    border-radius: 13px;
+  }
+
+  .admin-order-detail-product-image {
+    width: 62px !important;
+    height: 62px !important;
+    border-radius: 12px;
+  }
+
+  .admin-order-detail-product h3 {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .admin-order-detail-product p[dir="ltr"] {
+    margin-top: 3px;
+    font-size: 16px;
+  }
+
+  .admin-order-detail-info {
+    padding: 7px;
+    border-radius: 10px;
+  }
+
+  .admin-order-detail-info dt {
+    font-size: 8px;
+  }
+
+  .admin-order-detail-info dd {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-order-detail-section dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-order-detail-info {
+    grid-column: 1 !important;
+  }
+}
+
+/* Supplier balances: compact cards that do not stretch when the list is short. */
+.admin-provider-balances-panel {
+  padding: 13px !important;
+}
+
+.admin-provider-balances-panel > .admin-panel-heading {
+  padding-bottom: 8px !important;
+}
+
+.admin-provider-balances-panel > .admin-panel-heading .admin-panel-heading-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 11px !important;
+}
+
+.admin-provider-balances-panel > .admin-panel-heading .admin-panel-title {
+  font-size: 16px !important;
+}
+
+.admin-provider-balances-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 300px));
+  justify-content: start;
+  gap: 9px !important;
+  margin-top: 8px !important;
+}
+
+.admin-provider-balance-card {
+  min-height: 0;
+  padding: 11px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055) !important;
+}
+
+.admin-provider-balance-card > div:nth-of-type(2) {
+  gap: 8px;
+}
+
+.admin-provider-balance-card > div:nth-of-type(2) p:first-child {
+  font-size: 12px !important;
+}
+
+.admin-provider-balance-card > div:nth-of-type(2) p:nth-child(2) {
+  margin-top: 2px !important;
+  font-size: 9px !important;
+}
+
+.admin-provider-balance-card > div:nth-of-type(2) > span {
+  padding: 3px 8px !important;
+  font-size: 9px !important;
+}
+
+.admin-provider-balance-value {
+  margin-top: 9px !important;
+  padding: 8px 10px !important;
+  border-radius: 11px !important;
+}
+
+.admin-provider-balance-value > p:first-child {
+  font-size: 9px !important;
+}
+
+.admin-provider-balance-value > p:nth-child(2) {
+  margin-top: 2px !important;
+  font-size: 16px !important;
+  line-height: 1.25;
+}
+
+.admin-provider-balance-value > p:nth-child(3) {
+  margin-top: 4px !important;
+  font-size: 9px !important;
+  line-height: 1.45 !important;
+}
+
+@media (max-width: 640px) {
+  .admin-provider-balances-panel {
+    padding: 9px !important;
+  }
+
+  .admin-provider-balances-panel > .admin-panel-heading .admin-panel-heading-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .admin-provider-balances-panel > .admin-panel-heading .admin-panel-title {
+    font-size: 14px !important;
+  }
+
+  .admin-provider-balances-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px !important;
+  }
+
+  .admin-provider-balance-card {
+    padding: 9px !important;
+  }
+
+  .admin-provider-balance-value {
+    margin-top: 7px !important;
+    padding-block: 7px !important;
+  }
+}
+
+/* App-wide responsive guardrails. Keep every routed page inside the visual
+   viewport, including public and admin routes, without clipping local scrollers. */
+.winnie-app-shell,
+.winnie-app-content,
+.winnie-page-canvas,
+.winnie-page-stage,
+.winnie-page-stage > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.customer-app-main .winnie-page-stage > :where(.customer-profile-page, .wallet-page) {
+  max-width: none;
+}
+
+.admin-app-main .winnie-page-stage > :where(.customer-profile-page, .wallet-page) {
+  max-width: none;
+}
+
+.winnie-page-stage :where(img, video, canvas) {
+  height: auto;
+  max-width: 100%;
+}
+
+.winnie-page-stage :where(p, li, dd, dt, label, a, button, h1, h2, h3, h4) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.winnie-page-stage :where(input, select, textarea) {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Tables remain readable instead of widening the whole application. */
+.winnie-page-stage :where(.overflow-x-auto, [class*="table-scroll"]) {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  .public-app-main,
+  .admin-app-main {
+    padding-right: max(10px, env(safe-area-inset-right)) !important;
+    padding-left: max(10px, env(safe-area-inset-left)) !important;
+  }
+
+  .admin-app-main:not(.admin-dashboard-main) {
+    width: 100%;
+  }
+
+  /* Long toolbars and filter rows wrap instead of pushing actions off-screen. */
+  .winnie-page-stage :where(header, form, [class*="filters"], [class*="toolbar"]) > .flex {
+    min-width: 0;
+  }
+
+  .winnie-page-stage :where([class*="filters"], [class*="toolbar"]) :where(input, select) {
+    width: 100%;
+  }
+
+  /* Fixed dialogs must fit short phones and keep their content scrollable. */
+  [role="dialog"],
+  [role="alertdialog"] {
+    box-sizing: border-box;
+    max-width: calc(
+      100vw - max(12px, env(safe-area-inset-left)) - max(12px, env(safe-area-inset-right))
+    );
+  }
+
+  [role="dialog"] :where(p, dd, code),
+  [role="alertdialog"] :where(p, dd, code) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .customer-notifications-popover {
+    position: fixed !important;
+    top: max(66px, calc(env(safe-area-inset-top) + 58px)) !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    width: auto !important;
+    max-height: calc(100dvh - 82px - env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 359px) {
+  .public-app-main,
+  .customer-app-shell .customer-app-main,
+  .admin-app-main {
+    padding-right: max(8px, env(safe-area-inset-right)) !important;
+    padding-left: max(8px, env(safe-area-inset-left)) !important;
+  }
+
+  .winnie-page-stage :where(.grid-cols-4, .grid-cols-5) {
+    gap: 4px;
+  }
+}
+
+/* Dashboard request feeds: a contained, accessible scrollbar that keeps the
+   panel heading and summary visible while browsing long request lists. */
+.admin-dashboard-main .admin-dashboard-feed-scroll {
+  --feed-scroll-thumb: linear-gradient(180deg, #22d3ee 0%, #3b82f6 48%, #8b5cf6 100%);
+  max-height: 430px;
+  padding-inline-end: 9px;
+  padding-block: 3px 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  scrollbar-color: #4f7cf2 rgba(148, 163, 184, 0.13);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+
+.admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar-track {
+  margin-block: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.44);
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar-thumb {
+  min-height: 52px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--feed-scroll-thumb) padding-box;
+  box-shadow: 0 5px 14px rgba(59, 130, 246, 0.26);
+}
+
+.admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #06b6d4 0%, #2563eb 48%, #7c3aed 100%) padding-box;
+}
+
+.admin-dashboard-main .admin-dashboard-feed-scroll:focus-visible {
+  border-radius: 16px;
+  outline: 2px solid rgba(59, 130, 246, 0.48);
+  outline-offset: 3px;
+}
+
+html.dark .admin-dashboard-main .admin-dashboard-feed-scroll {
+  scrollbar-color: #818cf8 rgba(255, 255, 255, 0.07);
+}
+
+html.dark .admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar-track {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(2, 6, 23, 0.42);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar-thumb {
+  border-color: transparent;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.34);
+}
+
+@media (max-width: 767px) {
+  .admin-dashboard-main .admin-dashboard-feed-scroll {
+    max-height: min(56dvh, 520px);
+    padding-inline-end: 6px;
+  }
+
+  .admin-dashboard-main .admin-dashboard-feed-scroll::-webkit-scrollbar {
+    width: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard-main .admin-dashboard-feed-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* Shared search treatment for every page-level filter. */
+.site-filter-search {
+  position: relative !important;
+  display: block !important;
+  min-width: 0;
+  padding: 0 !important;
+  color: #7c3aed;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.site-filter-search > input.site-filter-search-input {
+  display: block;
+  width: 100% !important;
+  min-width: 0;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 42px 0 10px !important;
+  color: #0f172a !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+  text-align: right;
+  appearance: none;
+  background: rgba(248, 250, 252, 0.78) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  outline: none !important;
+  box-shadow:
+    0 6px 16px rgba(15, 23, 42, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.site-filter-search > input.site-filter-search-input::placeholder {
+  color: #94a3b8 !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  opacity: 1;
+}
+
+.site-filter-search > input.site-filter-search-input:hover {
+  border-color: rgba(139, 92, 246, 0.42) !important;
+}
+
+.site-filter-search > input.site-filter-search-input:focus {
+  background: #fff !important;
+  border-color: rgba(139, 92, 246, 0.68) !important;
+  box-shadow:
+    0 0 0 4px rgba(139, 92, 246, 0.10),
+    0 8px 20px rgba(76, 29, 149, 0.08) !important;
+}
+
+.site-filter-search > .site-filter-search-icon {
+  position: absolute !important;
+  z-index: 2;
+  top: 50% !important;
+  right: 7px !important;
+  bottom: auto !important;
+  left: auto !important;
+  display: grid !important;
+  box-sizing: border-box;
+  width: 27px !important;
+  height: 27px !important;
+  margin: 0 !important;
+  padding: 6px !important;
+  color: #7c3aed !important;
+  pointer-events: none;
+  place-items: center;
+  background: rgba(124, 58, 237, 0.10) !important;
+  border: 1px solid rgba(124, 58, 237, 0.22) !important;
+  border-radius: 9px !important;
+  filter: drop-shadow(0 2px 5px rgba(124, 58, 237, 0.18));
+  transform: translateY(-50%) !important;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    filter 180ms ease,
+    transform 180ms ease !important;
+}
+
+.site-filter-search > span.site-filter-search-icon > svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.site-filter-search:focus-within > .site-filter-search-icon {
+  color: #2563eb !important;
+  border-color: rgba(37, 99, 235, 0.36) !important;
+  filter: drop-shadow(0 2px 7px rgba(37, 99, 235, 0.28));
+  transform: translateY(-50%) scale(1.06) !important;
+}
+
+.site-filter-search:has(> button) > input.site-filter-search-input {
+  padding-left: 42px !important;
+}
+
+.site-filter-search > button {
+  position: absolute !important;
+  z-index: 2;
+  top: 50% !important;
+  right: auto !important;
+  left: 7px !important;
+  display: grid !important;
+  width: 27px !important;
+  height: 27px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  color: #64748b !important;
+  place-items: center;
+  background: rgba(148, 163, 184, 0.10) !important;
+  border: 1px solid rgba(148, 163, 184, 0.20) !important;
+  border-radius: 9px !important;
+  transform: translateY(-50%) !important;
+}
+
+html.dark .site-filter-search > input.site-filter-search-input {
+  color: #fff !important;
+  background: #0b1220 !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+}
+
+html.dark .site-filter-search > input.site-filter-search-input::placeholder {
+  color: #7f8aa0 !important;
+}
+
+html.dark .site-filter-search > input.site-filter-search-input:hover {
+  border-color: rgba(168, 85, 247, 0.42) !important;
+}
+
+html.dark .site-filter-search > input.site-filter-search-input:focus {
+  background: #0d1324 !important;
+  border-color: rgba(168, 85, 247, 0.68) !important;
+  box-shadow:
+    0 0 0 4px rgba(139, 92, 246, 0.13),
+    0 8px 22px rgba(0, 0, 0, 0.20) !important;
+}
+
+html.dark .site-filter-search > .site-filter-search-icon {
+  color: #d8b4fe !important;
+  background: rgba(139, 92, 246, 0.16) !important;
+  border-color: rgba(168, 85, 247, 0.36) !important;
+  filter: drop-shadow(0 2px 6px rgba(168, 85, 247, 0.26));
+}
+
+html.dark .site-filter-search:focus-within > .site-filter-search-icon {
+  color: #f0abfc !important;
+  border-color: rgba(217, 70, 239, 0.46) !important;
+  filter: drop-shadow(0 2px 8px rgba(217, 70, 239, 0.34));
+}
+
+@media (max-width: 560px) {
+  .site-filter-search > input.site-filter-search-input {
+    height: 34px !important;
+    min-height: 34px !important;
+    padding-right: 36px !important;
+    padding-left: 8px !important;
+    font-size: 0.56rem !important;
+    border-radius: 9px !important;
+  }
+
+  .site-filter-search > input.site-filter-search-input::placeholder {
+    font-size: 0.625rem !important;
+  }
+
+  .site-filter-search > .site-filter-search-icon {
+    right: 4px !important;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .site-filter-search:has(> button) > input.site-filter-search-input {
+    padding-left: 36px !important;
+  }
+
+  .site-filter-search > button {
+    left: 4px !important;
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 8px !important;
+  }
+}
+
+/* Payment-method groups: readable, ordered cards on phone screens. */
+@media (max-width: 640px) {
+  .admin-payment-methods-page .admin-payment-groups-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-card {
+    width: 100%;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07) !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-inner {
+    padding: 10px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-header {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-card .payment-admin-logo-shell {
+    width: 42px !important;
+    height: 42px !important;
+    padding: 5px !important;
+    border-radius: 11px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-copy {
+    align-self: center;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-name {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+    -webkit-line-clamp: 1;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-description {
+    margin-top: 1px !important;
+    font-size: 7.5px !important;
+    line-height: 1.45 !important;
+    -webkit-line-clamp: 1;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-meta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 19px;
+    margin-top: 4px !important;
+    padding-inline: 7px;
+    color: #6d28d9;
+    font-size: 7.5px !important;
+    background: rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(124, 58, 237, 0.13);
+    border-radius: 999px;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-status {
+    grid-column: auto !important;
+    align-self: start;
+    justify-self: end !important;
+    margin-top: 0 !important;
+    padding: 4px 7px !important;
+    font-size: 7px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 9px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-actions button {
+    width: 100%;
+    height: 33px !important;
+    min-width: 0;
+    gap: 4px;
+    padding-inline: 5px;
+    border-radius: 9px !important;
+    font-size: 7.5px !important;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-actions button svg {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+  }
+
+  .admin-payment-methods-page .admin-payment-methods-list {
+    padding: 8px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-card {
+    padding: 9px !important;
+    border-radius: 13px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-header {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-card .payment-admin-logo-shell {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 4px !important;
+    border-radius: 10px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-name {
+    font-size: 9px !important;
+    line-height: 1.45 !important;
+    -webkit-line-clamp: 1;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-description {
+    font-size: 7px !important;
+    -webkit-line-clamp: 1;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-status {
+    grid-column: auto !important;
+    align-self: start;
+    justify-self: end !important;
+    margin-top: 0 !important;
+    padding: 4px 6px !important;
+    font-size: 6.5px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 7px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-details p {
+    padding: 6px 7px;
+    font-size: 7px;
+    background: rgba(148, 163, 184, 0.08);
+    border-radius: 8px;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-actions {
+    gap: 4px !important;
+    margin-top: 7px !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-method-actions button {
+    min-width: 0;
+    height: 30px;
+    padding-inline: 2px;
+    font-size: 6.5px;
+  }
+
+  html.dark .admin-payment-methods-page .admin-payment-group-meta {
+    color: #c4b5fd;
+    background: rgba(139, 92, 246, 0.13);
+    border-color: rgba(168, 85, 247, 0.22);
+  }
+}
+
+@media (max-width: 350px) {
+  .admin-payment-methods-page .admin-payment-group-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-header {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+
+  .admin-payment-methods-page .admin-payment-group-card .payment-admin-logo-shell {
+    width: 38px !important;
+    height: 38px !important;
+  }
+}
+
+/* Currency cards: one clear information hierarchy per row on phones. */
+@media (max-width: 640px) {
+  .admin-currencies-page .admin-currencies-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .admin-currencies-page .admin-currency-card {
+    width: 100%;
+    padding: 10px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.065) !important;
+  }
+
+  .admin-currencies-page .admin-currency-header {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px !important;
+  }
+
+  .admin-currencies-page .admin-currency-symbol {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 0.9rem !important;
+    border: 1px solid rgba(124, 58, 237, 0.13);
+    border-radius: 11px !important;
+  }
+
+  .admin-currencies-page .admin-currency-name {
+    font-size: 11px !important;
+    line-height: 1.4;
+  }
+
+  .admin-currencies-page .admin-currency-copy > p {
+    margin-top: 2px;
+    font-size: 8px !important;
+  }
+
+  .admin-currencies-page .admin-currency-fixed {
+    align-self: start;
+    padding: 4px 7px !important;
+    font-size: 6.5px !important;
+  }
+
+  .admin-currencies-page .admin-currency-rate {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 3px 8px;
+    margin-top: 9px !important;
+    padding: 9px 10px !important;
+    border: 1px solid rgba(124, 58, 237, 0.10);
+    border-radius: 11px !important;
+  }
+
+  .admin-currencies-page .admin-currency-rate > p:first-child {
+    grid-column: 1;
+    font-size: 7.5px !important;
+  }
+
+  .admin-currencies-page .admin-currency-rate strong {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0 !important;
+    font-size: 0.95rem !important;
+    white-space: nowrap;
+  }
+
+  .admin-currencies-page .admin-currency-rate > p:last-child {
+    grid-column: 1 / -1;
+    margin-top: 2px !important;
+    padding-top: 5px;
+    font-size: 7px !important;
+    border-top: 1px solid rgba(124, 58, 237, 0.09);
+  }
+
+  .admin-currencies-page .admin-currency-meta {
+    margin-top: 8px !important;
+    padding-inline: 2px;
+  }
+
+  .admin-currencies-page .admin-currency-status {
+    flex: 0 0 auto;
+    padding: 4px 8px !important;
+    font-size: 7px !important;
+  }
+
+  .admin-currencies-page .admin-currency-updated {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 7px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-currencies-page .admin-currency-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 8px !important;
+  }
+
+  .admin-currencies-page .admin-currency-actions button {
+    width: 100%;
+    min-width: 0;
+    height: 32px !important;
+    gap: 4px;
+    padding-inline: 5px;
+    border-radius: 9px !important;
+    font-size: 7.5px !important;
+    white-space: nowrap;
+  }
+
+  .admin-currencies-page .admin-currency-actions button svg {
+    flex: 0 0 auto;
+    width: 12px !important;
+    height: 12px !important;
+  }
+}
+
+@media (max-width: 340px) {
+  .admin-currencies-page .admin-currency-rate {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-currencies-page .admin-currency-rate strong {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 2px !important;
+  }
+
+  .admin-currencies-page .admin-currency-rate > p:last-child {
+    grid-column: 1;
+  }
+}
+
+/* Compact add/edit currency dialog. */
+.admin-currency-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 100dvh;
+  align-items: center !important;
+  justify-content: center !important;
+  padding-top: max(8px, env(safe-area-inset-top)) !important;
+  padding-right: max(8px, env(safe-area-inset-right)) !important;
+  padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  padding-left: max(8px, env(safe-area-inset-left)) !important;
+  backdrop-filter: blur(6px);
+}
+
+.admin-currency-modal {
+  width: min(350px, calc(100vw - 16px)) !important;
+  max-width: 350px !important;
+  max-height: calc(
+    100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom))
+  );
+  padding: 12px !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  border-radius: 19px !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.30);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-currency-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-currency-modal-header {
+  gap: 8px !important;
+  min-height: 34px;
+}
+
+.admin-currency-modal-header > svg {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.admin-currency-modal-header h2 {
+  font-size: 12px !important;
+  line-height: 1.35;
+}
+
+.admin-currency-modal-header p {
+  margin-top: 1px;
+  font-size: 7px !important;
+}
+
+.admin-currency-modal-close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  color: #64748b;
+  place-items: center;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  border-radius: 9px;
+}
+
+.admin-currency-modal-close svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.admin-currency-modal-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  margin-top: 9px !important;
+}
+
+.admin-currency-modal-field {
+  display: block;
+  min-width: 0;
+}
+
+.admin-currency-modal-field > span {
+  margin-bottom: 3px !important;
+  font-size: 7.5px !important;
+}
+
+.admin-currency-modal-input {
+  width: 100%;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding-inline: 8px !important;
+  font-size: 9px !important;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px !important;
+}
+
+.admin-currency-modal-input:focus {
+  border-color: rgba(139, 92, 246, 0.62);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.09);
+}
+
+.admin-currency-modal-debt {
+  grid-column: 1 / -1;
+  min-height: 36px !important;
+  padding-inline: 9px !important;
+  font-size: 8px !important;
+  border-radius: 10px !important;
+}
+
+.admin-currency-modal-debt input {
+  width: 15px;
+  height: 15px;
+  accent-color: #7c3aed;
+}
+
+.admin-currency-modal-save {
+  height: 38px !important;
+  margin-top: 9px !important;
+  border-radius: 11px !important;
+  font-size: 9px !important;
+  box-shadow: 0 9px 22px rgba(124, 58, 237, 0.20);
+}
+
+html.dark .admin-currency-modal {
+  border-color: rgba(168, 85, 247, 0.20);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.48),
+    0 0 28px rgba(124, 58, 237, 0.10);
+}
+
+html.dark .admin-currency-modal-close {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+@media (max-width: 340px) {
+  .admin-currency-modal {
+    width: min(326px, calc(100vw - 12px)) !important;
+    padding: 10px !important;
+  }
+
+  .admin-currency-modal-fields {
+    gap: 6px !important;
+  }
+
+  .admin-currency-modal-input {
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 8px !important;
+  }
+}
+
+/* Profit timeline below the administration tools. */
+.admin-dashboard-main .admin-profit-chart-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(16px, 2.2vw, 24px);
+  border: 1px solid rgba(16, 185, 129, 0.20);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(34, 211, 238, 0.14), transparent 32%),
+    radial-gradient(circle at 96% 4%, rgba(168, 85, 247, 0.13), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(245, 253, 250, 0.93));
+  box-shadow:
+    0 22px 55px rgba(15, 118, 110, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.admin-dashboard-main .admin-profit-chart-ambient {
+  position: absolute;
+  z-index: -1;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  opacity: 0.42;
+  filter: blur(55px);
+  pointer-events: none;
+}
+
+.admin-dashboard-main .admin-profit-chart-ambient-one {
+  top: -95px;
+  right: -45px;
+  background: #22d3ee;
+}
+
+.admin-dashboard-main .admin-profit-chart-ambient-two {
+  bottom: -115px;
+  left: -40px;
+  background: #a855f7;
+}
+
+.admin-dashboard-main .admin-profit-chart-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-dashboard-main .admin-profit-chart-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-dashboard-main .admin-profit-chart-heading-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  color: #fff;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #059669, #06b6d4 52%, #7c3aed);
+  box-shadow:
+    0 12px 26px rgba(5, 150, 105, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.admin-dashboard-main .admin-profit-chart-heading-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-dashboard-main .admin-profit-chart-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #059669;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.03em;
+}
+
+.admin-dashboard-main .admin-profit-chart-kicker svg {
+  width: 12px;
+  height: 12px;
+}
+
+.admin-dashboard-main .admin-profit-chart-heading h2 {
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.3rem);
+  font-weight: 950;
+  line-height: 1.45;
+}
+
+.admin-dashboard-main .admin-profit-chart-heading p {
+  margin-top: 1px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-dashboard-main .admin-profit-chart-range {
+  display: inline-flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 11px;
+  color: #6d28d9;
+  font-size: 10px;
+  font-weight: 900;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 7px 18px rgba(76, 29, 149, 0.06);
+}
+
+.admin-dashboard-main .admin-profit-chart-range svg {
+  width: 14px;
+  height: 14px;
+}
+
+.admin-dashboard-main .admin-profit-chart-stats {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 17px;
+}
+
+.admin-dashboard-main .admin-profit-chart-stats article {
+  min-width: 0;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.63);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.admin-dashboard-main .admin-profit-chart-stats article.is-total {
+  border-color: rgba(16, 185, 129, 0.22);
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(236, 254, 255, 0.78));
+}
+
+.admin-dashboard-main .admin-profit-chart-stats span,
+.admin-dashboard-main .admin-profit-chart-stats strong,
+.admin-dashboard-main .admin-profit-chart-stats small {
+  display: block;
+}
+
+.admin-dashboard-main .admin-profit-chart-stats span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.admin-dashboard-main .admin-profit-chart-stats strong {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: clamp(0.95rem, 0.8rem + 0.5vw, 1.25rem);
+  font-weight: 950;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dashboard-main .admin-profit-chart-stats .is-total strong {
+  color: #059669;
+}
+
+.admin-dashboard-main .admin-profit-chart-stats small {
+  margin-top: 1px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dashboard-main .admin-profit-chart-active {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  width: fit-content;
+  min-width: 180px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 14px auto -5px;
+  padding: 6px 12px;
+  color: #475569;
+  border: 1px solid rgba(16, 185, 129, 0.20);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 9px 22px rgba(15, 118, 110, 0.10);
+}
+
+.admin-dashboard-main .admin-profit-chart-active span {
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.admin-dashboard-main .admin-profit-chart-active strong {
+  color: #059669;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.admin-dashboard-main .admin-profit-chart-canvas {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 9px;
+  margin-top: 13px;
+  direction: ltr;
+}
+
+.admin-dashboard-main .admin-profit-chart-y-axis {
+  display: flex;
+  height: 272px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2px 0 34px;
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.admin-dashboard-main .admin-profit-chart-plot {
+  --profit-zero: 100%;
+  position: relative;
+  height: 272px;
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 15px 15px 7px 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(240, 253, 250, 0.34)),
+    repeating-linear-gradient(90deg, transparent 0 54px, rgba(148, 163, 184, 0.035) 54px 55px);
+}
+
+.admin-dashboard-main .admin-profit-chart-grid-line,
+.admin-dashboard-main .admin-profit-chart-zero-line {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+}
+
+.admin-dashboard-main .admin-profit-chart-grid-line {
+  border-top: 1px dashed rgba(148, 163, 184, 0.18);
+}
+
+.admin-dashboard-main .admin-profit-chart-grid-line.is-top {
+  top: 0;
+}
+
+.admin-dashboard-main .admin-profit-chart-grid-line.is-middle {
+  top: calc((100% - 34px) / 2);
+}
+
+.admin-dashboard-main .admin-profit-chart-grid-line.is-bottom {
+  top: calc(100% - 34px);
+}
+
+.admin-dashboard-main .admin-profit-chart-zero-line {
+  top: min(var(--profit-zero), calc(100% - 34px));
+  background: linear-gradient(90deg, transparent, rgba(100, 116, 139, 0.38) 10%, rgba(100, 116, 139, 0.38) 90%, transparent);
+}
+
+.admin-dashboard-main .admin-profit-chart-columns {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  bottom: 34px;
+  left: 0;
+  display: grid;
+  direction: rtl;
+}
+
+.admin-dashboard-main .admin-profit-chart-column {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  color: #10b981;
+  background: transparent;
+  border: 0;
+  border-radius: 12px 12px 4px 4px;
+  outline: none;
+  transition: background-color 170ms ease, box-shadow 170ms ease;
+}
+
+.admin-dashboard-main .admin-profit-chart-column:hover,
+.admin-dashboard-main .admin-profit-chart-column:focus-visible,
+.admin-dashboard-main .admin-profit-chart-column.is-active {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.015));
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.08);
+}
+
+.admin-dashboard-main .admin-profit-chart-column.is-negative {
+  color: #f43f5e;
+}
+
+.admin-dashboard-main .admin-profit-chart-column:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.admin-dashboard-main .admin-profit-chart-bar {
+  position: absolute;
+  top: var(--profit-bar-top);
+  left: 50%;
+  width: min(24px, 46%);
+  min-height: 4px;
+  height: var(--profit-bar-height);
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #34d399 0%, #06b6d4 58%, #8b5cf6 100%);
+  box-shadow:
+    0 7px 17px rgba(16, 185, 129, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  transform-origin: center bottom;
+  animation: admin-profit-bar-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-dashboard-main .admin-profit-chart-column.is-negative .admin-profit-chart-bar {
+  background: linear-gradient(180deg, #fb7185, #e11d48);
+  box-shadow: 0 7px 17px rgba(225, 29, 72, 0.22);
+  transform-origin: center top;
+}
+
+.admin-dashboard-main .admin-profit-chart-dot {
+  position: absolute;
+  z-index: 2;
+  top: var(--profit-dot-top);
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.13), 0 4px 10px rgba(15, 23, 42, 0.14);
+  transition: width 170ms ease, height 170ms ease, box-shadow 170ms ease;
+}
+
+.admin-dashboard-main .admin-profit-chart-column.is-active .admin-profit-chart-dot {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.16), 0 5px 13px rgba(15, 23, 42, 0.16);
+}
+
+.admin-dashboard-main .admin-profit-chart-date {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 2px;
+  left: 2px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 7px;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dashboard-main .admin-profit-chart-column.is-active .admin-profit-chart-date {
+  color: #059669;
+}
+
+.admin-dashboard-main .admin-profit-chart-missing {
+  position: absolute;
+  top: 48%;
+  right: 0;
+  left: 0;
+  color: #cbd5e1;
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-dashboard-main .admin-profit-chart-note {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.admin-dashboard-main .admin-profit-chart-note svg {
+  width: 13px;
+  height: 13px;
+  color: #10b981;
+}
+
+.admin-dashboard-main .admin-profit-chart-loading {
+  display: flex;
+  height: 260px;
+  align-items: end;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.admin-dashboard-main .admin-profit-chart-loading span {
+  width: clamp(14px, 4vw, 34px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.65), rgba(139, 92, 246, 0.52));
+  animation: admin-profit-loading 1s ease-in-out infinite alternate;
+}
+
+.admin-dashboard-main .admin-profit-chart-loading span:nth-child(1) { height: 32%; }
+.admin-dashboard-main .admin-profit-chart-loading span:nth-child(2) { height: 54%; animation-delay: 80ms; }
+.admin-dashboard-main .admin-profit-chart-loading span:nth-child(3) { height: 42%; animation-delay: 160ms; }
+.admin-dashboard-main .admin-profit-chart-loading span:nth-child(4) { height: 76%; animation-delay: 240ms; }
+.admin-dashboard-main .admin-profit-chart-loading span:nth-child(5) { height: 61%; animation-delay: 320ms; }
+.admin-dashboard-main .admin-profit-chart-loading span:nth-child(6) { height: 88%; animation-delay: 400ms; }
+
+.admin-dashboard-main .admin-profit-chart-empty {
+  display: grid;
+  min-height: 230px;
+  margin-top: 18px;
+  place-items: center;
+  align-content: center;
+  color: #94a3b8;
+  text-align: center;
+  border: 1px dashed rgba(148, 163, 184, 0.26);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.admin-dashboard-main .admin-profit-chart-empty svg {
+  width: 34px;
+  height: 34px;
+  color: #10b981;
+}
+
+.admin-dashboard-main .admin-profit-chart-empty strong {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 11px;
+}
+
+.admin-dashboard-main .admin-profit-chart-empty span {
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+html.dark .admin-dashboard-main .admin-profit-chart-panel {
+  border-color: rgba(52, 211, 153, 0.15);
+  background:
+    radial-gradient(circle at 3% 0%, rgba(34, 211, 238, 0.12), transparent 34%),
+    radial-gradient(circle at 96% 4%, rgba(168, 85, 247, 0.15), transparent 36%),
+    linear-gradient(145deg, rgba(7, 18, 31, 0.97), rgba(15, 13, 35, 0.96));
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html.dark .admin-dashboard-main .admin-profit-chart-heading h2,
+html.dark .admin-dashboard-main .admin-profit-chart-stats strong,
+html.dark .admin-dashboard-main .admin-profit-chart-empty strong {
+  color: #f8fafc;
+}
+
+html.dark .admin-dashboard-main .admin-profit-chart-heading p,
+html.dark .admin-dashboard-main .admin-profit-chart-stats span,
+html.dark .admin-dashboard-main .admin-profit-chart-note {
+  color: #94a3b8;
+}
+
+html.dark .admin-dashboard-main .admin-profit-chart-range,
+html.dark .admin-dashboard-main .admin-profit-chart-stats article,
+html.dark .admin-dashboard-main .admin-profit-chart-active,
+html.dark .admin-dashboard-main .admin-profit-chart-loading,
+html.dark .admin-dashboard-main .admin-profit-chart-empty {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+html.dark .admin-dashboard-main .admin-profit-chart-stats article.is-total {
+  border-color: rgba(52, 211, 153, 0.15);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.10), rgba(34, 211, 238, 0.055));
+}
+
+html.dark .admin-dashboard-main .admin-profit-chart-plot {
+  border-color: rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(16, 185, 129, 0.018)),
+    repeating-linear-gradient(90deg, transparent 0 54px, rgba(255, 255, 255, 0.022) 54px 55px);
+}
+
+@keyframes admin-profit-bar-rise {
+  from {
+    opacity: 0;
+    scale: 1 0.08;
+  }
+  to {
+    opacity: 1;
+    scale: 1 1;
+  }
+}
+
+@keyframes admin-profit-loading {
+  from { opacity: 0.34; transform: scaleY(0.72); }
+  to { opacity: 0.9; transform: scaleY(1); }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard-main .admin-profit-chart-panel {
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-heading {
+    gap: 9px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-heading-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 13px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-heading-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-heading h2 {
+    font-size: 12px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-heading p {
+    font-size: 7.5px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-range {
+    width: fit-content;
+    min-height: 30px;
+    align-self: flex-start;
+    padding-inline: 9px;
+    font-size: 8px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 11px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-stats article {
+    min-height: 61px;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-stats article.is-total {
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-stats span {
+    font-size: 7px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-stats strong {
+    font-size: 0.9rem;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-active {
+    width: 100%;
+    min-width: 0;
+    min-height: 32px;
+    margin-top: 10px;
+    padding-inline: 9px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-canvas {
+    grid-template-columns: 39px minmax(0, 1fr);
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-y-axis,
+  .admin-dashboard-main .admin-profit-chart-plot {
+    height: 222px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-y-axis {
+    padding-bottom: 31px;
+    font-size: 6.5px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-plot {
+    border-radius: 11px 11px 5px 5px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-columns {
+    bottom: 31px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-grid-line.is-middle {
+    top: calc((100% - 31px) / 2);
+  }
+
+  .admin-dashboard-main .admin-profit-chart-grid-line.is-bottom {
+    top: calc(100% - 31px);
+  }
+
+  .admin-dashboard-main .admin-profit-chart-zero-line {
+    top: min(var(--profit-zero), calc(100% - 31px));
+  }
+
+  .admin-dashboard-main .admin-profit-chart-bar {
+    width: min(17px, 50%);
+  }
+
+  .admin-dashboard-main .admin-profit-chart-date {
+    display: none;
+    top: calc(100% + 8px);
+    font-size: 6px;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-column:first-child .admin-profit-chart-date,
+  .admin-dashboard-main .admin-profit-chart-column:last-child .admin-profit-chart-date,
+  .admin-dashboard-main .admin-profit-chart-column.is-active .admin-profit-chart-date {
+    display: block;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-note {
+    margin-top: 6px;
+    font-size: 6.5px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .admin-dashboard-main .admin-profit-chart-loading {
+    height: 220px;
+    gap: 7px;
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard-main .admin-profit-chart-bar,
+  .admin-dashboard-main .admin-profit-chart-loading span {
+    animation: none;
+  }
 }

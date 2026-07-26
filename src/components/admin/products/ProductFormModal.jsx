@@ -365,6 +365,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       profitMargin: numericOriginalPrice > 0 ? Number((((numericFinalPrice - numericOriginalPrice) / numericOriginalPrice) * 100).toFixed(2)) : Number(effectiveForm.profitMargin) || 0,
       clearProviderLink: Boolean(effectiveForm.clearProviderLink),
       extraFields: normalizedFields,
+      orderFields: normalizedFields,
       providerId: safeTrim(effectiveForm.providerId),
       providerProductId: safeTrim(effectiveForm.providerProductId),
       providerProductExternalId: optionalTrim(effectiveForm.providerProductExternalId),
@@ -450,9 +451,15 @@ function buildInitialProductForm(product) {
     originalPrice: safeTrim(product?.originalPrice),
     finalPrice: safeTrim(product?.finalPrice),
     providerProductSearch: "",
-    syncLimitsFromProvider: !providerLinked,
-    syncNameFromProvider: false,
-    syncPriceFromProvider: providerLinked ? product?.syncPriceWithProvider !== false : false,
+    syncLimitsFromProvider: providerLinked
+      ? Boolean(product?.syncLimitsFromProvider ?? product?.syncLimits)
+      : true,
+    syncNameFromProvider: providerLinked
+      ? Boolean(product?.syncNameFromProvider ?? product?.syncName)
+      : false,
+    syncPriceFromProvider: providerLinked
+      ? Boolean(product?.syncPriceFromProvider ?? product?.syncPriceWithProvider ?? product?.syncPrice)
+      : false,
   };
 }
 

@@ -712,12 +712,12 @@ function SelectedPaymentCard({ method }) {
 
   return (
     <div className="relative aspect-square w-[112px] shrink-0 rounded-[22px] bg-[linear-gradient(145deg,rgba(139,92,246,0.65),rgba(14,165,233,0.50))] p-px shadow-[0_14px_30px_rgba(76,29,149,0.16)] sm:w-[132px] dark:shadow-[0_16px_34px_rgba(0,0,0,0.30)]">
-      <div className="relative grid h-full w-full place-items-center overflow-hidden rounded-[21px] bg-white p-2 ring-1 ring-white/80 dark:bg-[#090d1d] dark:ring-white/5">
+      <div className="relative grid h-full w-full place-items-center overflow-hidden rounded-[21px] bg-white p-2 ring-1 ring-white/80 dark:bg-white dark:ring-white/20">
         {image ? (
           <img
             src={image}
             alt={method.title}
-            className="h-full w-full rounded-[15px] object-contain"
+            className="h-full w-full rounded-[15px] bg-white object-contain"
           />
         ) : (
           <span className="grid h-full w-full place-items-center rounded-[15px] bg-gradient-to-br from-violet-500/10 to-sky-500/10">

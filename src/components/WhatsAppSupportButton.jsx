@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-const supportNumber = "971527715868";
+const supportNumber = "971529330668";
 
 export default function WhatsAppSupportButton({ className = "", topic = "currency" }) {
   const { t, i18n } = useTranslation("common");

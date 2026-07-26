@@ -1,0 +1,187 @@
+.admin-subagents-tabs {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-subagents-tab {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.045);
+  color: #475569;
+  cursor: pointer;
+  display: grid;
+  font-family: inherit;
+  gap: 7px;
+  grid-template-columns: 31px minmax(0, 1fr) 14px;
+  min-height: 58px;
+  padding: 7px;
+  text-align: right;
+  touch-action: manipulation;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-subagents-tab:hover {
+  background: #faf8ff;
+  border-color: rgba(139, 92, 246, 0.32);
+  box-shadow: 0 9px 22px rgba(109, 40, 217, 0.09);
+  color: #6d28d9;
+  transform: translateY(-1px);
+}
+
+.admin-subagents-tab:active {
+  transform: scale(0.98);
+}
+
+.admin-subagents-tab.is-active {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(59, 130, 246, 0.07));
+  border-color: rgba(124, 58, 237, 0.55);
+  box-shadow:
+    0 0 0 2px rgba(124, 58, 237, 0.07),
+    0 9px 24px rgba(109, 40, 217, 0.12);
+  color: #6d28d9;
+}
+
+.admin-subagents-tab-icon {
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
+  display: inline-flex;
+  height: 31px;
+  justify-content: center;
+  transition: 160ms ease;
+  width: 31px;
+}
+
+.admin-subagents-tab-icon svg {
+  height: 15px;
+  width: 15px;
+}
+
+.admin-subagents-tab:hover .admin-subagents-tab-icon,
+.admin-subagents-tab.is-active .admin-subagents-tab-icon {
+  background: linear-gradient(145deg, #8b5cf6, #6d28d9);
+  border-color: transparent;
+  box-shadow: 0 6px 15px rgba(109, 40, 217, 0.22);
+  color: white;
+}
+
+.admin-subagents-tab-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-subagents-tab-copy b {
+  color: inherit;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.admin-subagents-tab-copy small {
+  color: #94a3b8;
+  font-size: 6.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-top: 1px;
+}
+
+.admin-subagents-tab.is-active .admin-subagents-tab-copy small {
+  color: #7c3aed;
+}
+
+.admin-subagents-tab-arrow {
+  color: #94a3b8;
+  height: 14px;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+  width: 14px;
+}
+
+.admin-subagents-tab:hover .admin-subagents-tab-arrow {
+  color: #7c3aed;
+  transform: translateX(-2px);
+}
+
+.admin-subagents-tab.is-active .admin-subagents-tab-arrow {
+  color: #7c3aed;
+  transform: rotate(-90deg);
+}
+
+html.dark .admin-subagents-tab {
+  background: rgba(17, 24, 39, 0.9);
+  border-color: rgba(148, 163, 184, 0.13);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.16);
+  color: #cbd5e1;
+}
+
+html.dark .admin-subagents-tab:hover,
+html.dark .admin-subagents-tab.is-active {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(30, 64, 175, 0.12));
+  border-color: rgba(167, 139, 250, 0.46);
+  color: #ddd6fe;
+}
+
+html.dark .admin-subagents-tab-icon {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(148, 163, 184, 0.13);
+  color: #94a3b8;
+}
+
+html.dark .admin-subagents-tab.is-active .admin-subagents-tab-copy small {
+  color: #c4b5fd;
+}
+
+@media (max-width: 767px) {
+  .admin-subagents-tabs {
+    gap: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-subagents-tab {
+    border-radius: 12px;
+    gap: 6px;
+    grid-template-columns: 29px minmax(0, 1fr) 12px;
+    min-height: 52px;
+    padding: 6px;
+  }
+
+  .admin-subagents-tab:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .admin-subagents-tab-icon {
+    border-radius: 9px;
+    height: 29px;
+    width: 29px;
+  }
+
+  .admin-subagents-tab-icon svg {
+    height: 14px;
+    width: 14px;
+  }
+
+  .admin-subagents-tab-copy b {
+    font-size: 8px;
+  }
+
+  .admin-subagents-tab-copy small {
+    font-size: 6px;
+  }
+
+  .admin-subagents-tab-arrow {
+    height: 12px;
+    width: 12px;
+  }
+}

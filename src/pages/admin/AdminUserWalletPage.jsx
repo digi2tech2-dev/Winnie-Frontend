@@ -253,13 +253,8 @@ export default function AdminUserWalletPage() {
       return;
     }
 
-    const reason = adjustmentForm.reason.trim();
-    if (!reason) {
-      const message = "يجب كتابة سبب التعديل قبل تنفيذ العملية";
-      setFormErrors((current) => ({ ...current, adjustment: message }));
-      showToast({ type: "error", title: "سبب التعديل مطلوب", message });
-      return;
-    }
+    const reason = adjustmentForm.reason.trim()
+      || (type === "DEDUCT" ? "خصم رصيد بواسطة الإدارة" : "زيادة رصيد بواسطة الإدارة");
 
     const balanceBefore = Number(wallet?.balance || 0);
     const balanceAfter = type === "DEDUCT" ? balanceBefore - amount : balanceBefore + amount;
@@ -284,12 +279,7 @@ export default function AdminUserWalletPage() {
       setFormErrors((current) => ({ ...current, adjustment: "" }));
       await load();
     } catch (requestError) {
-      const missingReason = requestError?.code === "ADJUSTMENT_REASON_REQUIRED" ||
-        requestError?.fieldErrors?.reason ||
-        /reason/i.test(String(requestError?.message || requestError?.userMessage || ""));
-      const message = missingReason
-        ? "يجب كتابة سبب التعديل قبل تنفيذ العملية"
-        : buildAdminActionError(requestError, type === "DEDUCT" ? "خصم الرصيد" : "زيادة الرصيد");
+      const message = buildAdminActionError(requestError, type === "DEDUCT" ? "خصم الرصيد" : "زيادة الرصيد");
       setFormErrors((current) => ({ ...current, adjustment: message }));
       showToast({
         type: "error",
@@ -477,7 +467,7 @@ export default function AdminUserWalletPage() {
                 placeholder="0.00"
               />
             </FormField>
-            <FormField label="سبب التعديل">
+            <FormField label="سبب التعديل (اختياري)">
               <textarea
                 value={adjustmentForm.reason}
                 onChange={(event) => {
@@ -485,7 +475,7 @@ export default function AdminUserWalletPage() {
                   setFormErrors((current) => ({ ...current, adjustment: "" }));
                 }}
                 maxLength={500}
-                placeholder="اكتب سبب الزيادة أو الخصم"
+                placeholder="اتركه فارغًا لاستخدام سبب تلقائي"
                 rows={3}
               />
             </FormField>
@@ -620,13 +610,13 @@ export default function AdminUserWalletPage() {
             <h2 className="text-sm font-black text-slate-950 dark:text-white">سجل المعاملات</h2>
             <p className="text-[9px] font-bold text-slate-400">{pagination.total} حركة في السجل المالي</p>
           </div>
-          <label className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+          <label className="site-filter-search relative w-full sm:w-72">
+            <span className="site-filter-search-icon pointer-events-none"><Search /></span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="ابحث في المعاملات المحملة"
-              className="h-11 w-full rounded-2xl bg-slate-50 pe-9 ps-3 text-[10px] font-black outline-none dark:bg-[#0B1220] dark:text-white"
+              className="site-filter-search-input"
             />
           </label>
         </div>

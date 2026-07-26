@@ -12,6 +12,7 @@ import HeaderSearchOverlay from "./HeaderSearchOverlay";
 import ProductPurchaseModal from "./ProductPurchaseModal";
 import ThemeToggle from "./ThemeToggle";
 import { BrandName } from "./Brand";
+import { canPurchaseProduct } from "../utils/productAvailability";
 
 const purchaseLinks = [
   {
@@ -187,7 +188,10 @@ export default function PublicHeader() {
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onNavigate={navigate}
-        onProductSelect={(product) => setPurchaseItem({ product, category: product.groupTitle })}
+        onProductSelect={(product) => {
+          if (!canPurchaseProduct(product)) return;
+          setPurchaseItem({ product, category: product.groupTitle });
+        }}
         mode="public"
         products={searchProducts}
       />

@@ -22,7 +22,7 @@ const commercialRegistration = "4423622.01";
 const taxNumber = "105156169200001";
 const supportEmail = "Support.winniefun@gmail.com";
 const instagramUrl = "https://www.instagram.com/winnie.cards?utm_source=qr";
-const whatsappUrl = "https://wa.me/971527715868";
+const whatsappUrl = "https://wa.me/971529330668";
 
 const linkIcons = {
   "privacy-policy": ShieldCheck,

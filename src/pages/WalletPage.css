@@ -224,21 +224,6 @@
   opacity: 0.65;
 }
 
-.wallet-page .payment-brand {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: clamp(0.5rem, 1.8vw, 0.68rem);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.wallet-page .payment-brand--default {
-  color: #6d28d9;
-}
-
 .wallet-page .wallet-security-card {
   background:
     radial-gradient(circle at 5% 20%, rgb(139 92 246 / 0.17), transparent 16rem),

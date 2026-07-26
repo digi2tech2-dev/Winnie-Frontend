@@ -74,6 +74,9 @@
     "customerOnlyMessage": "إنشاء الطلبات متصل من مساحة العميل فقط.",
     "catalogRequiredTitle": "كتالوج العميل مطلوب",
     "catalogRequiredMessage": "افتح منتجًا من كتالوج العميل لإنشاء طلب.",
+    "productUnavailableBadge": "غير متوفر",
+    "productUnavailableTitle": "المنتج غير متوفر",
+    "productUnavailableMessage": "هذا المنتج غير متوفر حاليًا للشراء.",
     "topUpTitle": "شحن {{name}}",
     "topUpTitleFallback": "شحن"
   },

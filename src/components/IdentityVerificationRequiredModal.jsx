@@ -2,7 +2,7 @@ import { MessageCircle, ShieldAlert, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export const IDENTITY_VERIFICATION_WHATSAPP_URL =
-  "https://wa.me/971527715868?text=Hello%20Winnie%20Support%2C%20I%20need%20to%20verify%20my%20identity.";
+  "https://wa.me/971529330668?text=Hello%20Winnie%20Support%2C%20I%20need%20to%20verify%20my%20identity.";
 
 export default function IdentityVerificationRequiredModal({ open, reason = "", onClose }) {
   const { t } = useTranslation("common");

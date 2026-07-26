@@ -74,6 +74,9 @@
     "customerOnlyMessage": "Order creation is connected only in the customer area.",
     "catalogRequiredTitle": "Customer catalog required",
     "catalogRequiredMessage": "Open a backend customer catalog product to create an order.",
+    "productUnavailableBadge": "Unavailable",
+    "productUnavailableTitle": "Product unavailable",
+    "productUnavailableMessage": "This product is currently unavailable for purchase.",
     "topUpTitle": "Top up {{name}}",
     "topUpTitleFallback": "Top up"
   },

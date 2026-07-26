@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, BellRing, CheckCheck, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { AlertTriangle, ArrowLeft, ArrowRight, BellRing, CheckCheck, RefreshCw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import EmptyState from "../components/EmptyState";
 import { iconMap } from "../components/icons";
@@ -46,6 +47,7 @@ export default function NotificationsPage({
 }) {
   const [filter, setFilter] = useState("all");
   const [localItems, setLocalItems] = useState([]);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
   const { showToast } = useToast();
   const { isArabic } = useLanguage();
   const { t } = useTranslation("notifications");
@@ -118,12 +120,12 @@ export default function NotificationsPage({
     }
   };
 
-  const removeNotification = async (item) => {
-    if (readOnly || !onDeleteNotification) return;
-    if (!window.confirm(t("confirmDelete"))) return;
+  const removeNotification = async () => {
+    if (readOnly || !onDeleteNotification || !deleteCandidate) return;
 
     try {
-      await onDeleteNotification(item.id);
+      await onDeleteNotification(deleteCandidate.id);
+      setDeleteCandidate(null);
       showToast({
         type: "success",
         title: t("deletedTitle"),
@@ -241,7 +243,7 @@ export default function NotificationsPage({
                         {onDeleteNotification && (
                           <button
                             type="button"
-                            onClick={(event) => { event.stopPropagation(); void removeNotification(item); }}
+                            onClick={(event) => { event.stopPropagation(); setDeleteCandidate(item); }}
                             disabled={actionInFlight}
                             className="interactive-ring grid h-8 w-8 place-items-center rounded-lg border border-red-100 bg-white/60 text-red-500 transition hover:border-red-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-55 dark:border-red-400/20 dark:bg-white/[0.04] dark:text-red-200 dark:hover:bg-red-500/10"
                             title={t("delete")}
@@ -270,7 +272,95 @@ export default function NotificationsPage({
           label={t("common:pagination.pageOf", { page: pagination.page, pages: pagination.pages })}
         />
       )}
+
+      {deleteCandidate && (
+        <DeleteNotificationDialog
+          busy={actionPending === `delete:${deleteCandidate.id}`}
+          isArabic={isArabic}
+          item={deleteCandidate}
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={removeNotification}
+        />
+      )}
     </div>
+  );
+}
+
+function DeleteNotificationDialog({ busy, isArabic, item, onCancel, onConfirm }) {
+  const { t } = useTranslation("notifications");
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !busy) onCancel();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [busy, onCancel]);
+
+  return createPortal(
+    <div
+      dir={isArabic ? "rtl" : "ltr"}
+      className="fixed inset-0 z-[3000] flex min-h-[100dvh] w-screen max-w-none items-center justify-center bg-slate-950/75 p-3 backdrop-blur-[6px] sm:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="notification-delete-title"
+        aria-describedby="notification-delete-description"
+        className="relative max-h-[calc(100dvh-24px)] w-full max-w-[400px] overflow-y-auto rounded-[26px] border border-rose-200/80 bg-white p-5 text-center text-slate-950 shadow-[0_30px_95px_rgba(15,23,42,0.44)] dark:border-rose-400/20 dark:bg-[#111827] dark:text-white sm:p-6"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span aria-hidden="true" className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-rose-500 to-transparent" />
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          aria-label={t("cancelDelete")}
+          className={`absolute top-3.5 grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:bg-rose-500/10 ${isArabic ? "left-3.5" : "right-3.5"}`}
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-[19px] border border-rose-200 bg-rose-500/10 text-rose-600 shadow-[0_12px_30px_rgba(244,63,94,0.14)] dark:border-rose-400/20 dark:text-rose-300">
+          <AlertTriangle className="h-7 w-7" />
+        </span>
+        <h2 id="notification-delete-title" className="mt-4 text-base font-black sm:text-lg">
+          {t("deleteConfirmTitle")}
+        </h2>
+        <p id="notification-delete-description" className="mt-2 text-xs font-bold leading-6 text-slate-500 sm:text-sm dark:text-slate-300">
+          {t("deleteConfirmMessage")}
+        </p>
+
+        <div className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/70 px-4 py-3 dark:border-rose-400/10 dark:bg-rose-500/[0.06]">
+          <p className="line-clamp-2 text-xs font-black leading-6 text-slate-700 dark:text-slate-200">{item.title}</p>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="h-11 rounded-[14px] border border-slate-200 bg-white text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white sm:h-12 sm:text-sm"
+          >
+            {t("cancelDelete")}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-gradient-to-l from-rose-600 to-red-500 text-xs font-black text-white shadow-[0_12px_28px_rgba(244,63,94,0.25)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60 sm:h-12 sm:text-sm"
+          >
+            {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            <span>{busy ? t("deleting") : t("confirmDeleteAction")}</span>
+          </button>
+        </div>
+      </section>
+    </div>,
+    document.body,
   );
 }
 

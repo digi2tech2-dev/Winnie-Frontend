@@ -33,36 +33,103 @@ function normalizeTotals(items = []) {
   });
 }
 
+function firstBoolean(...values) {
+  return values.find((value) => typeof value === "boolean");
+}
+
+function toEntityId(value) {
+  if (!value) return "";
+  return typeof value === "object" ? getItemId(value) : String(value);
+}
+
+function normalizeSubAgentGroup(value, fallbackName = "") {
+  if (!value) return null;
+  if (typeof value === "object") return normalizeAdminGroup(value);
+
+  const id = String(value);
+  return normalizeAdminGroup({
+    _id: id,
+    name: fallbackName || "مجموعة غير معروفة",
+  });
+}
+
 export function normalizeSubAgent(agent = {}) {
-  const id = getItemId(agent);
-  const override = agent.referralCommissionPercentOverride;
+  const populatedUser = agent.user && typeof agent.user === "object"
+    ? agent.user
+    : agent.userId && typeof agent.userId === "object"
+      ? agent.userId
+      : {};
+  const profile = agent.agentProfile && typeof agent.agentProfile === "object"
+    ? agent.agentProfile
+    : {};
+  const userId = toEntityId(agent.userId) || getItemId(populatedUser) || getItemId(agent);
+  const id = getItemId(agent) || userId;
+  const override = agent.referralCommissionPercentOverride ?? profile.referralCommissionPercentOverride;
   const hasOverride = override !== undefined && override !== null;
-  const effectivePercent = toNumber(agent.commissionPercentEffective ?? agent.commissionPercent, 0);
-  const defaultPercent = toNumber(agent.defaultCommissionPercent, 1);
-  const code = agent.code || agent.referralCode || "";
+  const effectivePercent = toNumber(
+    agent.commissionPercentEffective
+      ?? agent.commissionPercent
+      ?? profile.commissionPercentEffective
+      ?? profile.commissionPercent,
+    0,
+  );
+  const defaultPercent = toNumber(agent.defaultCommissionPercent ?? profile.defaultCommissionPercent, 1);
+  const code = agent.code || agent.referralCode || populatedUser.referralCode || "";
+  const rawStatus = String(
+    agent.status
+      || profile.status
+      || (firstBoolean(agent.active, agent.isActive, profile.active, profile.isActive) === false ? "inactive" : "active"),
+  ).toLowerCase();
+  const inactive = ["inactive", "disabled", "blocked", "suspended"].includes(rawStatus);
+  const active = firstBoolean(agent.active, agent.isActive, profile.active, profile.isActive) ?? !inactive;
+  const group = normalizeSubAgentGroup(
+    agent.group || agent.groupId || populatedUser.group || populatedUser.groupId,
+    agent.groupName || populatedUser.groupName,
+  );
+
   return {
     ...agent,
     id,
-    userId: agent.userId || id,
-    active: agent.active !== false,
-    approvedAt: agent.approvedAt || null,
-    approvedAtLabel: agent.approvedAt ? formatDateTime(agent.approvedAt) : "",
+    userId,
+    active,
+    approvedAt: agent.approvedAt || profile.approvedAt || null,
+    approvedAtLabel: agent.approvedAt || profile.approvedAt ? formatDateTime(agent.approvedAt || profile.approvedAt) : "",
     code,
     commissionPercent: effectivePercent,
     commissionPercentEffective: effectivePercent,
     commissionPercentLabel: hasOverride ? `Custom ${toNumber(override, 0)}%` : `Default ${defaultPercent}%`,
     defaultCommissionPercent: defaultPercent,
-    email: agent.email || "",
-    group: normalizeAdminGroup(agent.group),
-    isSubAgent: agent.isSubAgent === true,
-    name: agent.name || "User",
+    email: agent.email || populatedUser.email || "",
+    group,
+    isSubAgent: firstBoolean(agent.isSubAgent, populatedUser.isSubAgent, profile.isSubAgent) ?? true,
+    name: agent.name || populatedUser.name || "User",
     referredUsersCount: toNumber(agent.referredUsersCount, 0),
     referralCommissionPercentOverride: hasOverride ? toNumber(override, 0) : null,
     referralLink: agent.referralLink || buildReferralInviteLink(code),
-    status: agent.status || (agent.active ? "active" : "inactive"),
+    status: active && !inactive ? "active" : "inactive",
     totalPaidCommissions: normalizeTotals(agent.totalPaidCommissions),
     totalPendingCommissions: normalizeTotals(agent.totalPendingCommissions),
     usingDefaultCommission: agent.usingDefaultCommission !== false && !hasOverride,
+  };
+}
+
+function normalizePaginatedRows(response, rows, query = {}) {
+  const metadata = findPaginationMetadata(response.raw) || response.pagination;
+  const pagination = normalizePagination(metadata, {
+    page: query.page,
+    limit: query.limit,
+    total: rows.length,
+  });
+
+  if (metadata || rows.length <= pagination.limit) {
+    return { pagination, rows };
+  }
+
+  const page = Math.min(pagination.pages, Math.max(1, Number(query.page) || 1));
+  const start = (page - 1) * pagination.limit;
+  return {
+    pagination: { ...pagination, page },
+    rows: rows.slice(start, start + pagination.limit),
   };
 }
 
@@ -122,23 +189,38 @@ export async function getSubAgents(token, query = {}) {
     token,
     query: compactObject(query),
   });
-  const subAgents = asArray(response.data?.subAgents || response.data).map(normalizeSubAgent);
+  const normalizedRows = asArray(response.data?.subAgents || response.data).map(normalizeSubAgent);
+  const result = normalizePaginatedRows(response, normalizedRows, query);
   return {
     message: response.message,
-    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
-      page: query.page,
-      limit: query.limit,
-      total: subAgents.length,
-    }),
-    subAgents,
+    pagination: result.pagination,
+    subAgents: result.rows,
   };
 }
 
 export async function updateSubAgent(token, userId, payload = {}) {
-  const response = await apiRequest(`/admin/sub-agents/${userId}`, {
+  const normalizedUserId = toEntityId(userId);
+  if (!normalizedUserId) throw new Error("معرّف الوكيل الفرعي غير صالح.");
+
+  const useDefault = payload.useDefault === true;
+  const commissionPercent = toNumber(
+    payload.commissionPercent ?? payload.referralCommissionPercentOverride,
+    0,
+  );
+  const body = {
+    groupId: toEntityId(payload.groupId) || undefined,
+    status: payload.status,
+    useDefault: typeof payload.useDefault === "boolean" ? payload.useDefault : undefined,
+    commissionPercent: useDefault ? undefined : commissionPercent,
+    referralCommissionPercentOverride: typeof payload.useDefault === "boolean"
+      ? useDefault ? null : commissionPercent
+      : payload.referralCommissionPercentOverride,
+  };
+
+  const response = await apiRequest(`/admin/sub-agents/${encodeURIComponent(normalizedUserId)}`, {
     method: "PATCH",
     token,
-    body: compactObject(payload),
+    body,
   });
   return {
     message: response.message,
@@ -147,19 +229,17 @@ export async function updateSubAgent(token, userId, payload = {}) {
 }
 
 export async function getSubAgentReferredUsers(token, userId, query = {}) {
-  const response = await apiRequest(`/admin/sub-agents/${userId}/referred-users`, {
+  const normalizedUserId = toEntityId(userId);
+  const response = await apiRequest(`/admin/sub-agents/${encodeURIComponent(normalizedUserId)}/referred-users`, {
     token,
     query: compactObject(query),
   });
-  const referredUsers = asArray(response.data?.referredUsers || response.data).map(normalizeReferredUser);
+  const normalizedRows = asArray(response.data?.referredUsers || response.data).map(normalizeReferredUser);
+  const result = normalizePaginatedRows(response, normalizedRows, query);
   return {
     message: response.message,
-    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
-      page: query.page,
-      limit: query.limit,
-      total: referredUsers.length,
-    }),
-    referredUsers,
+    pagination: result.pagination,
+    referredUsers: result.rows,
   };
 }
 
@@ -168,15 +248,12 @@ export async function getSubAgentCommissions(token, query = {}) {
     token,
     query: compactObject(query),
   });
-  const commissions = asArray(response.data?.commissions || response.data).map(normalizeReferralCommission);
+  const normalizedRows = asArray(response.data?.commissions || response.data).map(normalizeReferralCommission);
+  const result = normalizePaginatedRows(response, normalizedRows, query);
   return {
     message: response.message,
-    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
-      page: query.page,
-      limit: query.limit,
-      total: commissions.length,
-    }),
-    commissions,
+    pagination: result.pagination,
+    commissions: result.rows,
   };
 }
 
@@ -185,15 +262,12 @@ export async function getReferralPayouts(token, query = {}) {
     token,
     query: compactObject(query),
   });
-  const payouts = asArray(response.data?.payouts || response.data).map(normalizeReferralPayout);
+  const normalizedRows = asArray(response.data?.payouts || response.data).map(normalizeReferralPayout);
+  const result = normalizePaginatedRows(response, normalizedRows, query);
   return {
     message: response.message,
-    pagination: normalizePagination(findPaginationMetadata(response.raw) || response.pagination, {
-      page: query.page,
-      limit: query.limit,
-      total: payouts.length,
-    }),
-    payouts,
+    pagination: result.pagination,
+    payouts: result.rows,
   };
 }
 

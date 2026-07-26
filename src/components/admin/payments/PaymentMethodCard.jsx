@@ -3,27 +3,27 @@ import { Pencil, Power, RefreshCw, Trash2 } from "lucide-react";
 export default function PaymentMethodCard({ method, onEdit, onDelete, onRefresh, onToggle }) {
   return (
     <article className="admin-payment-method-card rounded-2xl border border-slate-100 bg-slate-50/70 p-2.5 dark:border-white/[0.06] dark:bg-[#0B1220]">
-      <div className="flex items-center gap-2.5">
+      <div className="admin-payment-method-header flex items-center gap-2.5">
         <span className="payment-admin-logo-shell grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl p-1.5">
           <img src={method.imageUrl || method.image || "/logo.png"} alt={method.name} className="h-full w-full object-contain" />
         </span>
-        <div className="min-w-0 flex-1">
-          <h4 className="truncate text-[10px] font-black dark:text-white">{method.name}</h4>
-          <p className="truncate text-[8px] font-bold text-slate-400">{method.description}</p>
+        <div className="admin-payment-method-copy min-w-0 flex-1">
+          <h4 className="admin-payment-method-name text-[10px] font-black dark:text-white">{method.name}</h4>
+          <p className="admin-payment-method-description text-[8px] font-bold text-slate-400">{method.description}</p>
         </div>
-        <span className={`rounded-full px-2 py-1 text-[8px] font-black ${method.active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
+        <span className={`admin-payment-method-status rounded-full px-2 py-1 text-[8px] font-black ${method.active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
           {method.active ? "نشطة" : "غير نشطة"}
         </span>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-1.5 text-[8px] font-bold text-slate-500 dark:text-slate-300">
-        <p className="truncate">الحساب: <b dir="ltr">{method.account || "-"}</b></p>
-        <p className="truncate">البنك: <b>{method.bank || method.gateway || "-"}</b></p>
-        <p className="truncate">المالك: <b>{method.owner || "-"}</b></p>
+      <div className="admin-payment-method-details mt-2 grid grid-cols-2 gap-1.5 text-[8px] font-bold text-slate-500 dark:text-slate-300">
+        <p>الحساب: <b dir="ltr">{method.account || "-"}</b></p>
+        <p>البنك: <b>{method.bank || method.gateway || "-"}</b></p>
+        <p>المالك: <b>{method.owner || "-"}</b></p>
         <p>الرسوم: <b>{Number(method.fee || 0)}%</b></p>
       </div>
 
-      <div className="mt-2 grid grid-cols-4 gap-1">
+      <div className="admin-payment-method-actions mt-2 grid grid-cols-4 gap-1">
         <Button icon={Pencil} label="تعديل" onClick={() => onEdit(method)} />
         <Button icon={Trash2} label="حذف" danger onClick={() => onDelete(method)} />
         <Button icon={RefreshCw} label="تحديث" onClick={() => onRefresh(method)} />

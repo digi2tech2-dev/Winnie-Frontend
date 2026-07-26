@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Coins, Loader2, LockKeyhole, Pencil, Plus, Power, Search, Trash2, X } from "lucide-react";
+import { createPortal } from "react-dom";
 import {
   createAdminCurrency,
   deleteAdminCurrency,
@@ -132,13 +133,13 @@ export default function AdminCurrenciesPage() {
 
       <section className="admin-currencies-search rounded-[23px] border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#111827]">
         <h2 className="text-sm font-black dark:text-white">عملات الخلفية</h2>
-        <label className="relative mt-3 block">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+        <label className="site-filter-search relative mt-3 block">
+          <span className="site-filter-search-icon"><Search /></span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="ابحث عن عملة بالاسم أو الرمز"
-            className="h-11 w-full rounded-2xl bg-slate-50 pe-9 ps-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white"
+            className="site-filter-search-input"
           />
         </label>
       </section>
@@ -226,16 +227,16 @@ function CurrencyCard({ currency, onDelete, onEdit, onToggle }) {
 
   return (
     <article className="admin-currency-card rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
-      <div className="flex items-center gap-3">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-500/10 text-lg font-black text-violet-700 dark:text-violet-200">
+      <div className="admin-currency-header flex items-center gap-3">
+        <span className="admin-currency-symbol grid h-12 w-12 place-items-center rounded-2xl bg-violet-500/10 text-lg font-black text-violet-700 dark:text-violet-200">
           {currency.symbol}
         </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-black dark:text-white">{currency.name}</h3>
+        <div className="admin-currency-copy min-w-0 flex-1">
+          <h3 className="admin-currency-name truncate text-sm font-black dark:text-white">{currency.name}</h3>
           <p dir="ltr" className="text-right text-[9px] font-black text-violet-600">{currency.code}</p>
         </div>
         {fixed && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[7px] font-black text-slate-500 dark:bg-white/[0.06]">
+          <span className="admin-currency-fixed inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[7px] font-black text-slate-500 dark:bg-white/[0.06]">
             <LockKeyhole className="h-2.5 w-2.5" />
             ثابت
           </span>
@@ -252,11 +253,11 @@ function CurrencyCard({ currency, onDelete, onEdit, onToggle }) {
         </p>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <span className={`rounded-full px-2 py-1 text-[8px] font-black ${currency.isActive ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
+      <div className="admin-currency-meta mt-3 flex items-center justify-between gap-2">
+        <span className={`admin-currency-status rounded-full px-2 py-1 text-[8px] font-black ${currency.isActive ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
           {currency.isActive ? "نشطة" : "غير نشطة"}
         </span>
-        <span className="text-[8px] font-bold text-slate-400">{currency.updatedAtLabel}</span>
+        <span className="admin-currency-updated text-[8px] font-bold text-slate-400">{currency.updatedAtLabel}</span>
       </div>
 
       <div className="admin-currency-actions mt-3 grid grid-cols-3 gap-2">
@@ -310,34 +311,39 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-[150] grid place-items-center bg-slate-950/65 p-4">
-      <section className="w-full max-w-[460px] rounded-[26px] bg-white p-4 dark:bg-[#111827]">
-        <div className="flex items-center gap-3">
+  const modal = (
+    <div className="admin-currency-modal-overlay fixed inset-0 z-[150] grid place-items-center bg-slate-950/65 p-4">
+      <section
+        className="admin-currency-modal w-full max-w-[460px] rounded-[26px] bg-white p-4 dark:bg-[#111827]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-currency-modal-title"
+      >
+        <div className="admin-currency-modal-header flex items-center gap-3">
           <Coins className="h-5 w-5 text-violet-500" />
           <div className="flex-1">
-            <h2 className="text-sm font-black dark:text-white">{exists ? "تعديل سعر الصرف" : "إضافة العملة"}</h2>
+            <h2 id="admin-currency-modal-title" className="text-sm font-black dark:text-white">{exists ? "تعديل سعر الصرف" : "إضافة العملة"}</h2>
             <p className="text-[8px] text-slate-400">{form.code || "جديدة"} · مسار عملة الخادم</p>
           </div>
-          <button type="button" onClick={onClose} disabled={busy}><X className="h-4 w-4" /></button>
+          <button className="admin-currency-modal-close" type="button" onClick={onClose} disabled={busy} aria-label="إغلاق"><X className="h-4 w-4" /></button>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="admin-currency-modal-fields mt-4 grid gap-3 sm:grid-cols-2">
           <Field disabled={exists} label="الرمز" value={form.code} onChange={(value) => set("code", value.toUpperCase().slice(0, 3))} />
           <Field label="الاسم" value={form.name} onChange={(value) => set("name", value)} />
           <Field label="الرمز المختصر" value={form.symbol} onChange={(value) => set("symbol", value)} />
           <Field label="سعر المنصة" type="number" value={form.platformRate} onChange={(value) => set("platformRate", value)} />
           <Field label="سعر السوق" type="number" value={form.marketRate} onChange={(value) => set("marketRate", value)} />
           <Field label="نسبة الهامش %" type="number" value={form.markupPercentage} onChange={(value) => set("markupPercentage", value)} />
-          <label>
+          <label className="admin-currency-modal-field">
               <span className="mb-1 block text-[9px] font-black text-slate-500">الحالة</span>
-              <select value={form.isActive ? "yes" : "no"} onChange={(event) => set("isActive", event.target.value === "yes")} className={input}>
+              <select value={form.isActive ? "yes" : "no"} onChange={(event) => set("isActive", event.target.value === "yes")} className={`${input} admin-currency-modal-input`}>
                 <option value="yes">نشطة</option>
                 <option value="no">غير نشطة</option>
               </select>
           </label>
           {exists && (
-            <label className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[9px] font-black text-slate-600 dark:border-white/10 dark:bg-[#0B1220] dark:text-white">
+            <label className="admin-currency-modal-debt flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[9px] font-black text-slate-600 dark:border-white/10 dark:bg-[#0B1220] dark:text-white">
               <span>تعديل أرصدة الديون</span>
               <input type="checkbox" checked={form.applyDebtAdjustment} onChange={(event) => set("applyDebtAdjustment", event.target.checked)} />
             </label>
@@ -348,20 +354,22 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
           type="button"
           disabled={busy}
           onClick={save}
-          className="mt-4 h-11 w-full rounded-2xl bg-violet-600 text-[10px] font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="admin-currency-modal-save mt-4 h-11 w-full rounded-2xl bg-violet-600 text-[10px] font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "جارٍ التنفيذ..." : exists ? "حفظ التعديل" : "إضافة العملة"}
         </button>
       </section>
     </div>
   );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
 function Field({ disabled = false, label, type = "text", value, onChange }) {
   return (
-    <label>
+    <label className="admin-currency-modal-field">
       <span className="mb-1 block text-[9px] font-black text-slate-500">{label}</span>
-      <input disabled={disabled} type={type} value={value} onChange={(event) => onChange(event.target.value)} className={`${input} disabled:cursor-not-allowed disabled:opacity-70`} />
+      <input disabled={disabled} type={type} value={value} onChange={(event) => onChange(event.target.value)} className={`${input} admin-currency-modal-input disabled:cursor-not-allowed disabled:opacity-70`} />
     </label>
   );
 }

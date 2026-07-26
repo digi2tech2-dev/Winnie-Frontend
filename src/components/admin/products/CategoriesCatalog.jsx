@@ -1,4 +1,4 @@
-import { Filter, LayoutGrid, MoreVertical, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronDown, Filter, LayoutGrid, MoreVertical, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const number = (value) => Number(value || 0).toLocaleString("ar-EG-u-nu-latn");
@@ -73,24 +73,41 @@ export default function CategoriesCatalog({ mainCategories, subCategories, produ
 }
 
 function CategoryPanel({ activeOnly, addLabel, children, icon: Icon, onAdd, onQuery, onToggleActive, query, title }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <section className="admin-products-panel relative overflow-hidden rounded-[22px] border border-[#17327b] bg-[#030b24] p-3 shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_18px_50px_rgba(0,0,0,0.28),0_0_34px_rgba(37,99,235,0.08)] sm:p-4">
       <span className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-violet-600/[0.07] blur-3xl" />
       <header className="relative flex min-w-0 items-center gap-3 px-1 py-2 sm:gap-4 sm:px-2">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-fuchsia-500/60 bg-violet-500/10 text-fuchsia-300 shadow-[0_0_18px_rgba(192,38,211,0.22)] sm:h-11 sm:w-11"><Icon className="h-5 w-5" /></span>
-        <h2 className="min-w-0 flex-1 whitespace-nowrap text-lg font-black text-white sm:text-2xl">{title}</h2>
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((value) => !value)}
+          className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-right outline-none focus-visible:ring-2 focus-visible:ring-violet-400 sm:gap-4"
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-fuchsia-500/60 bg-violet-500/10 text-fuchsia-300 shadow-[0_0_18px_rgba(192,38,211,0.22)] transition group-hover:bg-violet-500/20 sm:h-11 sm:w-11"><Icon className="h-5 w-5" /></span>
+          <span className="min-w-0 flex-1">
+            <h2 className="text-base font-black leading-tight text-white sm:text-2xl">{title}</h2>
+            <span className="mt-1 block text-[8px] font-bold text-slate-400 sm:text-[9px]">{isOpen ? "اضغط للإغلاق" : "اضغط للفتح"}</span>
+          </span>
+          <ChevronDown className={`h-5 w-5 shrink-0 text-fuchsia-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        </button>
         <button type="button" onClick={onAdd} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-fuchsia-400/80 bg-gradient-to-l from-violet-600/35 to-blue-600/30 px-2.5 text-[10px] font-black text-white shadow-[0_0_16px_rgba(192,38,211,0.28)] transition hover:border-fuchsia-300 hover:shadow-[0_0_24px_rgba(192,38,211,0.4)] sm:gap-2 sm:px-4 sm:text-xs"><Plus className="h-4 w-4" />{addLabel}</button>
       </header>
-      <div className="relative mt-4 flex flex-wrap items-center gap-2 px-1 sm:px-2">
-        <label className="relative min-w-[210px] flex-1 sm:max-w-sm">
-          <span className="pointer-events-none absolute left-1 top-1 grid h-8 w-8 place-items-center rounded-md border border-violet-500/40 bg-violet-500/15 text-violet-300"><Search className="h-4 w-4" /></span>
-          <input type="text" value={query} onChange={(event) => onQuery(event.target.value)} aria-label={`البحث في ${title}`} placeholder={title === "الأقسام الرئيسية" ? "ابحث باسم القسم الرئيسي" : "ابحث باسم القسم الفرعي"} className="admin-products-panel-input h-10 w-full rounded-lg border border-[#1a2e5b] bg-[#02081b] py-0 pl-11 pr-3 text-[11px] font-bold text-white outline-none placeholder:text-slate-500 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/15" />
-        </label>
-        <button type="button" onClick={onToggleActive} className={`admin-products-panel-filter inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-[11px] font-black transition ${activeOnly ? "border-fuchsia-500/70 bg-fuchsia-500/15 text-fuchsia-200" : "border-[#1a2e5b] bg-[#060d23] text-slate-300 hover:border-violet-500/60"}`}><Filter className="h-4 w-4" />فلترة</button>
-      </div>
-      <div className="admin-products-panel-table relative mt-3 w-full max-w-full overflow-hidden rounded-xl border border-[#142654] bg-[#02091d] md:overflow-x-auto">
-        {children}
-      </div>
+      {isOpen ? (
+        <>
+          <div className="relative mt-4 flex flex-wrap items-center gap-2 px-1 sm:px-2">
+            <label className="site-filter-search relative min-w-0 flex-[1_1_210px] sm:max-w-sm">
+              <span className="site-filter-search-icon pointer-events-none"><Search className="h-4 w-4" /></span>
+              <input type="text" value={query} onChange={(event) => onQuery(event.target.value)} aria-label={`البحث في ${title}`} placeholder={title === "الأقسام الرئيسية" ? "ابحث باسم القسم الرئيسي" : "ابحث باسم القسم الفرعي"} className="site-filter-search-input admin-products-panel-input" />
+            </label>
+            <button type="button" onClick={onToggleActive} className={`admin-products-panel-filter inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-[11px] font-black transition ${activeOnly ? "border-fuchsia-500/70 bg-fuchsia-500/15 text-fuchsia-200" : "border-[#1a2e5b] bg-[#060d23] text-slate-300 hover:border-violet-500/60"}`}><Filter className="h-4 w-4" />فلترة</button>
+          </div>
+          <div className="admin-products-panel-table relative mt-3 w-full max-w-full overflow-hidden rounded-xl border border-[#142654] bg-[#02091d] md:overflow-x-auto">
+            {children}
+          </div>
+        </>
+      ) : null}
     </section>
   );
 }
@@ -121,5 +138,11 @@ function SharedColumnWidths() {
   return <colgroup><col className="w-[30%]" /><col className="w-[22%]" /><col className="w-[18%]" /><col className="w-[14%]" /><col className="w-[16%]" /></colgroup>;
 }
 
-function Th({ children }) { return <th className="whitespace-nowrap bg-[#060e29] px-5 py-3.5 text-[10px] font-black text-slate-400">{children}</th>; }
+function Th({ children }) {
+  return (
+    <th className="admin-products-table-heading whitespace-nowrap px-5 py-3.5 text-[10px] font-black">
+      {children}
+    </th>
+  );
+}
 function Td({ children }) { return <td className="whitespace-nowrap px-5 py-3 text-xs font-bold text-slate-200">{children}</td>; }

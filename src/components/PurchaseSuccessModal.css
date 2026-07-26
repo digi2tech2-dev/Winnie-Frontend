@@ -1,7 +1,7 @@
 .charge-success-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 100200;
   isolation: isolate;
   display: flex;
   overflow: hidden;

@@ -79,7 +79,6 @@ export default function ProductsManagementPage() {
     [mainCategories, subCategories],
   );
   const mainById = useMemo(() => Object.fromEntries(mainCategories.map((item) => [item.id, item])), [mainCategories]);
-  const subById = useMemo(() => Object.fromEntries(subCategories.map((item) => [item.id, item])), [subCategories]);
   const filteredProducts = useMemo(() => filterProducts(products, appliedFilters), [appliedFilters, products]);
   const activeFiltersCount = countActiveFilters(appliedFilters);
 
@@ -337,9 +336,10 @@ export default function ProductsManagementPage() {
       const result = await toggleAdminProduct(token, product.id, categoryLookup);
       applyProductToState(result.product);
       await loadCatalog({ silent: true });
+      const isActive = result.product.isActive !== false;
       showToast({
-        type: result.product.isActive ? "success" : "warning",
-        title: result.product.isActive ? "تم تفعيل المنتج" : "تم تعطيل المنتج",
+        type: isActive ? "success" : "warning",
+        title: isActive ? "تم تفعيل المنتج" : "تم إيقاف المنتج مؤقتًا",
         message: result.message || result.product.name,
       });
     } catch (error) {
@@ -494,13 +494,13 @@ export default function ProductsManagementPage() {
             {productsLoading ? <ProductCardsSkeleton /> : filteredProducts.length ? (
               <div className="admin-products-panel-table relative w-full max-w-full rounded-xl border border-[#142654] bg-[#02091d] md:overflow-x-auto">
                 <table className="hidden w-full min-w-[900px] table-fixed text-right md:table">
-                  <thead><tr><ProductTh className="w-[28%]">المنتج</ProductTh><ProductTh>القسم الفرعي</ProductTh><ProductTh>السعر</ProductTh><ProductTh>المخزون</ProductTh><ProductTh>الحالة</ProductTh><ProductTh className="w-36">الإجراءات</ProductTh></tr></thead>
+                  <thead><tr><ProductTh className="w-[28%]">المنتج</ProductTh><ProductTh>القسم الرئيسي</ProductTh><ProductTh>السعر</ProductTh><ProductTh>حدود الطلب</ProductTh><ProductTh>الحالة</ProductTh><ProductTh className="w-36">الإجراءات</ProductTh></tr></thead>
                   <tbody>{filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} mainCategory={mainById[product.mainCategoryId]} subCategory={subById[product.subCategoryId]} provider={{ name: product.providerName || (product.isProviderLinked ? "مرتبط بمورد" : "منتج يدوي") }} onEdit={openProductForm} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
+                    <ProductCard key={product.id} product={product} mainCategory={mainById[product.mainCategoryId]} provider={{ name: product.providerName || (product.isProviderLinked ? "مرتبط بمورد" : "منتج يدوي") }} onEdit={openProductForm} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
                   ))}</tbody>
                 </table>
                 <div className="divide-y divide-[#142654] md:hidden">{filteredProducts.map((product) => (
-                  <ProductMobileCard key={product.id} product={product} subCategory={subById[product.subCategoryId]} onEdit={openProductForm} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
+                  <ProductMobileCard key={product.id} product={product} mainCategory={mainById[product.mainCategoryId]} onEdit={openProductForm} onDelete={(item) => requestDelete("product", item)} onProviderLink={openProviderLink} onProviderSync={requestProviderSync} onTogglePause={togglePause} actionBusy={Boolean(actionId)} />
                 ))}</div>
               </div>
             ) : (

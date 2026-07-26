@@ -54,6 +54,7 @@ export default function CustomerLayout() {
   const location = useLocation();
   const isAboutPage = location.pathname === "/customer/about";
   const isWalletTopUpPage = location.pathname.startsWith("/customer/wallet/top-up/");
+  const isProfilePage = location.pathname.endsWith("/profile");
   const usesFullFooter = location.pathname === "/customer/dashboard";
   const identityVerificationRequired = user?.identityVerificationRequired === true;
   const showIdentityPrompt = identityVerificationRequired && !authLoading && (!identityPromptDismissed || identityPromptForced);
@@ -289,11 +290,15 @@ export default function CustomerLayout() {
                 ? "winnie-page-canvas pb-28 pt-4 sm:pt-6 xl:pb-12"
                 : `winnie-page-canvas customer-app-main mx-auto w-full max-w-[1440px] px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${
                     usesFullFooter ? "customer-home-main pb-4 sm:pb-5 xl:pb-6" : "pb-28 xl:pb-12"
-                  }`
+                  } ${isProfilePage ? "customer-profile-main" : ""}`
             }
           >
             <BackButton
-              className={isAboutPage ? "mx-auto max-w-[1120px] px-4 sm:px-6 lg:px-8" : ""}
+              className={
+                isAboutPage
+                  ? "mx-auto -mt-4 max-w-[1120px] px-4 sm:-mt-6 sm:px-6 lg:px-8"
+                  : "-mt-4 sm:-mt-6"
+              }
               fallbackPath="/customer/dashboard"
               hiddenPaths={[
                 "/",
@@ -323,7 +328,10 @@ export default function CustomerLayout() {
               />
             </div>
           </main>
-          <SiteFooter simple={!usesFullFooter} className="pb-28 xl:pb-8" />
+          <SiteFooter
+            simple={!usesFullFooter}
+            className={`${usesFullFooter ? "customer-home-footer" : ""} pb-28 xl:pb-8`}
+          />
           <CustomerBottomNav />
         </div>
       </div>

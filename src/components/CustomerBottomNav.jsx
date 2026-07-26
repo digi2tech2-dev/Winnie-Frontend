@@ -16,7 +16,7 @@ export default function CustomerBottomNav({ basePath = "/customer", translate = 
     path: item.path.replace("/customer", basePath),
   }));
   return (
-    <nav aria-label={t("nav.mobileNavigation")} className="fixed bottom-2 left-3 right-3 z-50 rounded-[22px] border border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-1.5 py-1.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl transition-colors duration-300 dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] xl:hidden">
+    <nav aria-label={t("nav.mobileNavigation")} className="customer-bottom-nav fixed bottom-2 left-3 right-3 z-50 rounded-[22px] border border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-1.5 py-1.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl transition-colors duration-300 dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] xl:hidden">
       <div className="grid grid-cols-5 items-center gap-1">
         {navItems.slice(0, 2).map((item) => (
           <BottomItem key={item.path} item={item} />

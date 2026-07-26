@@ -137,7 +137,7 @@ export default function SettingsPage({
         </SettingsPanel>
       </section>
 
-      <div className="sticky bottom-24 z-20 grid grid-cols-[1fr_auto] gap-2 rounded-[20px] border border-slate-200 bg-white/90 p-2.5 shadow-[0_16px_45px_rgba(15,23,42,0.14)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1220]/92 xl:bottom-4">
+      <div className="sticky bottom-24 z-20 grid grid-cols-[1fr_auto] gap-2 bg-transparent p-0 xl:bottom-4">
         <button
           type="button"
           disabled={saveDisabled || saveInFlight}

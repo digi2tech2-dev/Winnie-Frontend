@@ -325,7 +325,6 @@ function PaymentMethodCard({ method, onSelect, selected = false }) {
     method.logo ||
     "";
   const providerName = method.title || method.name;
-  const providerInitials = getProviderInitials(providerName);
 
   return (
     <button
@@ -338,9 +337,7 @@ function PaymentMethodCard({ method, onSelect, selected = false }) {
       className={`payment-method-card ${imageUrl ? "payment-method-card--image" : "payment-method-card--fallback"} group relative flex min-w-0 cursor-pointer flex-col items-center overflow-hidden rounded-[14px] border text-center outline-none transition duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8FCFF] disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-[#020615] ${selected ? "payment-method-selected" : ""}`}
     >
       <span className="payment-method-logo-shell relative flex w-full min-h-0 flex-1 items-center justify-center rounded-[11px]">
-        <span className="payment-method-fallback absolute inset-0 grid place-items-center rounded-[10px]" aria-hidden="true">
-          <ProviderBrandFallback name={providerName} initials={providerInitials} />
-        </span>
+        <span className="payment-method-fallback absolute inset-0 rounded-[10px]" aria-hidden="true" />
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -367,21 +364,6 @@ function PaymentMethodCard({ method, onSelect, selected = false }) {
       ) : null}
     </button>
   );
-}
-
-function ProviderBrandFallback({ initials, name }) {
-  return (
-    <span className="payment-brand payment-brand--default inline-flex items-center gap-1" title={name} aria-label={name}>
-      <CreditCard className="h-3.5 w-3.5" />
-      <span>{initials}</span>
-    </span>
-  );
-}
-
-function getProviderInitials(name = "") {
-  const words = String(name).trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return "PM";
-  return words.slice(0, 2).map((word) => word[0]).join("");
 }
 
 function SecurityPanel() {

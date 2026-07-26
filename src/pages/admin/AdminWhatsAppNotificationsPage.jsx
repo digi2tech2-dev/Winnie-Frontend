@@ -1,5 +1,23 @@
 import { useEffect, useState } from "react";
-import { MessageCircle, Plus, RefreshCw, RotateCcw, Send, Trash2 } from "lucide-react";
+import {
+  Activity,
+  BellRing,
+  Clock3,
+  Edit3,
+  Info,
+  MessageCircle,
+  Plus,
+  Radio,
+  RefreshCw,
+  RotateCcw,
+  Send,
+  Server,
+  Trash2,
+  UserRoundPlus,
+  UsersRound,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ToastProvider";
 import { formatDateTime } from "../../api/adapters";
@@ -13,6 +31,7 @@ import {
   sendAdminWhatsAppRecipientTest,
   updateAdminWhatsAppRecipient,
 } from "../../api/whatsappNotifications";
+import "../../styles/admin-whatsapp-notifications.css";
 
 const defaultPreferences = {
   successfulPayment: true,
@@ -28,11 +47,69 @@ const preferenceLabels = {
   successfulPayment: "دفع ناجح",
   manualDepositPending: "إيداع قيد المراجعة",
   providerOrderFailed: "فشل المورد",
-  paymentWebhookError: "خطأ Webhook",
+  paymentWebhookError: "خطأ إشعار الدفع التلقائي",
   financialDayClosed: "تقفيل اليوم",
   largeWalletAdjustment: "تعديل محفظة كبير",
   providerBalanceWarning: "تحذير رصيد مورد",
 };
+
+const deliveryStatusLabels = {
+  pending: "قيد الانتظار",
+  queued: "في قائمة الانتظار",
+  processing: "جارٍ الإرسال",
+  sent: "تم الإرسال",
+  delivered: "تم التسليم",
+  failed: "فشل الإرسال",
+  skipped: "تم التجاوز",
+  enabled: "مفعّلة",
+  disabled: "معطّلة",
+  reachable: "متصلة",
+  connected: "متصلة",
+  disconnected: "غير متصلة",
+  unknown: "غير معروفة",
+  configured: "مضبوطة",
+  missing: "غير مضبوطة",
+};
+
+const eventTypeLabels = {
+  ...preferenceLabels,
+  successful_payment: preferenceLabels.successfulPayment,
+  manual_deposit_pending: preferenceLabels.manualDepositPending,
+  provider_order_failed: preferenceLabels.providerOrderFailed,
+  payment_webhook_error: preferenceLabels.paymentWebhookError,
+  financial_day_closed: preferenceLabels.financialDayClosed,
+  large_wallet_adjustment: preferenceLabels.largeWalletAdjustment,
+  provider_balance_warning: preferenceLabels.providerBalanceWarning,
+};
+
+const statusFilterOptions = [
+  { value: "", label: "كل الحالات" },
+  { value: "pending", label: "قيد الانتظار" },
+  { value: "sent", label: "تم الإرسال" },
+  { value: "failed", label: "فشل الإرسال" },
+  { value: "skipped", label: "تم التجاوز" },
+];
+
+const eventFilterOptions = [
+  { value: "", label: "كل أنواع الأحداث" },
+  ...Object.entries(preferenceLabels).map(([value, label]) => ({ value, label })),
+];
+
+const recipientFilterOptions = [
+  { value: "", label: "كل أنواع المستلمين" },
+  { value: "customer", label: "العملاء" },
+  { value: "admin", label: "الإدارة" },
+];
+
+function translateDeliveryStatus(value) {
+  if (!value) return "-";
+  return deliveryStatusLabels[String(value).trim().toLowerCase()] || "حالة غير معروفة";
+}
+
+function translateEventType(value) {
+  if (!value) return "حدث غير محدد";
+  return eventTypeLabels[value] || eventTypeLabels[String(value).trim().toLowerCase()] || "حدث إشعار واتساب";
+}
 
 const emptyForm = { id: "", name: "", phone: "", enabled: true, eventPreferences: defaultPreferences };
 
@@ -118,164 +195,345 @@ export default function AdminWhatsAppNotificationsPage() {
   }, "تم تحديث السجلات");
 
   return (
-    <div dir="rtl" className="admin-whatsapp-page mx-auto max-w-[1180px] space-y-4 pb-8 text-right">
-      <section className="admin-whatsapp-hero rounded-[24px] border border-emerald-100 bg-white/95 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
-              <MessageCircle className="h-6 w-6" />
-            </span>
-            <div>
-              <h1 className="text-2xl font-black text-slate-950 dark:text-white">إشعارات واتساب</h1>
-              <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">إدارة OpenWA والمستلمين والسجلات التشغيلية.</p>
-            </div>
+    <div dir="rtl" className="wa-admin-page">
+      <section className="wa-admin-hero">
+        <span className="wa-admin-hero-glow is-one" aria-hidden="true" />
+        <span className="wa-admin-hero-glow is-two" aria-hidden="true" />
+        <div className="wa-admin-hero-main">
+          <span className="wa-admin-brand-icon" aria-hidden="true">
+            <MessageCircle />
+          </span>
+          <div className="wa-admin-hero-copy">
+            <span className="wa-admin-eyebrow">مركز التواصل الفوري</span>
+            <h1>إشعارات واتساب</h1>
+            <p>تابع حالة الخدمة، ونظّم المستلمين، وراجع جميع عمليات الإرسال من مكان واحد.</p>
           </div>
-          <button onClick={loadAll} disabled={loading || busy} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
-            <RefreshCw className="h-4 w-4" /> تحديث الحالة
+          <span className={`wa-admin-connection-chip${status?.canReachOpenWA ? " is-online" : ""}`}>
+            {status?.canReachOpenWA ? <Wifi /> : <WifiOff />}
+            {status?.canReachOpenWA ? "الخدمة متصلة" : "الخدمة غير متصلة"}
+          </span>
+          <button type="button" onClick={loadAll} disabled={loading || busy} className="wa-admin-refresh">
+            <RefreshCw className={loading ? "animate-spin" : ""} />
+            {loading ? "جارٍ التحديث..." : "تحديث البيانات"}
           </button>
+        </div>
+
+        <div className="wa-admin-overview">
+          <OverviewCard
+            icon={status?.canReachOpenWA ? Wifi : WifiOff}
+            label="حالة الاتصال"
+            value={status?.canReachOpenWA ? "متصلة" : "غير متصلة"}
+            tone={status?.canReachOpenWA ? "green" : "red"}
+          />
+          <OverviewCard icon={UsersRound} label="مستلمو الإدارة" value={`${recipients.length} مستلم`} tone="violet" />
+          <OverviewCard icon={BellRing} label="السجلات المعروضة" value={`${logs.length} سجل`} tone="blue" />
+          <OverviewCard
+            icon={Server}
+            label="جلسة الإرسال"
+            value={status?.sessionIdConfigured ? "مضبوطة" : "غير مضبوطة"}
+            tone={status?.sessionIdConfigured ? "green" : "orange"}
+          />
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <Panel title="OpenWA Status">
-          <StatusRow label="Enabled" value={status?.enabled ? "Enabled" : "Disabled"} tone={status?.enabled ? "good" : "warn"} />
-          <StatusRow label="Session id" value={status?.sessionIdConfigured ? status?.sessionId || "Configured" : "Missing"} />
-          <StatusRow label="Connection" value={status?.canReachOpenWA ? status?.status || "reachable" : "unknown"} tone={status?.canReachOpenWA ? "good" : "warn"} />
-          <StatusRow label="Last checked" value={formatDateTime(lastChecked, "ar-EG-u-nu-latn")} />
-          {status?.lastError && <p className="rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">{status.lastError}</p>}
+      <section className="wa-admin-primary-grid">
+        <Panel
+          className="wa-admin-status-panel"
+          icon={Radio}
+          title="حالة خدمة واتساب"
+          description="معلومات الاتصال والجلسة الحالية"
+        >
+          <div className="wa-admin-status-list">
+            <StatusRow label="حالة التشغيل" value={status?.enabled ? "مفعّلة" : "معطّلة"} tone={status?.enabled ? "good" : "warn"} />
+            <StatusRow label="حالة الاتصال" value={status?.canReachOpenWA ? translateDeliveryStatus(status?.status || "reachable") : "غير معروفة"} tone={status?.canReachOpenWA ? "good" : "warn"} />
+            <StatusRow label="معرّف الجلسة" value={status?.sessionIdConfigured ? status?.sessionId || "مضبوط" : "غير مضبوط"} />
+            <StatusRow label="آخر فحص" value={formatDateTime(lastChecked, "ar-EG-u-nu-latn")} />
+          </div>
+          {status?.lastError ? (
+            <div className="wa-admin-service-alert">
+              <WifiOff />
+              <p>يوجد خطأ في الاتصال بخدمة واتساب. راجع إعدادات الخدمة في الخادم.</p>
+            </div>
+          ) : (
+            <div className="wa-admin-service-note">
+              <Info />
+              <p>يتم تحديث حالة الاتصال عند فتح الصفحة أو الضغط على زر تحديث البيانات.</p>
+            </div>
+          )}
         </Panel>
 
-        <Panel title={form.id ? "تعديل مستلم" : "إضافة مستلم"}>
-          <form onSubmit={saveRecipient} className="grid gap-3 md:grid-cols-2">
-            <Input label="الاسم" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
-            <Input label="رقم واتساب" dir="ltr" value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
-            <label className="flex h-11 items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 text-xs font-black dark:border-white/10 dark:bg-white/[0.04]">
-              <span>مفعل</span>
+        <Panel
+          className="wa-admin-recipient-form-panel"
+          icon={form.id ? Edit3 : UserRoundPlus}
+          title={form.id ? "تعديل بيانات المستلم" : "إضافة مستلم جديد"}
+          description="حدد رقم واتساب وأنواع التنبيهات التي سيستقبلها"
+          action={form.id ? <Badge tone="warn">وضع التعديل</Badge> : null}
+        >
+          <form onSubmit={saveRecipient} className="wa-admin-recipient-form">
+            <div className="wa-admin-form-grid">
+              <Input label="اسم المستلم" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="مثال: مدير العمليات" />
+              <Input label="رقم واتساب" dir="ltr" value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} placeholder="+2010xxxxxxx" />
+            </div>
+
+            <label className="wa-admin-toggle-card">
+              <span>
+                <b>تفعيل هذا المستلم</b>
+                <small>السماح بإرسال إشعارات واتساب لهذا الرقم</small>
+              </span>
               <input type="checkbox" checked={form.enabled} onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))} />
             </label>
-            <div className="flex gap-2">
-              <button disabled={Boolean(busy)} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 text-xs font-black text-white disabled:opacity-60">
-                <Plus className="h-4 w-4" /> {form.id ? "حفظ التعديل" : "إضافة"}
-              </button>
-              {form.id && <button type="button" onClick={() => setForm(emptyForm)} className="h-11 rounded-2xl border border-slate-200 px-4 text-xs font-black dark:border-white/10">إلغاء</button>}
+
+            <div className="wa-admin-preferences">
+              <div className="wa-admin-preferences-heading">
+                <BellRing />
+                <div>
+                  <b>أنواع الإشعارات</b>
+                  <small>اختر الأحداث التي تريد إرسالها لهذا المستلم</small>
+                </div>
+              </div>
+              <div className="wa-admin-preferences-grid">
+                {Object.entries(preferenceLabels).map(([key, label]) => (
+                  <label key={key} className="wa-admin-preference">
+                    <span>{label}</span>
+                    <input
+                      type="checkbox"
+                      checked={form.eventPreferences[key] !== false}
+                      onChange={(event) => setForm((current) => ({
+                        ...current,
+                        eventPreferences: { ...current.eventPreferences, [key]: event.target.checked },
+                      }))}
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
-            <div className="md:col-span-2 grid gap-2 sm:grid-cols-2">
-              {Object.entries(preferenceLabels).map(([key, label]) => (
-                <label key={key} className="flex h-10 items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold dark:border-white/10 dark:bg-white/[0.04]">
-                  <span>{label}</span>
-                  <input
-                    type="checkbox"
-                    checked={form.eventPreferences[key] !== false}
-                    onChange={(event) => setForm((current) => ({
-                      ...current,
-                      eventPreferences: { ...current.eventPreferences, [key]: event.target.checked },
-                    }))}
-                  />
-                </label>
-              ))}
+
+            <div className="wa-admin-form-actions">
+              <button type="submit" disabled={Boolean(busy)} className="wa-admin-primary-button">
+                {form.id ? <Edit3 /> : <Plus />}
+                {form.id ? "حفظ التعديلات" : "إضافة المستلم"}
+              </button>
+              {form.id ? (
+                <button type="button" onClick={() => setForm(emptyForm)} className="wa-admin-secondary-button">
+                  إلغاء التعديل
+                </button>
+              ) : null}
             </div>
           </form>
         </Panel>
       </section>
 
-      <Panel title="Admin Recipients">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="text-xs text-slate-500">
-              <tr>
-                <th className="p-2">الاسم</th>
-                <th className="p-2">الهاتف</th>
-                <th className="p-2">الحالة</th>
-                <th className="p-2">الأحداث</th>
-                <th className="p-2">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recipients.map((recipient) => (
-                <tr key={recipient.id || recipient._id} className="border-t border-slate-100 dark:border-white/10">
-                  <td className="p-2 font-black">{recipient.name}</td>
-                  <td className="p-2 font-bold" dir="ltr">{recipient.phone}</td>
-                  <td className="p-2"><Badge tone={recipient.enabled ? "good" : "muted"}>{recipient.enabled ? "مفعل" : "متوقف"}</Badge></td>
-                  <td className="p-2 text-xs text-slate-500">{Object.entries(preferenceLabels).filter(([key]) => recipient.eventPreferences?.[key] !== false).map(([, label]) => label).join("، ")}</td>
-                  <td className="p-2">
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => run(`test-${recipient.id}`, () => sendAdminWhatsAppRecipientTest(token, recipient.id || recipient._id), "تم إرسال رسالة تجربة")} className="grid h-9 w-9 place-items-center rounded-xl border border-emerald-200 text-emerald-700 dark:border-emerald-400/20 dark:text-emerald-200" title="إرسال تجربة"><Send className="h-4 w-4" /></button>
-                      <button onClick={() => editRecipient(recipient)} className="h-9 rounded-xl border border-slate-200 px-3 text-xs font-black dark:border-white/10">تعديل</button>
-                      <button onClick={() => run(`delete-${recipient.id}`, () => deleteAdminWhatsAppRecipient(token, recipient.id || recipient._id), "تم حذف المستلم")} className="grid h-9 w-9 place-items-center rounded-xl border border-rose-200 text-rose-600 dark:border-rose-400/20 dark:text-rose-200" title="حذف"><Trash2 className="h-4 w-4" /></button>
+      <Panel
+        className="wa-admin-recipients-panel"
+        icon={UsersRound}
+        title="مستلمو الإدارة"
+        description="الأرقام الإدارية التي تستقبل إشعارات المنصة"
+        action={<span className="wa-admin-count-badge">{recipients.length} مستلم</span>}
+      >
+        {loading ? (
+          <div className="wa-admin-card-grid">
+            {Array.from({ length: 3 }).map((_, index) => <div key={index} className="wa-admin-card-skeleton" />)}
+          </div>
+        ) : recipients.length ? (
+          <div className="wa-admin-card-grid">
+            {recipients.map((recipient) => {
+              const recipientId = recipient.id || recipient._id;
+              const activeEvents = Object.entries(preferenceLabels)
+                .filter(([key]) => recipient.eventPreferences?.[key] !== false)
+                .map(([, label]) => label);
+
+              return (
+                <article key={recipientId} className={`wa-admin-recipient-card${recipient.enabled ? "" : " is-disabled"}`}>
+                  <div className="wa-admin-recipient-top">
+                    <span className="wa-admin-avatar">{(recipient.name || "م").trim().charAt(0)}</span>
+                    <div className="wa-admin-recipient-copy">
+                      <h3>{recipient.name || "مستلم بدون اسم"}</h3>
+                      <p dir="ltr">{recipient.phone || "-"}</p>
                     </div>
-                  </td>
-                </tr>
-              ))}
-              {recipients.length === 0 && <tr><td colSpan={5} className="p-5 text-center text-sm font-bold text-slate-500">لا يوجد مستلمون بعد.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+                    <Badge tone={recipient.enabled ? "good" : "muted"}>{recipient.enabled ? "مفعّل" : "متوقف"}</Badge>
+                  </div>
+
+                  <div className="wa-admin-recipient-events">
+                    <div className="wa-admin-events-title">
+                      <BellRing />
+                      <span>{activeEvents.length} أنواع إشعارات مفعّلة</span>
+                    </div>
+                    <div className="wa-admin-event-tags">
+                      {activeEvents.slice(0, 3).map((label) => <span key={label}>{label}</span>)}
+                      {activeEvents.length > 3 ? <span>+{activeEvents.length - 3}</span> : null}
+                    </div>
+                  </div>
+
+                  <div className="wa-admin-recipient-actions">
+                    <button
+                      type="button"
+                      onClick={() => run(`test-${recipientId}`, () => sendAdminWhatsAppRecipientTest(token, recipientId), "تم إرسال رسالة تجربة")}
+                      disabled={Boolean(busy)}
+                      className="is-test"
+                    >
+                      <Send /> إرسال تجربة
+                    </button>
+                    <button type="button" onClick={() => editRecipient(recipient)} className="is-edit">
+                      <Edit3 /> تعديل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => run(`delete-${recipientId}`, () => deleteAdminWhatsAppRecipient(token, recipientId), "تم حذف المستلم")}
+                      disabled={Boolean(busy)}
+                      className="is-delete"
+                    >
+                      <Trash2 /> حذف
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyBlock icon={UsersRound} title="لا يوجد مستلمون بعد" description="أضف أول مستلم إداري من النموذج الموجود بالأعلى." />
+        )}
       </Panel>
 
-      <Panel title="Logs">
-        <div className="mb-3 grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto]">
-          <Input label="Status" value={filters.status} onChange={(value) => setFilters((current) => ({ ...current, status: value }))} placeholder="pending / sent / failed" />
-          <Input label="Event type" value={filters.eventType} onChange={(value) => setFilters((current) => ({ ...current, eventType: value }))} />
-          <Input label="Recipient type" value={filters.recipientType} onChange={(value) => setFilters((current) => ({ ...current, recipientType: value }))} placeholder="customer / admin" />
-          <button onClick={refreshLogs} className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-xs font-black dark:border-white/10">
-            <RefreshCw className="h-4 w-4" /> فلترة
+      <Panel
+        className="wa-admin-logs-panel"
+        icon={Activity}
+        title="سجلات الإرسال"
+        description="تابع نتيجة كل إشعار وأعد محاولة الرسائل الفاشلة"
+        action={<span className="wa-admin-count-badge">{logs.length} سجل</span>}
+      >
+        <div className="wa-admin-filters">
+          <Select label="الحالة" value={filters.status} options={statusFilterOptions} onChange={(value) => setFilters((current) => ({ ...current, status: value }))} />
+          <Select label="نوع الحدث" value={filters.eventType} options={eventFilterOptions} onChange={(value) => setFilters((current) => ({ ...current, eventType: value }))} />
+          <Select label="نوع المستلم" value={filters.recipientType} options={recipientFilterOptions} onChange={(value) => setFilters((current) => ({ ...current, recipientType: value }))} />
+          <button type="button" onClick={refreshLogs} disabled={Boolean(busy)} className="wa-admin-filter-button">
+            <RefreshCw className={busy === "logs" ? "animate-spin" : ""} />
+            تطبيق الفلاتر
           </button>
         </div>
-        <div className="space-y-2">
-          {logs.map((log) => (
-            <div key={log._id || log.id} className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-white/10 dark:bg-white/[0.04] md:grid-cols-[120px_150px_1fr_auto]">
-              <Badge tone={log.status === "sent" ? "good" : log.status === "failed" ? "bad" : log.status === "skipped" ? "muted" : "warn"}>{log.status}</Badge>
-              <span className="font-black">{log.eventType}</span>
-              <span className="min-w-0 truncate text-slate-600 dark:text-slate-300">{log.title || log.message}</span>
-              {log.status === "failed" && (
-                <button onClick={() => run(`retry-${log._id}`, () => retryAdminWhatsAppLog(token, log._id || log.id), "تمت إعادة المحاولة")} className="inline-flex h-8 items-center gap-1 rounded-xl border border-sky-200 px-2 font-black text-sky-700 dark:border-sky-400/20 dark:text-sky-200">
-                  <RotateCcw className="h-3.5 w-3.5" /> Retry
-                </button>
-              )}
-            </div>
-          ))}
-          {logs.length === 0 && <p className="rounded-2xl border border-slate-200 p-5 text-center text-sm font-bold text-slate-500 dark:border-white/10">لا توجد سجلات مطابقة.</p>}
-        </div>
+
+        {logs.length ? (
+          <div className="wa-admin-logs-list">
+            {logs.map((log) => {
+              const logId = log._id || log.id;
+              const tone = log.status === "sent" ? "good" : log.status === "failed" ? "bad" : log.status === "skipped" ? "muted" : "warn";
+
+              return (
+                <article key={logId} className={`wa-admin-log is-${tone}`}>
+                  <span className="wa-admin-log-icon">
+                    {log.status === "sent" ? <Send /> : log.status === "failed" ? <WifiOff /> : <Clock3 />}
+                  </span>
+                  <div className="wa-admin-log-copy">
+                    <div className="wa-admin-log-title">
+                      <h3>{translateEventType(log.eventType)}</h3>
+                      <Badge tone={tone}>{translateDeliveryStatus(log.status)}</Badge>
+                    </div>
+                    <p>{log.title || log.message || "إشعار واتساب بدون تفاصيل إضافية."}</p>
+                    {log.createdAt ? <small>{formatDateTime(log.createdAt, "ar-EG-u-nu-latn")}</small> : null}
+                  </div>
+                  {log.status === "failed" ? (
+                    <button
+                      type="button"
+                      onClick={() => run(`retry-${logId}`, () => retryAdminWhatsAppLog(token, logId), "تمت إعادة المحاولة")}
+                      disabled={Boolean(busy)}
+                      className="wa-admin-retry"
+                    >
+                      <RotateCcw /> إعادة المحاولة
+                    </button>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyBlock icon={Activity} title="لا توجد سجلات مطابقة" description="غيّر الفلاتر أو حدّث البيانات لعرض أحدث عمليات الإرسال." />
+        )}
       </Panel>
 
-      <Panel title="Instructions">
-        <ul className="space-y-2 text-sm font-bold leading-6 text-slate-600 dark:text-slate-300">
-          <li>استخدم رقم واتساب منفصل للإشعارات.</li>
-          <li>تأكد من اتصال جلسة OpenWA قبل الإرسال.</li>
-        </ul>
-      </Panel>
+      <section className="wa-admin-tips">
+        <span className="wa-admin-tips-icon"><Info /></span>
+        <div>
+          <h2>إرشادات مهمة</h2>
+          <p>استخدم رقم واتساب منفصلًا للإشعارات، وتأكد من اتصال جلسة الخدمة قبل إرسال رسائل التجربة.</p>
+        </div>
+      </section>
     </div>
   );
 }
 
-function Panel({ title, children }) {
+function OverviewCard({ icon: Icon, label, tone, value }) {
   return (
-    <section className="admin-whatsapp-panel rounded-[24px] border border-slate-200 bg-white/95 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[#111827]">
-      <h2 className="mb-3 text-base font-black text-slate-950 dark:text-white">{title}</h2>
-      {children}
+    <article className={`wa-admin-overview-card is-${tone}`}>
+      <span><Icon /></span>
+      <div>
+        <small>{label}</small>
+        <b>{value}</b>
+      </div>
+    </article>
+  );
+}
+
+function Panel({ action, children, className = "", description, icon: Icon, title }) {
+  return (
+    <section className={`admin-whatsapp-panel ${className}`}>
+      <header className="wa-admin-panel-header">
+        <span className="wa-admin-panel-icon"><Icon /></span>
+        <div>
+          <h2>{title}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+        {action ? <div className="wa-admin-panel-action">{action}</div> : null}
+      </header>
+      <div className="wa-admin-panel-body">{children}</div>
     </section>
+  );
+}
+
+function EmptyBlock({ description, icon: Icon, title }) {
+  return (
+    <div className="wa-admin-empty">
+      <span><Icon /></span>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
   );
 }
 
 function Input({ label, value, onChange, placeholder = "", dir = "rtl" }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-black text-slate-500">{label}</span>
+    <label className="wa-admin-field">
+      <span>{label}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         dir={dir}
-        className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none focus:border-emerald-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
+        className="wa-admin-input"
       />
+    </label>
+  );
+}
+
+function Select({ label, value, onChange, options }) {
+  return (
+    <label className="wa-admin-field">
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="wa-admin-input"
+      >
+        {options.map((option) => (
+          <option key={option.value || "all"} value={option.value}>{option.label}</option>
+        ))}
+      </select>
     </label>
   );
 }
 
 function StatusRow({ label, value, tone = "muted" }) {
   return (
-    <div className="admin-whatsapp-status-row mb-2 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/[0.04]">
-      <span className="font-bold text-slate-500 dark:text-slate-400">{label}</span>
+    <div className="admin-whatsapp-status-row">
+      <span>{label}</span>
       <Badge tone={tone}>{value || "-"}</Badge>
     </div>
   );
@@ -288,5 +546,5 @@ function Badge({ tone = "muted", children }) {
     warn: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200",
     muted: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-200",
   };
-  return <span className={`inline-flex max-w-full items-center justify-center rounded-full px-2.5 py-1 text-xs font-black ${classes[tone]}`}>{children}</span>;
+  return <span className={`wa-admin-badge is-${tone} ${classes[tone]}`}>{children}</span>;
 }

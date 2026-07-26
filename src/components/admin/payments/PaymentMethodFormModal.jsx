@@ -95,13 +95,13 @@ function Content({ method, defaultGroupId, groups, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-[140] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-4">
-      <section className="flex max-h-[94dvh] w-full max-w-[680px] flex-col rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
+      <section className="flex max-h-[94dvh] w-full max-w-[680px] flex-col overflow-hidden rounded-t-[28px] bg-white sm:rounded-[28px] dark:bg-[#111827]">
         <header className="flex items-center border-b p-4 dark:border-white/10">
           <h2 className="flex-1 text-sm font-black dark:text-white">{method ? "تعديل طريقة الدفع" : "إضافة طريقة دفع"}</h2>
           <button type="button" onClick={onClose}><X className="h-4 w-4" /></button>
         </header>
 
-        <div className="grid gap-3 overflow-y-auto p-4 sm:grid-cols-2">
+        <div className="grid min-h-0 gap-3 overflow-y-auto overscroll-contain p-4 sm:grid-cols-2">
           <SelectField label="المجموعة" value={form.groupId} onChange={(value) => {
             const nextGroup = groups.find((group) => group.id === value);
             setForm((current) => ({
@@ -221,7 +221,7 @@ function Content({ method, defaultGroupId, groups, onClose, onSave }) {
           </label>
         </div>
 
-        <footer className="sticky bottom-0 grid grid-cols-2 gap-2 border-t bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+        <footer className="sticky bottom-0 grid shrink-0 grid-cols-2 gap-2 border-t bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
           <button type="button" onClick={onClose} className="h-11 rounded-xl border text-[10px] font-black dark:border-white/10 dark:text-white">إلغاء</button>
           <button type="button" onClick={save} className="inline-flex h-11 items-center justify-center gap-1 rounded-xl bg-violet-600 text-[10px] font-black text-white">
             <Save className="h-4 w-4" />

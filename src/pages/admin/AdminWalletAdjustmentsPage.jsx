@@ -409,13 +409,13 @@ function Filters({ activeCount, allCurrenciesLabel, currencyOptions, filters, on
         )}
       </div>
       <form onSubmit={onApply} className="grid w-full max-w-full grid-cols-1 gap-3 overflow-visible p-4 sm:[grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))]">
-        <label className="relative min-w-0 sm:col-span-2">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+        <label className="site-filter-search relative min-w-0 sm:col-span-2">
+          <span className="site-filter-search-icon"><Search /></span>
           <input
             value={filters.search}
             onChange={(event) => onChange("search", event.target.value)}
             placeholder="ابحث باسم المستخدم أو البريد أو السبب"
-            className="h-11 w-full min-w-0 rounded-2xl bg-slate-50 pe-9 ps-3 text-xs font-black outline-none dark:bg-[#0B1220] dark:text-white"
+            className="site-filter-search-input"
           />
         </label>
         <select value={filters.type} onChange={(event) => onChange("type", event.target.value)} className="h-11 min-w-0 rounded-2xl bg-slate-50 px-3 text-xs font-black dark:bg-[#0B1220] dark:text-white">

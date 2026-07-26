@@ -131,13 +131,13 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
 
         <form
           onSubmit={(event) => event.preventDefault()}
-          className="flex h-10 items-center gap-2 rounded-2xl border border-sky-100 bg-slate-50/80 px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-white/10 dark:bg-slate-950/35"
+          className="site-filter-search"
         >
-          <Search className="h-4 w-4 shrink-0 text-[#8B5CF6] dark:text-[#C084FC]" />
+          <span className="site-filter-search-icon"><Search /></span>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]"
+            className="site-filter-search-input"
             placeholder={t("category.searchPlaceholder", { category: category.title })}
           />
         </form>

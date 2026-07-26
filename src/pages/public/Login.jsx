@@ -126,7 +126,7 @@ export default function Login() {
   };
 
   return (
-    <div className="mx-auto grid min-h-[calc(100vh-92px)] max-w-[1320px] place-items-center px-4 py-8">
+    <div className="mx-auto grid min-h-[calc(100vh-92px)] max-w-[1320px] items-start justify-items-center px-4 pb-8 pt-0">
       <div className="w-full max-w-[550px] rounded-[28px] bg-[linear-gradient(135deg,#22D3EE_0%,#2563EB_13%,#7C3AED_27%,#EC4899_41%,#F97316_55%,#FACC15_69%,#22C55E_83%,#06B6D4_100%)] p-[1px] shadow-[0_28px_85px_rgba(37,99,235,0.20),0_10px_35px_rgba(236,72,153,0.12)] dark:shadow-[0_32px_96px_rgba(124,58,237,0.26),0_12px_42px_rgba(34,211,238,0.12)]">
         <div className="relative overflow-hidden rounded-[27px] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.96)_36%,rgba(250,245,255,0.95)_70%,rgba(255,247,237,0.94)_100%)] p-5 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/10 dark:bg-[linear-gradient(145deg,rgba(5,12,28,0.98)_0%,rgba(15,23,42,0.96)_38%,rgba(45,18,67,0.94)_72%,rgba(6,78,98,0.88)_100%)] dark:text-[#F8F9FA] sm:p-8">
           <span className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22D3EE,#2563EB,#7C3AED,#EC4899,#F97316,#FACC15,#22C55E,#06B6D4)]" />

@@ -219,14 +219,14 @@ export default function CustomerWalletTransactions({ basePath = "/customer" }) {
 
         <section className="rounded-[30px] border border-white/80 bg-white/95 p-4 shadow-[0_22px_70px_rgba(42,51,83,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-[#080d1e]/95 dark:shadow-[0_18px_50px_rgba(0,0,0,0.3)] sm:p-6">
           <div className="flex flex-row gap-2 sm:gap-3">
-            <label className="group relative min-w-0 flex-1">
-              <span className="pointer-events-none absolute start-2.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg border border-slate-200 bg-white text-violet-600 shadow-sm group-focus-within:border-violet-400 dark:border-slate-700 dark:bg-[#0d1324] dark:text-violet-300"><Search className="h-4.5 w-4.5" /></span>
+            <label className="site-filter-search group relative min-w-0 flex-1">
+              <span className="site-filter-search-icon pointer-events-none"><Search className="h-4.5 w-4.5" /></span>
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t("transactions.searchPlaceholder")}
-                className="h-14 w-full rounded-xl border-2 border-slate-200 bg-slate-50 ps-14 pe-11 text-sm font-bold text-slate-950 outline-none transition placeholder:font-semibold placeholder:text-slate-400 hover:border-slate-300 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 dark:border-slate-700 dark:bg-[#050918] dark:text-white dark:placeholder:text-white/35 dark:focus:border-violet-500"
+                className="site-filter-search-input"
               />
               {query && <button type="button" onClick={() => setQuery("")} aria-label={t("transactions.clearSearch")} className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400"><X className="h-4 w-4" /></button>}
             </label>

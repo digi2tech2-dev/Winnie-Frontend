@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { sortProductsByBestSelling } from "../../utils/bestSellingProducts";
+import { isProductVisibleInStore } from "../../utils/productAvailability";
 import HomeProductCard from "./HomeProductCard";
 import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
@@ -12,8 +13,8 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
   const isArabic = i18n.language?.startsWith("ar");
   const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
   const bestSellingItems = useMemo(() => {
-    const activeItems = items.filter((item) => item?.isActive !== false);
-    return sortProductsByBestSelling(activeItems).slice(0, maxBestSellingItems);
+    const visibleItems = items.filter(isProductVisibleInStore);
+    return sortProductsByBestSelling(visibleItems).slice(0, maxBestSellingItems);
   }, [items]);
 
   if (!bestSellingItems.length) return null;

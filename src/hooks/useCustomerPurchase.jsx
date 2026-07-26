@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, WalletCards, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { buildCustomerOrderPayload, createCustomerOrder } from "../api/orders";
 import ProductPurchaseModal from "../components/ProductPurchaseModal";
+import { canPurchaseProduct } from "../utils/productAvailability";
 import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
 import { useToast } from "../components/ToastProvider";
 
@@ -161,6 +162,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
   const [insufficientFundsPrompt, setInsufficientFundsPrompt] = useState(null);
   const [purchaseReceipt, setPurchaseReceipt] = useState(null);
   const [purchaseSubmitting, setPurchaseSubmitting] = useState(false);
+  const purchaseRequestInFlightRef = useRef(false);
   const isCustomerArea = basePath === "/customer" || basePath === "/admin/user";
 
   const openPurchase = useCallback((product, category = null) => {
@@ -178,7 +180,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
       return;
     }
 
-    if (product?.isPurchasable === false) {
+    if (!canPurchaseProduct(product)) {
       showToast({
         type: "info",
         title: t("purchase.productUnavailableTitle", { defaultValue: "Product unavailable" }),
@@ -237,7 +239,9 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
   }, [t]);
 
   const submitPurchase = useCallback(async (purchase) => {
-    if (purchaseSubmitting) return;
+    // State updates are not synchronous, so fast taps could previously enter
+    // this function more than once before the disabled button was rendered.
+    if (purchaseRequestInFlightRef.current) return;
 
     const payload = buildCustomerOrderPayload(purchase);
     if (!payload.productId) {
@@ -245,6 +249,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
       return;
     }
 
+    purchaseRequestInFlightRef.current = true;
     setPurchaseSubmitting(true);
     setPurchaseError("");
 
@@ -279,13 +284,15 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
 
       setPurchaseError(error.userMessage || t("purchase.orderCreateFailed"));
     } finally {
+      purchaseRequestInFlightRef.current = false;
       setPurchaseSubmitting(false);
     }
-  }, [onSuccess, purchaseItem?.category, purchaseSubmitting, showToast, t, token]);
+  }, [onSuccess, purchaseItem?.category, showToast, t, token]);
 
   const purchaseModals = useMemo(() => (
-    <AnimatePresence>
-      {purchaseItem && (
+    <>
+      <AnimatePresence>
+        {purchaseItem && (
         <ProductPurchaseModal
           product={purchaseItem.product}
           category={purchaseItem.category}
@@ -297,8 +304,10 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
           submitting={purchaseSubmitting}
           token={token}
         />
-      )}
-      {purchaseReceipt && (
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {purchaseReceipt && (
         <PurchaseSuccessModal
           receipt={purchaseReceipt}
           onClose={() => setPurchaseReceipt(null)}
@@ -307,8 +316,10 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
             navigate(`${basePath}/order/${purchaseReceipt.orderRecordId}`);
           }}
         />
-      )}
-      {insufficientFundsPrompt && (
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {insufficientFundsPrompt && (
         <InsufficientFundsPrompt
           message={insufficientFundsPrompt.message}
           shortfall={insufficientFundsPrompt.shortfall}
@@ -317,8 +328,9 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
           onConfirm={goToAddBalance}
           t={t}
         />
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </>
   ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, insufficientFundsPrompt, showQuoteInsufficientFunds, submitPurchase, t, token]);
 
   return {
@@ -330,7 +342,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
 function InsufficientFundsPrompt({ message, shortfall, shortfallLabel, onCancel, onConfirm, t }) {
   const modal = (
     <motion.div
-      className="fixed inset-0 z-[100100] grid place-items-center bg-slate-950/70 px-4 text-right backdrop-blur-md"
+      className="fixed inset-0 z-[100100] grid place-items-center bg-slate-950/70 px-3 text-right backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -346,54 +358,54 @@ function InsufficientFundsPrompt({ message, shortfall, shortfallLabel, onCancel,
         exit={{ opacity: 0, y: 24, scale: 0.96 }}
         transition={{ duration: 0.24, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className="relative w-full max-w-[430px] overflow-hidden rounded-[28px] border border-amber-200/80 bg-white p-5 text-slate-950 shadow-[0_30px_90px_rgba(15,23,42,0.35)] dark:border-amber-300/20 dark:bg-[#101827] dark:text-white dark:shadow-[0_0_44px_rgba(245,158,11,0.18)]"
+        className="relative w-full max-w-[320px] overflow-hidden rounded-[20px] border border-amber-200/80 bg-white p-3.5 text-slate-950 shadow-[0_24px_70px_rgba(15,23,42,0.32)] dark:border-amber-300/20 dark:bg-[#101827] dark:text-white dark:shadow-[0_0_32px_rgba(245,158,11,0.15)]"
       >
-        <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#F59E0B,#A855F7,#38BDF8)]" />
+        <div className="absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,#F59E0B,#A855F7,#38BDF8)]" />
         <button
           type="button"
           onClick={onCancel}
-          className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10"
+          className="absolute left-3 top-3 grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10"
           aria-label={t("purchase.insufficientFundsCancel")}
           title={t("purchase.insufficientFundsCancel")}
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
 
-        <div className="grid h-16 w-16 place-items-center rounded-3xl bg-amber-100 text-amber-600 shadow-[0_18px_36px_rgba(245,158,11,0.18)] dark:bg-amber-400/14 dark:text-amber-300">
-          <AlertTriangle className="h-8 w-8" />
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-600 shadow-[0_10px_24px_rgba(245,158,11,0.16)] dark:bg-amber-400/14 dark:text-amber-300">
+          <AlertTriangle className="h-5 w-5" />
         </div>
 
-        <h2 id="insufficient-funds-title" className="mt-4 text-2xl font-black leading-8">
+        <h2 id="insufficient-funds-title" className="mt-2.5 text-base font-black leading-6">
           {t("purchase.insufficientFundsTitle")}
         </h2>
         {message ? (
-          <p className="mt-2 text-sm font-bold leading-7 text-slate-600 dark:text-white/68">
+          <p className="mt-1 text-[10px] font-bold leading-5 text-slate-600 dark:text-white/68">
             {message}
           </p>
         ) : null}
         {shortfall > 0 && (
-          <p className="mt-3 rounded-2xl border border-violet-300/50 bg-violet-50 px-3 py-2 text-sm font-black leading-7 text-violet-800 dark:border-violet-300/20 dark:bg-violet-300/10 dark:text-violet-200">
+          <p className="mt-2 rounded-xl border border-violet-300/50 bg-violet-50 px-2.5 py-1.5 text-[10px] font-black leading-5 text-violet-800 dark:border-violet-300/20 dark:bg-violet-300/10 dark:text-violet-200">
             {t("purchase.insufficientFundsShortfall", { amount: shortfallLabel || formatAmount(shortfall) })}
           </p>
         )}
-        <p className="mt-3 rounded-2xl border border-amber-300/50 bg-amber-50 px-3 py-2 text-sm font-black leading-7 text-amber-800 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-200">
+        <p className="mt-2 rounded-xl border border-amber-300/50 bg-amber-50 px-2.5 py-1.5 text-[10px] font-black leading-5 text-amber-800 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-200">
           {t("purchase.insufficientFundsConfirmQuestion")}
         </p>
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-1.5">
           <button
             type="button"
             onClick={onCancel}
-            className="h-12 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
+            className="h-9 rounded-xl border border-slate-200 bg-white text-[10px] font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
           >
             {t("purchase.insufficientFundsCancel")}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(124,58,237,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_44px_rgba(124,58,237,0.36)]"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-3 text-[10px] font-black text-white shadow-[0_10px_24px_rgba(124,58,237,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(124,58,237,0.32)]"
           >
-            <WalletCards className="h-4 w-4" />
+            <WalletCards className="h-3.5 w-3.5" />
             {t("purchase.insufficientFundsConfirm")}
           </button>
         </div>

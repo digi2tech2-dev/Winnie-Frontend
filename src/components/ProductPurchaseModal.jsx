@@ -4,7 +4,6 @@ import {
   ArrowDown,
   ArrowUp,
   CheckCircle2,
-  CircleUserRound,
   Loader2,
   Search,
   ShieldCheck,
@@ -17,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { verifyProductTarget } from "../api/catalog";
 import { createCustomerOrderQuote } from "../api/orders";
+import { isProductUnavailable } from "../utils/productAvailability";
 import {
   getXenaTargetFieldKey,
   isXenaTargetFieldKey,
@@ -46,9 +46,10 @@ export default function ProductPurchaseModal({
   const minQuantity = Math.max(1, Number(product.minQty) || 1);
   const maxQuantity = Math.max(minQuantity, Number(product.maxQty) || 999);
   const productId = product?._id || product?.id || product?.productId;
+  const productUnavailable = isProductUnavailable(product);
   const xenaProduct = isXenaProduct(product);
   const xenaTargetFieldKey = xenaProduct ? getXenaTargetFieldKey(orderFields) : XENA_TARGET_FIELD_KEY;
-  const [quantity, setQuantity] = useState(minQuantity);
+  const [quantity, setQuantity] = useState("");
   const [accountId, setAccountId] = useState("");
   const [fieldValues, setFieldValues] = useState(() => createInitialFieldValues(orderFields));
   const [xenaVerification, setXenaVerification] = useState({
@@ -63,11 +64,10 @@ export default function ProductPurchaseModal({
   const [quote, setQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState("");
-  const modalRef = useRef(null);
-  const modalScale = useViewportFitScale(modalRef, 10, 0.45);
+  const confirmButtonRef = useRef(null);
 
   const selectedPackage = packages[selectedPackageIndex] || null;
-  const numericQuantity = Number(quantity);
+  const numericQuantity = quantity === "" ? Number.NaN : Number(quantity);
   const quoteForQuantity = quote && Number(quote.quantity) === numericQuantity ? quote : null;
   const localEstimate = calculateLocalEstimate(product, numericQuantity, user);
   const displayTotal = quoteForQuantity?.displayTotal
@@ -79,7 +79,9 @@ export default function ProductPurchaseModal({
     : t("purchase.estimatedTotal", { defaultValue: isArabic ? "الإجمالي التقديري" : "Estimated total" });
   const walletBalance = Number(user?.walletBalance ?? quote?.walletBalance ?? 0);
   const balanceLabel = formatPlainAmount(walletBalance);
-  const quantityWarning = getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
+  const quantityWarning = quantity === ""
+    ? ""
+    : getQuantityWarning(numericQuantity, minQuantity, maxQuantity, isArabic, t);
   const xenaTargetUid = normalizeXenaTargetUid(fieldValues[xenaTargetFieldKey]);
   const xenaVerified = !xenaProduct || (
     xenaVerification.valid
@@ -104,20 +106,20 @@ export default function ProductPurchaseModal({
   const isQuantityWithinBounds = Number.isInteger(numericQuantity)
     && numericQuantity >= minQuantity
     && numericQuantity <= maxQuantity;
-  const quoteAllowsSubmit = Boolean(quoteForQuantity)
-    && quoteForQuantity.isQuantityValid !== false
-    && (quoteForQuantity.canSubmit !== false || quoteForQuantity.hasEnoughBalance === false);
   const confirmDisabled = submitting
+    || productUnavailable
     || quoteLoading
     || xenaVerification.loading
-    || Boolean(quoteError)
-    || !quoteAllowsSubmit
+    || quoteForQuantity?.isQuantityValid === false
+    || (quoteForQuantity?.canSubmit === false && quoteForQuantity?.hasEnoughBalance !== false)
     || !isQuantityWithinBounds
     || missingRequiredField
     || missingFallbackAccount
     || (xenaProduct && !xenaVerified);
 
   useEffect(() => {
+    if (productUnavailable) return undefined;
+
     const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousBodyOverflow = document.body.style.overflow;
 
@@ -128,12 +130,12 @@ export default function ProductPurchaseModal({
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousBodyOverflow;
     };
-  }, []);
+  }, [productUnavailable]);
 
   useEffect(() => {
     const numericQuantity = Number(quantity);
 
-    if (!token || !productId || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
+    if (productUnavailable || !token || !productId || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       setQuote(null);
       setQuoteLoading(false);
       setQuoteError("");
@@ -167,7 +169,7 @@ export default function ProductPurchaseModal({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [productId, quantity, t, token]);
+  }, [productId, productUnavailable, quantity, t, token]);
 
   useEffect(() => {
     setXenaVerification({
@@ -271,6 +273,9 @@ export default function ProductPurchaseModal({
 
   const submit = (event) => {
     event.preventDefault();
+    // Mobile keyboards can implicitly submit a form while the user is editing
+    // an input. A purchase must only start from the visible confirmation button.
+    if (event.nativeEvent?.submitter !== confirmButtonRef.current) return;
     if (submitting || quoteLoading) return;
 
     const numericQuantity = Number(quantity);
@@ -311,12 +316,12 @@ export default function ProductPurchaseModal({
       return;
     }
 
-    if (!quoteForQuantity || quoteError || quoteForQuantity.isQuantityValid === false) {
+    if (quoteForQuantity?.isQuantityValid === false) {
       setLocalError(t("purchase.quoteFailed", { defaultValue: "Could not calculate the final price. Please try again." }));
       return;
     }
 
-    if (quoteForQuantity.hasEnoughBalance === false) {
+    if (quoteForQuantity?.hasEnoughBalance === false) {
       if (typeof onInsufficientFunds === "function") {
         setLocalError("");
         onInsufficientFunds(quoteForQuantity);
@@ -344,6 +349,8 @@ export default function ProductPurchaseModal({
     });
   };
 
+  if (productUnavailable) return null;
+
   const modal = (
     <motion.div
       className="buy-modal-backdrop"
@@ -353,17 +360,15 @@ export default function ProductPurchaseModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="purchase-modal-title"
-      onClick={submitting ? undefined : onClose}
     >
       <motion.form
-        ref={modalRef}
         className="buy-modal"
-        style={{ "--buy-modal-scale": modalScale }}
         onSubmit={submit}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.97 }}
         transition={{ duration: 0.24, ease: "easeOut" }}
+        onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         <span className="buy-modal__aura buy-modal__aura--pink" aria-hidden="true" />
@@ -397,7 +402,6 @@ export default function ProductPurchaseModal({
           <div className="buy-balance-card">
             <span>{isArabic ? "رصيدك الحالي" : "Current balance"}</span>
             <strong dir="ltr">
-              <span className="buy-w-coin">W</span>
               {balanceLabel}
             </strong>
           </div>
@@ -462,7 +466,6 @@ export default function ProductPurchaseModal({
           {hasOrderFields ? orderFields.map((field) => (
             <PurchaseRow
               key={field.key}
-              icon={CircleUserRound}
               label={getOrderFieldLabel(field, isArabic)}
             >
               {xenaProduct && field.key === xenaTargetFieldKey ? (
@@ -483,7 +486,7 @@ export default function ProductPurchaseModal({
               )}
             </PurchaseRow>
           )) : showFallbackAccountInput ? (
-            <PurchaseRow icon={CircleUserRound} label={t("purchase.accountPlayerId")}>
+            <PurchaseRow label={t("purchase.accountPlayerId")}>
               <input
                 className="buy-account-input"
                 value={accountId}
@@ -508,7 +511,12 @@ export default function ProductPurchaseModal({
         )}
 
         <div className="buy-actions">
-          <button className="buy-actions__submit" type="submit" disabled={confirmDisabled}>
+          <button
+            ref={confirmButtonRef}
+            className="buy-actions__submit"
+            type="submit"
+            disabled={confirmDisabled}
+          >
             <span>{submitting ? t("purchase.creatingOrder") : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : isArabic ? "تأكيد الشحن" : "Confirm charge"}</span>
             {submitting ? <Loader2 className="is-spinning" /> : <Zap />}
           </button>
@@ -525,10 +533,9 @@ export default function ProductPurchaseModal({
   return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
-function PurchaseRow({ children, icon: Icon, label }) {
+function PurchaseRow({ children, label }) {
   return (
     <div className="buy-row" dir="rtl">
-      <span className="buy-row__icon" aria-hidden="true"><Icon /></span>
       <span className="buy-row__label">{label}</span>
       <div className="buy-row__content">{children}</div>
     </div>
@@ -833,49 +840,4 @@ function getXenaCustomerErrorMessage(error = {}) {
   };
 
   return map[code] || error.userMessage || "Verification is temporarily unavailable.";
-}
-
-function useViewportFitScale(ref, margin = 10, minScale = 0.45) {
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return undefined;
-
-    let frameId = 0;
-
-    const fit = () => {
-      window.cancelAnimationFrame(frameId);
-      frameId = window.requestAnimationFrame(() => {
-        const viewport = window.visualViewport;
-        const viewportWidth = viewport?.width || window.innerWidth;
-        const viewportHeight = viewport?.height || window.innerHeight;
-        const availableWidth = Math.max(260, viewportWidth - margin * 2);
-        const availableHeight = Math.max(320, viewportHeight - margin * 2);
-        const width = element.scrollWidth || element.offsetWidth || 1;
-        const height = element.scrollHeight || element.offsetHeight || 1;
-        const nextScale = Math.min(1, availableWidth / width, availableHeight / height);
-
-        setScale(Number(Math.max(minScale, nextScale).toFixed(3)));
-      });
-    };
-
-    fit();
-
-    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
-    observer?.observe(element);
-    window.addEventListener("resize", fit);
-    window.visualViewport?.addEventListener("resize", fit);
-    window.visualViewport?.addEventListener("scroll", fit);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      observer?.disconnect();
-      window.removeEventListener("resize", fit);
-      window.visualViewport?.removeEventListener("resize", fit);
-      window.visualViewport?.removeEventListener("scroll", fit);
-    };
-  }, [margin, minScale, ref]);
-
-  return scale;
 }

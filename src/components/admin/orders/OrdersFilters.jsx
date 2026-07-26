@@ -65,16 +65,18 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
         <div className={isOpen ? "overflow-visible" : "overflow-hidden"}>
           <form onSubmit={onApply} className="border-t border-slate-100 px-4 pb-4 pt-4 sm:px-5 sm:pb-5 dark:border-white/[0.07]">
             <div className="grid gap-3 lg:grid-cols-[1fr_260px]">
-              <label className="relative block">
+              <label className="admin-orders-search-field relative block">
                 <span className="mb-1.5 block text-[11px] font-black text-slate-600 dark:text-slate-300">بحث</span>
-                <Search className="pointer-events-none absolute bottom-3.5 right-3.5 h-4.5 w-4.5 text-[#8B5CF6]" />
-                <input
-                  type="search"
-                  value={filters.query}
-                  onChange={update("query")}
-                  placeholder="رقم الطلب أو معرّفه أو رقم طلب المورد أو قيمة مُدخلة"
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/75 px-10 text-xs font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/65 focus:bg-white focus:ring-4 focus:ring-[#8B5CF6]/10 sm:text-sm dark:border-white/10 dark:bg-[#0B1220] dark:text-white dark:focus:bg-[#0D1324]"
-                />
+                <span className="admin-orders-search-control site-filter-search">
+                  <Search className="admin-orders-search-icon site-filter-search-icon pointer-events-none" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={filters.query}
+                    onChange={update("query")}
+                    placeholder="رقم الطلب أو معرّفه أو رقم طلب المورد أو قيمة مُدخلة"
+                    className="site-filter-search-input h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/75 py-0 text-xs font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/65 focus:bg-white focus:ring-4 focus:ring-[#8B5CF6]/10 sm:text-sm dark:border-white/10 dark:bg-[#0B1220] dark:text-white dark:focus:bg-[#0D1324]"
+                  />
+                </span>
               </label>
 
               <FilterField label="معرّف العميل" icon={UserRound}>
@@ -82,7 +84,7 @@ export default function OrdersFilters({ filters, onChange, onApply, onReset, act
                   value={filters.userId}
                   onChange={update("userId")}
                   placeholder="معرّف المستخدم المكوّن من 24 حرفًا"
-                  className={fieldClassName}
+                  className={`${fieldClassName} admin-orders-user-id-input`}
                   dir="ltr"
                 />
               </FilterField>

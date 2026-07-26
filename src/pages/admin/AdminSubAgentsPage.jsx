@@ -1,5 +1,17 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeDollarSign, CheckCircle2, Edit3, RefreshCw, UsersRound, XCircle } from "lucide-react";
+import {
+  BadgeDollarSign,
+  CheckCircle2,
+  ChevronLeft,
+  ClipboardList,
+  Edit3,
+  HandCoins,
+  RefreshCw,
+  Search,
+  UserRoundPlus,
+  UsersRound,
+  XCircle,
+} from "lucide-react";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -20,13 +32,14 @@ import {
 import { GROUP_REQUEST_STATUS } from "../../api/groupRequests";
 import { useAuth } from "../../context/AuthContext";
 import AdminPagination from "../../components/admin/AdminPagination";
+import "../../styles/admin-subagents-tabs.css";
 
 const tabs = [
-  ["requests", "الطلبات"],
-  ["agents", "الوكلاء الفرعيون"],
-  ["commissions", "العمولات"],
-  ["payouts", "طلبات السحب"],
-  ["referred", "المستخدمون المحالون"],
+  { key: "requests", label: "الطلبات", icon: ClipboardList },
+  { key: "agents", label: "الوكلاء الفرعيون", icon: UsersRound },
+  { key: "commissions", label: "العمولات", icon: BadgeDollarSign },
+  { key: "payouts", label: "طلبات السحب", icon: HandCoins },
+  { key: "referred", label: "المستخدمون المحالون", icon: UserRoundPlus },
 ];
 const pageSize = 15;
 const initialPages = { requests: 1, agents: 1, commissions: 1, payouts: 1, referred: 1 };
@@ -43,6 +56,7 @@ export default function AdminSubAgentsPage() {
   const [groups, setGroups] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [referredUsers, setReferredUsers] = useState([]);
+  const [referredLoading, setReferredLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -103,21 +117,42 @@ export default function AdminSubAgentsPage() {
   }, [loadData]);
 
   useEffect(() => {
+    let ignore = false;
+
     const loadReferred = async () => {
       if (!token || !selectedAgentId) {
         setReferredUsers([]);
+        setPaginations((current) => ({ ...current, referred: emptyPagination }));
         return;
       }
+      setReferredLoading(true);
       try {
         const result = await getSubAgentReferredUsers(token, selectedAgentId, { page: pages.referred, limit: pageSize, search: appliedSearch });
+        if (ignore) return;
         setReferredUsers(result.referredUsers);
         setPaginations((current) => ({ ...current, referred: result.pagination }));
-      } catch {
+      } catch (requestError) {
+        if (ignore) return;
         setReferredUsers([]);
+        showToast({
+          type: "error",
+          title: "تعذر تحميل المستخدمين المحالين",
+          message: requestError.userMessage || "تحقق من الوكيل المحدد ثم حاول مرة أخرى.",
+        });
+      } finally {
+        if (!ignore) setReferredLoading(false);
       }
     };
     void loadReferred();
-  }, [appliedSearch, pages.referred, selectedAgentId, token]);
+    return () => {
+      ignore = true;
+    };
+  }, [appliedSearch, pages.referred, selectedAgentId, showToast, token]);
+
+  const selectReferredAgent = (agentId) => {
+    setSelectedAgentId(agentId);
+    setPages((current) => ({ ...current, referred: 1 }));
+  };
 
   const approve = async (values) => {
     if (!approveRequest) return;
@@ -214,25 +249,37 @@ export default function AdminSubAgentsPage() {
     <div dir="rtl" className="admin-subagents-page space-y-4">
       <Header loading={loading} onRefresh={loadData} />
       <form onSubmit={(event) => { event.preventDefault(); setPages((current) => ({ ...current, [tab]: 1 })); setAppliedSearch(search.trim()); }} className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
-        <label className="relative min-w-0 flex-1">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث في القسم الحالي" className="h-11 w-full rounded-xl bg-slate-50 px-3 text-xs font-black dark:bg-[#0B1220] dark:text-white" />
+        <label className="site-filter-search relative min-w-0 flex-1">
+          <span className="site-filter-search-icon"><Search /></span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث في القسم الحالي" className="site-filter-search-input" />
         </label>
         <button type="submit" className="h-11 rounded-xl bg-violet-600 px-5 text-xs font-black text-white">بحث</button>
       </form>
       {error ? <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</p> : null}
 
-      <div className="grid grid-cols-5 rounded-lg bg-slate-100 p-1 dark:bg-white/[0.06]">
-        {tabs.map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`h-10 rounded-md text-xs font-black ${tab === key ? "bg-white text-violet-700 shadow-sm dark:bg-[#111827]" : "text-slate-500"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <nav className="admin-subagents-tabs" aria-label="أقسام إدارة الوكلاء الفرعيين">
+        {tabs.map(({ key, label, icon: Icon }) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`admin-subagents-tab${active ? " is-active" : ""}`}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="admin-subagents-tab-icon" aria-hidden="true">
+                <Icon />
+              </span>
+              <span className="admin-subagents-tab-copy">
+                <b>{label}</b>
+                <small>{active ? "القسم مفتوح الآن" : "اضغط للفتح"}</small>
+              </span>
+              <ChevronLeft className="admin-subagents-tab-arrow" aria-hidden="true" />
+            </button>
+          );
+        })}
+      </nav>
 
       {loading ? (
         <div className="grid gap-3 md:grid-cols-2">
@@ -260,13 +307,19 @@ export default function AdminSubAgentsPage() {
             />
           ) : null}
           {tab === "referred" ? (
-            <ReferredTab agents={agents} selectedAgentId={selectedAgentId} setSelectedAgentId={setSelectedAgentId} rows={referredUsers} />
+            <ReferredTab
+              agents={agents}
+              loading={referredLoading}
+              onSelectAgent={selectReferredAgent}
+              rows={referredUsers}
+              selectedAgentId={selectedAgentId}
+            />
           ) : null}
         </>
       )}
       <AdminPagination
         {...paginations[tab]}
-        loading={loading}
+        loading={loading || (tab === "referred" && referredLoading)}
         onChange={(nextPage) => setPages((current) => ({ ...current, [tab]: nextPage }))}
       />
 
@@ -291,7 +344,7 @@ export default function AdminSubAgentsPage() {
         <EditAgentModal
           agent={editAgent}
           busy={busy === `agent:${editAgent.userId}`}
-          groups={activeGroups}
+          groups={groups}
           onClose={() => setEditAgent(null)}
           onSubmit={saveAgent}
         />
@@ -542,13 +595,26 @@ function PayoutRejectModal({ busy, onClose, onSubmit, payout }) {
   );
 }
 
-function ReferredTab({ agents, rows, selectedAgentId, setSelectedAgentId }) {
+function ReferredTab({ agents, loading, onSelectAgent, rows, selectedAgentId }) {
   return (
     <Panel>
-      <select value={selectedAgentId} onChange={(event) => setSelectedAgentId(event.target.value)} className="mb-4 h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold dark:border-white/10 dark:bg-[#0D1324] dark:text-white">
+      <label className="mb-4 block text-[10px] font-black text-slate-500">
+        <span className="mb-1.5 block">اختر الوكيل الفرعي</span>
+        <select
+          value={selectedAgentId}
+          onChange={(event) => onSelectAgent(event.target.value)}
+          className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none focus:border-violet-500 dark:border-white/10 dark:bg-[#0D1324] dark:text-white sm:max-w-md"
+        >
+          {!agents.length ? <option value="">لا يوجد وكلاء في الصفحة الحالية</option> : null}
         {agents.map((agent) => <option key={agent.userId} value={agent.userId}>{agent.name} - {agent.code}</option>)}
-      </select>
-      {!rows.length ? (
+        </select>
+      </label>
+      {loading ? (
+        <div className="grid gap-2">
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+        </div>
+      ) : !rows.length ? (
         <EmptyState icon={UsersRound} title="لا يوجد مستخدمون مُحالون" description="سيظهر المستخدمون المُحالون مباشرة بواسطة الوكيل المحدد هنا." />
       ) : (
         <div className="grid gap-2">
@@ -608,6 +674,9 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
   const [percent, setPercent] = useState(String(agent.referralCommissionPercentOverride ?? agent.commissionPercent ?? 0));
   const [status, setStatus] = useState(agent.status || "active");
   const canEditResellerFields = agent.isSubAgent === true;
+  const groupOptions = agent.group?.id && !groups.some((group) => group.id === agent.group.id)
+    ? [agent.group, ...groups]
+    : groups;
   const percentNumber = Number(percent);
   const percentInvalid = !useDefault && (percent === "" || !Number.isFinite(percentNumber) || percentNumber < 0 || percentNumber > 100);
 
@@ -627,7 +696,12 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
       {canEditResellerFields ? (
         <Field label="المجموعة المعيّنة">
           <select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="input">
-            {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+            <option value="">اختر المجموعة</option>
+            {groupOptions.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}{group.isActive === false ? " (غير نشطة)" : ""}
+              </option>
+            ))}
           </select>
         </Field>
       ) : null}
@@ -640,6 +714,7 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
       {!useDefault ? (
         <Field label="النسبة المخصصة">
           <input value={percent} onChange={(event) => setPercent(event.target.value)} type="number" min="0" max="100" step="0.01" className="input" />
+          {percentInvalid ? <span className="mt-1 block text-[10px] font-bold text-rose-600">أدخل نسبة صحيحة من 0 إلى 100.</span> : null}
         </Field>
       ) : null}
       {canEditResellerFields ? (
@@ -667,11 +742,11 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
 function Modal({ children, onClose, title }) {
   return (
     <div className="fixed inset-0 z-[160] grid place-items-center bg-slate-950/70 p-4">
-      <section className="w-full max-w-[460px] rounded-lg bg-white p-4 shadow-2xl dark:bg-[#111827]">
+      <section role="dialog" aria-modal="true" aria-label={title} className="max-h-[calc(100dvh-2rem)] w-full max-w-[460px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-[#111827]">
         <header className="flex items-center gap-3">
           <CheckCircle2 className="h-5 w-5 text-emerald-500" />
           <h2 className="flex-1 text-sm font-black dark:text-white">{title}</h2>
-          <button type="button" onClick={onClose}><XCircle className="h-5 w-5" /></button>
+          <button type="button" aria-label="إغلاق" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:hover:bg-white/10"><XCircle className="h-5 w-5" /></button>
         </header>
         <div className="mt-4 space-y-3">{children}</div>
       </section>

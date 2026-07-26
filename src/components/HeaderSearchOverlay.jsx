@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import FavoriteButton from "./FavoriteButton";
 import { iconMap } from "./icons";
+import { isProductUnavailable, isProductVisibleInStore } from "../utils/productAvailability";
 
 export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
@@ -14,7 +15,9 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
   const products = useMemo(() => {
     const backendProducts = Array.isArray(providedProducts) ? providedProducts : [];
 
-    return backendProducts.map((product, index) => {
+    return backendProducts
+      .filter(isProductVisibleInStore)
+      .map((product, index) => {
       const id = product.id || product._id || `product-${index}`;
       const name = product.name || product.title || t("products:listing.title", { defaultValue: "Untitled product" });
       const groupTitle = product.categoryTitle || product.categoryName || t("home:showcase.catalog", { defaultValue: "Catalog" });
@@ -29,7 +32,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
         price,
         searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
       };
-    });
+      });
   }, [providedProducts, t]);
 
   const shownProducts = useMemo(() => {
@@ -69,6 +72,8 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
   }, [open]);
 
   const handleProductClick = (product) => {
+    if (isProductUnavailable(product)) return;
+
     if (onProductSelect) {
       onProductSelect(product);
       onClose();
@@ -153,6 +158,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                       key={product.id || `${product.groupId}-${product.name}`}
                       product={product}
                       onClick={() => handleProductClick(product)}
+                      unavailableLabel={t("products:purchase.productUnavailableBadge")}
                     />
                   ))}
                 </div>
@@ -178,19 +184,27 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
   return createPortal(overlay, document.body);
 }
 
-function SearchProductCard({ product, onClick }) {
+function SearchProductCard({ product, onClick, unavailableLabel }) {
   const Icon = iconMap[product.icon] || iconMap.ShoppingBag;
   const tone = product.tone || product.cover || "from-[#7C3AED] via-[#2563EB] to-[#111827]";
+  const unavailable = isProductUnavailable(product);
 
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={onClick}
+      tabIndex={unavailable ? -1 : 0}
+      aria-disabled={unavailable || undefined}
+      onClick={unavailable ? undefined : onClick}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onClick();
+        if (unavailable || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        onClick();
       }}
-      className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-sky-100 bg-white p-2 text-right shadow-[0_8px_20px_rgba(14,165,233,0.08)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:shadow-[0_12px_28px_rgba(124,58,237,0.12)] dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_14px_rgba(139,92,246,0.10)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
+      className={`group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-sky-100 bg-white p-2 text-right shadow-[0_8px_20px_rgba(14,165,233,0.08)] transition dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_14px_rgba(139,92,246,0.10)] ${
+        unavailable
+          ? "cursor-not-allowed opacity-80"
+          : "cursor-pointer hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:shadow-[0_12px_28px_rgba(124,58,237,0.12)] dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
+      }`}
     >
       <span className={`relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-gradient-to-br ${tone}`}>
         <span className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.38),transparent_32%),linear-gradient(180deg,transparent,rgba(2,6,23,0.34))]" />
@@ -206,6 +220,11 @@ function SearchProductCard({ product, onClick }) {
             }}
           />
         ) : null}
+        {unavailable ? (
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-rose-600/95 px-0.5 py-0.5 text-center text-[6px] font-black leading-none text-white">
+            {unavailableLabel}
+          </span>
+        ) : null}
       </span>
       <span className="block min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
@@ -214,7 +233,11 @@ function SearchProductCard({ product, onClick }) {
         </span>
         <span className="block truncate text-[10px] font-bold leading-4 text-slate-500 dark:text-[#8A94A7]">{product.groupTitle}</span>
         {product.price ? (
-          <span dir="ltr" className="block text-[11px] font-black leading-4 text-[#8B5CF6] dark:text-[#C084FC]">{product.price}</span>
+          <span dir="ltr" className={`block text-[11px] font-black leading-4 ${
+            unavailable
+              ? "text-slate-400 line-through decoration-rose-500 dark:text-slate-500"
+              : "text-[#8B5CF6] dark:text-[#C084FC]"
+          }`}>{product.price}</span>
         ) : null}
       </span>
     </div>

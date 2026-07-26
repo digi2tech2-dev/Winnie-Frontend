@@ -9,6 +9,7 @@ import {
   resolveBackendAssetUrl,
   toNumber,
 } from "./adapters";
+import { isProductVisibleInStore } from "../utils/productAvailability";
 
 const toneClasses = [
   "from-[#7C3AED] via-[#8B5CF6] to-[#38BDF8]",
@@ -100,8 +101,10 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     : 0;
   const name = product.name || product.title || "Untitled product";
   const categoryTitle = category?.title || product.categoryName || humanizeToken(categoryValue, "Catalog");
+  const isActive = product.isActive !== false;
   const isPaused = product.isPaused === true || product.paused === true;
-  const status = product.status === "unavailable" ? "unavailable" : "available";
+  const visibleInStore = isProductVisibleInStore(product);
+  const status = !isActive || product.status === "unavailable" ? "unavailable" : "available";
 
   return {
     ...product,
@@ -127,9 +130,13 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     image: resolveBackendAssetUrl(
       product.image || product.imageUrl || product.imageURL || product.thumbnail || product.coverImage,
     ),
-    isActive: product.isActive !== false,
+    isActive,
     isPaused,
-    isPurchasable: product.isPurchasable !== false && !isPaused && status !== "unavailable",
+    isPurchasable: visibleInStore
+      && product.isPurchasable !== false
+      && isActive
+      && !isPaused
+      && status !== "unavailable",
     maxQty,
     minQty,
     minTotalCustomerCurrency: hasMinTotal ? toNumber(minTotalValue, 0) : null,
@@ -143,8 +150,8 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     unitPriceUsd: product.unitPriceUsd || product.finalPrice,
     status,
     tone: product.tone || pickTone(`${name}${categoryTitle}`),
-    visible: product.visibleInStore !== false,
-    visibleInStore: product.visibleInStore !== false,
+    visible: visibleInStore,
+    visibleInStore,
   };
 }
 
@@ -170,12 +177,15 @@ export async function getCustomerProducts(token, query = {}) {
   const response = await apiRequest("/me/products", {
     token,
     query: {
+      includeUnavailable: true,
       limit: 100,
       ...query,
     },
   });
 
-  const products = asArray(response.data).map((product, index) => normalizeProduct(product, index));
+  const products = asArray(response.data)
+    .map((product, index) => normalizeProduct(product, index))
+    .filter(isProductVisibleInStore);
 
   return {
     products,
@@ -233,15 +243,16 @@ export async function getCustomerCatalog(token, query = {}) {
 export async function getPublicCatalog(query = {}) {
   const response = await apiRequest("/public/catalog", {
     query: {
+      includeUnavailable: true,
       limit: 100,
       ...query,
     },
   });
   const categories = asArray(response.data?.categories || response.categories).map(normalizeCategory);
   const lookup = buildCategoryLookup(categories);
-  const products = asArray(response.data?.products || response.products).map((product, index) =>
-    normalizeProduct(product, index, lookup),
-  );
+  const products = asArray(response.data?.products || response.products)
+    .map((product, index) => normalizeProduct(product, index, lookup))
+    .filter(isProductVisibleInStore);
 
   return {
     categories,
@@ -265,6 +276,8 @@ export function filterProductsByCategory(products, category) {
   ].filter(Boolean));
 
   return products.filter((product) => {
+    if (!isProductVisibleInStore(product)) return false;
+
     const values = [product.category, product.categoryId, product.categorySlug]
       .map((value) => String(value || ""));
 

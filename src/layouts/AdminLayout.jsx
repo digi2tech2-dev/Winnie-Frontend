@@ -226,8 +226,12 @@ export default function AdminLayout() {
             searchProducts={searchProducts}
             unreadNotificationCount={unreadNotificationCount}
           />
-          <main className={`winnie-page-canvas admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[108px] sm:pt-[118px]" : "pb-28 pt-5 sm:pt-6 xl:pb-12"}`}>
-            <BackButton fallbackPath="/admin/user/dashboard" hiddenPaths={["/", "/admin/user/dashboard", "/admin/user/profile", "/admin/tools/dashboard"]} />
+          <main className={`winnie-page-canvas admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[80px] sm:pt-[96px]" : "pb-28 pt-4 sm:pt-6 xl:pb-12"}`}>
+            <BackButton
+              className={isAdminToolsPage ? "admin-tools-back-button" : "-mt-4 sm:-mt-6"}
+              fallbackPath={isAdminToolsPage ? "/admin/tools/dashboard" : "/admin/user/dashboard"}
+              hiddenPaths={["/", "/admin/user/dashboard", "/admin/user/profile", "/admin/tools/dashboard"]}
+            />
             <div className="winnie-page-stage">
               <Outlet
                 context={{

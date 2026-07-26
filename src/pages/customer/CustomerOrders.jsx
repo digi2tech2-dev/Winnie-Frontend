@@ -243,14 +243,14 @@ export default function CustomerOrders({ basePath = "/customer" }) {
         <div className={`grid transition-[grid-template-rows] duration-300 ${filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
           <div className={filtersOpen ? "overflow-visible" : "overflow-hidden"}>
         <div className="grid grid-cols-2 gap-2 border-t border-violet-100/80 p-2 sm:gap-2.5 sm:p-3.5 dark:border-white/10">
-          <label className="relative col-span-2">
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8B5CF6] sm:right-4 sm:h-5 sm:w-5 dark:text-slate-400" />
+          <label className="site-filter-search relative col-span-2">
+            <span className="site-filter-search-icon pointer-events-none"><Search /></span>
             <input
               type="search"
               value={filters.query}
               onChange={(event) => updateFilter("query", event.target.value)}
               placeholder={t("list.searchPlaceholder")}
-              className="h-9 w-full rounded-xl border border-[#D8B4FE]/70 bg-white px-9 text-[11px] font-bold text-slate-950 shadow-[0_6px_14px_rgba(59,130,246,0.05)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/80 focus:ring-2 focus:ring-[#8B5CF6]/15 sm:h-10 sm:rounded-2xl sm:px-12 sm:text-sm sm:shadow-[0_8px_20px_rgba(59,130,246,0.06)] sm:focus:ring-4 dark:border-white/10 dark:bg-white/[0.065] dark:text-white dark:shadow-none"
+              className="site-filter-search-input"
             />
           </label>
 

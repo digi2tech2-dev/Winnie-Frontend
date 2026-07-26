@@ -92,7 +92,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[4px] sm:items-center sm:p-5 dark:bg-[#02040C]/75"
+      className="admin-order-detail-overlay fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[4px] sm:items-center sm:p-5 dark:bg-[#02040C]/75"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busy) onClose();
       }}
@@ -101,9 +101,9 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
         role="dialog"
         aria-modal="true"
         aria-labelledby="order-details-title"
-        className="flex max-h-[94dvh] w-full max-w-[820px] flex-col overflow-hidden rounded-t-[28px] border border-white/70 bg-[#F8FAFC] shadow-[0_34px_100px_rgba(15,23,42,0.34)] sm:max-h-[90vh] sm:rounded-[30px] dark:border-white/10 dark:bg-[#080D19] dark:shadow-[0_0_50px_rgba(139,92,246,0.20)]"
+        className="admin-order-detail-modal flex max-h-[94dvh] w-full max-w-[820px] flex-col overflow-hidden rounded-t-[28px] border border-white/70 bg-[#F8FAFC] shadow-[0_34px_100px_rgba(15,23,42,0.34)] sm:max-h-[90vh] sm:rounded-[30px] dark:border-white/10 dark:bg-[#080D19] dark:shadow-[0_0_50px_rgba(139,92,246,0.20)]"
       >
-        <header className="relative shrink-0 overflow-hidden border-b border-slate-200 bg-white px-4 py-4 sm:px-6 dark:border-white/[0.08] dark:bg-[#111827]">
+        <header className="admin-order-detail-header relative shrink-0 overflow-hidden border-b border-slate-200 bg-white px-4 py-4 sm:px-6 dark:border-white/[0.08] dark:bg-[#111827]">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#8B5CF6] via-[#3B82F6] to-[#22C55E]" aria-hidden="true" />
           <div className="flex items-start gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#3B82F6] text-white shadow-[0_10px_24px_rgba(124,58,237,0.22)]">
@@ -137,7 +137,7 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
           </div>
         </header>
 
-        <div className="overflow-y-auto overscroll-contain p-3.5 sm:p-6">
+        <div className="admin-order-detail-body overflow-y-auto overscroll-contain p-3.5 sm:p-6">
           {isLoading && (
             <div className="mb-3 rounded-2xl border border-sky-200 bg-sky-50 p-3 text-xs font-black text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200">
               جارٍ تحميل أحدث تفاصيل الطلب...
@@ -154,8 +154,8 @@ function OrderDetailsModalContent({ actionKey, detailsError, isLoading, onAction
           {order && (
             <>
               <DetailSection title="المنتج" icon={Package}>
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-2.5 dark:border-white/[0.07] dark:bg-[#0B1220]">
-                  <img src={order.productImage} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-sm sm:h-24 sm:w-28" />
+                <div className="admin-order-detail-product flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-2.5 dark:border-white/[0.07] dark:bg-[#0B1220]">
+                  <img src={order.productImage} alt="" className="admin-order-detail-product-image h-20 w-20 shrink-0 rounded-2xl object-cover shadow-sm sm:h-24 sm:w-28" />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-black leading-5 text-slate-950 sm:text-base dark:text-white">{order.product}</h3>
                     <p dir="ltr" className="mt-1 text-right text-xl font-black text-[#7C3AED] dark:text-[#C084FC]">{order.priceLabel}</p>
@@ -321,7 +321,8 @@ function getConfirmation(action, order) {
   if (action === "complete") {
     return {
       ...base,
-      confirmLabel: "إكمال الطلب",
+      title: "تأكيد قبول الطلب",
+      confirmLabel: "قبول الطلب",
       message: `هل تريد تسجيل الطلب ${order.displayId} كمكتمل؟ إذا كان المبلغ قد استُرد سابقًا فقد يُخصم مرة أخرى.`,
       tone: "success",
     };
@@ -330,7 +331,8 @@ function getConfirmation(action, order) {
   if (action === "refund") {
     return {
       ...base,
-      confirmLabel: "تسجيل الفشل والاسترداد",
+      title: "تأكيد رفض الطلب",
+      confirmLabel: "رفض الطلب والاسترداد",
       message: `هل تريد تسجيل فشل الطلب ${order.displayId} وترك الخادم ينفذ الاسترداد؟`,
       tone: "danger",
     };
@@ -353,7 +355,7 @@ function getConfirmation(action, order) {
 
 function DetailSection({ title, icon: Icon, children }) {
   return (
-    <section className="mb-3 rounded-[22px] border border-slate-200/80 bg-white p-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.035)] last:mb-0 sm:p-4 dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-none">
+    <section className="admin-order-detail-section mb-3 rounded-[22px] border border-slate-200/80 bg-white p-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.035)] last:mb-0 sm:p-4 dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-none">
       <div className="mb-3 flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-500/10 text-[#7C3AED] dark:text-[#C084FC]">
           <Icon className="h-4 w-4" />
@@ -367,7 +369,7 @@ function DetailSection({ title, icon: Icon, children }) {
 
 function InfoItem({ label, value, icon: Icon, dir, wide = false }) {
   return (
-    <div className={`min-w-0 rounded-xl border border-slate-100 bg-slate-50/75 p-2.5 dark:border-white/[0.06] dark:bg-[#0B1220]/70 ${wide ? "col-span-2 sm:col-span-3" : ""}`}>
+    <div className={`admin-order-detail-info min-w-0 rounded-xl border border-slate-100 bg-slate-50/75 p-2.5 dark:border-white/[0.06] dark:bg-[#0B1220]/70 ${wide ? "col-span-2 sm:col-span-3" : ""}`}>
       <dt className="flex items-center gap-1 text-[9px] font-black text-slate-400 dark:text-[#7C8598]">
         <Icon className="h-3 w-3 shrink-0" />
         {label}
@@ -405,13 +407,24 @@ function ConfirmActionDialog({ busy, confirmation, onCancel, onConfirm, reason, 
   const danger = confirmation.tone === "danger";
   const success = confirmation.tone === "success";
 
-  return (
-    <div className="fixed inset-0 z-[160] grid place-items-center bg-slate-950/70 p-4">
-      <section className="w-full max-w-[460px] rounded-[26px] bg-white p-5 text-center shadow-2xl dark:bg-[#111827]">
+  return createPortal(
+    <div
+      className="admin-order-confirm-overlay fixed inset-0 z-[320] flex min-h-[100dvh] items-center justify-center bg-slate-950/75 p-3 backdrop-blur-[5px] sm:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="admin-order-confirm-title"
+        className="admin-order-confirm-dialog max-h-[calc(100dvh-24px)] w-full max-w-[420px] overflow-y-auto rounded-[22px] border border-white/60 bg-white p-4 text-center shadow-[0_30px_90px_rgba(15,23,42,0.38)] sm:rounded-[26px] sm:p-5 dark:border-white/10 dark:bg-[#111827]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <span className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl ${danger ? "bg-rose-500/10 text-rose-600" : success ? "bg-emerald-500/10 text-emerald-600" : "bg-sky-500/10 text-sky-600"}`}>
           {danger ? <AlertTriangle className="h-6 w-6" /> : success ? <Check className="h-6 w-6" /> : <CloudCog className="h-6 w-6" />}
         </span>
-        <h2 className="mt-3 text-sm font-black dark:text-white">{confirmation.title}</h2>
+        <h2 id="admin-order-confirm-title" className="mt-3 text-sm font-black dark:text-white">{confirmation.title}</h2>
         <p className="mt-2 text-xs font-bold leading-6 text-slate-500 dark:text-slate-300">{confirmation.message}</p>
         {confirmation.action === "refund" && (
           <label className="mt-3 block text-right">
@@ -441,6 +454,7 @@ function ConfirmActionDialog({ busy, confirmation, onCancel, onConfirm, reason, 
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

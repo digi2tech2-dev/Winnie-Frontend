@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { iconMap } from "../icons";
 import productsBanner from "../../../photo/اسلايد 3.jpg";
+import { isProductUnavailable, isProductVisibleInStore } from "../../utils/productAvailability";
 
 export default function HomeShowcase({
   categories = [],
@@ -13,6 +14,7 @@ export default function HomeShowcase({
   onProductSelect,
 }) {
   const { t } = useTranslation("home");
+  const visibleProducts = products.filter(isProductVisibleInStore);
 
   return (
     <div dir="rtl" className="space-y-6 text-right lg:space-y-8">
@@ -26,10 +28,10 @@ export default function HomeShowcase({
       </section>
 
       <section id="catalog-products">
-        <ShowcaseHeading title={productsTitle || t("showcase.products")} action={t("showcase.viewAll")} onAction={products.length ? onViewAll : undefined} />
-        {products.length ? (
+        <ShowcaseHeading title={productsTitle || t("showcase.products")} action={t("showcase.viewAll")} onAction={visibleProducts.length ? onViewAll : undefined} />
+        {visibleProducts.length ? (
           <div dir="rtl" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product, index) => (
+            {visibleProducts.map((product, index) => (
               <ProductCatalogCard
                 key={product.id || product.name}
                 product={product}
@@ -168,6 +170,7 @@ function CategoryImageItem({ category, index, onSelect, size = "default" }) {
 function ProductCatalogCard({ product, index, onSelect }) {
   const { t } = useTranslation("home");
   const priceLabel = product.displayPriceLabel || product.price || "";
+  const unavailable = isProductUnavailable(product);
 
   return (
     <motion.button
@@ -176,17 +179,29 @@ function ProductCatalogCard({ product, index, onSelect }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.3, delay: index * 0.04 }}
-      whileHover={{ y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onSelect}
-      className="group relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-slate-100 bg-white text-right shadow-[0_12px_28px_rgba(15,23,42,0.08)] outline-none transition duration-150 hover:shadow-[0_18px_38px_rgba(76,29,149,0.14)] focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.16)] dark:focus-visible:ring-offset-[#050816]"
+      whileHover={unavailable ? undefined : { y: -4 }}
+      whileTap={unavailable ? undefined : { scale: 0.98 }}
+      onClick={unavailable ? undefined : onSelect}
+      disabled={unavailable}
+      className={`group relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-slate-100 bg-white text-right shadow-[0_12px_28px_rgba(15,23,42,0.08)] outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-[#A855F7] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-[#111827] dark:shadow-[0_0_20px_rgba(139,92,246,0.16)] dark:focus-visible:ring-offset-[#050816] ${
+        unavailable
+          ? "cursor-not-allowed opacity-85"
+          : "hover:shadow-[0_18px_38px_rgba(76,29,149,0.14)]"
+      }`}
     >
-      <span className="absolute right-2 top-2 z-20 rounded-full bg-[#7C3AED] px-2 py-0.5 text-[8px] font-black text-white shadow-[0_7px_16px_rgba(124,58,237,0.34)] sm:right-2.5 sm:top-2.5 sm:text-[9px]">
-        {t("showcase.catalog")}
+      <span className={`absolute right-2 top-2 z-20 rounded-full px-2 py-0.5 text-[8px] font-black text-white sm:right-2.5 sm:top-2.5 sm:text-[9px] ${
+        unavailable
+          ? "border border-white/60 bg-rose-600 shadow-[0_7px_18px_rgba(225,29,72,0.45)]"
+          : "bg-[#7C3AED] shadow-[0_7px_16px_rgba(124,58,237,0.34)]"
+      }`}>
+        {unavailable
+          ? t("products:purchase.productUnavailableBadge")
+          : t("showcase.catalog")}
       </span>
       <div className={`relative grid aspect-square shrink-0 place-items-center overflow-hidden rounded-b-[16px] bg-gradient-to-br ${product.cover || product.tone || "from-[#7C3AED] via-[#2563EB] to-[#111827]"}`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.35),transparent_28%),linear-gradient(180deg,transparent,rgba(2,6,23,0.42))]" />
         <ProductVisual product={product} />
+        {unavailable ? <span className="pointer-events-none absolute inset-0 z-10 bg-slate-950/20" /> : null}
       </div>
       <div className="flex min-h-0 flex-1 flex-col justify-between p-2.5 sm:p-3">
         <h3 dir="ltr" className="truncate text-center text-xs font-black tracking-normal text-slate-950 dark:text-white sm:text-sm">
@@ -194,7 +209,11 @@ function ProductCatalogCard({ product, index, onSelect }) {
         </h3>
         <div className="mt-1.5 flex min-h-5 items-center justify-center">
           {priceLabel ? (
-            <span dir="ltr" className="truncate text-[11px] font-black text-[#7C3AED] dark:text-[#A78BFA] sm:text-xs">
+            <span dir="ltr" className={`truncate text-[11px] font-black sm:text-xs ${
+              unavailable
+                ? "text-slate-400 line-through decoration-rose-500 decoration-2 dark:text-slate-500"
+                : "text-[#7C3AED] dark:text-[#A78BFA]"
+            }`}>
               {priceLabel}
             </span>
           ) : (

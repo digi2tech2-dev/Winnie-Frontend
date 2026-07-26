@@ -7,6 +7,7 @@ import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 import { sortProductsByBestSelling } from "../../utils/bestSellingProducts";
+import { isProductVisibleInStore } from "../../utils/productAvailability";
 
 const pageSize = 100;
 
@@ -57,7 +58,7 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
 
   const sourceProducts = useBackendProducts ? backendProducts : publicProducts;
   const bestSellingProducts = useMemo(
-    () => sortProductsByBestSelling(sourceProducts.filter((product) => product?.isActive !== false && product?.visibleInStore !== false && product?.visible !== false)),
+    () => sortProductsByBestSelling(sourceProducts.filter(isProductVisibleInStore)),
     [sourceProducts],
   );
 

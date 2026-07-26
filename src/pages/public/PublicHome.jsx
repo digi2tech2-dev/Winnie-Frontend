@@ -10,6 +10,7 @@ import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSecti
 import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeSlide from "../../components/home/HomeSlide";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
+import { canPurchaseProduct } from "../../utils/productAvailability";
 
 export default function PublicHome() {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ export default function PublicHome() {
   const openProducts = () => navigate("/best-selling");
   const openRecentlyAdded = () => navigate("/recently-added");
   const openPurchase = (product, categoryTitle = t("showcase.catalog")) => {
+    if (!canPurchaseProduct(product)) return;
     setPurchaseItem({ product, category: categoryTitle });
   };
   const confirmPurchase = () => {

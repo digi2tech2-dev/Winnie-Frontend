@@ -7,6 +7,7 @@ import { filterChildCategories, filterProductsByCategory, getPublicCatalog } fro
 import EmptyState from "../../components/EmptyState";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
+import { canPurchaseProduct } from "../../utils/productAvailability";
 
 export default function PublicCategoryProducts() {
   const { categoryId } = useParams();
@@ -82,6 +83,10 @@ export default function PublicCategoryProducts() {
     setSelectedProduct(null);
     navigate("/login", { state: { from: "/customer/dashboard" } });
   };
+  const selectProduct = (product) => {
+    if (!canPurchaseProduct(product)) return;
+    setSelectedProduct(product);
+  };
 
   if (loading) {
     return (
@@ -148,16 +153,18 @@ export default function PublicCategoryProducts() {
 
       <form
         onSubmit={(event) => event.preventDefault()}
-        className="flex items-center gap-2 rounded-[24px] border border-sky-100 bg-white p-2 shadow-[0_14px_34px_rgba(14,165,233,0.10)] dark:border-[#2B3650] dark:bg-[#111827]"
+        className="flex items-center gap-2"
       >
-        <Search className="mr-2 h-5 w-5 shrink-0 text-[#8B5CF6] dark:text-[#C084FC]" />
-        <input
-          ref={searchInputRef}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="h-11 min-w-0 flex-1 bg-transparent px-1 text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400 dark:text-white dark:placeholder:text-[#7F8AA0]"
-          placeholder={t("public.searchCategoryPlaceholder", { category: categoryTitle })}
-        />
+        <label className="site-filter-search min-w-0 flex-1">
+          <span className="site-filter-search-icon"><Search /></span>
+          <input
+            ref={searchInputRef}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="site-filter-search-input"
+            placeholder={t("public.searchCategoryPlaceholder", { category: categoryTitle })}
+          />
+        </label>
         <button
           type="submit"
           className="h-11 rounded-2xl bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-4 text-sm font-black text-white shadow-[0_12px_24px_rgba(124,58,237,0.20)] transition hover:-translate-y-0.5"
@@ -188,7 +195,7 @@ export default function PublicCategoryProducts() {
               key={product.id || product.name}
               product={product}
               index={index}
-              onSelect={setSelectedProduct}
+              onSelect={selectProduct}
             />
           ))}
         </section>

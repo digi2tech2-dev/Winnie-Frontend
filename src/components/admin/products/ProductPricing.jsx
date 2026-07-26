@@ -27,11 +27,29 @@ export default function ProductPricing({
   const selectedProvider = providerLink.providers.find((provider) => provider.id === value.providerId);
   const selectedProduct = providerLink.providerProducts.find((product) => product.id === value.providerProductId)
     || getCurrentProductSummary(value);
+  const priceSynced = Boolean(value.syncPriceFromProvider);
+  const limitsSynced = Boolean(value.syncLimitsFromProvider);
   const searchValue = value.providerProductSearch || "";
   const providerProductCount = providerLink.pagination?.total ?? providerLink.providerProducts.length;
   const searchTimerRef = useRef(null);
 
   useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+
+  const updateLimit = (field, nextValue) => {
+    onPatch({
+      [field]: nextValue,
+      syncLimitsFromProvider: false,
+    });
+  };
+
+  const updatePrice = (field, nextValue) => {
+    onPatch({
+      [field]: nextValue,
+      ...(field === "finalPrice" ? { basePrice: nextValue } : {}),
+      syncPriceFromProvider: false,
+      syncPriceWithProvider: false,
+    });
+  };
 
   const updateProductSearch = (nextValue) => {
     onPatch({ providerProductSearch: nextValue });
@@ -50,10 +68,10 @@ export default function ProductPricing({
       </div>
 
       <div className="order-3 mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-4">
-        <NumberField label="الحد الأدنى للطلب" value={value.min} onChange={(next) => onChange("min", next)} min="1" />
-        <NumberField label="الحد الأقصى للطلب" value={value.max} onChange={(next) => onChange("max", next)} min="1" />
-        <NumberField label="السعر الأصلي" value={value.originalPrice} onChange={(next) => onChange("originalPrice", next)} step="any" />
-        <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => onChange("finalPrice", next)} step="any" />
+        <NumberField label="الحد الأدنى للطلب" value={value.min} onChange={(next) => updateLimit("min", next)} min="1" disabled={limitsSynced} disabledMessage="ألغِ مزامنة حدود الطلب للتعديل يدويًا" />
+        <NumberField label="الحد الأقصى للطلب" value={value.max} onChange={(next) => updateLimit("max", next)} min="1" disabled={limitsSynced} disabledMessage="ألغِ مزامنة حدود الطلب للتعديل يدويًا" />
+        <NumberField label="السعر الأصلي" value={value.originalPrice} onChange={(next) => updatePrice("originalPrice", next)} step="any" disabled={priceSynced} disabledMessage="ألغِ مزامنة السعر من المورد للتعديل يدويًا" />
+        <NumberField label="السعر النهائي" value={value.finalPrice} onChange={(next) => updatePrice("finalPrice", next)} step="any" disabled={priceSynced} disabledMessage="ألغِ مزامنة السعر من المورد للتعديل يدويًا" />
         <NumberField className="col-span-2" label="نسبة الخصم %" value={value.discountPercentage} onChange={(next) => onChange("discountPercentage", next)} min="0" max="100" step="1" />
       </div>
 
@@ -168,6 +186,7 @@ export default function ProductPricing({
               const supplierPrice = checked ? getExactSupplierPrice(selectedProduct) : "";
               onPatch({
                 syncPriceFromProvider: checked,
+                syncPriceWithProvider: checked,
                 ...(supplierPrice ? {
                   supplierPrice,
                   originalPrice: supplierPrice,
@@ -214,10 +233,20 @@ function TypeButton({ active, icon: Icon, title, description, onClick, tone }) {
   );
 }
 
-function NumberField({ className = "", label, value, onChange, min = "0", max, step = "1" }) {
+function NumberField({ className = "", disabled = false, disabledMessage = "", label, value, onChange, min = "0", max, step = "1" }) {
   return (
     <Field label={label} className={className}>
-      <input type="number" min={min} max={max} step={step} value={value} onChange={(event) => onChange(event.target.value)} className={inputClassName} />
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        title={disabled ? disabledMessage : undefined}
+        onChange={(event) => onChange(event.target.value)}
+        className={`${inputClassName} disabled:border-slate-700/60 disabled:bg-slate-900/70 disabled:text-slate-500 disabled:opacity-70`}
+      />
     </Field>
   );
 }

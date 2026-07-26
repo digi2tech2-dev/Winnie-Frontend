@@ -16,20 +16,25 @@ export default function PaymentGroupCard({
   onToggleMethod,
 }) {
   const [open, setOpen] = useState(false);
+  const description = String(group.description || "").trim();
+  const showDescription = description
+    && description.toLocaleLowerCase() !== String(group.name || "").trim().toLocaleLowerCase();
 
   return (
     <article className="admin-payment-group-card overflow-hidden rounded-[23px] border border-slate-200 bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[#111827]">
-      <div className="p-3.5">
-        <div className="flex items-center gap-3">
+      <div className="admin-payment-group-inner p-3.5">
+        <div className="admin-payment-group-header flex items-center gap-3">
           <span className="payment-admin-logo-shell grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl p-1.5">
             <img src={group.imageUrl || group.image || "/logo.png"} alt={group.name} className="h-full w-full object-contain" />
           </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-black dark:text-white">{group.name}</h2>
-            <p className="mt-0.5 line-clamp-1 text-[8px] font-bold text-slate-400">{group.description}</p>
-            <p className="mt-1 text-[8px] font-black text-violet-600">{group.currency} · {methods.length} طرق</p>
+          <div className="admin-payment-group-copy min-w-0 flex-1">
+            <h2 className="admin-payment-group-name text-sm font-black dark:text-white">{group.name}</h2>
+            {showDescription && (
+              <p className="admin-payment-group-description mt-0.5 text-[8px] font-bold text-slate-400">{description}</p>
+            )}
+            <p className="admin-payment-group-meta mt-1 text-[8px] font-black text-violet-600">{group.currency} · {methods.length} طرق</p>
           </div>
-          <span className={`rounded-full px-2 py-1 text-[8px] font-black ${group.active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
+          <span className={`admin-payment-group-status rounded-full px-2 py-1 text-[8px] font-black ${group.active ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>
             {group.active ? "نشطة" : "غير نشطة"}
           </span>
         </div>
@@ -45,7 +50,7 @@ export default function PaymentGroupCard({
       </div>
 
       {open && (
-        <div className="space-y-2 border-t border-slate-100 bg-slate-50/50 p-3 dark:border-white/[0.07] dark:bg-[#080D19]/60">
+        <div className="admin-payment-methods-list space-y-2 border-t border-slate-100 bg-slate-50/50 p-3 dark:border-white/[0.07] dark:bg-[#080D19]/60">
           {methods.length ? (
             methods.map((method) => (
               <PaymentMethodCard

@@ -294,7 +294,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
       <aside
         data-sidebar-variant={variant}
         dir={language === "ar" ? "rtl" : "ltr"}
-        className={`${variant === "admin" ? "admin-control-sidebar sidebar--admin" : "sidebar--user"} dashboard-sidebar no-scrollbar fixed right-0 top-0 z-[90] flex h-screen min-h-0 w-[min(92vw,320px)] flex-col overflow-hidden rounded-l-[24px] border-l border-sky-100 bg-white p-3.5 text-slate-950 shadow-[0_24px_70px_rgba(14,165,233,0.16)] transition duration-300 dark:border-[rgba(255,255,255,0.08)] dark:bg-[#080b18] dark:text-[#C4C9D4] dark:shadow-[0_0_28px_rgba(139,92,246,0.16)] sm:w-[min(82vw,330px)] sm:rounded-l-[28px] sm:p-4 xl:top-0 xl:z-[90] xl:w-[284px] xl:shrink-0 xl:translate-x-0 xl:rounded-none xl:p-4 xl:shadow-none ${
+        className={`${variant === "admin" ? "admin-control-sidebar sidebar--admin" : "sidebar--user"} dashboard-sidebar no-scrollbar fixed right-0 top-0 z-[90] flex h-screen min-h-0 w-[min(90vw,292px)] flex-col overflow-hidden rounded-l-[22px] border-l border-sky-100 bg-white p-3 text-slate-950 shadow-[0_24px_70px_rgba(14,165,233,0.16)] transition duration-300 dark:border-[rgba(255,255,255,0.08)] dark:bg-[#080b18] dark:text-[#C4C9D4] dark:shadow-[0_0_28px_rgba(139,92,246,0.16)] sm:w-[min(80vw,300px)] sm:rounded-l-[24px] sm:p-3.5 xl:top-0 xl:z-[90] xl:w-[260px] xl:shrink-0 xl:translate-x-0 xl:rounded-none xl:p-3 xl:shadow-none ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

@@ -463,13 +463,14 @@ export default function AdminUsersPage() {
           setAppliedSearch(search.trim());
         }}
       >
-        <label className="admin-users-search-field">
-          <Search className="h-4 w-4" />
+        <label className="admin-users-search-field site-filter-search">
+          <span className="site-filter-search-icon"><Search /></span>
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="ابحث بالاسم أو البريد الإلكتروني أو رقم المستخدم"
             aria-label="ابحث بالاسم أو البريد الإلكتروني أو رقم المستخدم"
+            className="site-filter-search-input"
           />
           {search && (
             <button type="button" onClick={() => setSearch("")} title="مسح البحث" aria-label="مسح البحث">
@@ -1159,8 +1160,8 @@ function WalletItem({ label, value, strong = false }) {
 }
 
 function PasswordDialog({ busy, form, user, onCancel, onChange, onConfirm }) {
-  return (
-    <div className="admin-user-confirm-layer">
+  return createPortal(
+    <div className="admin-user-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="admin-user-password-title">
       <motion.div
         className="admin-user-confirm"
         initial={{ opacity: 0, y: 14, scale: 0.98 }}
@@ -1170,7 +1171,7 @@ function PasswordDialog({ busy, form, user, onCancel, onChange, onConfirm }) {
         <span className="admin-user-confirm-icon">
           <KeyRound className="h-6 w-6" />
         </span>
-        <h2>تغيير كلمة المرور</h2>
+        <h2 id="admin-user-password-title">تغيير كلمة المرور</h2>
         <p>{user.name} - لا يتم عرض كلمة المرور بعد الحفظ.</p>
         <label className="mt-4 block text-right">
           <span className="mb-1 block text-[10px] font-black text-slate-500">كلمة المرور الجديدة</span>
@@ -1200,15 +1201,16 @@ function PasswordDialog({ busy, form, user, onCancel, onChange, onConfirm }) {
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 function ConfirmDialog({ confirmation, busy, onCancel, onConfirm }) {
   const danger = confirmation.tone === "danger";
   const success = confirmation.tone === "success";
-  return (
-    <div className="admin-user-confirm-layer">
+  return createPortal(
+    <div className="admin-user-confirm-layer" role="alertdialog" aria-modal="true" aria-labelledby="admin-user-confirm-title">
       <motion.div
         className="admin-user-confirm"
         initial={{ opacity: 0, y: 14, scale: 0.98 }}
@@ -1218,7 +1220,7 @@ function ConfirmDialog({ confirmation, busy, onCancel, onConfirm }) {
         <span className={danger ? "admin-user-confirm-icon-danger" : success ? "admin-user-confirm-icon-success" : "admin-user-confirm-icon"}>
           {danger ? <AlertTriangle className="h-6 w-6" /> : <ShieldCheck className="h-6 w-6" />}
         </span>
-        <h2>{confirmation.title}</h2>
+        <h2 id="admin-user-confirm-title">{confirmation.title}</h2>
         <p>{confirmation.message}</p>
         <div>
           <button type="button" onClick={onCancel} disabled={busy}>إلغاء</button>
@@ -1233,6 +1235,7 @@ function ConfirmDialog({ confirmation, busy, onCancel, onConfirm }) {
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }

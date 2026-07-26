@@ -18,6 +18,7 @@ import { SkeletonBlock } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import AdminPagination from "../../components/admin/AdminPagination";
+import "../../styles/admin-supervisor-wizard.css";
 
 export default function AdminSupervisorsPage() {
   const [supervisors, setSupervisors] = useState([]);
@@ -130,9 +131,9 @@ export default function AdminSupervisorsPage() {
     <div dir="rtl" className="space-y-3">
       <PageHeader onAdd={() => setWizard({ stage: "search" })} />
       <form onSubmit={(event) => { event.preventDefault(); setPage(1); setAppliedSearch(search.trim()); }} className="flex gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-white/10 dark:bg-[#111827]">
-        <label className="relative min-w-0 flex-1">
-          <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-500" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث بالاسم أو البريد الإلكتروني" className="h-9 w-full rounded-lg bg-slate-50 pe-8 ps-2.5 text-[10px] font-black dark:bg-[#0B1220] dark:text-white" />
+        <label className="site-filter-search relative min-w-0 flex-1">
+          <span className="site-filter-search-icon"><Search /></span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث بالاسم أو البريد الإلكتروني" className="site-filter-search-input" />
         </label>
         <button type="submit" className="h-9 rounded-lg bg-violet-600 px-4 text-[10px] font-black text-white">بحث</button>
       </form>
@@ -246,7 +247,176 @@ function SupervisorPermissionsModal({ state, permissionGroups, onClose, onSave, 
   );
 }
 
-function SupervisorWizardLegacy({ state, permissionGroups, token, onClose, onStage, onSave, saving }) {
+function SupervisorWizardLegacy({ state, token, onClose, onStage, saving }) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState("");
+
+  useEffect(() => {
+    if (state?.stage !== "search") return;
+    setQuery("");
+    setSelected(null);
+  }, [state]);
+
+  useEffect(() => {
+    if (!state || state.stage !== "search" || !token) return undefined;
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setUsersLoading(true);
+      setUsersError("");
+      listEligibleSupervisorUsers(token, { search: query, page: 1, limit: 10 })
+        .then((response) => {
+          if (cancelled) return;
+          setUsers(response?.data || response?.users || []);
+        })
+        .catch((error) => {
+          if (!cancelled) setUsersError(error.userMessage || error.message || "تعذر تحميل المستخدمين");
+        })
+        .finally(() => {
+          if (!cancelled) setUsersLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, state, token]);
+
+  useEffect(() => {
+    if (!state || typeof document === "undefined") return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [state]);
+
+  if (!state) return null;
+
+  const modal = (
+    <motion.div
+      className="supervisor-wizard-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onMouseDown={(event) => {
+        if (!saving && event.target === event.currentTarget) onClose();
+      }}
+    >
+      <motion.section
+        className="supervisor-wizard-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supervisor-wizard-title"
+        initial={{ opacity: 0, y: 18, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 360, damping: 30 }}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="supervisor-wizard-header">
+          <span className="supervisor-wizard-header-icon" aria-hidden="true">
+            <ShieldCheck size={18} />
+          </span>
+          <div className="supervisor-wizard-heading">
+            <h2 id="supervisor-wizard-title">إضافة مشرف</h2>
+            <p>ابحث عن مستخدم ثم حدد صلاحياته</p>
+          </div>
+          <button
+            type="button"
+            className="supervisor-wizard-close"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="إغلاق"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </header>
+
+        <div className="supervisor-wizard-body">
+          <label className="supervisor-wizard-search">
+            <span className="supervisor-wizard-search-icon" aria-hidden="true">
+              <Search size={15} />
+            </span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="ابحث بالاسم أو البريد الإلكتروني"
+              aria-label="البحث عن مستخدم"
+            />
+          </label>
+
+          <div className="supervisor-wizard-users" aria-live="polite">
+            {usersLoading ? (
+              <div className="supervisor-wizard-loading">
+                <span />
+                <span />
+                <span />
+              </div>
+            ) : usersError ? (
+              <div className="supervisor-wizard-message is-error">{usersError}</div>
+            ) : users.length === 0 ? (
+              <div className="supervisor-wizard-message">لا توجد نتائج مطابقة</div>
+            ) : (
+              users.map((user) => {
+                const isSelected = selected?.id === user.id;
+                const status = String(user.status || "").toUpperCase();
+                const statusLabel =
+                  status === "ACTIVE" ? "نشط" : status === "PENDING" ? "معلّق" : user.status;
+
+                return (
+                  <button
+                    type="button"
+                    key={user.id}
+                    className={`supervisor-wizard-user${isSelected ? " is-selected" : ""}`}
+                    onClick={() => setSelected(user)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="supervisor-wizard-avatar" aria-hidden="true">
+                      {(user.name || user.email || "U").trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="supervisor-wizard-user-copy">
+                      <b>{user.name || "مستخدم بدون اسم"}</b>
+                      <small dir="ltr">{user.email}</small>
+                    </span>
+                    <span className="supervisor-wizard-user-side">
+                      <span className={`supervisor-wizard-status${status === "ACTIVE" ? " is-active" : ""}`}>
+                        {statusLabel}
+                      </span>
+                      {isSelected ? <Check size={15} aria-hidden="true" /> : null}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <footer className="supervisor-wizard-footer">
+          <button type="button" className="supervisor-wizard-cancel" onClick={onClose} disabled={saving}>
+            إلغاء
+          </button>
+          <button
+            type="button"
+            className="supervisor-wizard-continue"
+            onClick={() => selected && onStage("permissions", selected)}
+            disabled={!selected || saving}
+          >
+            متابعة
+          </button>
+        </footer>
+      </motion.section>
+    </motion.div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
+}
+
+function SupervisorWizardLegacyPrevious({ state, permissionGroups, token, onClose, onStage, onSave, saving }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [users, setUsers] = useState([]);
@@ -286,6 +456,119 @@ function SupervisorWizardLegacy({ state, permissionGroups, token, onClose, onSta
 }
 
 function LogsModal({ open, supervisor, logs, supervisors, loading, error, onClose }) {
+  const [expanded, setExpanded] = useState(null);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setExpanded(null);
+  }, [open]);
+
+  if (!open) return null;
+
+  const names = Object.fromEntries(supervisors.map((item) => [item.id, item.name]));
+  const modal = (
+    <div
+      className="supervisor-logs-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="supervisor-logs-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supervisor-logs-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="supervisor-logs-header">
+          <span className="supervisor-logs-header-icon" aria-hidden="true">
+            <Activity size={18} />
+          </span>
+          <div className="supervisor-logs-heading">
+            <h2 id="supervisor-logs-title">
+              {supervisor ? `سجلات ${supervisor.name}` : "سجلات عمليات المشرفين كلها"}
+            </h2>
+            <p>كل عملية منفذة بواسطة فريق الإدارة</p>
+          </div>
+          <button type="button" className="supervisor-logs-close" onClick={onClose} aria-label="إغلاق">
+            ✕
+          </button>
+        </header>
+
+        <div className="supervisor-logs-body">
+          {loading ? (
+            <div className="supervisor-logs-loading" aria-label="جارٍ تحميل السجلات">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <SkeletonBlock key={index} className="h-16 rounded-2xl" />
+              ))}
+            </div>
+          ) : error ? (
+            <p className="supervisor-logs-message is-error">{error}</p>
+          ) : !logs.length ? (
+            <p className="supervisor-logs-message">لا توجد سجلات</p>
+          ) : (
+            <div className="supervisor-logs-list">
+              {logs.map((log) => {
+                const completed = log.status === "completed";
+                const isExpanded = expanded === log.id;
+
+                return (
+                  <article key={log.id} className="supervisor-log-card">
+                    <div className="supervisor-log-summary">
+                      <span className={`supervisor-log-dot${completed ? " is-completed" : ""}`} aria-hidden="true" />
+                      <div className="supervisor-log-copy">
+                        <h3>{log.action}</h3>
+                        <p>
+                          المشرف المنفذ: {names[log.supervisorId] || log.supervisorId || "مشرف"}
+                          <span aria-hidden="true"> · </span>
+                          {log.date} · {log.time}
+                        </p>
+                      </div>
+                      <span className={`supervisor-log-status${completed ? " is-completed" : ""}`}>
+                        {completed ? "مكتملة" : "قيد التنفيذ"}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="supervisor-log-expand"
+                      onClick={() => setExpanded(isExpanded ? null : log.id)}
+                      aria-expanded={isExpanded}
+                    >
+                      {isExpanded ? "عرض أقل" : "عرض المزيد"}
+                      <ChevronDown size={13} className={isExpanded ? "rotate-180" : ""} />
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="supervisor-log-details">
+                        <p>{log.details}</p>
+                        <p dir="ltr" className="supervisor-log-meta">
+                          المعرّف: {log.id} · الهدف: {log.target} · عنوان الشبكة: {log.ip}
+                        </p>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
+}
+
+function LogsModalPrevious({ open, supervisor, logs, supervisors, loading, error, onClose }) {
   const [expanded, setExpanded] = useState(null);
   if (!open) return null;
   const names = Object.fromEntries(supervisors.map((item) => [item.id, item.name]));

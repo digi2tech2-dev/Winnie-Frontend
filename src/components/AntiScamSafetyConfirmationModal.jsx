@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ShieldAlert, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -24,10 +25,10 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
     onConfirm?.();
   };
 
-  return (
+  const modal = (
     <div
       dir={isArabic ? "rtl" : "ltr"}
-      className="fixed inset-0 z-[190] flex items-center justify-center overflow-y-auto bg-slate-950/72 p-2.5 backdrop-blur-sm sm:p-4"
+      className="anti-scam-overlay fixed inset-0 z-[100200] flex items-center justify-center overflow-hidden bg-slate-950/72 p-2.5 backdrop-blur-sm sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="anti-scam-title"
@@ -35,7 +36,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
         if (event.target === event.currentTarget) onCancel?.();
       }}
     >
-      <section className="relative flex max-h-[calc(100dvh-1.25rem)] w-full max-w-[540px] flex-col overflow-hidden rounded-[20px] border border-white/30 bg-white text-slate-950 shadow-[0_28px_80px_rgba(2,6,23,0.5)] dark:border-white/10 dark:bg-[#080d1e] dark:text-white sm:max-h-[calc(100dvh-2rem)]">
+      <section className="anti-scam-dialog relative flex max-h-[calc(100dvh-1.25rem)] w-full max-w-[540px] flex-col overflow-hidden rounded-[20px] border border-white/30 bg-white text-slate-950 shadow-[0_28px_80px_rgba(2,6,23,0.5)] dark:border-white/10 dark:bg-[#080d1e] dark:text-white sm:max-h-[calc(100dvh-2rem)]">
         <span className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-violet-500" aria-hidden="true" />
         <header className="relative flex shrink-0 items-center gap-3 border-b border-slate-200 bg-[linear-gradient(135deg,#fff8ed,#ffffff_52%,#f7f5ff)] px-3.5 py-3 text-start dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.16),rgba(8,13,30,0.98)_52%,rgba(139,92,246,0.16))]">
           <button
@@ -61,7 +62,7 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
           </div>
         </header>
 
-        <div className="min-h-0 overflow-y-auto bg-slate-50/70 px-2.5 py-2.5 dark:bg-black/10 sm:px-3">
+        <div className="anti-scam-scroll min-h-0 overflow-y-auto bg-slate-50/70 px-2.5 py-2.5 dark:bg-black/10 sm:px-3">
           <ol className="grid gap-1.5 rounded-[14px] border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/60 p-1.5 text-[11px] font-bold leading-[1.15rem] text-amber-950 dark:border-amber-300/15 dark:from-amber-300/[0.09] dark:to-orange-400/[0.04] dark:text-amber-100 sm:text-xs">
             {warningPoints.map((point, index) => (
               <li key={point} className="flex items-start gap-2 rounded-[10px] border border-white/70 bg-white/65 px-2 py-1.5 shadow-[0_2px_8px_rgba(120,53,15,0.04)] dark:border-white/[0.05] dark:bg-white/[0.035]">
@@ -133,6 +134,8 @@ export default function AntiScamSafetyConfirmationModal({ onCancel, onConfirm })
       </section>
     </div>
   );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
 function CheckboxRow({ checked, id, label, onChange }) {

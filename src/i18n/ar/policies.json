@@ -230,14 +230,14 @@
             {
               "type": "phone",
               "label": "الهاتف",
-              "value": "+971 52 771 5868",
-              "href": "tel:+971527715868"
+              "value": "+971 52 933 0668",
+              "href": "tel:+971529330668"
             },
             {
               "type": "whatsapp",
               "label": "واتساب",
-              "value": "+971 52 771 5868",
-              "href": "https://wa.me/971527715868"
+              "value": "+971 52 933 0668",
+              "href": "https://wa.me/971529330668"
             },
             {
               "type": "location",

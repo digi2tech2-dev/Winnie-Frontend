@@ -47,12 +47,14 @@
 .buy-modal {
   position: relative;
   width: min(430px, calc(100vw - 20px));
+  max-height: calc(100dvh - 20px);
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 24px 22px 24px;
   color: #fff;
-  scale: var(--buy-modal-scale, 1);
-  transform-origin: center;
   background:
     radial-gradient(circle at 50% 34%, rgba(43, 16, 116, 0.48), transparent 34%),
     radial-gradient(circle at 20% 0%, rgba(217, 70, 239, 0.18), transparent 28%),
@@ -605,7 +607,7 @@
 .buy-dynamic-input {
   width: 100%;
   min-height: 54px;
-  padding: 0 18px 0 70px;
+  padding: 0 18px;
   color: #fff;
   font-size: 17px;
   font-weight: 800;
@@ -873,11 +875,13 @@ html:not(.dark) .buy-modal__error--insufficient-funds {
 
 @media (max-width: 520px) {
   .buy-modal-backdrop {
+    align-items: start;
     padding: 8px;
   }
 
   .buy-modal {
     width: min(398px, calc(100vw - 16px));
+    max-height: calc(100dvh - 16px);
     padding: 22px 15px 21px;
     border-radius: 30px;
   }
@@ -1026,8 +1030,8 @@ html:not(.dark) .buy-modal__error--insufficient-funds {
   .buy-account-input,
   .buy-dynamic-input {
     min-height: 52px;
-    padding-inline: 14px 62px;
-    font-size: 15px;
+    padding-inline: 14px;
+    font-size: 16px;
   }
 
   .buy-actions__submit {
@@ -1185,4 +1189,335 @@ html:not(.dark) .buy-row__icon {
 
 html:not(.dark) .buy-modal__secure {
   color: #526078;
+}
+
+html:not(.dark) .buy-modal__error {
+  color: #713f12;
+  background: rgba(254, 249, 195, 0.96);
+  border-color: rgba(202, 138, 4, 0.48);
+  box-shadow:
+    0 10px 24px rgba(161, 98, 7, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+html:not(.dark) .buy-modal__error--quantity-warning {
+  color: #9a3412;
+  background: rgba(255, 247, 237, 0.98);
+  border-color: #fb923c;
+}
+
+/* Compact purchase dialog. The backdrop itself carries role="dialog", so it
+   must stay full-screen even when global responsive dialog guards are active. */
+.buy-modal-backdrop {
+  width: 100% !important;
+  max-width: none !important;
+  align-items: center;
+  padding: 8px !important;
+}
+
+.buy-modal {
+  width: min(350px, calc(100vw - 16px)) !important;
+  max-height: calc(100dvh - 16px);
+  padding: 14px !important;
+  border-radius: 24px !important;
+  scrollbar-width: none;
+}
+
+.buy-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.buy-modal::after {
+  border-radius: 23px !important;
+}
+
+.buy-modal__header {
+  grid-template-columns: 34px minmax(0, 1fr) 70px !important;
+  gap: 6px !important;
+}
+
+.buy-modal__close {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.buy-modal__close svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.buy-modal__title {
+  gap: 5px !important;
+  font-size: 14px !important;
+}
+
+.buy-modal__title svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.buy-modal__status {
+  height: 28px !important;
+  gap: 4px !important;
+  font-size: 9px !important;
+}
+
+.buy-modal__status-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.buy-modal__status svg {
+  width: 11px;
+  height: 11px;
+}
+
+.buy-hero {
+  min-height: 92px !important;
+  margin-top: 5px !important;
+}
+
+.buy-balance-card {
+  left: 0 !important;
+  top: 11px !important;
+  min-width: 92px !important;
+  padding: 8px !important;
+  border-radius: 13px !important;
+}
+
+.buy-balance-card span {
+  font-size: 8px !important;
+}
+
+.buy-balance-card strong {
+  margin-top: 4px !important;
+  font-size: 12px !important;
+}
+
+.buy-hero__image-wrap {
+  inset: -8px 0 0 !important;
+  padding-top: 10px !important;
+  padding-right: 18px !important;
+}
+
+.buy-hero__image-wrap::after {
+  right: 14px !important;
+  bottom: 7px !important;
+  width: 108px !important;
+  height: 15px !important;
+}
+
+.buy-hero__image {
+  width: 78px !important;
+  height: 78px !important;
+  border-radius: 16px !important;
+}
+
+.buy-summary {
+  min-height: 58px !important;
+  margin-top: 0 !important;
+  padding: 8px 9px !important;
+  border-radius: 15px !important;
+}
+
+.buy-summary__item > span {
+  font-size: 10px !important;
+}
+
+.buy-summary__item strong {
+  margin-top: 5px !important;
+  font-size: 17px !important;
+}
+
+.buy-summary__item--total strong {
+  margin-top: 5px !important;
+  font-size: 13px !important;
+}
+
+.buy-quantity {
+  width: min(132px, 100%) !important;
+  min-height: 38px !important;
+  gap: 5px !important;
+  margin-top: 5px !important;
+  padding-inline: 7px !important;
+  border-radius: 12px !important;
+}
+
+.buy-quantity input {
+  font-size: 22px !important;
+}
+
+.buy-summary__item--quantity .buy-w-coin {
+  width: 23px !important;
+  height: 23px !important;
+  font-size: 13px !important;
+}
+
+.buy-quantity-limits {
+  min-height: 18px !important;
+  gap: 6px !important;
+  margin-top: 4px !important;
+  font-size: 8px !important;
+}
+
+.buy-quantity-limits__item {
+  gap: 3px !important;
+}
+
+.buy-quantity-limits__item svg {
+  width: 9px !important;
+  height: 9px !important;
+}
+
+.buy-quantity-limits__item strong {
+  font-size: 9px !important;
+}
+
+.buy-packages {
+  gap: 6px !important;
+  margin-top: 9px !important;
+}
+
+.buy-packages button {
+  min-height: 38px !important;
+  padding: 7px 8px !important;
+  border-radius: 11px !important;
+  font-size: 10px !important;
+}
+
+.buy-fields {
+  gap: 7px !important;
+  margin-top: 9px !important;
+}
+
+.buy-row {
+  min-height: 0 !important;
+  gap: 6px !important;
+  padding: 9px !important;
+  border-radius: 14px !important;
+}
+
+.buy-row__label {
+  font-size: 12px !important;
+}
+
+.buy-account-input,
+.buy-dynamic-input {
+  min-height: 39px !important;
+  padding-inline: 10px !important;
+  border-radius: 11px !important;
+  font-size: 12px !important;
+}
+
+.buy-dynamic-input--textarea {
+  min-height: 58px !important;
+  padding-block: 9px !important;
+}
+
+.buy-xena-field,
+.buy-xena-field__control {
+  gap: 6px !important;
+}
+
+.buy-xena-field__verify {
+  min-width: 72px !important;
+  min-height: 39px !important;
+  padding-inline: 8px !important;
+  border-radius: 11px !important;
+  font-size: 9px !important;
+}
+
+.buy-modal__error {
+  margin-top: 8px !important;
+  padding: 7px 9px !important;
+  border-radius: 11px !important;
+  font-size: 10px !important;
+  line-height: 1.45 !important;
+}
+
+.buy-actions {
+  margin-top: 10px !important;
+}
+
+.buy-actions__submit {
+  height: 44px !important;
+  gap: 8px !important;
+  border-radius: 13px !important;
+  font-size: 14px !important;
+}
+
+.buy-actions__submit svg {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.buy-modal__secure {
+  gap: 5px !important;
+  margin-top: 8px !important;
+  font-size: 10px !important;
+}
+
+.buy-modal__secure svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+@media (max-width: 520px) {
+  .buy-modal-backdrop {
+    place-items: center !important;
+  }
+
+  .buy-modal {
+    width: min(330px, calc(100vw - 16px)) !important;
+    padding: 11px !important;
+    border-radius: 21px !important;
+  }
+
+  .buy-modal::after {
+    border-radius: 20px !important;
+  }
+
+  .buy-hero {
+    min-height: 84px !important;
+  }
+
+  .buy-hero__image {
+    width: 70px !important;
+    height: 70px !important;
+  }
+
+  .buy-balance-card {
+    transform: none !important;
+  }
+}
+
+.buy-account-input {
+  background:
+    linear-gradient(rgba(7, 8, 30, 0.92), rgba(7, 8, 30, 0.92)) padding-box,
+    linear-gradient(105deg, #d946ef, #7c3aed 48%, #22d3ee) border-box !important;
+  border: 1.5px solid transparent !important;
+  box-shadow:
+    0 0 5px rgba(255, 255, 255, 0.30),
+    0 0 12px rgba(217, 70, 239, 0.72),
+    0 0 22px rgba(34, 211, 238, 0.38),
+    inset 0 0 12px rgba(124, 58, 237, 0.12) !important;
+}
+
+.buy-account-input:focus {
+  box-shadow:
+    0 0 6px rgba(255, 255, 255, 0.68),
+    0 0 16px rgba(217, 70, 239, 0.94),
+    0 0 28px rgba(34, 211, 238, 0.62),
+    inset 0 0 15px rgba(124, 58, 237, 0.18) !important;
+}
+
+html:not(.dark) .buy-account-input {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.96)) padding-box,
+    linear-gradient(105deg, #c026d3, #7c3aed 48%, #0891b2) border-box !important;
+  box-shadow:
+    0 0 5px rgba(255, 255, 255, 0.92),
+    0 0 12px rgba(192, 38, 211, 0.56),
+    0 0 22px rgba(6, 182, 212, 0.34),
+    inset 0 0 10px rgba(124, 58, 237, 0.07) !important;
 }

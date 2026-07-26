@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { sortProductsByNewest } from "../../utils/recentProducts";
+import { isProductVisibleInStore } from "../../utils/productAvailability";
 import HomeProductCard from "./HomeProductCard";
 import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
@@ -12,7 +13,7 @@ export default function RecentAdditionsSection({ items = [], onSelect, onViewAll
   const isArabic = i18n.language?.startsWith("ar");
   const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
   const recentItems = useMemo(
-    () => sortProductsByNewest(items.filter((item) => item?.isActive !== false)).slice(0, recentHomepageLimit),
+    () => sortProductsByNewest(items.filter(isProductVisibleInStore)).slice(0, recentHomepageLimit),
     [items],
   );
 

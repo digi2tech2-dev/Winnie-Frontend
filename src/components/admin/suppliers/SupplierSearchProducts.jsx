@@ -20,19 +20,27 @@ export default function SupplierSearchProducts({
           event.preventDefault();
           onSearch(query);
         }}
-        className="mt-3 flex gap-2"
+        className="admin-suppliers-search-form mt-3 flex gap-2"
       >
-        <label className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+        <label className="admin-suppliers-search-field site-filter-search flex-1">
+          <span className="site-filter-search-icon" aria-hidden="true">
+            <Search />
+          </span>
           <input
+            type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="اسم منتج المورد أو اسمه المترجم"
-            className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-xs font-black outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
+            className="site-filter-search-input"
           />
         </label>
-        <button type="submit" disabled={loading} className="h-11 rounded-2xl bg-violet-600 px-4 text-[10px] font-black text-white disabled:opacity-60">
-          {loading ? "جارٍ البحث..." : "بحث"}
+        <button
+          type="submit"
+          disabled={loading}
+          className="admin-suppliers-search-submit h-11 rounded-2xl bg-violet-600 px-4 text-[10px] font-black text-white disabled:opacity-60"
+        >
+          <Search aria-hidden="true" />
+          <span>{loading ? "جارٍ البحث..." : "بحث"}</span>
         </button>
       </form>
 

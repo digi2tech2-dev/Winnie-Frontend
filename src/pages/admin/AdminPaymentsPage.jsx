@@ -516,13 +516,13 @@ function Filters({ activeCount, filters, onApply, onChange, onReset }) {
       <div className={`grid transition-[grid-template-rows] duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className={isOpen ? "overflow-visible" : "overflow-hidden"}>
       <form onSubmit={onApply} className="grid gap-2.5 border-t border-slate-100 p-4 dark:border-white/10 lg:grid-cols-[1fr_150px_180px_130px_300px_auto]">
-        <label className="relative">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+        <label className="site-filter-search relative">
+          <span className="site-filter-search-icon"><Search /></span>
           <input
             value={filters.search}
             onChange={(event) => onChange("search", event.target.value)}
             placeholder="ابحث عن دفعة أو مستخدم"
-            className="h-11 w-full rounded-2xl bg-slate-50 pe-9 ps-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white"
+            className="site-filter-search-input"
           />
         </label>
         <select value={filters.status} onChange={(event) => onChange("status", event.target.value)} className="h-11 rounded-2xl bg-slate-50 px-3 text-[10px] font-black dark:bg-[#0B1220] dark:text-white">

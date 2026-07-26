@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Phone, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -293,14 +294,14 @@ export default function ProfilePage({ basePath = "/customer" }) {
   return (
     <div
       dir="rtl"
-      className="customer-profile-page -mx-4 -mt-6 min-h-[calc(100vh-120px)] overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
+      className="customer-profile-page -mx-4 -mt-2 min-h-[calc(100vh-120px)] overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
     >
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={changeAvatar} />
       <section className="customer-profile-hero relative min-h-[390px] overflow-hidden bg-[linear-gradient(135deg,#BAF1FF_0%,#E8E0FF_48%,#FFC2DC_100%)] px-4 pb-7 pt-5 dark:bg-[linear-gradient(135deg,#070A1E_0%,#111827_48%,#24133D_100%)] sm:min-h-[460px] sm:px-8 sm:pb-8 sm:pt-7">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.06)_58%,rgba(248,252,255,0)_100%),linear-gradient(90deg,rgba(125,211,252,0.34)_0%,rgba(255,255,255,0)_42%,rgba(244,114,182,0.34)_100%)] dark:bg-[linear-gradient(180deg,rgba(139,92,246,0.24)_0%,rgba(56,189,248,0.08)_58%,rgba(5,8,22,0)_100%),linear-gradient(90deg,rgba(56,189,248,0.18)_0%,rgba(5,8,22,0)_44%,rgba(168,85,247,0.24)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,rgba(248,252,255,0)_0%,rgba(248,252,255,1)_100%)] dark:bg-[linear-gradient(180deg,rgba(5,8,22,0)_0%,rgba(5,8,22,0.94)_100%)]" />
         <BackButton
-          className="profile-hero-back absolute right-4 top-5 z-20 mb-0 sm:right-8 sm:top-7"
+          className="profile-hero-back absolute !right-3 !top-3 z-20 !mb-0 sm:!right-6 sm:!top-4"
           fallbackPath={`${basePath}/dashboard`}
           hiddenPaths={[`${basePath}/dashboard`]}
         />
@@ -545,18 +546,35 @@ function EditProfilePanel({
 function ProfileMenu({ displayName, avatarUrl, onClose, onShareInvite, onChangePassword, onSettings, onLogout }) {
   const { t } = useTranslation("profile");
 
-  return (
-    <div className="fixed inset-0 z-[150] flex items-end bg-[#050816]" role="dialog" aria-modal="true" onClick={onClose}>
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[3000] flex w-screen max-w-none items-end justify-center bg-slate-950/70 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[30px] border-t border-[#C4B5FD]/45 bg-white px-5 pb-6 pt-3 text-center text-slate-950 shadow-[0_-24px_70px_rgba(14,165,233,0.16)] dark:border-[#8B5CF6]/24 dark:bg-[#111827] dark:text-[#F8F9FA] dark:shadow-[0_0_28px_rgba(139,92,246,0.20)] sm:px-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-menu-title"
+        className="w-full overflow-y-auto overflow-x-hidden rounded-t-[28px] border-t border-[#C4B5FD]/45 bg-white px-4 pt-3 text-center text-slate-950 shadow-[0_-24px_70px_rgba(14,165,233,0.16)] dark:border-[#8B5CF6]/24 dark:bg-[#111827] dark:text-[#F8F9FA] dark:shadow-[0_0_28px_rgba(139,92,246,0.20)] sm:rounded-t-[30px] sm:px-8"
+        style={{
+          maxWidth: "none",
+          maxHeight: "calc(100dvh - max(8px, env(safe-area-inset-top)))",
+          paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))",
+        }}
         onClick={(event) => event.stopPropagation()}
       >
-        <span className="mx-auto mb-4 block h-1.5 w-12 rounded-full bg-[#C4B5FD]/55 dark:bg-[#8B5CF6]/34" />
-        <div className="mx-auto w-full max-w-[760px]">
-          <AvatarPicture src={avatarUrl} className="mx-auto h-24 w-24 border-4 border-[#E9D5FF] shadow-[0_16px_38px_rgba(139,92,246,0.16)] dark:border-[#8B5CF6]/32 dark:shadow-[0_0_24px_rgba(139,92,246,0.22)]" />
-          <h2 className="mt-4 text-2xl font-black text-slate-950 dark:text-[#F8F9FA]">{displayName}</h2>
+        <span className="mx-auto mb-3 block h-1.5 w-11 rounded-full bg-[#C4B5FD]/55 dark:bg-[#8B5CF6]/34 sm:mb-4 sm:w-12" />
+        <div className="mx-auto w-full max-w-[620px]">
+          <AvatarPicture src={avatarUrl} className="mx-auto h-20 w-20 border-4 border-[#E9D5FF] shadow-[0_16px_38px_rgba(139,92,246,0.16)] dark:border-[#8B5CF6]/32 dark:shadow-[0_0_24px_rgba(139,92,246,0.22)] sm:h-24 sm:w-24" />
+          <h2 id="profile-menu-title" className="mx-auto mt-2 max-w-full break-words px-3 text-xl font-black leading-8 text-slate-950 dark:text-[#F8F9FA] sm:mt-4 sm:text-2xl">{displayName}</h2>
 
-          <div className="mx-auto mt-6 w-full max-w-[760px] space-y-2 rounded-[22px] bg-white p-2 text-right shadow-[0_14px_34px_rgba(14,165,233,0.10)] dark:bg-[#0D1324] dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]">
+          <div className="mx-auto mt-4 w-full space-y-2 rounded-[20px] border border-violet-100/80 bg-white p-2 text-right shadow-[0_14px_34px_rgba(14,165,233,0.10)] dark:border-white/[0.07] dark:bg-[#0D1324] dark:shadow-[0_0_22px_rgba(139,92,246,0.16)] sm:mt-6 sm:rounded-[22px]">
             <MenuButton icon={Share2} label={t("menu.shareInvite")} onClick={onShareInvite} />
             <MenuButton icon={LockKeyhole} label={t("menu.changePassword")} onClick={onChangePassword} />
             <MenuButton icon={Settings} label={t("menu.settings")} onClick={onSettings} />
@@ -566,14 +584,15 @@ function ProfileMenu({ displayName, avatarUrl, onClose, onShareInvite, onChangeP
           <button
             type="button"
             onClick={onClose}
-            className="mx-auto mt-5 inline-flex h-14 w-full max-w-[760px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#A855F7] px-8 text-base font-black text-white shadow-[0_16px_38px_rgba(139,92,246,0.34)] transition hover:-translate-y-0.5 dark:from-[#8B5CF6] dark:to-[#A855F7] dark:shadow-[0_0_26px_rgba(139,92,246,0.32)]"
+            className="mx-auto mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] px-8 text-sm font-black text-white shadow-[0_16px_38px_rgba(139,92,246,0.34)] transition hover:-translate-y-0.5 dark:from-[#8B5CF6] dark:to-[#A855F7] dark:shadow-[0_0_26px_rgba(139,92,246,0.32)] sm:mt-5 sm:h-14 sm:rounded-full sm:text-base"
           >
             <X className="h-5 w-5" />
             {t("menu.close")}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -583,8 +602,8 @@ function AvatarPicture({ className, src = "/hero-winnie-fun.png" }) {
       <img
         src={src}
         alt=""
-        className="h-full w-full object-cover"
-        style={{ objectPosition: "72% 27%" }}
+        className="block h-full w-full object-cover object-center"
+        style={{ height: "100%", width: "100%", objectFit: "cover", objectPosition: "50% 50%" }}
       />
     </div>
   );
@@ -595,7 +614,7 @@ function MenuButton({ icon: Icon, label, onClick, danger = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-12 w-full items-center gap-3 rounded-2xl border px-4 text-sm font-black transition ${
+      className={`flex h-11 w-full items-center gap-3 rounded-xl border px-3 text-xs font-black transition sm:h-12 sm:rounded-2xl sm:px-4 sm:text-sm ${
         danger
           ? "border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:border-rose-400/24 dark:bg-[#2A111A] dark:text-rose-200 dark:hover:bg-[#351520]"
           : "border-sky-100 bg-white text-slate-700 shadow-[0_8px_20px_rgba(14,165,233,0.08)] hover:border-[#C4B5FD] hover:bg-[#F5F3FF] hover:text-[#7C3AED] dark:border-white/10 dark:bg-[#111827] dark:text-[#C4C9D4] dark:shadow-none dark:hover:border-[#A855F7]/45 dark:hover:bg-[#1A2335] dark:hover:text-[#E9D5FF]"
@@ -670,10 +689,16 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[220] grid place-items-center bg-[#050816] px-4" role="dialog" aria-modal="true" onClick={onClose}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[3000] flex min-h-[100dvh] w-screen max-w-none items-center justify-center bg-slate-950/75 p-3 backdrop-blur-[6px] sm:p-4"
+      onClick={onClose}
+    >
       <div
-        className="relative w-full max-w-[560px] overflow-hidden rounded-[28px] border border-[#C4B5FD]/45 bg-white p-5 text-right text-slate-950 shadow-[0_28px_90px_rgba(14,165,233,0.22)] dark:border-[#8B5CF6]/24 dark:bg-[#111827] dark:text-[#F8F9FA] dark:shadow-[0_0_34px_rgba(139,92,246,0.24)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-password-title"
+        className="relative max-h-[calc(100dvh-24px)] w-full max-w-[560px] overflow-x-hidden overflow-y-auto rounded-[28px] border border-[#C4B5FD]/45 bg-white p-5 text-right text-slate-950 shadow-[0_28px_90px_rgba(14,165,233,0.22)] dark:border-[#8B5CF6]/24 dark:bg-[#111827] dark:text-[#F8F9FA] dark:shadow-[0_0_34px_rgba(139,92,246,0.24)] sm:max-h-[calc(100dvh-32px)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,#BAF1FF,#FFC2DC)]" />
@@ -683,7 +708,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
               <KeyRound className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-xl font-black">{t("password.title")}</h2>
+              <h2 id="profile-password-title" className="text-xl font-black">{t("password.title")}</h2>
               <p className="text-sm font-semibold text-slate-600 dark:text-[#8A94A7]">
                 {confirming ? t("password.confirmSubtitle") : t("password.subtitle")}
               </p>
@@ -741,7 +766,8 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -210,13 +210,13 @@ export default function AdminBalanceRequestsPage() {
             className="overflow-hidden"
           >
             <div className="grid gap-2.5 border-t p-4 md:grid-cols-[1fr_180px_auto] dark:border-white/10">
-              <label className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+              <label className="site-filter-search relative">
+                <span className="site-filter-search-icon"><Search /></span>
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="ابحث باسم المستخدم أو البريد الإلكتروني"
-                  className="h-11 w-full rounded-2xl bg-slate-50 pe-9 ps-3 text-sm font-black dark:bg-[#0B1220] dark:text-white"
+                  className="site-filter-search-input"
                 />
               </label>
               <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-2xl bg-slate-50 px-3 text-sm font-black dark:bg-[#0B1220] dark:text-white">
@@ -504,27 +504,74 @@ function DetailInfo({ dir, emphasis = false, label, value }) {
 
 function ConfirmDialog({ busy, confirmation, onCancel, onConfirm }) {
   const danger = confirmation.tone === "danger";
-  return (
-    <div className="fixed inset-0 z-[1020] grid place-items-center bg-slate-950/70 p-4">
-      <section className="w-full max-w-[440px] rounded-[26px] bg-white p-5 text-center shadow-2xl dark:bg-[#111827]">
-        <span className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl ${danger ? "bg-rose-500/10 text-rose-600" : "bg-emerald-500/10 text-emerald-600"}`}>
-          {danger ? <AlertTriangle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+  return createPortal(
+    <div
+      dir="rtl"
+      className="fixed inset-0 z-[3000] flex min-h-[100dvh] items-center justify-center bg-slate-950/75 p-2 backdrop-blur-[6px] sm:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+    >
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="balance-request-confirm-title"
+        className={`relative max-h-[calc(100dvh-16px)] w-full max-w-[445px] overflow-y-auto rounded-[26px] border bg-white p-5 text-center shadow-[0_32px_100px_rgba(15,23,42,0.44)] sm:max-h-[calc(100dvh-32px)] sm:p-6 ${
+          danger
+            ? "border-rose-200/90 dark:border-rose-400/20"
+            : "border-emerald-200/90 dark:border-emerald-400/20"
+        } dark:bg-[#111827]`}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span
+          aria-hidden="true"
+          className={`absolute inset-x-8 top-0 h-px ${
+            danger
+              ? "bg-gradient-to-r from-transparent via-rose-500 to-transparent"
+              : "bg-gradient-to-r from-transparent via-emerald-500 to-transparent"
+          }`}
+        />
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          aria-label="إغلاق نافذة التأكيد"
+          className="absolute left-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-slate-300 hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <span className={`mx-auto grid h-14 w-14 place-items-center rounded-[19px] border shadow-sm ${danger ? "border-rose-200 bg-rose-500/10 text-rose-600 shadow-rose-500/10 dark:border-rose-400/20 dark:text-rose-300" : "border-emerald-200 bg-emerald-500/10 text-emerald-600 shadow-emerald-500/10 dark:border-emerald-400/20 dark:text-emerald-300"}`}>
+          {danger ? <AlertTriangle className="h-7 w-7" /> : <CheckCircle2 className="h-7 w-7" />}
         </span>
-        <h2 className="mt-3 text-base font-black dark:text-white">{confirmation.title}</h2>
-        <p className="mt-2 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">{confirmation.message}</p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={onCancel} disabled={busy} className="h-11 rounded-xl border border-slate-200 text-sm font-black dark:border-white/10 dark:text-white">إلغاء</button>
+        <h2 id="balance-request-confirm-title" className="mt-4 text-base font-black text-slate-950 sm:text-lg dark:text-white">
+          {confirmation.title}
+        </h2>
+        <div className={`mt-3 rounded-2xl border px-4 py-3 ${danger ? "border-rose-100 bg-rose-50/70 dark:border-rose-400/10 dark:bg-rose-500/[0.06]" : "border-emerald-100 bg-emerald-50/70 dark:border-emerald-400/10 dark:bg-emerald-500/[0.06]"}`}>
+          <p className="text-xs font-bold leading-6 text-slate-600 sm:text-sm dark:text-slate-300">
+            {confirmation.message}
+          </p>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="h-11 rounded-[14px] border border-slate-200 bg-white text-xs font-black text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60 sm:h-12 sm:text-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.07]"
+          >
+            إلغاء
+          </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-black text-white disabled:opacity-60 ${danger ? "bg-rose-600" : "bg-emerald-600"}`}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[14px] text-xs font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60 sm:h-12 sm:text-sm ${danger ? "bg-gradient-to-l from-rose-600 to-red-500 shadow-rose-500/25" : "bg-gradient-to-l from-emerald-600 to-green-500 shadow-emerald-500/25"}`}
           >
             {busy && <RefreshCw className="h-4 w-4 animate-spin" />}
             {busy ? "جارٍ التنفيذ..." : confirmation.confirmLabel}
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

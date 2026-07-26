@@ -7,6 +7,7 @@ import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 import { sortProductsByNewest } from "../../utils/recentProducts";
+import { isProductVisibleInStore } from "../../utils/productAvailability";
 
 const pageSize = 100;
 
@@ -51,7 +52,7 @@ export default function CustomerRecentlyAdded({ loginOnPurchase = false, basePat
   }, [token, t, useBackendProducts]);
 
   const recentProducts = useMemo(
-    () => sortProductsByNewest(products.filter((product) => product?.isActive !== false && product?.visibleInStore !== false && product?.visible !== false)),
+    () => sortProductsByNewest(products.filter(isProductVisibleInStore)),
     [products],
   );
   const selectProduct = (product) => {

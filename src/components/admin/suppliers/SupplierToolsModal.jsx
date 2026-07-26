@@ -45,8 +45,8 @@ export default function SupplierToolsModal({ onCheckOrder, onClose, onGetBalance
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[130] grid place-items-center bg-slate-950/60 p-4">
-      <section className="w-full max-w-[560px] rounded-[28px] bg-white p-4 dark:bg-[#111827]">
+    <div className="fixed inset-0 z-[130] grid place-items-center overflow-y-auto bg-slate-950/60 p-3 sm:p-4">
+      <section className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-[560px] overflow-y-auto overscroll-contain rounded-[28px] bg-white p-4 dark:bg-[#111827] sm:max-h-[calc(100dvh-2rem)]">
         <header className="flex items-center gap-3">
           <Stethoscope className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
