@@ -30,8 +30,9 @@ function normalizeFeatureList(value) {
 }
 
 function normalizeProviderStatus(provider = {}) {
-  if (provider.deletedAt) return "deleted";
-  return provider.isActive === false ? "inactive" : "active";
+  const value = provider || {};
+  if (value.deletedAt) return "deleted";
+  return value.isActive === false ? "inactive" : "active";
 }
 
 function getProviderFromResponse(data) {
@@ -62,6 +63,7 @@ function getBalanceCurrency(balance) {
 }
 
 export function normalizeAdminProvider(provider = {}) {
+  provider = provider || {};
   const id = getItemId(provider);
   const status = normalizeProviderStatus(provider);
   const supportedFeatures = normalizeFeatureList(provider.supportedFeatures);
@@ -102,6 +104,7 @@ export function normalizeAdminProvider(provider = {}) {
 }
 
 export function normalizeAdminProviderProduct(product = {}, index = 0) {
+  product = product || {};
   const id = getItemId(product, `provider-product-${index}`);
   const provider = product.provider && typeof product.provider === "object" ? product.provider : null;
   const providerId = toId(product.provider);
@@ -218,6 +221,7 @@ export function normalizeProviderSyncResult(data = {}) {
 }
 
 export function normalizeFazerCardsImportPreview(preview = {}) {
+  preview = preview || {};
   return {
     costPrice: preview.costPrice ?? "",
     currency: String(preview.currency || DEFAULT_CURRENCY).toUpperCase(),
@@ -233,19 +237,20 @@ export function normalizeFazerCardsImportPreview(preview = {}) {
 
 function normalizeImportedProduct(product = {}) {
   const value = product?.product && typeof product.product === "object" ? product.product : product;
-  const id = toId(value);
+  const safeValue = value || {};
+  const id = toId(safeValue);
   return {
     id,
-    _id: value._id ?? id,
-    basePrice: value.basePrice === undefined || value.basePrice === null ? "" : String(value.basePrice),
-    currency: String(value.currency || DEFAULT_CURRENCY).toUpperCase(),
-    executionType: value.executionType || "",
-    externalProductId: value.externalProductId || "",
-    isActive: value.isActive !== false,
-    name: value.name || "",
-    providerExecutionEnabled: value.providerExecutionEnabled !== false,
-    status: value.status || "",
-    visibleInStore: value.visibleInStore !== false,
+    _id: safeValue._id ?? id,
+    basePrice: safeValue.basePrice === undefined || safeValue.basePrice === null ? "" : String(safeValue.basePrice),
+    currency: String(safeValue.currency || DEFAULT_CURRENCY).toUpperCase(),
+    executionType: safeValue.executionType || "",
+    externalProductId: safeValue.externalProductId || "",
+    isActive: safeValue.isActive !== false,
+    name: safeValue.name || "",
+    providerExecutionEnabled: safeValue.providerExecutionEnabled !== false,
+    status: safeValue.status || "",
+    visibleInStore: safeValue.visibleInStore !== false,
   };
 }
 

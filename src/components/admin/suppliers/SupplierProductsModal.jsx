@@ -16,14 +16,14 @@ export default function SupplierProductsModal({
   onSearch,
   onSync,
   pagination,
-  products,
+  products = [],
   supplier,
 }) {
   const [query, setQuery] = useState("");
 
   if (!supplier) return null;
 
-  const syncBusy = actionKey === `${supplier.id}:sync`;
+  const syncBusy = actionKey === `${supplier?.id}:sync`;
 
   const updateFilter = (patch) => onFilterChange?.({ ...filters, ...patch });
 
@@ -36,15 +36,15 @@ export default function SupplierProductsModal({
         <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <Boxes className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-black dark:text-white">{supplier.name} products</h2>
+            <h2 className="truncate text-sm font-black dark:text-white">{supplier?.name || "Supplier"} products</h2>
             <p className="text-[8px] font-bold text-slate-400">
               {(pagination?.total ?? products.length).toLocaleString("ar-EG-u-nu-latn")} synced supplier products
             </p>
           </div>
           <button
             type="button"
-            onClick={() => onSync(supplier)}
-            disabled={syncBusy || loading || !supplier.active}
+            onClick={() => onSync?.(supplier)}
+            disabled={syncBusy || loading || !supplier?.active}
             className="inline-flex h-9 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${syncBusy ? "animate-spin" : ""}`} />

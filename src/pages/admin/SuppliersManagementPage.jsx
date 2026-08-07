@@ -47,10 +47,14 @@ const emptyProductsState = {
   supplier: null,
 };
 
-function isFazerCardsSupplier(supplier = {}) {
-  const providerCode = String(supplier.providerCode || "").toUpperCase();
-  const slug = String(supplier.slug || supplier.code || "").toLowerCase();
-  const name = String(supplier.name || supplier.displayName || "").toLowerCase();
+function getProviderCode(provider) {
+  return String(provider?.providerCode || provider?.code || provider?.provider?.providerCode || "").toUpperCase() || null;
+}
+
+function isFazerCardsSupplier(supplier) {
+  const providerCode = getProviderCode(supplier);
+  const slug = String(supplier?.slug || supplier?.code || "").toLowerCase();
+  const name = String(supplier?.name || supplier?.displayName || "").toLowerCase();
   return providerCode === "FAZER_CARDS" || slug === "fazer-cards" || name === "fazercards" || name === "fazer cards";
 }
 
@@ -369,22 +373,24 @@ export default function SuppliersManagementPage() {
       )}
 
       <SupplierFormModal error={formError} open={form !== undefined} supplier={form} onClose={() => !saving && setForm(undefined)} onSave={saveSupplier} saving={saving} />
-      <SupplierProductsModal
-        actionKey={actionKey}
-        error={productsState.error}
-        fazerCards={isFazerCardsSupplier(productsState.supplier)}
-        filters={productsState.filters}
-        loading={productsState.loading}
-        onClose={() => setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } })}
-        onFilterChange={updateFazerCardsFilters}
-        onImport={setFazerImportProduct}
-        onPageChange={(page) => loadProviderProducts(productsState.supplier, { filters: productsState.filters, page, search: productsState.search })}
-        onSearch={(search, filters) => loadProviderProducts(productsState.supplier, { filters, page: 1, search })}
-        onSync={requestSync}
-        pagination={productsState.pagination}
-        products={productsState.products}
-        supplier={productsState.supplier}
-      />
+      {productsState.supplier && (
+        <SupplierProductsModal
+          actionKey={actionKey}
+          error={productsState.error}
+          fazerCards={isFazerCardsSupplier(productsState.supplier)}
+          filters={productsState.filters}
+          loading={productsState.loading}
+          onClose={() => setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } })}
+          onFilterChange={updateFazerCardsFilters}
+          onImport={setFazerImportProduct}
+          onPageChange={(page) => loadProviderProducts(productsState.supplier, { filters: productsState.filters, page, search: productsState.search })}
+          onSearch={(search, filters) => loadProviderProducts(productsState.supplier, { filters, page: 1, search })}
+          onSync={requestSync}
+          pagination={productsState.pagination}
+          products={productsState.products}
+          supplier={productsState.supplier}
+        />
+      )}
       <FazerCardsImportModal
         onClose={() => setFazerImportProduct(null)}
         onImported={handleFazerCardsImported}

@@ -44,11 +44,12 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
     getFazerCardsImportPreview(token, product.id)
       .then((result) => {
         if (!active) return;
-        setPreview(result.preview);
+        const nextPreview = result.preview || {};
+        setPreview(nextPreview);
         setForm((current) => ({
           ...current,
-          currency: result.preview.currency || current.currency,
-          name: result.preview.suggestedProductName || current.name,
+          currency: nextPreview.currency || current.currency,
+          name: nextPreview.suggestedProductName || current.name,
         }));
       })
       .catch((requestError) => {
@@ -184,7 +185,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
                   Sync price metadata
                   <input type="checkbox" checked={form.syncPriceFromProvider} onChange={(event) => update("syncPriceFromProvider", event.target.checked)} />
                 </label>
-                {product.imported && (
+                {product?.imported && (
                   <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
                     Update existing import
                     <input type="checkbox" checked={form.updateExisting} onChange={(event) => update("updateExisting", event.target.checked)} />

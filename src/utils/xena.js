@@ -8,12 +8,13 @@ function normalizeText(value) {
 }
 
 function providerSignals(provider = {}) {
+  const value = provider || {};
   return [
-    provider.slug,
-    provider.code,
-    provider.name,
-    provider.displayName,
-    provider.providerCode,
+    value.slug,
+    value.code,
+    value.name,
+    value.displayName,
+    value.providerCode,
   ].map(normalizeText);
 }
 
@@ -24,6 +25,7 @@ export function isXenaProvider(provider = {}) {
 }
 
 export function isXenaProduct(product = {}) {
+  product = product || {};
   const provider = product.provider && typeof product.provider === "object" ? product.provider : {};
   const providerProduct = product.providerProduct && typeof product.providerProduct === "object"
     ? product.providerProduct
