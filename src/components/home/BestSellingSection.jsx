@@ -8,10 +8,11 @@ import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
 const maxBestSellingItems = 6;
 
-export default function BestSellingSection({ items = [], onSelect, onViewAll }) {
+export default function BestSellingSection({ forceRtl = false, items = [], onSelect, onViewAll }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
-  const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
+  const isRtl = forceRtl || isArabic;
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const bestSellingItems = useMemo(() => {
     const visibleItems = items.filter(isProductVisibleInStore);
     return sortProductsByBestSelling(visibleItems).slice(0, maxBestSellingItems);
@@ -20,11 +21,11 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
   if (!bestSellingItems.length) return null;
 
   return (
-    <section id="best-selling" dir={isArabic ? "rtl" : "ltr"} className="homepage-compact-products space-y-3">
+    <section id="best-selling" dir={isRtl ? "rtl" : "ltr"} className="homepage-compact-products space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="relative text-lg font-black tracking-normal text-slate-950 dark:text-white sm:text-xl">
-          <span className="absolute top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#F43F5E,#7C3AED,#38BDF8)] shadow-[0_0_14px_rgba(124,58,237,0.30)] ltr:-left-3 rtl:-right-3" />
-          {t("homePage.bestSellers")}
+        <h2 className={`relative text-lg font-black tracking-normal text-slate-950 dark:text-white sm:text-xl ${isRtl ? "pr-3 text-right" : "pl-3 text-left"}`}>
+          <span className={`absolute top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#F43F5E,#7C3AED,#38BDF8)] shadow-[0_0_14px_rgba(124,58,237,0.30)] ${isRtl ? "right-0" : "left-0"}`} />
+          <span dir={isArabic ? "rtl" : "ltr"}>{t("homePage.bestSellers")}</span>
         </h2>
         {onViewAll ? (
           <button
@@ -39,7 +40,7 @@ export default function BestSellingSection({ items = [], onSelect, onViewAll }) 
       </div>
       <HorizontalProductCarousel label={t("homePage.bestSellers")}>
         {bestSellingItems.map((item, index) => (
-          <div key={item.id || item._id || item.slug || item.name} dir={isArabic ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
+          <div key={item.id || item._id || item.slug || item.name} dir={isRtl ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
             <HomeProductCard product={item} index={index} onSelect={onSelect} variant="featured" />
           </div>
         ))}

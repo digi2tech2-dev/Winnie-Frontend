@@ -129,7 +129,7 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   };
 
   return (
-    <div className="customer-dashboard-home space-y-6 lg:space-y-8">
+    <div dir="rtl" className="customer-dashboard-home space-y-6 lg:space-y-8">
       {!hasProfileImage && !completeProfileDismissed ? (
         <div className="relative overflow-hidden rounded-[18px] border border-violet-200/70 bg-[linear-gradient(115deg,rgba(250,245,255,0.96),rgba(255,255,255,0.92)_55%,rgba(240,249,255,0.9))] p-2 shadow-[0_8px_20px_rgba(109,40,217,0.08)] backdrop-blur-xl dark:border-violet-400/15 dark:bg-[linear-gradient(115deg,rgba(124,58,237,0.11),rgba(17,24,39,0.94)_52%,rgba(14,165,233,0.07))] sm:p-2.5">
           <span aria-hidden="true" className="pointer-events-none absolute -left-8 -top-10 h-24 w-24 rounded-full bg-sky-300/20 blur-2xl dark:bg-sky-400/10" />
@@ -165,22 +165,24 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
           </div>
         </div>
       ) : null}
-      <HomeSlide categoriesPath={`${basePath}/categories`} />
-      <CategoryShowcaseSection categories={mainCategories} onSelect={goCategory} />
+      <HomeSlide categoriesPath={`${basePath}/categories`} compactDesktop />
+      <CategoryShowcaseSection categories={mainCategories} forceRtl onSelect={goCategory} />
       <BestSellingSection
+        forceRtl
         items={visibleProducts}
         onSelect={openProductPurchase}
         onViewAll={goGames}
       />
       <div className="lg:hidden">
-        <HomePromoBanners />
+        <HomePromoBanners forceRtl />
       </div>
       <RecentAdditionsSection
+        forceRtl
         items={visibleProducts}
         onSelect={openProductPurchase}
         onViewAll={goRecentlyAdded}
       />
-      <CustomerReviews />
+      <CustomerReviews forceRtl />
       {purchaseModals}
     </div>
   );

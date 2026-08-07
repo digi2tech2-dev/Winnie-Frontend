@@ -9,7 +9,6 @@ import {
 } from "../api/notifications";
 import { getWalletSummary } from "../api/wallet";
 import AdminHeader from "../components/AdminHeader";
-import BackButton from "../components/BackButton";
 import DashboardSidebar from "../components/DashboardSidebar";
 import SiteFooter from "../components/SiteFooter";
 import CustomerBottomNav from "../components/CustomerBottomNav";
@@ -23,7 +22,7 @@ import { getCustomerCatalog } from "../api/catalog";
 
 export default function AdminLayout() {
   const { favorites } = useFavorites();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [walletSummary, setWalletSummary] = useState(null);
   const { language } = useLanguage();
@@ -191,7 +190,9 @@ export default function AdminLayout() {
 
   const adminNavItems = useMemo(
     () =>
-      adminNav.map((item) =>
+      adminNav
+        .filter((item) => item.path !== "/admin/user/api" || user?.apiAccessEnabled === true)
+        .map((item) =>
         ({
           ...item,
           label: getAdminNavLabel(item.path),
@@ -202,7 +203,7 @@ export default function AdminLayout() {
               : undefined,
         }),
       ),
-    [favorites.length, unreadNotificationCount],
+    [favorites.length, unreadNotificationCount, user?.apiAccessEnabled],
   );
 
   return (
@@ -225,13 +226,10 @@ export default function AdminLayout() {
             onOpenSidebar={() => setSidebarOpen(true)}
             searchProducts={searchProducts}
             unreadNotificationCount={unreadNotificationCount}
+            walletBalance={walletSummary?.balance ?? 0}
+            walletCurrency={walletSummary?.currency || "USD"}
           />
           <main className={`winnie-page-canvas admin-app-main mx-auto ${isAdminDashboardPage ? "admin-dashboard-main max-w-[1500px]" : "max-w-[1120px]"} px-4 sm:px-6 lg:px-8 ${isAdminToolsPage ? "pb-6 pt-[80px] sm:pt-[96px]" : "pb-28 pt-4 sm:pt-6 xl:pb-12"}`}>
-            <BackButton
-              className={isAdminToolsPage ? "admin-tools-back-button" : "-mt-4 sm:-mt-6"}
-              fallbackPath={isAdminToolsPage ? "/admin/tools/dashboard" : "/admin/user/dashboard"}
-              hiddenPaths={["/", "/admin/user/dashboard", "/admin/user/profile", "/admin/tools/dashboard"]}
-            />
             <div className="winnie-page-stage">
               <Outlet
                 context={{
@@ -271,6 +269,7 @@ const adminNavLabels = {
   "/admin/user/categories": "الأقسام",
   "/admin/user/orders": "طلباتي",
   "/admin/user/wallet": "محفظتي",
+  "/admin/user/api": "واجهة API",
   "/admin/user/sub-agent": "وكيل فرعي",
   "/admin/user/about": "من نحن",
   "/admin/user/notifications": "الإشعارات",

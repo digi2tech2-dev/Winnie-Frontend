@@ -81,7 +81,7 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
         rating,
         message,
         reviewer: {
-          name: user?.name || user?.username || "Winnie Fun Customer",
+          name: user?.name || user?.username || "Winnie HUB Customer",
           avatar: user?.avatar || user?.image || "",
         },
       });

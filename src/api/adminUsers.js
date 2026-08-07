@@ -44,6 +44,7 @@ export function normalizeAdminUser(user = {}) {
     id,
     _id: user._id ?? id,
     approvedAt: user.approvedAt || null,
+    apiAccessEnabled: user.isApiEnabled === true || user.apiAccessEnabled === true || user.apiAccess?.enabled === true || user.developerAccess?.enabled === true,
     avatar: user.avatar || "",
     blockedAt,
     blockReason: user.blockReason || "",
@@ -231,6 +232,19 @@ export async function changeAdminUserPassword(token, id, newPassword) {
     user: normalizeAdminUser(response.data?.user || response.data || {}),
     wallet: response.data?.wallet || null,
     conversion: response.data?.conversion || null,
+  };
+}
+
+export async function updateAdminUserApiAccess(token, id, enabled) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
+    body: { isApiEnabled: Boolean(enabled) },
+    method: "PATCH",
+    token,
+  });
+
+  return {
+    message: response.message,
+    user: normalizeAdminUser(response.data?.user || response.data || {}),
   };
 }
 

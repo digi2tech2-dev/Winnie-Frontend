@@ -20,7 +20,7 @@ import { importantLinks } from "../data/importantLinks";
 
 const commercialRegistration = "4423622.01";
 const taxNumber = "105156169200001";
-const supportEmail = "Support.winniefun@gmail.com";
+const supportEmail = "Support@winniehub.ae";
 const instagramUrl = "https://www.instagram.com/winnie.cards?utm_source=qr";
 const whatsappUrl = "https://wa.me/971529330668";
 

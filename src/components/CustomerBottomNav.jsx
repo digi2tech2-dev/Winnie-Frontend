@@ -28,7 +28,7 @@ export default function CustomerBottomNav({ basePath = "/customer", translate = 
           title={t("nav.favorites")}
         >
           <span className="absolute -inset-1 -z-10 rounded-full bg-gradient-to-r from-violet-500/30 to-blue-500/30 blur-md opacity-70 transition group-hover:opacity-100" />
-          <img src="/logo.png" alt="Winnie Fun" className="relative h-8 w-8 object-contain transition duration-300 group-hover:scale-105" />
+          <img src="/logo.png" alt="Winnie HUB" className="relative h-8 w-8 object-contain transition duration-300 group-hover:scale-105" />
           {favorites.length ? <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-rose-500 px-1 text-[9px] font-black text-white shadow-[0_6px_14px_rgba(244,63,94,0.38)] dark:border-[#070B19]">{favorites.length > 99 ? "99+" : favorites.length}</span> : null}
         </NavLink>
         {navItems.slice(2).map((item) => (

@@ -141,7 +141,7 @@ function normalizeReview(review = {}) {
     createdAt,
     dateLabel: review.dateLabel || formatDateLabel(createdAt),
     reviewer: {
-      name: reviewer.name || review.customerName || "Winnie Fun Customer",
+      name: reviewer.name || review.customerName || "Winnie HUB Customer",
       nameAr: reviewer.nameAr || review.customerNameAr || "",
       avatar: reviewer.avatar || review.avatar || "",
     },

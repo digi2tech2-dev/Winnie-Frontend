@@ -36,7 +36,7 @@ function openHeaderSearch(query = "") {
   window.dispatchEvent(new CustomEvent("winnie-open-search", { detail: { query } }));
 }
 
-export default function HomeSlide({ categoriesPath = "/categories", subAgentPath }) {
+export default function HomeSlide({ categoriesPath = "/categories", compactDesktop = false, subAgentPath }) {
   const { t } = useTranslation("home");
   const [{ activeSlide, direction }, setSlider] = useState({ activeSlide: 0, direction: 1 });
   const [paused, setPaused] = useState(false);
@@ -78,7 +78,7 @@ export default function HomeSlide({ categoriesPath = "/categories", subAgentPath
       <section
         aria-label={t("slider.label")}
         aria-roledescription="carousel"
-        className="group relative isolate aspect-[1024/364] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl shadow-royal/10"
+        className={`group relative isolate aspect-[1024/364] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl shadow-royal/10 ${compactDesktop ? "lg:mx-auto lg:h-auto lg:w-[98%] lg:max-w-[850px]" : ""}`}
         onBlur={() => setPaused(false)}
         onFocus={() => setPaused(true)}
         onMouseEnter={() => setPaused(true)}

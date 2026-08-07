@@ -66,12 +66,13 @@ export default function PublicHome() {
 
   return (
     <motion.div
+      dir="rtl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="mx-auto max-w-[1120px] space-y-6 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:space-y-8 lg:px-8 lg:pb-16"
+      className="mx-auto max-w-[1440px] space-y-6 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:space-y-8 lg:px-8 lg:pb-16"
     >
-      <HomeSlide categoriesPath="/categories" />
+      <HomeSlide categoriesPath="/categories" compactDesktop />
       {loading ? (
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
           {t("common:states.loadingCatalog")}
@@ -82,21 +83,24 @@ export default function PublicHome() {
         <>
           <CategoryShowcaseSection
             categories={filterMainCategories(catalog.categories)}
+            forceRtl
             onSelect={openCategory}
           />
           <RecentAdditionsSection
+            forceRtl
             items={catalog.products}
             onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
             onViewAll={openRecentlyAdded}
           />
           <BestSellingSection
+            forceRtl
             items={catalog.products}
             onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
             onViewAll={openProducts}
           />
         </>
       )}
-      <CustomerReviews />
+      <CustomerReviews forceRtl />
       <AnimatePresence>
         {purchaseItem && (
           <ProductPurchaseModal

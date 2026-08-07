@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-export default function CategoryShowcaseSection({ categories = [], onSelect, showHeading = true }) {
+export default function CategoryShowcaseSection({ categories = [], forceRtl = false, onSelect, showHeading = true }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
+  const isRtl = forceRtl || isArabic;
 
   return (
-    <section id="home-categories" dir={isArabic ? "rtl" : "ltr"} className="space-y-5">
+    <section id="home-categories" dir={isRtl ? "rtl" : "ltr"} className="space-y-5">
       {showHeading ? (
         <h2 className="relative text-xl font-black tracking-normal text-slate-950 dark:text-white sm:text-2xl ltr:pl-3 rtl:pr-3">
           <span className="absolute top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#ec4899,#7c3aed,#22d3ee)] ltr:left-0 rtl:right-0" />

@@ -2,29 +2,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Bell, ChevronLeft, Menu, Moon, SunMedium } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { resolveBackendAssetUrl } from "../api/adapters";
-import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import HeaderSearchOverlay from "./HeaderSearchOverlay";
 import { iconMap } from "./icons";
 import { getNotificationIconName } from "../utils/notificationNavigation";
 import { BrandName } from "./Brand";
-
-const profileAvatarKey = "winnie-profile-avatar";
-const profileAvatarChangedEvent = "winnie-profile-avatar-change";
-
-function getStoredProfileAvatar() {
-  try {
-    return localStorage.getItem(profileAvatarKey) || "";
-  } catch {
-    return "";
-  }
-}
-
-function isImageAvatar(avatar) {
-  return typeof avatar === "string" && /^(https?:|data:image|\/)/.test(avatar);
-}
+import HeaderWalletBadge from "./HeaderWalletBadge";
 
 export default function CustomerHeader({
   notificationItems = [],
@@ -34,18 +18,16 @@ export default function CustomerHeader({
   onOpenSidebar,
   searchProducts = [],
   unreadNotificationCount = 0,
+  walletBalance = 0,
+  walletCurrency = "USD",
 }) {
-  const { user } = useAuth();
   const { isArabic } = useLanguage();
   const { theme, setTheme } = useTheme();
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [profileAvatarUrl, setProfileAvatarUrl] = useState(getStoredProfileAvatar);
   const notificationsRef = useRef(null);
-  const backendAvatarUrl = resolveBackendAssetUrl(user?.avatar);
-  const headerAvatarUrl = (isImageAvatar(backendAvatarUrl) ? backendAvatarUrl : "") || profileAvatarUrl || "/hero-winnie-fun.png";
   const latestNotifications = useMemo(() => (
     notificationItems
       .map((notification, index) => ({
@@ -71,18 +53,6 @@ export default function CustomerHeader({
     setNotificationsOpen(true);
     if (unreadNotificationCount > 0) void onNotificationsOpened?.();
   };
-
-  useEffect(() => {
-    const refreshAvatar = () => setProfileAvatarUrl(getStoredProfileAvatar());
-
-    window.addEventListener("storage", refreshAvatar);
-    window.addEventListener(profileAvatarChangedEvent, refreshAvatar);
-
-    return () => {
-      window.removeEventListener("storage", refreshAvatar);
-      window.removeEventListener(profileAvatarChangedEvent, refreshAvatar);
-    };
-  }, []);
 
   useEffect(() => {
     const openSearchFromPage = () => setSearchOpen(true);
@@ -126,15 +96,8 @@ export default function CustomerHeader({
       <header dir="ltr" className="customer-header winnie-mobile-topbar site-header-warm relative z-[70] overflow-visible border-b border-violet-200/60 bg-[linear-gradient(180deg,rgba(248,250,255,0.96)_0%,rgba(242,240,255,0.93)_52%,rgba(238,246,255,0.95)_100%)] px-4 py-2.5 text-slate-800 shadow-[0_18px_55px_rgba(76,29,149,0.12)] backdrop-blur-2xl dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-80%,rgba(23,21,58,0.98)_0%,rgba(7,11,26,0.97)_58%,rgba(3,6,17,0.98)_100%)] dark:text-white dark:shadow-[0_18px_60px_rgba(0,0,0,0.42),0_0_24px_rgba(124,58,237,0.10)] lg:px-8">
         <span aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
         <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl dark:bg-sky-400/10" />
-        <div className="winnie-mobile-topbar-shell relative mx-auto grid max-w-[1120px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
-          <Link to="/customer/dashboard" className="primary-header-brand winnie-mobile-brand col-start-2 row-start-1 flex min-w-0 items-center justify-self-center gap-0.5 text-left sm:gap-1.5">
-            <img src="/logo.png" alt={t("app.logoAlt")} className="h-12 w-12 shrink-0 object-contain sm:h-[60px] sm:w-[60px]" />
-            <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_18px_rgba(139,92,246,0.25)] sm:-ml-1">
-              <BrandName size="adminHeader" />
-            </span>
-          </Link>
-
-          <div className="winnie-mobile-left-actions col-start-1 row-start-1 flex items-center justify-self-start gap-2 sm:gap-3">
+        <div className="customer-header-shell winnie-mobile-topbar-shell relative mx-auto flex max-w-[1120px] items-center gap-2 sm:gap-3">
+          <div className="customer-header-actions winnie-mobile-left-actions order-1 flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={switchTheme}
@@ -212,33 +175,48 @@ export default function CustomerHeader({
                 </div>
               ) : null}
             </div>
+
+            <HeaderWalletBadge
+              balance={walletBalance}
+              className="customer-header-wallet-mobile"
+              currency={walletCurrency}
+              to="/customer/wallet"
+            />
           </div>
 
-          <div className="winnie-mobile-right-actions col-start-3 row-start-1 flex items-center justify-self-end gap-2 sm:gap-3">
-            <Link
-              to="/customer/profile"
-              className="relative block h-11 w-11 overflow-hidden rounded-full border-2 border-[#C4B5FD]/72 bg-white shadow-[0_12px_28px_rgba(14,165,233,0.16)] transition hover:-translate-y-0.5 hover:border-[#8B5CF6] dark:border-[#A855F7]/72 dark:bg-[#151827] dark:shadow-[0_0_24px_rgba(168,85,247,0.30)] sm:h-12 sm:w-12"
-              aria-label={t("nav.profile")}
-              title={user?.name || t("nav.profile")}
-            >
-              <img
-                src={headerAvatarUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-              <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#050816] bg-emerald-400 sm:h-4 sm:w-4" />
-              <span className="sr-only">{user?.name || t("nav.profile")}</span>
+          <Link to="/customer/dashboard" className="customer-header-brand customer-header-brand-desktop primary-header-brand winnie-mobile-brand order-2 flex min-w-0 shrink-0 items-center gap-0.5 text-left sm:gap-1.5">
+            <img src="/logo.png" alt={t("app.logoAlt")} className="h-12 w-12 shrink-0 object-contain sm:h-[60px] sm:w-[60px]" />
+            <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_18px_rgba(139,92,246,0.25)] sm:-ml-1">
+              <BrandName size="adminHeader" />
+            </span>
+          </Link>
+
+          <div className="customer-header-right-cluster order-3 ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+            <Link to="/customer/dashboard" className="customer-header-brand customer-header-brand-mobile primary-header-brand winnie-mobile-brand order-3 min-w-0 shrink-0 items-center gap-0.5 text-left">
+              <img src="/logo.png" alt={t("app.logoAlt")} className="h-10 w-10 shrink-0 object-contain" />
+              <span className="-ml-0.5 min-w-0 text-center leading-none drop-shadow-[0_0_18px_rgba(139,92,246,0.25)]">
+                <BrandName size="adminHeader" />
+              </span>
             </Link>
 
-            <button
-              type="button"
-              onClick={onOpenSidebar}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#C4C9D4] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A] xl:hidden"
-              aria-label={t("sidebar.openMenu")}
-              title={t("sidebar.openMenu")}
-            >
-              <Menu className="h-6 w-6 stroke-[1.8]" />
-            </button>
+            <div className="customer-header-menu winnie-mobile-right-actions flex shrink-0 items-center">
+              <button
+                type="button"
+                onClick={onOpenSidebar}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-200/70 bg-white/55 text-[#8B5CF6] shadow-[0_10px_24px_rgba(76,29,149,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-violet-400/70 hover:bg-white/80 dark:border-violet-400/20 dark:bg-[#070B19]/70 dark:text-[#C4C9D4] dark:shadow-[0_0_18px_rgba(124,58,237,0.10)] dark:hover:border-[#A855F7]/60 dark:hover:bg-[#11172A] xl:hidden"
+                aria-label={t("sidebar.openMenu")}
+                title={t("sidebar.openMenu")}
+              >
+                <Menu className="h-6 w-6 stroke-[1.8]" />
+              </button>
+            </div>
+
+            <HeaderWalletBadge
+              balance={walletBalance}
+              className="customer-header-wallet-desktop"
+              currency={walletCurrency}
+              to="/customer/wallet"
+            />
           </div>
         </div>
       </header>

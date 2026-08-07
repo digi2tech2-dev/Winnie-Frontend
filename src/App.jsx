@@ -39,6 +39,7 @@ const CustomerNotifications = lazy(() => import("./pages/customer/CustomerNotifi
 const CustomerProfile = lazy(() => import("./pages/customer/CustomerProfile"));
 const CustomerSettings = lazy(() => import("./pages/customer/CustomerSettings"));
 const CustomerSubAgent = lazy(() => import("./pages/customer/CustomerSubAgent"));
+const DeveloperApiPage = lazy(() => import("./pages/customer/DeveloperApiPage"));
 
 const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
 const AdminOrdersPage = lazy(() => import("./pages/admin/AdminOrdersPage"));
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="profile" element={<Animated><CustomerProfile /></Animated>} />
             <Route path="settings" element={<Animated><CustomerSettings /></Animated>} />
             <Route path="sub-agent" element={<Animated><CustomerSubAgent /></Animated>} />
+            <Route path="api" element={<Animated><DeveloperApiPage /></Animated>} />
             <Route path="about" element={<Animated><About /></Animated>} />
             {importantLinks.map((article) => (
               <Route
@@ -164,6 +166,7 @@ export default function App() {
               <Route path="profile" element={<Animated><CustomerProfile basePath="/admin/user" /></Animated>} />
               <Route path="settings" element={<Animated><CustomerSettings /></Animated>} />
               <Route path="sub-agent" element={<Animated><CustomerSubAgent basePath="/admin/user" /></Animated>} />
+              <Route path="api" element={<Animated><DeveloperApiPage /></Animated>} />
               <Route path="about" element={<Animated><About /></Animated>} />
               {importantLinks.map((article) => (
                 <Route

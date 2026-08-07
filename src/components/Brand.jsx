@@ -46,11 +46,11 @@ export function BrandName({
   const wrapperClass = inline
     ? "inline-flex items-baseline gap-1 align-baseline leading-none"
     : "inline-block text-center leading-none";
-  const brandText = forceArabic ? "ويني" : fullName ? "winnie" : "innie";
-  const funText = forceArabic ? "فن" : "Fun";
+  const brandText = forceArabic ? "ويني" : fullName ? "Winnie" : "innie";
+  const funText = forceArabic ? "هاب" : "HUB";
 
   return (
-    <span dir="ltr" className={`${wrapperClass} ${className}`.trim()} aria-label={forceArabic ? "ويني فن" : "Winnie Fun"}>
+    <span dir="ltr" className={`${wrapperClass} ${className}`.trim()} aria-label={forceArabic ? "ويني هاب" : "Winnie HUB"}>
       <span data-brand-text={brandText} className={`${classes.name} winnie-brand-name ${inline ? "inline-block" : "block"} truncate font-black italic tracking-wide`}>
         {brandText}
       </span>
@@ -64,7 +64,7 @@ export function BrandName({
 export function BrandLockup({
   className = "",
   forceArabic = false,
-  fullName = true,
+  fullName = false,
   logoClassName = "h-7 w-7",
   nameSize = "inline",
 }) {
@@ -74,7 +74,7 @@ export function BrandLockup({
     <span dir="ltr" className={`inline-flex items-center gap-1.5 align-middle leading-none ${className}`.trim()}>
       <img
         src="/logo.png"
-        alt={forceArabic ? "شعار ويني فن" : t("app.logoAlt")}
+        alt={forceArabic ? "شعار ويني هاب" : t("app.logoAlt")}
         className={`${logoClassName} shrink-0 object-contain`}
       />
       <BrandName forceArabic={forceArabic} fullName={fullName} inline size={nameSize} />
@@ -91,7 +91,7 @@ export default function Brand({ compact = false, forceArabic = false, header = f
     <div dir="ltr" className="flex items-center gap-0.5">
       <img
         src="/logo.png"
-        alt={forceArabic ? "شعار ويني فن" : t("app.logoAlt")}
+        alt={forceArabic ? "شعار ويني هاب" : t("app.logoAlt")}
         className={`${logoClass} object-contain`}
       />
       <div className="-ml-0.5 w-fit text-center leading-none">

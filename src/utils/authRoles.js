@@ -78,6 +78,7 @@ export function normalizeUser(rawUser) {
     tier: rawUser.tier || group?.name || getRoleLabel(rawUser.role),
     group,
     walletBalance: rawUser.walletBalance ?? 0,
+    apiAccessEnabled: rawUser.isApiEnabled === true || rawUser.apiAccessEnabled === true || rawUser.apiAccess?.enabled === true || rawUser.developerAccess?.enabled === true,
     identityVerificationRequired: rawUser.identityVerificationRequired === true,
     identityVerificationReason: rawUser.identityVerificationReason || "",
   };

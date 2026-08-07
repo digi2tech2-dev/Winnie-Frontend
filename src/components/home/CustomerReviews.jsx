@@ -34,9 +34,10 @@ function formatReviewDate(value, locale) {
   }).format(date);
 }
 
-export default function CustomerReviews() {
+export default function CustomerReviews({ forceRtl = false }) {
   const { i18n } = useTranslation();
   const isArabic = i18n.language?.startsWith("ar");
+  const isRtl = forceRtl || isArabic;
   const locale = isArabic ? "ar-EG-u-nu-latn" : "en-US";
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState({ averageRating: 0, totalReviews: 0 });
@@ -142,7 +143,7 @@ export default function CustomerReviews() {
   };
 
   return (
-    <section className="wf-reviews-section" aria-labelledby="customer-reviews-title" dir={isArabic ? "rtl" : "ltr"}>
+    <section className="wf-reviews-section" aria-labelledby="customer-reviews-title" dir={isRtl ? "rtl" : "ltr"}>
       <motion.div
         className="wf-reviews-shell"
         initial={{ opacity: 0, y: 22 }}

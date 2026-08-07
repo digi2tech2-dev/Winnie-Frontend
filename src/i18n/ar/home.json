@@ -65,8 +65,8 @@
     "promoTrustCta": "اعرف المزيد"
   },
   "slider": {
-    "label": "عروض Winnie Fun",
-    "slideAlt": "عرض Winnie Fun رقم {{number}}",
+    "label": "عروض Winnie HUB",
+    "slideAlt": "عرض Winnie HUB رقم {{number}}",
     "searchAction": "فتح البحث عن المنتجات",
     "searchPlaceholder": "ابحث عن منتج.."
   },

@@ -417,6 +417,7 @@ export default function ProductPurchaseModal({
             <div className="buy-quantity" dir="ltr">
               <span className="buy-w-coin">W</span>
               <input
+                className={`buy-quantity__input${String(quantity).length >= 14 ? " buy-quantity__input--very-long" : String(quantity).length >= 10 ? " buy-quantity__input--long" : ""}`}
                 type="text"
                 inputMode="numeric"
                 value={formatQuantityInput(quantity)}

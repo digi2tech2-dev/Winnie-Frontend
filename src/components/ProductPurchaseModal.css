@@ -1491,6 +1491,46 @@ html:not(.dark) .buy-modal__error--quantity-warning {
   }
 }
 
+/* Give the purchase flow more breathing room on desktop and keep long
+   quantities fully readable without changing the compact mobile dialog. */
+@media (min-width: 768px) {
+  .buy-modal-backdrop {
+    padding: 24px !important;
+  }
+
+  .buy-modal {
+    width: min(520px, calc(100vw - 48px)) !important;
+    padding: 18px 20px !important;
+  }
+
+  .buy-summary {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr) !important;
+    gap: 10px !important;
+    padding-inline: 14px !important;
+  }
+
+  .buy-quantity {
+    width: min(230px, 100%) !important;
+    min-height: 44px !important;
+    gap: 7px !important;
+    padding-inline: 10px !important;
+  }
+
+  .buy-quantity__input {
+    font-size: 26px !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+  }
+
+  .buy-quantity__input--long {
+    font-size: 20px !important;
+  }
+
+  .buy-quantity__input--very-long {
+    font-size: 16px !important;
+  }
+}
+
 .buy-account-input {
   background:
     linear-gradient(rgba(7, 8, 30, 0.92), rgba(7, 8, 30, 0.92)) padding-box,

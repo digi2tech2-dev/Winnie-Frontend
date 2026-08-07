@@ -57,7 +57,7 @@ export default function CustomerCategories({ basePath = "/customer" }) {
         </h1>
       </header>
 
-      <HomeSlide categoriesPath={`${basePath}/categories`} />
+      <HomeSlide categoriesPath={`${basePath}/categories`} compactDesktop />
 
       <section id="customer-categories" className="px-1">
         {loading ? (

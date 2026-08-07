@@ -23,7 +23,8 @@ const contactIcons = {
 export default function ImportantArticlePage({ articleSlug }) {
   const { slug } = useParams();
   const location = useLocation();
-  const { t } = useTranslation(["about", "policies"]);
+  const { t, i18n } = useTranslation(["about", "policies"]);
+  const isArabic = i18n.dir() === "rtl";
   const articles = t("articles", { ns: "policies", returnObjects: true });
   const article = getImportantArticle(articleSlug || slug, articles);
   const homePath = location.pathname.startsWith("/customer")
@@ -37,12 +38,12 @@ export default function ImportantArticlePage({ articleSlug }) {
   }
 
   return (
-    <article dir="rtl" className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+    <article dir={isArabic ? "rtl" : "ltr"} lang={i18n.resolvedLanguage || i18n.language} className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
       <Link
         to={homePath}
         className="inline-flex items-center gap-2 text-sm font-black text-[#7C3AED] transition hover:text-[#0369A1] dark:text-[#A78BFA] dark:hover:text-[#38BDF8]"
       >
-        <ArrowRight className="h-4 w-4" />
+        <ArrowRight className={`h-4 w-4 ${isArabic ? "" : "rotate-180"}`} />
         {homePath === "/" ? t("backHome") : t("backAccount")}
       </Link>
 
@@ -165,7 +166,7 @@ export default function ImportantArticlePage({ articleSlug }) {
           {t("notFoundDescription")}
         </p>
         <a
-          href="mailto:Support.winniefun@gmail.com"
+          href="mailto:Support@winniehub.ae"
           className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(135deg,#7C3AED,#38BDF8)] px-5 text-sm font-black text-white shadow-[0_14px_34px_rgba(124,58,237,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(14,165,233,0.24)]"
         >
           <Mail className="h-4 w-4" />

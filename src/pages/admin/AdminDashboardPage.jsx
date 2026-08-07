@@ -893,7 +893,7 @@ function PurchaseReceiptModal({ onClose, order }) {
             <ReceiptText className="h-4.5 w-4.5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[8px] font-black tracking-[0.14em] text-violet-600 dark:text-violet-300">WINNIE FUN</p>
+            <p className="text-[8px] font-black tracking-[0.14em] text-violet-600 dark:text-violet-300">WINNIE HUB</p>
             <h3 id="purchase-receipt-title" className="mt-0.5 text-[13px] font-black text-slate-950 dark:text-white">
               إيصال طلب الشراء
             </h3>
@@ -934,7 +934,7 @@ function PurchaseReceiptModal({ onClose, order }) {
           ) : null}
 
           <p className="mt-3 text-center text-[7px] font-bold text-slate-400">
-            شكرًا لاستخدامك منصة WINNIE FUN
+            شكرًا لاستخدامك منصة WINNIE HUB
           </p>
         </div>
       </section>

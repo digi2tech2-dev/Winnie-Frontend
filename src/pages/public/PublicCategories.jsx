@@ -56,7 +56,7 @@ export default function PublicCategories() {
         </p>
       </header>
 
-      <HomeSlide categoriesPath="/categories" />
+      <HomeSlide categoriesPath="/categories" compactDesktop />
 
       <section id="public-categories" className="px-1">
         {loading ? (

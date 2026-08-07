@@ -8,17 +8,18 @@ import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
 export const recentHomepageLimit = 6;
 
-export default function RecentAdditionsSection({ items = [], onSelect, onViewAll }) {
+export default function RecentAdditionsSection({ forceRtl = false, items = [], onSelect, onViewAll }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
-  const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
+  const isRtl = forceRtl || isArabic;
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const recentItems = useMemo(
     () => sortProductsByNewest(items.filter(isProductVisibleInStore)).slice(0, recentHomepageLimit),
     [items],
   );
 
   return (
-    <section id="recent-additions" dir={isArabic ? "rtl" : "ltr"} className="homepage-compact-products space-y-3">
+    <section id="recent-additions" dir={isRtl ? "rtl" : "ltr"} className="homepage-compact-products space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="relative text-lg font-black tracking-normal text-slate-950 dark:text-white sm:text-xl ltr:pl-3 rtl:pr-3">
@@ -44,7 +45,7 @@ export default function RecentAdditionsSection({ items = [], onSelect, onViewAll
       {recentItems.length ? (
         <HorizontalProductCarousel label={t("recentlyAdded.title")}>
           {recentItems.map((product, index) => (
-            <div key={product.id || product._id || product.slug || product.name} dir={isArabic ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
+            <div key={product.id || product._id || product.slug || product.name} dir={isRtl ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
               <HomeProductCard product={product} index={index} onSelect={onSelect} variant="featured" />
             </div>
           ))}

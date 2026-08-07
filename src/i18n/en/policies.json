@@ -11,7 +11,7 @@
       "refund": "Refund",
       "orders": "Orders"
     },
-    "notice": "Please read the following terms before continuing. Continuing means you accept Winnie Fun policies for digital services.",
+    "notice": "Please read the following terms before continuing. Continuing means you accept Winnie HUB policies for digital services.",
     "more": "More",
     "understood": "Understood",
     "sections": [
@@ -35,7 +35,7 @@
       "path": "/privacy-policy",
       "label": "Privacy Policy",
       "badge": "Data protection",
-      "title": "Winnie Fun Privacy Policy",
+      "title": "Winnie HUB Privacy Policy",
       "updated": "June 17, 2026",
       "intro": "We respect customer privacy and handle data clearly and responsibly. This policy explains the information we need to provide digital top-up services, how we use and protect it, and the choices available to users.",
       "highlights": ["Minimal data where possible", "Service-related use", "Technical and organizational protection"],
@@ -51,7 +51,7 @@
         {
           "heading": "How do we use data?",
           "body": [
-            "We use data to provide Winnie Fun services such as game top-ups, software services, digital cards, subscriptions, order tracking, wallet management, experience improvements, and support replies.",
+            "We use data to provide Winnie HUB services such as game top-ups, software services, digital cards, subscriptions, order tracking, wallet management, experience improvements, and support replies.",
             "We may use aggregated non-personal data to understand service performance and improve platform quality without identifying a specific user."
           ]
         },
@@ -72,7 +72,7 @@
           ]
         }
       ],
-      "closing": "For privacy requests, contact us at Support.winniefun@gmail.com. We will try to respond as soon as possible depending on the nature of the request."
+      "closing": "For privacy requests, contact us at Support@winniehub.ae. We will try to respond as soon as possible depending on the nature of the request."
     },
     {
       "slug": "terms-and-conditions",
@@ -81,7 +81,7 @@
       "badge": "Platform use",
       "title": "Terms and Conditions",
       "updated": "June 17, 2026",
-      "intro": "By using Winnie Fun, you agree to these terms governing account creation, order fulfillment, payments, wallet use, and the limits of digital services available on the platform.",
+      "intro": "By using Winnie HUB, you agree to these terms governing account creation, order fulfillment, payments, wallet use, and the limits of digital services available on the platform.",
       "highlights": ["Responsible account", "Clear digital orders", "Fair and safe use"],
       "sections": [
         {
@@ -102,7 +102,7 @@
         {
           "heading": "Orders and digital services",
           "body": [
-            "Winnie Fun services include games, software, digital cards, and subscriptions. Some services are instant, while others require review or processing time depending on the provider and product type.",
+            "Winnie HUB services include games, software, digital cards, and subscriptions. Some services are instant, while others require review or processing time depending on the provider and product type.",
             "Users must verify player IDs, email addresses, account numbers, countries, and all required data before confirming an order. Incorrect data may result in delivery to the wrong account."
           ]
         },
@@ -128,13 +128,13 @@
       "badge": "Compliance and security",
       "title": "Anti-Money Laundering and Prohibited Financing Policy",
       "updated": "June 17, 2026",
-      "intro": "Winnie Fun handles digital products and services that could be misused. We therefore apply controls for monitoring transactions, verifying identity when needed, and reducing activity that may relate to money laundering or fraud.",
+      "intro": "Winnie HUB handles digital products and services that could be misused. We therefore apply controls for monitoring transactions, verifying identity when needed, and reducing activity that may relate to money laundering or fraud.",
       "highlights": ["Transaction review", "Verification when needed", "Suspicious activity rejection"],
       "sections": [
         {
           "heading": "Policy purpose",
           "body": [
-            "This policy aims to prevent the use of Winnie Fun services to hide unlawful fund sources, finance prohibited activity, or pass fraudulent operations through digital products.",
+            "This policy aims to prevent the use of Winnie HUB services to hide unlawful fund sources, finance prohibited activity, or pass fraudulent operations through digital products.",
             "We cooperate with payment providers and competent authorities when required by applicable laws and regulations."
           ]
         },
@@ -162,7 +162,7 @@
           "body": ["Users must use payment methods they own or are authorized to use, avoid passing funds or requests for unknown parties, and avoid splitting transactions to evade review."]
         }
       ],
-      "closing": "An AML policy protects serious users and preserves the reliability of Winnie Fun services in the digital market."
+      "closing": "An AML policy protects serious users and preserves the reliability of Winnie HUB services in the digital market."
     },
     {
       "slug": "replacement-cancellation-policy",
@@ -171,7 +171,7 @@
       "badge": "Orders and refunds",
       "title": "Replacement and Cancellation Policy",
       "updated": "June 17, 2026",
-      "intro": "Because most Winnie Fun services are digital and delivered to accounts or electronic codes, cancellation or replacement depends on order status, data accuracy, and the product or provider type.",
+      "intro": "Because most Winnie HUB services are digital and delivered to accounts or electronic codes, cancellation or replacement depends on order status, data accuracy, and the product or provider type.",
       "highlights": ["Review may be possible before fulfillment", "Restrictions after delivery", "Fair problem resolution comes first"],
       "sections": [
         {
@@ -185,7 +185,7 @@
           "heading": "After service delivery",
           "body": [
             "After top-up, digital-code delivery, or subscription activation, orders are usually not cancellable or replaceable because the product is outside the platform’s control and may be used.",
-            "If an error by Winnie Fun or the provider is proven, we will work to fix the issue or compensate the customer suitably based on the case."
+            "If an error by Winnie HUB or the provider is proven, we will work to fix the issue or compensate the customer suitably based on the case."
           ]
         },
         {
@@ -196,7 +196,7 @@
         {
           "heading": "Refund and compensation method",
           "body": [
-            "When a refund is accepted, compensation may be made to the Winnie Fun wallet or the original payment method if available through the payment provider. Timing depends on the payment method, bank, or provider.",
+            "When a refund is accepted, compensation may be made to the Winnie HUB wallet or the original payment method if available through the payment provider. Timing depends on the payment method, bank, or provider.",
             "Payment-provider or external processing fees may be deducted if they are non-refundable."
           ]
         },
@@ -212,7 +212,7 @@
       "path": "/contact-methods",
       "label": "Contact Methods",
       "badge": "Support",
-      "title": "Contact Winnie Fun",
+      "title": "Contact Winnie HUB",
       "updated": "June 17, 2026",
       "intro": "Fast and clear support is an essential part of the digital top-up experience. This page explains the right channels to contact us and the details that help us solve your request accurately.",
       "highlights": ["Order support", "Phone and WhatsApp", "Location details"],
@@ -224,8 +224,8 @@
             {
               "type": "email",
               "label": "Official email",
-              "value": "Support.winniefun@gmail.com",
-              "href": "mailto:Support.winniefun@gmail.com"
+              "value": "Support@winniehub.ae",
+              "href": "mailto:Support@winniehub.ae"
             },
             {
               "type": "phone",
@@ -242,7 +242,7 @@
             {
               "type": "location",
               "label": "Location",
-              "value": "Open Winnie Fun location on Google Maps",
+              "value": "Open Winnie HUB location on Google Maps",
               "href": "https://maps.app.goo.gl/REwk2zZKSiuyVAdLA?g_st=ic"
             }
           ]
@@ -263,7 +263,7 @@
           "heading": "Safety when contacting us",
           "body": [
             "We will not ask you to share your password or verification codes. Do not send full card data or sensitive information through messages.",
-            "If you receive a message claiming to be from Winnie Fun and requesting sensitive data, ignore it and contact us through the official email to verify."
+            "If you receive a message claiming to be from Winnie HUB and requesting sensitive data, ignore it and contact us through the official email to verify."
           ]
         },
         {
@@ -280,7 +280,7 @@
       "badge": "Experience improvement",
       "title": "Suggestions and Complaints Policy",
       "updated": "June 17, 2026",
-      "intro": "We receive suggestions and complaints as an important way to improve Winnie Fun services. Our goal is to hear users clearly, review each case fairly, and respond with practical action where possible.",
+      "intro": "We receive suggestions and complaints as an important way to improve Winnie HUB services. Our goal is to hear users clearly, review each case fairly, and respond with practical action where possible.",
       "highlights": ["Organized intake", "Fair review", "Continuous improvement"],
       "sections": [
         {
@@ -293,15 +293,14 @@
             "You can submit suggestions and complaints through the official email and state the subject clearly, such as a complaint about order number X or a suggestion to add a new service.",
             "Please include the following information to help us process the complaint quickly and easily:"
           ],
-          "email": "Support.winniefun@gmail.com",
+          "email": "Support@winniehub.ae",
           "bullets": ["Full name", "Mobile number", "Order number", "Complaint summary", "Any supporting documents or evidence", "Complainant contact details: mobile number / email"]
         },
         {
           "heading": "Review process",
           "body": [
             "We review complaints based on order details, payment logs, fulfillment status, support messages, and provider responses if available. We may request additional details before a final decision.",
-            "Winnie store will study the complaint and respond as soon as possible, up to a maximum of 3 business days from receipt.",
-            "Suggestions are collected and categorized, and may enter the platform roadmap or upcoming services list when suitable and requested by enough users."
+            "Winnie store will study the complaint and respond as soon as possible, up to a maximum of 3 business days from receipt."
           ]
         },
         {
@@ -322,14 +321,14 @@
       "badge": "Sub-agent",
       "title": "Affiliate Marketing and Sub-Agent Program Guide",
       "updated": "June 17, 2026",
-      "intro": "The Winnie Fun affiliate and sub-agent program is for people or organizations that can bring real customers to digital top-up services while following transparency and platform rules.",
+      "intro": "The Winnie HUB affiliate and sub-agent program is for people or organizations that can bring real customers to digital top-up services while following transparency and platform rules.",
       "highlights": ["Suitable for agents", "Clear commissions", "Responsible marketing"],
       "sections": [
         {
           "heading": "Program idea",
           "body": [
-            "The program allows a partner to promote Winnie Fun services such as game top-ups, software, digital cards, and subscriptions in exchange for commission or benefits determined by agreement, activity size, and customer quality.",
-            "A sub-agent is not a Winnie Fun employee, but an independent marketing partner or distributor who follows brand, pricing, and compliance rules."
+            "The program allows a partner to promote Winnie HUB services such as game top-ups, software services, digital cards, and subscriptions in exchange for commission or benefits determined by agreement, activity size, and customer quality.",
+            "A sub-agent is not a Winnie HUB employee, but an independent marketing partner or distributor who follows brand, pricing, and compliance rules."
           ]
         },
         {
@@ -340,7 +339,7 @@
         {
           "heading": "Marketing rules",
           "body": [
-            "Marketing materials must be accurate and must not promise unconfirmed prices or delivery times. Using Winnie Fun in deceptive campaigns, fake pages, or unapproved offers is prohibited.",
+            "Marketing materials must be accurate and must not promise unconfirmed prices or delivery times. Using Winnie HUB in deceptive campaigns, fake pages, or unapproved offers is prohibited.",
             "Agents may not use spam messages or target minors or categories that may not legally receive the service."
           ]
         },
@@ -353,10 +352,10 @@
         },
         {
           "heading": "Suspending or changing the program",
-          "body": ["Winnie Fun may change commission rates, acceptance conditions, or suspend a sub-agent account when rules are violated, the brand is misused, customers are misled, or suspicious activity exists."]
+          "body": ["Winnie HUB may change commission rates, acceptance conditions, or suspend a sub-agent account when rules are violated, the brand is misused, customers are misled, or suspicious activity exists."]
         }
       ],
-      "closing": "To join as a sub-agent, send a brief about your activity and marketing channels to Support.winniefun@gmail.com. We will review the request based on fit and quality."
+      "closing": "To join as a sub-agent, send a brief about your activity and marketing channels to Support@winniehub.ae. We will review the request based on fit and quality."
     }
   ]
 }

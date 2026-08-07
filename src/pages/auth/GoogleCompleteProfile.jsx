@@ -176,7 +176,7 @@ export default function GoogleCompleteProfile() {
 
           <div className="text-center">
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-white/75 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)] dark:border-white/10 dark:bg-white/10">
-              <img src="/logo.png" alt="Winnie Fun" className="h-12 w-12 object-contain" />
+              <img src="/logo.png" alt="Winnie HUB" className="h-12 w-12 object-contain" />
             </span>
             <span className="mx-auto mt-3 grid h-10 w-10 place-items-center rounded-full bg-[linear-gradient(135deg,#2563EB,#7C3AED,#EC4899)] text-white shadow-[0_14px_30px_rgba(124,58,237,0.28)]">
               <UserRound className="h-5 w-5" />

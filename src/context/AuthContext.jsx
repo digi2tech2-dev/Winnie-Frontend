@@ -129,7 +129,7 @@ export function AuthProvider({ children }) {
     setAuthError("");
   }, []);
 
-  const refreshCurrentUser = useCallback(async (overrideToken) => {
+  const refreshCurrentUser = useCallback(async (overrideToken, options = {}) => {
     const activeToken = overrideToken || readStoredToken();
     if (!activeToken) {
       clearAuth();
@@ -150,11 +150,42 @@ export function AuthProvider({ children }) {
       return { ok: true, user: currentUser };
     } catch (error) {
       const failure = mapAuthFailure(error, "Unable to refresh your session.");
+      const preserveSession = options.preserveSessionOnError === true
+        && ![401, 403].includes(Number(failure.status || 0));
+      if (preserveSession) return failure;
       clearAuth();
       setAuthError(failure.message);
       return failure;
     }
   }, [clearAuth, persistAuth]);
+
+  useEffect(() => {
+    if (!token || isLoading) return undefined;
+
+    let refreshInFlight = false;
+    const syncAccount = async () => {
+      if (refreshInFlight) return;
+      refreshInFlight = true;
+      try {
+        await refreshCurrentUser(undefined, { preserveSessionOnError: true });
+      } finally {
+        refreshInFlight = false;
+      }
+    };
+    const syncVisibleAccount = () => {
+      if (document.visibilityState === "visible") void syncAccount();
+    };
+
+    const intervalId = window.setInterval(syncAccount, 30000);
+    window.addEventListener("focus", syncAccount);
+    document.addEventListener("visibilitychange", syncVisibleAccount);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncAccount);
+      document.removeEventListener("visibilitychange", syncVisibleAccount);
+    };
+  }, [isLoading, refreshCurrentUser, token]);
 
   useEffect(() => {
     let cancelled = false;

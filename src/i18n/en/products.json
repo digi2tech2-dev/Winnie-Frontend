@@ -1,7 +1,7 @@
 {
   "listing": {
     "title": "Products",
-    "eyebrow": "Winnie Fun",
+    "eyebrow": "Winnie HUB",
     "authenticatedDescription": "Authenticated product prices are loaded from the backend.",
     "publicDescription": "Browse active catalog products and log in before placing orders.",
     "loadError": "Unable to load products.",

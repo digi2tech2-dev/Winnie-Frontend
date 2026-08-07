@@ -4,6 +4,7 @@ import {
   checkAdminProviderOrder,
   createAdminProvider,
   deleteAdminProvider,
+  getFazerCardsProviderProducts,
   getAdminProviderBalance,
   getAdminProviderProducts,
   getAdminProviders,
@@ -13,6 +14,7 @@ import {
   updateAdminProvider,
 } from "../../api/adminProviders";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
+import FazerCardsImportModal from "../../components/admin/suppliers/FazerCardsImportModal";
 import SupplierCard from "../../components/admin/suppliers/SupplierCard";
 import SupplierFormModal from "../../components/admin/suppliers/SupplierFormModal";
 import SupplierProductsModal from "../../components/admin/suppliers/SupplierProductsModal";
@@ -26,8 +28,17 @@ import { useAuth } from "../../context/AuthContext";
 
 const productPageSize = 30;
 
+const defaultFazerCardsFilters = {
+  blocked: "",
+  category: "",
+  fulfillmentMode: "TOPUP_WITH_FIELDS",
+  imported: "",
+  supported: "true",
+};
+
 const emptyProductsState = {
   error: "",
+  filters: defaultFazerCardsFilters,
   loading: false,
   page: 1,
   pagination: { page: 1, limit: productPageSize, total: 0, pages: 1 },
@@ -35,6 +46,13 @@ const emptyProductsState = {
   search: "",
   supplier: null,
 };
+
+function isFazerCardsSupplier(supplier = {}) {
+  const providerCode = String(supplier.providerCode || "").toUpperCase();
+  const slug = String(supplier.slug || supplier.code || "").toLowerCase();
+  const name = String(supplier.name || supplier.displayName || "").toLowerCase();
+  return providerCode === "FAZER_CARDS" || slug === "fazer-cards" || name === "fazercards" || name === "fazer cards";
+}
 
 export default function SuppliersManagementPage() {
   const { token } = useAuth();
@@ -50,6 +68,7 @@ export default function SuppliersManagementPage() {
   const [connectionResults, setConnectionResults] = useState({});
   const [providerProductsTotal, setProviderProductsTotal] = useState(0);
   const [productsState, setProductsState] = useState(emptyProductsState);
+  const [fazerImportProduct, setFazerImportProduct] = useState(null);
   const [toolsFor, setToolsFor] = useState(null);
   const [xenaFor, setXenaFor] = useState(null);
   const [globalSearch, setGlobalSearch] = useState({
@@ -165,7 +184,7 @@ export default function SuppliersManagementPage() {
         message: `تم جلب ${result.result.totalFetched} منتج، وتحديث أو إضافة ${result.result.updated + result.result.upserted} منتج.`,
         });
         if (productsState.supplier?.id === supplier.id) {
-          await loadProviderProducts(supplier, { page: productsState.page, search: productsState.search });
+          await loadProviderProducts(supplier, { filters: productsState.filters, page: productsState.page, search: productsState.search });
         }
       } else if (kind === "toggle") {
         const result = await toggleAdminProvider(token, supplier.id);
@@ -192,12 +211,17 @@ export default function SuppliersManagementPage() {
     }
   };
 
-  const loadProviderProducts = async (supplier, { page = 1, search = "" } = {}) => {
+  const loadProviderProducts = async (supplier, { page = 1, search = "", filters } = {}) => {
     if (!token || !supplier) return;
+    const fazerCards = isFazerCardsSupplier(supplier);
+    const effectiveFilters = fazerCards
+      ? { ...defaultFazerCardsFilters, ...(filters || productsState.filters || {}) }
+      : {};
 
     setProductsState((current) => ({
       ...current,
       error: "",
+      filters: effectiveFilters,
       loading: true,
       page,
       search,
@@ -205,14 +229,22 @@ export default function SuppliersManagementPage() {
     }));
 
     try {
-      const result = await getAdminProviderProducts(token, supplier.id, {
-        includeInactive: true,
-        limit: productPageSize,
-        page,
-        search,
-      });
+      const result = fazerCards
+        ? await getFazerCardsProviderProducts(token, {
+            ...effectiveFilters,
+            limit: productPageSize,
+            page,
+            search,
+          })
+        : await getAdminProviderProducts(token, supplier.id, {
+            includeInactive: true,
+            limit: productPageSize,
+            page,
+            search,
+          });
       setProductsState({
         error: "",
+        filters: effectiveFilters,
         loading: false,
         page: result.pagination.page,
         pagination: result.pagination,
@@ -256,6 +288,29 @@ export default function SuppliersManagementPage() {
         searched: true,
       });
     }
+  };
+
+  const updateFazerCardsFilters = (filters) => {
+    setProductsState((current) => ({
+      ...current,
+      filters: { ...defaultFazerCardsFilters, ...filters },
+    }));
+  };
+
+  const handleFazerCardsImported = async (result) => {
+    showToast({
+      type: "success",
+      title: result.action === "updated" ? "Import updated" : "Product imported",
+      message: `${result.product.name || "FazerCards product"} was saved inactive and hidden from customers.`,
+    });
+    if (productsState.supplier) {
+      await loadProviderProducts(productsState.supplier, {
+        filters: productsState.filters,
+        page: productsState.page,
+        search: productsState.search,
+      });
+    }
+    await loadSuppliers({ silent: true });
   };
 
   return (
@@ -317,14 +372,24 @@ export default function SuppliersManagementPage() {
       <SupplierProductsModal
         actionKey={actionKey}
         error={productsState.error}
+        fazerCards={isFazerCardsSupplier(productsState.supplier)}
+        filters={productsState.filters}
         loading={productsState.loading}
-        onClose={() => setProductsState(emptyProductsState)}
-        onPageChange={(page) => loadProviderProducts(productsState.supplier, { page, search: productsState.search })}
-        onSearch={(search) => loadProviderProducts(productsState.supplier, { page: 1, search })}
+        onClose={() => setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } })}
+        onFilterChange={updateFazerCardsFilters}
+        onImport={setFazerImportProduct}
+        onPageChange={(page) => loadProviderProducts(productsState.supplier, { filters: productsState.filters, page, search: productsState.search })}
+        onSearch={(search, filters) => loadProviderProducts(productsState.supplier, { filters, page: 1, search })}
         onSync={requestSync}
         pagination={productsState.pagination}
         products={productsState.products}
         supplier={productsState.supplier}
+      />
+      <FazerCardsImportModal
+        onClose={() => setFazerImportProduct(null)}
+        onImported={handleFazerCardsImported}
+        product={fazerImportProduct}
+        token={token}
       />
       <SupplierToolsModal
         onCheckOrder={(supplier, orderId) => checkAdminProviderOrder(token, supplier.id, orderId)}

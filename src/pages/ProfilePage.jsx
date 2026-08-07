@@ -7,7 +7,6 @@ import { resolveBackendAssetUrl } from "../api/adapters";
 import { normalizeApiError } from "../api/errors";
 import { changeMyPassword, getProfile, updateMyProfile, uploadMyAvatar } from "../api/profile";
 import { getMyReferrals } from "../api/referrals";
-import BackButton from "../components/BackButton";
 import WhatsAppSupportButton from "../components/WhatsAppSupportButton";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ToastProvider";
@@ -300,11 +299,6 @@ export default function ProfilePage({ basePath = "/customer" }) {
       <section className="customer-profile-hero relative min-h-[390px] overflow-hidden bg-[linear-gradient(135deg,#BAF1FF_0%,#E8E0FF_48%,#FFC2DC_100%)] px-4 pb-7 pt-5 dark:bg-[linear-gradient(135deg,#070A1E_0%,#111827_48%,#24133D_100%)] sm:min-h-[460px] sm:px-8 sm:pb-8 sm:pt-7">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.06)_58%,rgba(248,252,255,0)_100%),linear-gradient(90deg,rgba(125,211,252,0.34)_0%,rgba(255,255,255,0)_42%,rgba(244,114,182,0.34)_100%)] dark:bg-[linear-gradient(180deg,rgba(139,92,246,0.24)_0%,rgba(56,189,248,0.08)_58%,rgba(5,8,22,0)_100%),linear-gradient(90deg,rgba(56,189,248,0.18)_0%,rgba(5,8,22,0)_44%,rgba(168,85,247,0.24)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,rgba(248,252,255,0)_0%,rgba(248,252,255,1)_100%)] dark:bg-[linear-gradient(180deg,rgba(5,8,22,0)_0%,rgba(5,8,22,0.94)_100%)]" />
-        <BackButton
-          className="profile-hero-back absolute !right-3 !top-3 z-20 !mb-0 sm:!right-6 sm:!top-4"
-          fallbackPath={`${basePath}/dashboard`}
-          hiddenPaths={[`${basePath}/dashboard`]}
-        />
         <div className="relative z-10 mx-auto mt-12 grid max-w-[760px] grid-cols-[92px_minmax(0,1fr)_92px] items-center gap-2 sm:mt-14 sm:grid-cols-[150px_minmax(0,1fr)_150px] sm:gap-3">
           <button
             type="button"

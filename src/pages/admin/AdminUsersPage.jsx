@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   Ban,
+  Braces,
   CheckCircle2,
   Copy,
   Eye,
@@ -33,6 +34,7 @@ import {
   rejectUser,
   restoreAdminUser,
   unblockAdminUser,
+  updateAdminUserApiAccess,
   updateUserIdentityVerification,
 } from "../../api/adminUsers";
 import { getAdminUserWalletTransactions } from "../../api/adminWallet";
@@ -346,6 +348,21 @@ export default function AdminUsersPage() {
     });
   };
 
+  const requestApiAccessChange = (user) => {
+    const enable = !user.apiAccessEnabled;
+    closeActionMenu();
+    setConfirmation({
+      action: enable ? "enableApi" : "disableApi",
+      userId: user.id,
+      title: enable ? "تفعيل API للمستخدم" : "إيقاف API للمستخدم",
+      message: enable
+        ? `سيتم منح ${user.name} صلاحية استخدام API وإنشاء توكن خاص بالحساب.`
+        : `سيتم إلغاء وصول ${user.name} إلى API وتعطيل التوكن الحالي فورًا.`,
+      confirmLabel: enable ? "تفعيل API" : "إيقاف API",
+      tone: enable ? "success" : "danger",
+    });
+  };
+
   const executeConfirmedAction = async () => {
     if (!confirmation || !token) return;
     const key = `${confirmation.action}:${confirmation.userId}`;
@@ -366,6 +383,8 @@ export default function AdminUsersPage() {
         result = await deleteAdminUser(token, confirmation.userId);
       } else if (confirmation.action === "restore") {
         result = await restoreAdminUser(token, confirmation.userId);
+      } else if (confirmation.action === "enableApi" || confirmation.action === "disableApi") {
+        result = await updateAdminUserApiAccess(token, confirmation.userId, confirmation.action === "enableApi");
       }
 
       showToast({
@@ -608,6 +627,7 @@ export default function AdminUsersPage() {
           onClose={closeActionMenu}
           onDelete={() => requestUserStateChange(actionMenuUser, "delete")}
           onPassword={() => openPasswordModal(actionMenuUser)}
+          onApiAccess={() => requestApiAccessChange(actionMenuUser)}
           onReject={() => requestUserReview(actionMenuUser, "reject")}
           onRestore={() => handleRestoreUser(actionMenuUser)}
           onUnblock={() => handleUnblockUser(actionMenuUser)}
@@ -627,6 +647,7 @@ export default function AdminUsersPage() {
             onCopy={copyUserId}
             onOpenWallet={() => openUserWallet(selectedUser.id)}
             onPassword={() => openPasswordModal(selectedUser)}
+            onApiAccess={() => requestApiAccessChange(selectedUser)}
             onReject={() => requestUserReview(selectedUser, "reject")}
             onRestore={() => handleRestoreUser(selectedUser)}
             onUnblock={() => handleUnblockUser(selectedUser)}
@@ -845,7 +866,7 @@ function UserActionTrigger({ isOpen, user, onDetails, onToggle }) {
   );
 }
 
-function UserActionsMenu({ actionKey, anchor, user, onApprove, onBlock, onClose, onDelete, onPassword, onReject, onRestore, onUnblock, onWallet }) {
+function UserActionsMenu({ actionKey, anchor, user, onApiAccess, onApprove, onBlock, onClose, onDelete, onPassword, onReject, onRestore, onUnblock, onWallet }) {
   const menuRef = useRef(null);
   const [position, setPosition] = useState(null);
   const busy = Boolean(actionKey);
@@ -899,6 +920,7 @@ function UserActionsMenu({ actionKey, anchor, user, onApprove, onBlock, onClose,
       {isDeleted ? <MenuButton icon={RotateCcw} label="استرجاع المستخدم" onClick={() => run(onRestore)} disabled={busy} /> : <>
         {canReview && <><MenuButton icon={CheckCircle2} label="قبول الحساب" onClick={() => run(onApprove)} disabled={busy} /><MenuButton icon={Ban} label="رفض الحساب" onClick={() => run(onReject)} disabled={busy} danger /><span className="admin-user-menu-separator" /></>}
         <MenuButton icon={WalletCards} label="المحفظة والتحكم" onClick={() => run(onWallet)} disabled={busy} />
+        <MenuButton icon={Braces} label={user.apiAccessEnabled ? "إيقاف API" : "تفعيل API"} onClick={() => run(onApiAccess)} disabled={busy} danger={user.apiAccessEnabled} />
         <MenuButton icon={KeyRound} label="تغيير كلمة المرور" onClick={() => run(onPassword)} disabled={busy} />
         <span className="admin-user-menu-separator" />
         {isBlocked ? <MenuButton icon={ShieldCheck} label="فك الحظر" onClick={() => run(onUnblock)} disabled={busy} /> : <MenuButton icon={Ban} label="حظر المستخدم" onClick={() => run(onBlock)} disabled={busy} danger />}
@@ -944,7 +966,7 @@ function StatusBadge({ status, label }) {
   );
 }
 
-function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWallet, onPassword, onReject, onRestore, onUnblock, onUpdateIdentityVerification }) {
+function UserDrawer({ user, busy, onApiAccess, onApprove, onBlock, onClose, onCopy, onOpenWallet, onPassword, onReject, onRestore, onUnblock, onUpdateIdentityVerification }) {
   const canReview = user.displayStatus !== "DELETED" && user.status === "PENDING";
   const [identityReason, setIdentityReason] = useState(user.identityVerificationReason || "");
 
@@ -1083,6 +1105,33 @@ function UserDrawer({ user, busy, onApprove, onBlock, onClose, onCopy, onOpenWal
                 <span>المحفظة والتحكم</span>
               </button>
             )}
+          </DrawerSection>
+
+          <DrawerSection icon={Braces} title="وصول API">
+            <div className="rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-cyan-50 p-4 dark:border-violet-400/20 dark:from-violet-500/10 dark:via-white/[0.035] dark:to-cyan-500/10">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-950 dark:text-white">واجهة برمجة التطبيقات</p>
+                  <p className="mt-1 text-xs font-bold leading-6 text-slate-600 dark:text-slate-300">
+                    عند التفعيل يستطيع المستخدم فتح صفحة API ونسخ الرابط والتوكن وقراءة دليل الربط.
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-black ${user.apiAccessEnabled ? "bg-emerald-500 text-white" : "bg-slate-500/12 text-slate-600 dark:text-slate-300"}`}>
+                  {user.apiAccessEnabled ? "API مفعّل" : "API غير مفعّل"}
+                </span>
+              </div>
+              {user.displayStatus !== "DELETED" && (
+                <button
+                  type="button"
+                  onClick={onApiAccess}
+                  disabled={busy}
+                  className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${user.apiAccessEnabled ? "bg-rose-600 hover:bg-rose-700" : "bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 hover:brightness-110"}`}
+                >
+                  <Braces className="h-4 w-4" />
+                  <span>{user.apiAccessEnabled ? "إيقاف API" : "تفعيل API"}</span>
+                </button>
+              )}
+            </div>
           </DrawerSection>
         </div>
 

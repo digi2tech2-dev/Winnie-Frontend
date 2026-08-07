@@ -1,9 +1,10 @@
 import { BadgePercent, ShieldCheck, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-export default function HomePromoBanners() {
+export default function HomePromoBanners({ forceRtl = false }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
+  const isRtl = forceRtl || isArabic;
   const banners = [
     {
       id: "games",
@@ -32,7 +33,7 @@ export default function HomePromoBanners() {
   ];
 
   return (
-    <section dir={isArabic ? "rtl" : "ltr"} aria-label={t("homePage.promotions")} className="hidden overflow-hidden md:block">
+    <section dir={isRtl ? "rtl" : "ltr"} aria-label={t("homePage.promotions")} className="hidden overflow-hidden md:block">
       <div className="grid grid-cols-3 gap-3">
         {banners.map((banner) => {
           const Icon = banner.icon;

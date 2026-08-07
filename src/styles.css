@@ -16647,6 +16647,237 @@ body::-webkit-scrollbar {
   }
 }
 
+/* Keep the admin wallet balance and brand separated on narrow headers. */
+.admin-header .admin-header-wallet {
+  display: inline-flex;
+  width: fit-content;
+  max-width: min(210px, 28vw);
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  overflow: hidden;
+  padding-inline: 7px !important;
+  white-space: nowrap;
+  border: 1px solid rgba(139, 92, 246, 0.42);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(236, 72, 153, 0.18), transparent 42%),
+    radial-gradient(circle at 92% 100%, rgba(34, 211, 238, 0.2), transparent 44%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 243, 255, 0.96) 52%, rgba(236, 254, 255, 0.96));
+  color: #5b21b6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 10px 25px rgba(124, 58, 237, 0.14),
+    0 0 18px rgba(34, 211, 238, 0.08);
+}
+
+.admin-header .admin-header-wallet::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, 0.2) 42%, transparent 62%);
+  content: "";
+  opacity: 0.45;
+  pointer-events: none;
+  transform: translateX(-85%);
+  transition: transform 500ms ease;
+}
+
+.admin-header .admin-header-wallet:hover::before {
+  transform: translateX(85%);
+}
+
+.admin-header .admin-header-wallet:hover {
+  border-color: rgba(168, 85, 247, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 14px 30px rgba(124, 58, 237, 0.2),
+    0 0 24px rgba(34, 211, 238, 0.14);
+}
+
+.admin-header .admin-header-wallet-icon {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #7c3aed 0%, #d946ef 48%, #06b6d4 100%);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 5px 14px rgba(124, 58, 237, 0.3),
+    0 0 12px rgba(34, 211, 238, 0.16);
+}
+
+.admin-header .admin-header-wallet-balance {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 10px rgba(124, 58, 237, 0.12);
+}
+
+.admin-header .admin-header-wallet-balance strong {
+  display: block;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: #312e81;
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-header .admin-header-wallet-balance small {
+  flex-shrink: 0;
+  color: #7c3aed;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+html.dark .admin-header .admin-header-wallet {
+  border-color: rgba(96, 165, 250, 0.3);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(236, 72, 153, 0.2), transparent 42%),
+    radial-gradient(circle at 92% 100%, rgba(34, 211, 238, 0.18), transparent 46%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(35, 21, 69, 0.96) 54%, rgba(7, 28, 42, 0.96));
+  color: #e9d5ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.28),
+    0 0 20px rgba(139, 92, 246, 0.14);
+}
+
+html.dark .admin-header .admin-header-wallet:hover {
+  border-color: rgba(34, 211, 238, 0.54);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 14px 30px rgba(0, 0, 0, 0.34),
+    0 0 26px rgba(168, 85, 247, 0.2);
+}
+
+html.dark .admin-header .admin-header-wallet-icon {
+  border-color: rgba(216, 180, 254, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 5px 15px rgba(168, 85, 247, 0.28),
+    0 0 13px rgba(34, 211, 238, 0.2);
+}
+
+html.dark .admin-header .admin-header-wallet-balance strong {
+  color: #f8fafc;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.26);
+}
+
+html.dark .admin-header .admin-header-wallet-balance small {
+  color: #67e8f9;
+}
+
+@media (max-width: 639px) {
+  .admin-header .admin-header-shell {
+    display: flex !important;
+    gap: 5px !important;
+  }
+
+  .admin-header .admin-header-actions,
+  .admin-header .admin-header-brand,
+  .admin-header .admin-header-menu {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .admin-header .admin-header-actions {
+    order: 1;
+    gap: 4px !important;
+  }
+
+  .admin-header .admin-header-wallet {
+    order: 2;
+    flex: 0 1 auto;
+    width: fit-content !important;
+    min-width: 0 !important;
+    max-width: 118px;
+    height: 40px !important;
+    padding: 0 6px !important;
+    border-radius: 9999px;
+  }
+
+  .admin-header .admin-header-wallet-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 9px;
+  }
+
+  .admin-header .admin-header-wallet svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .admin-header .admin-header-wallet-balance {
+    display: inline-flex;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-header .admin-header-wallet-balance strong {
+    min-width: 0;
+    font-size: 0.7rem;
+  }
+
+  .admin-header .admin-header-wallet-balance small {
+    font-size: 0.46rem;
+  }
+
+  .admin-header .admin-header-brand {
+    order: 3;
+    margin-left: auto !important;
+    justify-self: auto;
+  }
+
+  .admin-header .admin-header-menu {
+    order: 4;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-header .admin-header-shell {
+    gap: 3px !important;
+  }
+
+  .admin-header .admin-header-actions {
+    gap: 3px !important;
+  }
+
+  .admin-header .admin-header-wallet {
+    flex-basis: auto;
+    min-width: 0 !important;
+    max-width: 86px;
+    height: 36px !important;
+    gap: 4px;
+    padding-inline: 4px !important;
+  }
+
+  .admin-header .admin-header-wallet-balance {
+    font-size: 9px;
+  }
+
+  .admin-header .admin-header-wallet-balance strong {
+    font-size: 0.62rem;
+  }
+
+  .admin-header .admin-header-wallet-balance small {
+    font-size: 0.42rem;
+  }
+}
+
 /* Compact admin order details on phones. */
 @media (max-width: 640px) {
   .admin-order-detail-overlay {
@@ -18391,5 +18622,657 @@ html.dark .admin-dashboard-main .admin-profit-chart-plot {
   .admin-dashboard-main .admin-profit-chart-bar,
   .admin-dashboard-main .admin-profit-chart-loading span {
     animation: none;
+  }
+}
+
+/* Developer API page: isolate its surfaces from the generic page-card theme rules. */
+.developer-api-page {
+  --developer-api-surface: #ffffff;
+  --developer-api-surface-muted: #f8fafc;
+  --developer-api-surface-raised: #f1f5f9;
+  --developer-api-border: rgba(148, 163, 184, 0.34);
+  --developer-api-border-strong: rgba(124, 58, 237, 0.30);
+  --developer-api-shadow: 0 20px 55px rgba(15, 23, 42, 0.075);
+  color: #334155;
+}
+
+html.dark .developer-api-page {
+  --developer-api-surface: #0b1220;
+  --developer-api-surface-muted: #101a2d;
+  --developer-api-surface-raised: #142036;
+  --developer-api-border: rgba(148, 163, 184, 0.16);
+  --developer-api-border-strong: rgba(167, 139, 250, 0.28);
+  --developer-api-shadow: 0 24px 64px rgba(0, 0, 0, 0.30);
+  color: #cbd5e1;
+}
+
+.developer-api-page > .developer-api-hero,
+.developer-api-page > .developer-api-surface,
+.developer-api-empty {
+  background: var(--developer-api-surface) !important;
+  border-color: var(--developer-api-border) !important;
+  box-shadow: var(--developer-api-shadow) !important;
+}
+
+.developer-api-page > .developer-api-hero {
+  background-image:
+    radial-gradient(circle at 8% 15%, rgba(6, 182, 212, 0.10), transparent 34%),
+    radial-gradient(circle at 92% 100%, rgba(124, 58, 237, 0.09), transparent 32%) !important;
+}
+
+html.dark .developer-api-page > .developer-api-hero {
+  background-image:
+    radial-gradient(circle at 8% 15%, rgba(34, 211, 238, 0.08), transparent 36%),
+    radial-gradient(circle at 92% 100%, rgba(139, 92, 246, 0.10), transparent 34%) !important;
+}
+
+.developer-api-page > section:hover {
+  border-color: var(--developer-api-border-strong) !important;
+  box-shadow: var(--developer-api-shadow) !important;
+  transform: none !important;
+}
+
+.developer-api-page .developer-api-section-header,
+.developer-api-page .developer-api-endpoint-header {
+  background: var(--developer-api-surface-muted) !important;
+  border-color: var(--developer-api-border) !important;
+}
+
+.developer-api-page :where(
+  .developer-api-subcard,
+  .developer-api-credential,
+  .developer-api-endpoint
+) {
+  background: var(--developer-api-surface-muted) !important;
+  border-color: var(--developer-api-border) !important;
+  box-shadow: none !important;
+}
+
+.developer-api-page .developer-api-credential {
+  background: var(--developer-api-surface) !important;
+}
+
+.developer-api-page .developer-api-token {
+  border-color: rgba(139, 92, 246, 0.40) !important;
+  background:
+    radial-gradient(circle at 4% 0%, rgba(34, 211, 238, 0.18), transparent 32%),
+    linear-gradient(135deg, #312e81 0%, #1e1b4b 45%, #111827 100%) !important;
+  box-shadow: 0 18px 44px rgba(49, 46, 129, 0.20) !important;
+}
+
+html.dark .developer-api-page .developer-api-token {
+  border-color: rgba(167, 139, 250, 0.26) !important;
+  background:
+    radial-gradient(circle at 4% 0%, rgba(34, 211, 238, 0.12), transparent 34%),
+    linear-gradient(135deg, #111a30 0%, #0b1220 52%, #070c17 100%) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.30) !important;
+}
+
+.developer-api-page .developer-api-code {
+  border-color: #1e293b !important;
+  background: #0b1220 !important;
+  box-shadow: 0 16px 36px rgba(2, 6, 23, 0.16) !important;
+}
+
+html.dark .developer-api-page .developer-api-code {
+  border-color: rgba(148, 163, 184, 0.15) !important;
+  background: #060b14 !important;
+}
+
+.developer-api-page .developer-api-security {
+  border-color: rgba(245, 158, 11, 0.30) !important;
+  background: #fffbeb !important;
+  box-shadow: none !important;
+}
+
+html.dark .developer-api-page .developer-api-security {
+  border-color: rgba(251, 191, 36, 0.20) !important;
+  background: rgba(120, 53, 15, 0.14) !important;
+}
+
+.developer-api-page :where(button, a):focus-visible {
+  outline: 3px solid rgba(139, 92, 246, 0.28);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .developer-api-page {
+    width: 100%;
+  }
+
+  .developer-api-page > :where(.developer-api-hero, .developer-api-surface) {
+    border-radius: 20px;
+  }
+
+  .developer-api-page :where(
+    .developer-api-token,
+    .developer-api-credential,
+    .developer-api-subcard,
+    .developer-api-code,
+    .developer-api-endpoint
+  ) {
+    border-radius: 16px;
+  }
+
+  .developer-api-page .developer-api-code pre {
+    max-width: calc(100vw - 64px);
+  }
+}
+
+/* Shared wallet badge used by both customer and admin headers. */
+.header-wallet-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: min(210px, 28vw);
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  overflow: hidden;
+  padding: 7px !important;
+  white-space: nowrap;
+  border: 1px solid rgba(139, 92, 246, 0.42);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(236, 72, 153, 0.18), transparent 42%),
+    radial-gradient(circle at 92% 100%, rgba(34, 211, 238, 0.20), transparent 44%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 243, 255, 0.96) 52%, rgba(236, 254, 255, 0.96));
+  color: #5b21b6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 10px 25px rgba(124, 58, 237, 0.14),
+    0 0 18px rgba(34, 211, 238, 0.08);
+}
+
+.header-wallet-badge::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, 0.20) 42%, transparent 62%);
+  content: "";
+  opacity: 0.45;
+  pointer-events: none;
+  transform: translateX(-85%);
+  transition: transform 500ms ease;
+}
+
+.header-wallet-badge:hover::before {
+  transform: translateX(85%);
+}
+
+.header-wallet-badge-icon {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.70);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #7c3aed 0%, #d946ef 48%, #06b6d4 100%);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 5px 14px rgba(124, 58, 237, 0.30),
+    0 0 12px rgba(34, 211, 238, 0.16);
+}
+
+.header-wallet-badge-balance {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 100%;
+  align-items: baseline;
+  gap: 4px;
+  overflow: hidden;
+  letter-spacing: 0.02em;
+}
+
+.header-wallet-badge-balance strong {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #312e81;
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-wallet-badge-balance small {
+  flex-shrink: 0;
+  color: #7c3aed;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+html.dark .header-wallet-badge {
+  border-color: rgba(96, 165, 250, 0.30);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(236, 72, 153, 0.20), transparent 42%),
+    radial-gradient(circle at 92% 100%, rgba(34, 211, 238, 0.18), transparent 46%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(35, 21, 69, 0.96) 54%, rgba(7, 28, 42, 0.96));
+  color: #e9d5ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.28),
+    0 0 20px rgba(139, 92, 246, 0.14);
+}
+
+html.dark .header-wallet-badge-balance strong {
+  color: #f8fafc;
+}
+
+html.dark .header-wallet-badge-balance small {
+  color: #67e8f9;
+}
+
+@media (max-width: 639px) {
+  .customer-header-shell {
+    gap: 5px !important;
+  }
+
+  .customer-header-actions {
+    gap: 4px !important;
+  }
+
+  .customer-header-actions > button,
+  .customer-header-actions > div > button,
+  .customer-header-menu > button {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 14px !important;
+  }
+
+  .customer-header-brand {
+    order: 3;
+    margin-left: auto !important;
+    gap: 0 !important;
+  }
+
+  .customer-header-menu {
+    order: 4;
+  }
+
+  .customer-header-brand > img {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .customer-header .header-wallet-badge {
+    flex: 0 1 auto;
+    width: fit-content !important;
+    min-width: 0 !important;
+    max-width: 118px;
+    height: 40px !important;
+    padding: 0 6px !important;
+    border-radius: 9999px;
+  }
+
+  .header-wallet-badge-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 9px;
+  }
+
+  .header-wallet-badge-balance strong {
+    font-size: 0.70rem;
+  }
+
+  .header-wallet-badge-balance small {
+    font-size: 0.46rem;
+  }
+}
+
+@media (max-width: 410px) {
+  .customer-header-shell {
+    gap: 3px !important;
+    padding-inline: 7px !important;
+  }
+
+  .customer-header-actions {
+    gap: 3px !important;
+  }
+
+  .customer-header-actions > button,
+  .customer-header-actions > div > button,
+  .customer-header-menu > button {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .customer-header-brand > img {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .customer-header .header-wallet-badge {
+    max-width: 86px;
+    height: 36px !important;
+    gap: 4px;
+    padding-inline: 4px !important;
+  }
+
+  .customer-header .header-wallet-badge-balance small {
+    display: none;
+  }
+}
+
+/* Customer account header: keep brand, wallet and actions separated at every width. */
+.customer-header .customer-header-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.customer-header .customer-header-brand {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+.customer-header .customer-header-right-cluster {
+  order: 3;
+  grid-column: 3;
+  grid-row: 1;
+  margin-left: auto;
+  min-width: 0;
+  flex: 0 0 auto;
+  justify-self: end;
+}
+
+.customer-header .customer-header-actions,
+.customer-header .customer-header-menu {
+  flex: 0 0 auto;
+}
+
+.customer-header .customer-header-actions {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.customer-header .customer-header-menu {
+  order: 4;
+}
+
+.customer-header .header-wallet-badge {
+  display: inline-grid !important;
+  grid-auto-flow: column;
+  grid-template-columns: max-content max-content;
+  flex: 0 0 auto;
+  min-width: 82px;
+  max-width: min(180px, 26vw);
+  align-items: center !important;
+  justify-content: start !important;
+}
+
+.customer-header .header-wallet-badge-icon {
+  flex: 0 0 auto;
+}
+
+.customer-header .header-wallet-badge-balance,
+.customer-header .header-wallet-badge-balance strong {
+  min-width: 0;
+}
+
+.customer-header .header-wallet-badge-balance {
+  flex: 0 0 auto;
+  flex-flow: row nowrap;
+  align-items: baseline;
+}
+
+@media (max-width: 639px) {
+  .customer-header {
+    padding-inline: 6px !important;
+  }
+
+  .customer-header .customer-header-shell {
+    gap: 4px !important;
+    padding: 6px !important;
+  }
+
+  .customer-header .customer-header-brand {
+    max-width: 94px;
+    margin-left: auto !important;
+  }
+
+  .customer-header .customer-header-brand > img {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .customer-header .customer-header-brand .winnie-brand-name:not(.winnie-brand-fun) {
+    font-size: 1.2rem !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .customer-header .customer-header-brand .winnie-brand-fun {
+    margin-top: 2px !important;
+    font-size: 0.52rem !important;
+    letter-spacing: 0.18em !important;
+  }
+
+  .customer-header .header-wallet-badge {
+    width: auto !important;
+    min-width: 82px !important;
+    max-width: 104px !important;
+  }
+}
+
+@media (max-width: 460px) {
+  .customer-header .customer-header-shell {
+    gap: 3px !important;
+    padding-inline: 5px !important;
+  }
+
+  .customer-header .customer-header-actions {
+    gap: 2px !important;
+  }
+
+  .customer-header .customer-header-actions > button,
+  .customer-header .customer-header-actions > div > button,
+  .customer-header .customer-header-menu > button {
+    width: 35px !important;
+    height: 35px !important;
+    border-radius: 12px !important;
+  }
+
+  .customer-header .customer-header-actions svg,
+  .customer-header .customer-header-menu svg {
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  .customer-header .customer-header-brand {
+    max-width: 78px;
+  }
+
+  .customer-header .customer-header-brand > img {
+    width: 35px !important;
+    height: 35px !important;
+  }
+
+  .customer-header .customer-header-brand .winnie-brand-name:not(.winnie-brand-fun) {
+    font-size: 0.98rem !important;
+  }
+
+  .customer-header .customer-header-brand .winnie-brand-fun {
+    font-size: 0.43rem !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  .customer-header .header-wallet-badge {
+    width: auto !important;
+    min-width: 76px !important;
+    max-width: 88px !important;
+    height: 35px !important;
+    gap: 4px;
+    padding-inline: 4px !important;
+  }
+
+  .customer-header .header-wallet-badge-icon {
+    width: 23px;
+    height: 23px;
+    border-radius: 8px;
+  }
+
+  .customer-header .header-wallet-badge-balance strong {
+    font-size: 0.64rem;
+  }
+
+  .customer-header .header-wallet-badge-balance small {
+    display: inline;
+    font-size: 0.42rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .customer-header .customer-header-shell {
+    padding-inline: 3px !important;
+  }
+
+  .customer-header .customer-header-brand {
+    max-width: 69px;
+  }
+
+  .customer-header .customer-header-brand > img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .customer-header .header-wallet-badge {
+    min-width: 74px !important;
+    max-width: 82px !important;
+  }
+}
+
+/* Customer desktop header: balanced sides keep the brand on the true center
+   line while the wallet stays at the far-right edge. */
+.customer-header .customer-header-wallet-desktop {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .customer-header .customer-header-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .customer-header .customer-header-actions {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .customer-header .customer-header-brand {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .customer-header .customer-header-right-cluster {
+    grid-column: 3;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+    justify-self: stretch;
+  }
+
+  .customer-header .customer-header-menu {
+    order: 0;
+  }
+
+  .customer-header .customer-header-wallet-mobile {
+    display: none !important;
+  }
+
+  .customer-header .customer-header-wallet-desktop {
+    order: 1;
+    display: inline-grid !important;
+  }
+}
+
+/* Admin desktop header mirrors the customer header alignment. Displaying the
+   right cluster as contents below desktop preserves the existing mobile order. */
+.admin-header .admin-header-right-cluster {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .admin-header .admin-header-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .admin-header .admin-header-actions {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    justify-self: start;
+  }
+
+  .admin-header .admin-header-brand {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    margin-left: 0;
+    justify-self: center;
+  }
+
+  .admin-header .admin-header-right-cluster {
+    display: flex;
+    grid-column: 3;
+    grid-row: 1;
+    width: 100%;
+    align-items: center;
+    align-self: center;
+    justify-content: flex-end;
+    gap: 8px;
+    justify-self: stretch;
+  }
+
+  .admin-header .admin-header-menu {
+    order: 0;
+  }
+
+  .admin-header .admin-header-wallet {
+    order: 1;
+
+  }
+}
+
+/* On phones, keep the brand immediately before the sidebar trigger on the
+   right, with enough breathing room to remain visually distinct. */
+.customer-header .customer-header-brand-mobile,
+.admin-header .admin-header-brand-mobile {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .customer-header .customer-header-brand-desktop,
+  .admin-header .admin-header-brand-desktop {
+    display: none !important;
+  }
+
+  .customer-header .customer-header-brand-mobile,
+  .admin-header .admin-header-brand-mobile {
+    display: flex !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .customer-header .customer-header-right-cluster {
+    gap: 30px !important;
+    margin-left: auto;
+  }
+
+  .admin-header .admin-header-right-cluster {
+    display: flex;
+    order: 2;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
   }
 }

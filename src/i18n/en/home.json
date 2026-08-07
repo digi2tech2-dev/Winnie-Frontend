@@ -65,8 +65,8 @@
     "promoTrustCta": "Learn more"
   },
   "slider": {
-    "label": "Winnie Fun offers",
-    "slideAlt": "Winnie Fun offer {{number}}",
+    "label": "Winnie HUB offers",
+    "slideAlt": "Winnie HUB offer {{number}}",
     "searchAction": "Open product search",
     "searchPlaceholder": "Search for a product"
   },
@@ -83,7 +83,7 @@
     "categoriesLoaded": "Categories loaded",
     "customerCatalog": "Customer catalog",
     "completeProfileTitle": "Complete your profile",
-    "completeProfileDescription": "Add an account photo so your Winnie Fun profile looks complete.",
+    "completeProfileDescription": "Add an account photo so your Winnie HUB profile looks complete.",
     "completeProfileAction": "Add photo",
     "dismissCompleteProfile": "Dismiss"
   }

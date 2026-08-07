@@ -7,8 +7,8 @@ export const permissionGroups = [
 ];
 
 export const supervisorsSeed = [
-  { id: "SUP-1001", userId: "USR-10010", name: "كريم منصور", email: "karim@example.com", status: "active", lastSeen: "منذ 8 دقائق", permissions: ["عرض المستخدمين", "إدارة المستخدمين", "عرض الطلبات", "تأكيد الطلبات", "إدارة المنتجات", "سجل المدفوعات", "إدارة الأرصدة", "سجلات النشاط"] },
-  { id: "SUP-1002", userId: "USR-10076", name: "سارة علي", email: "sara@example.com", status: "active", lastSeen: "منذ 28 دقيقة", permissions: ["عرض المستخدمين", "تأكيد الحسابات", "عرض الطلبات", "تأكيد طلبات الجهة المستهدفة"] },
+  { id: "SUP-1001", userId: "USR-10010", name: "كريم منصور", email: "Support@winniehub.ae", status: "active", lastSeen: "منذ 8 دقائق", permissions: ["عرض المستخدمين", "إدارة المستخدمين", "عرض الطلبات", "تأكيد الطلبات", "إدارة المنتجات", "سجل المدفوعات", "إدارة الأرصدة", "سجلات النشاط"] },
+  { id: "SUP-1002", userId: "USR-10076", name: "سارة علي", email: "Support@winniehub.ae", status: "active", lastSeen: "منذ 28 دقيقة", permissions: ["عرض المستخدمين", "تأكيد الحسابات", "عرض الطلبات", "تأكيد طلبات الجهة المستهدفة"] },
 ];
 
 export const supervisorLogsSeed = [
@@ -19,10 +19,10 @@ export const supervisorLogsSeed = [
 ];
 
 export const balanceRequestsSeed = [
-  { id: "TOP-55021", userId: "USR-10087", name: "مروان عادل", email: "marwan@example.com", amount: 150, actualAmount: 150, currency: "USD", status: "pending", date: "21 يونيو 2026 · 10:20 ص", paymentMethod: "تحويل بنكي CIB", walletFrom: "EG12 0010 9931", execution: "manual", receipt: "/اسلايد وكيل.jpg" },
-  { id: "TOP-55018", userId: "USR-10076", name: "سارة علي", email: "sara@example.com", amount: 500, actualAmount: 500, currency: "SAR", status: "approved", date: "21 يونيو 2026 · 09:05 ص", paymentMethod: "STC Pay", walletFrom: "+966 55 201 4470", execution: "automatic", receipt: "/hero-winnie-fun.png" },
-  { id: "TOP-55012", userId: "USR-10051", name: "ليان محمد", email: "layan@example.com", amount: 200, actualAmount: 200, currency: "AED", status: "processing", date: "20 يونيو 2026 · 07:48 م", paymentMethod: "تحويل بنكي", walletFrom: "AE44 2100 1182", execution: "manual", receipt: "/اسلايد1.jpg" },
-  { id: "TOP-55003", userId: "USR-10022", name: "نادين حسن", email: "nadin@example.com", amount: 1000, actualAmount: 950, currency: "EGP", status: "rejected", date: "20 يونيو 2026 · 02:11 م", paymentMethod: "Vodafone Cash", walletFrom: "0111 774 2210", execution: "manual", receipt: "/logo.png" },
+  { id: "TOP-55021", userId: "USR-10087", name: "مروان عادل", email: "Support@winniehub.ae", amount: 150, actualAmount: 150, currency: "USD", status: "pending", date: "21 يونيو 2026 · 10:20 ص", paymentMethod: "تحويل بنكي CIB", walletFrom: "EG12 0010 9931", execution: "manual", receipt: "/اسلايد وكيل.jpg" },
+  { id: "TOP-55018", userId: "USR-10076", name: "سارة علي", email: "Support@winniehub.ae", amount: 500, actualAmount: 500, currency: "SAR", status: "approved", date: "21 يونيو 2026 · 09:05 ص", paymentMethod: "STC Pay", walletFrom: "+966 55 201 4470", execution: "automatic", receipt: "/hero-winnie-fun.png" },
+  { id: "TOP-55012", userId: "USR-10051", name: "ليان محمد", email: "Support@winniehub.ae", amount: 200, actualAmount: 200, currency: "AED", status: "processing", date: "20 يونيو 2026 · 07:48 م", paymentMethod: "تحويل بنكي", walletFrom: "AE44 2100 1182", execution: "manual", receipt: "/اسلايد1.jpg" },
+  { id: "TOP-55003", userId: "USR-10022", name: "نادين حسن", email: "Support@winniehub.ae", amount: 1000, actualAmount: 950, currency: "EGP", status: "rejected", date: "20 يونيو 2026 · 02:11 م", paymentMethod: "Vodafone Cash", walletFrom: "0111 774 2210", execution: "manual", receipt: "/logo.png" },
 ];
 
 export const currencyCatalog = [
@@ -41,9 +41,9 @@ export const currencyCatalog = [
 ];
 
 export const subAgentRequestsSeed = [
-  { id: "SAR-2018", userId: "USR-10076", name: "سارة علي", email: "sara@example.com", message: "أنا وكيلة وأرغب في الحصول على أسعار التجار وتوسيع شبكة العملاء.", currentGroup: "Gold", currentRate: 5, invitedBy: "مروان عادل", status: "pending", date: "21 يونيو 2026 · 09:40 ص" },
-  { id: "SAR-2014", userId: "USR-10051", name: "ليان محمد", email: "layan@example.com", message: "أعمل في بيع الخدمات الرقمية وأرغب في الانضمام كوكلاء فرعيين.", currentGroup: "Silver", currentRate: 3, invitedBy: "سارة علي", status: "pending", date: "20 يونيو 2026 · 06:15 م" },
-  { id: "SAR-2009", userId: "USR-10044", name: "Omar Stone", email: "omar.stone@example.com", message: "طلب أسعار موزعين.", currentGroup: "Retail", currentRate: 7, invitedBy: "Yara Kim", status: "rejected", date: "19 يونيو 2026 · 03:10 م" },
+  { id: "SAR-2018", userId: "USR-10076", name: "سارة علي", email: "Support@winniehub.ae", message: "أنا وكيلة وأرغب في الحصول على أسعار التجار وتوسيع شبكة العملاء.", currentGroup: "Gold", currentRate: 5, invitedBy: "مروان عادل", status: "pending", date: "21 يونيو 2026 · 09:40 ص" },
+  { id: "SAR-2014", userId: "USR-10051", name: "ليان محمد", email: "Support@winniehub.ae", message: "أعمل في بيع الخدمات الرقمية وأرغب في الانضمام كوكلاء فرعيين.", currentGroup: "Silver", currentRate: 3, invitedBy: "سارة علي", status: "pending", date: "20 يونيو 2026 · 06:15 م" },
+  { id: "SAR-2009", userId: "USR-10044", name: "Omar Stone", email: "Support@winniehub.ae", message: "طلب أسعار موزعين.", currentGroup: "Retail", currentRate: 7, invitedBy: "Yara Kim", status: "rejected", date: "19 يونيو 2026 · 03:10 م" },
 ];
 
 export const agentEarningsSeed = [

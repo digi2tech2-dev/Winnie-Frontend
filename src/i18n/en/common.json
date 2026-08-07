@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "Winnie Fun",
-    "logoAlt": "Winnie Fun logo",
+    "name": "Winnie HUB",
+    "logoAlt": "Winnie HUB logo",
     "tagline": "Global top-up",
     "defaultUser": "Winnie user",
     "member": "Premium member"
@@ -23,6 +23,7 @@
     "categories": "Categories",
     "orders": "Orders",
     "wallet": "Wallet",
+    "developerApi": "Developer API",
     "subAgent": "Sub-agent",
     "about": "About",
     "notifications": "Notifications",
@@ -37,11 +38,12 @@
     "categoriesMeta": "All service categories",
     "ordersMeta": "Orders and tracking",
     "walletMeta": "Balance and transfers",
+    "developerApiMeta": "Credentials and integration guide",
     "subAgentMeta": "Agent and referral program",
     "notificationsMeta": "Alerts and updates",
     "profileMeta": "Account details",
     "settingsMeta": "Preferences",
-    "aboutMeta": "Learn about Winnie Fun"
+    "aboutMeta": "Learn about Winnie HUB"
   },
   "actions": {
     "back": "Back",
@@ -94,20 +96,20 @@
     "noQuickResults": "No quick results."
   },
   "footer": {
-    "description": "A Winnie brand focused on gaming top-ups, software services, and digital cards with reliable service quality.",
+    "description": "A Winnie HUB brand focused on gaming top-ups, software services, and digital cards with reliable service quality.",
     "importantLinks": "Important links",
     "importantLinksAria": "Important links",
     "followUs": "Follow and contact us",
     "socialAria": "Social media links",
-    "companyAria": "About Winnie Fun",
-    "companyBadge": "The Winnie digital experience",
+    "companyAria": "About Winnie HUB",
+    "companyBadge": "The Winnie HUB digital experience",
     "instagram": "Instagram",
     "whatsapp": "WhatsApp",
     "email": "Email",
     "contactNow": "Contact now",
     "followNow": "Follow us",
     "sendEmail": "Send a message",
-    "whyUs": "Why choose Winnie Fun?",
+    "whyUs": "Why choose Winnie HUB?",
     "trust": {
       "secureTitle": "Secure & trusted",
       "secureDescription": "Protected data and secure transactions.",
@@ -118,7 +120,7 @@
       "supportTitle": "24/7 support",
       "supportDescription": "We are here whenever you need us."
     },
-    "rights": "All rights reserved © Winnie 2026",
+    "rights": "All rights reserved © Winnie HUB 2026",
     "commercialRegistration": "Commercial registration:",
     "taxNumber": "Tax number:"
   },
@@ -176,7 +178,7 @@
     "serverTitle": "Something needs attention",
     "serverDescription": "This page is ready to show server faults or real operating states.",
     "notFoundTitle": "Page not found",
-    "notFoundDescription": "The requested page is not part of the current Winnie Fun navigation map.",
+    "notFoundDescription": "The requested page is not part of the current Winnie HUB navigation map.",
     "home": "Back to home"
   }
 }

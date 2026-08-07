@@ -1,7 +1,6 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import BackButton from "../components/BackButton";
 import CustomerBottomNav from "../components/CustomerBottomNav";
 import CustomerHeader from "../components/CustomerHeader";
 import DashboardSidebar from "../components/DashboardSidebar";
@@ -28,6 +27,7 @@ const customerPages = [
   ["/customer/categories", "nav.categories", "nav.categoriesMeta", "ListChecks"],
   ["/customer/orders", "nav.orders", "nav.ordersMeta", "ShoppingCart"],
   ["/customer/wallet", "nav.wallet", "nav.walletMeta", "WalletCards"],
+  ["/customer/api", "nav.developerApi", "nav.developerApiMeta", "Braces"],
   ["/customer/sub-agent", "nav.subAgent", "nav.subAgentMeta", "UserPlus"],
   ["/customer/notifications", "nav.notifications", "nav.notificationsMeta", "Bell"],
   ["/customer/profile", "nav.profile", "nav.profileMeta", "UserRound"],
@@ -53,7 +53,6 @@ export default function CustomerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isAboutPage = location.pathname === "/customer/about";
-  const isWalletTopUpPage = location.pathname.startsWith("/customer/wallet/top-up/");
   const isProfilePage = location.pathname.endsWith("/profile");
   const usesFullFooter = location.pathname === "/customer/dashboard";
   const identityVerificationRequired = user?.identityVerificationRequired === true;
@@ -236,7 +235,9 @@ export default function CustomerLayout() {
 
   const customerNavItems = useMemo(
     () =>
-      customerNav.map((item) =>
+      customerNav
+        .filter((item) => item.path !== "/customer/api" || user?.apiAccessEnabled === true)
+        .map((item) =>
         ({
           ...item,
           label: getCustomerNavLabel(item.path, t),
@@ -247,11 +248,13 @@ export default function CustomerLayout() {
               : undefined,
         }),
       ),
-    [favorites.length, t, unreadNotificationCount],
+    [favorites.length, t, unreadNotificationCount, user?.apiAccessEnabled],
   );
 
   const searchResults = useMemo(() => {
-    const pages = customerPages.map(([target, nameKey, metaKey, icon]) => ({
+    const pages = customerPages
+      .filter(([target]) => target !== "/customer/api" || user?.apiAccessEnabled === true)
+      .map(([target, nameKey, metaKey, icon]) => ({
       kind: "page",
       name: t(nameKey),
       meta: t(metaKey),
@@ -261,7 +264,7 @@ export default function CustomerLayout() {
     }));
 
     return pages.slice(0, 9);
-  }, [t]);
+  }, [t, user?.apiAccessEnabled]);
 
   return (
     <div className="winnie-app-shell customer-app-shell min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
@@ -283,6 +286,8 @@ export default function CustomerLayout() {
             searchResults={searchResults}
             searchProducts={searchProducts}
             unreadNotificationCount={unreadNotificationCount}
+            walletBalance={walletSummary?.balance ?? 0}
+            walletCurrency={walletSummary?.currency || "USD"}
           />
           <main
             className={
@@ -293,21 +298,6 @@ export default function CustomerLayout() {
                   } ${isProfilePage ? "customer-profile-main" : ""}`
             }
           >
-            <BackButton
-              className={
-                isAboutPage
-                  ? "mx-auto -mt-4 max-w-[1120px] px-4 sm:-mt-6 sm:px-6 lg:px-8"
-                  : "-mt-4 sm:-mt-6"
-              }
-              fallbackPath="/customer/dashboard"
-              hiddenPaths={[
-                "/",
-                "/customer/dashboard",
-                "/admin/user/dashboard",
-                "/customer/profile",
-                ...(isWalletTopUpPage ? [location.pathname] : []),
-              ]}
-            />
             <div className="winnie-page-stage">
               <Outlet
                 context={{
@@ -359,6 +349,7 @@ const customerNavLabelKeys = {
   "/customer/categories": "nav.categories",
   "/customer/orders": "nav.orders",
   "/customer/wallet": "nav.wallet",
+  "/customer/api": "nav.developerApi",
   "/customer/sub-agent": "nav.subAgent",
   "/customer/about": "nav.about",
   "/customer/notifications": "nav.notifications",

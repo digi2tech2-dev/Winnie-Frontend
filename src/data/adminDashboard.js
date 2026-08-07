@@ -260,9 +260,9 @@ export const initialProducts = [
 ];
 
 export const initialUsers = [
-  { id: "us-1", name: "مروان عادل", email: "marwan@example.com", balance: 132.4, tier: "VIP", visits: 184, orders: 39, score: 98, lastActivity: "منذ 4 دقائق" },
-  { id: "us-2", name: "سارة علي", email: "sara@example.com", balance: 48.75, tier: "Premium", visits: 141, orders: 27, score: 91, lastActivity: "منذ 12 دقيقة" },
-  { id: "us-3", name: "ليان محمد", email: "layan@example.com", balance: 7.1, tier: "New", visits: 96, orders: 14, score: 84, lastActivity: "منذ 25 دقيقة" },
+  { id: "us-1", name: "مروان عادل", email: "Support@winniehub.ae", balance: 132.4, tier: "VIP", visits: 184, orders: 39, score: 98, lastActivity: "منذ 4 دقائق" },
+  { id: "us-2", name: "سارة علي", email: "Support@winniehub.ae", balance: 48.75, tier: "Premium", visits: 141, orders: 27, score: 91, lastActivity: "منذ 12 دقيقة" },
+  { id: "us-3", name: "ليان محمد", email: "Support@winniehub.ae", balance: 7.1, tier: "New", visits: 96, orders: 14, score: 84, lastActivity: "منذ 25 دقيقة" },
 ];
 
 export const popularPaymentMethods = [

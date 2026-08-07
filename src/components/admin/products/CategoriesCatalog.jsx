@@ -5,7 +5,6 @@ const number = (value) => Number(value || 0).toLocaleString("ar-EG-u-nu-latn");
 
 export default function CategoriesCatalog({ mainCategories, subCategories, products = [], onAddMain, onAddSub, onEditMain, onEditSub, onDeleteMain, onDeleteSub }) {
   const [mainQuery, setMainQuery] = useState("");
-  const [subQuery, setSubQuery] = useState("");
   const [mainActiveOnly, setMainActiveOnly] = useState(false);
   const [subActiveOnly, setSubActiveOnly] = useState(false);
   const parentNameById = Object.fromEntries(mainCategories.map((category) => [category.id, category.name]));
@@ -14,10 +13,8 @@ export default function CategoriesCatalog({ mainCategories, subCategories, produ
     return matchesQuery && (!mainActiveOnly || category.visible !== false);
   }), [mainActiveOnly, mainCategories, mainQuery]);
   const subRows = useMemo(() => subCategories.filter((category) => {
-    const query = subQuery.trim().toLocaleLowerCase("ar");
-    const matchesQuery = category.name?.toLocaleLowerCase("ar").includes(query) || parentNameById[category.parentId]?.toLocaleLowerCase("ar").includes(query);
-    return matchesQuery && (!subActiveOnly || category.isActive !== false);
-  }), [parentNameById, subActiveOnly, subCategories, subQuery]);
+    return !subActiveOnly || category.isActive !== false;
+  }), [subActiveOnly, subCategories]);
 
   const mainCounts = useMemo(() => Object.fromEntries(mainCategories.map((category) => [category.id, {
     products: products.filter((product) => product.mainCategoryId === category.id).length,
@@ -48,7 +45,7 @@ export default function CategoriesCatalog({ mainCategories, subCategories, produ
         </div>
       </CategoryPanel>
 
-      <CategoryPanel title="الأقسام الفرعية" icon={LayoutGrid} addLabel="إضافة قسم فرعي" onAdd={onAddSub} query={subQuery} onQuery={setSubQuery} activeOnly={subActiveOnly} onToggleActive={() => setSubActiveOnly((value) => !value)}>
+      <CategoryPanel title="الأقسام الفرعية" icon={LayoutGrid} addLabel="إضافة قسم فرعي" onAdd={onAddSub} activeOnly={subActiveOnly} onToggleActive={() => setSubActiveOnly((value) => !value)} showSearch={false}>
         <table className="hidden w-full min-w-[760px] table-fixed text-right md:table">
           <SharedColumnWidths />
           <thead><tr><Th>القسم الرئيسي</Th><Th>القسم الفرعي</Th><Th>عدد المنتجات</Th><Th>الحالة</Th><Th>الإجراءات</Th></tr></thead>
@@ -72,7 +69,7 @@ export default function CategoriesCatalog({ mainCategories, subCategories, produ
   );
 }
 
-function CategoryPanel({ activeOnly, addLabel, children, icon: Icon, onAdd, onQuery, onToggleActive, query, title }) {
+function CategoryPanel({ activeOnly, addLabel, children, icon: Icon, onAdd, onQuery, onToggleActive, query, showSearch = true, title }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -97,10 +94,12 @@ function CategoryPanel({ activeOnly, addLabel, children, icon: Icon, onAdd, onQu
       {isOpen ? (
         <>
           <div className="relative mt-4 flex flex-wrap items-center gap-2 px-1 sm:px-2">
-            <label className="site-filter-search relative min-w-0 flex-[1_1_210px] sm:max-w-sm">
-              <span className="site-filter-search-icon pointer-events-none"><Search className="h-4 w-4" /></span>
-              <input type="text" value={query} onChange={(event) => onQuery(event.target.value)} aria-label={`البحث في ${title}`} placeholder={title === "الأقسام الرئيسية" ? "ابحث باسم القسم الرئيسي" : "ابحث باسم القسم الفرعي"} className="site-filter-search-input admin-products-panel-input" />
-            </label>
+            {showSearch ? (
+              <label className="site-filter-search relative min-w-0 flex-[1_1_210px] sm:max-w-sm">
+                <span className="site-filter-search-icon pointer-events-none"><Search className="h-4 w-4" /></span>
+                <input type="text" value={query} onChange={(event) => onQuery(event.target.value)} aria-label={`البحث في ${title}`} placeholder="ابحث باسم القسم الرئيسي" className="site-filter-search-input admin-products-panel-input" />
+              </label>
+            ) : null}
             <button type="button" onClick={onToggleActive} className={`admin-products-panel-filter inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-[11px] font-black transition ${activeOnly ? "border-fuchsia-500/70 bg-fuchsia-500/15 text-fuchsia-200" : "border-[#1a2e5b] bg-[#060d23] text-slate-300 hover:border-violet-500/60"}`}><Filter className="h-4 w-4" />فلترة</button>
           </div>
           <div className="admin-products-panel-table relative mt-3 w-full max-w-full overflow-hidden rounded-xl border border-[#142654] bg-[#02091d] md:overflow-x-auto">

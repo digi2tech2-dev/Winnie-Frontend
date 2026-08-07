@@ -53,7 +53,7 @@ export function PoliciesModal({ onClose }) {
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="grid h-16 w-16 shrink-0 place-items-center rounded-[18px] border border-white/30 bg-[linear-gradient(145deg,#FFFFFF,#F5F3FF)] shadow-[0_16px_36px_rgba(0,0,0,0.24)] dark:border-[#C084FC]/35 dark:bg-[linear-gradient(145deg,#171C2C,#211238)] dark:shadow-[0_0_24px_rgba(168,85,247,0.30),0_16px_36px_rgba(0,0,0,0.34)]">
-                <img src="/logo.png" alt="Winnie Fun" className="h-12 w-12 object-contain drop-shadow-[0_6px_12px_rgba(76,29,149,0.22)] dark:brightness-110 dark:drop-shadow-[0_0_14px_rgba(192,132,252,0.50)]" />
+                <img src="/logo.png" alt="Winnie HUB" className="h-12 w-12 object-contain drop-shadow-[0_6px_12px_rgba(76,29,149,0.22)] dark:brightness-110 dark:drop-shadow-[0_0_14px_rgba(192,132,252,0.50)]" />
               </span>
               <div>
                 <BrandName size="tiny" />

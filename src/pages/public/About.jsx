@@ -32,7 +32,7 @@ const company = {
   name: "Winnie FZE",
   registration: "4423622.01",
   tax: "105156169200001",
-  email: "Support.winniefun@gmail.com",
+  email: "Support@winniehub.ae",
 };
 
 const serviceIcons = [MessageCircle, Trophy, CreditCard, Smartphone, Sparkles, Globe2];
@@ -141,7 +141,7 @@ export default function About() {
                     <img src="/logo.png" alt="Winnie" className="h-14 w-14 object-contain" />
                   </span>
                   <div>
-                    <BrandName fullName size="tiny" />
+                    <BrandName size="tiny" />
                     <h2 className="mt-1 text-2xl font-black text-[#111715] dark:text-[#F8F4E8]">{t.identityTitle}</h2>
                     <p className="mt-1 text-sm font-semibold leading-6 text-[var(--about-muted)]">{t.identitySubtitle}</p>
                   </div>
