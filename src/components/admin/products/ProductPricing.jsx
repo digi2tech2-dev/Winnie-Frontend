@@ -27,6 +27,8 @@ export default function ProductPricing({
   const selectedProvider = providerLink.providers.find((provider) => provider.id === value.providerId);
   const selectedProduct = providerLink.providerProducts.find((product) => product.id === value.providerProductId)
     || getCurrentProductSummary(value);
+  const selectedProviderCode = safeTrim(selectedProvider?.providerCode || selectedProvider?.code || value.providerCode).toUpperCase().replace(/-/g, "_");
+  const isFazerCards = selectedProviderCode === "FAZER_CARDS" || selectedProviderCode === "FAZERCARDS";
   const priceSynced = Boolean(value.syncPriceFromProvider);
   const limitsSynced = Boolean(value.syncLimitsFromProvider);
   const searchValue = value.providerProductSearch || "";
@@ -204,6 +206,17 @@ export default function ProductPricing({
             })} />
             <CheckboxField checked={Boolean(value.syncNameFromProvider)} label="مزامنة اسم المنتج" onChange={(checked) => onPatch({ syncNameFromProvider: checked })} />
           </div>
+
+          {isFazerCards && (
+            <div className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-3 text-[10px] font-bold text-amber-900 dark:text-amber-100">
+              <CheckboxField
+                checked={Boolean(value.providerExecutionEnabled)}
+                label="Enable FazerCards real top-up execution"
+                onChange={(checked) => onPatch({ providerExecutionEnabled: checked })}
+              />
+              <p className="mt-2 leading-5">Only enable this for a tested imported top-up product. Product visibility is still controlled separately.</p>
+            </div>
+          )}
         </div>
       )}
       </div>

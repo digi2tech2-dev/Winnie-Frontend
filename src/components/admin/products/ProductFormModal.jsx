@@ -372,6 +372,9 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       syncLimits: Boolean(effectiveForm.syncLimitsFromProvider),
       syncName: Boolean(effectiveForm.syncNameFromProvider),
       syncPrice: Boolean(effectiveForm.syncPriceFromProvider),
+      ...(Object.prototype.hasOwnProperty.call(effectiveForm, "providerExecutionEnabled")
+        ? { providerExecutionEnabled: Boolean(effectiveForm.providerExecutionEnabled) }
+        : {}),
     });
   };
 
@@ -447,6 +450,10 @@ function buildInitialProductForm(product) {
     providerId: safeTrim(product?.providerId),
     providerProductId: safeTrim(product?.providerProductId),
     providerProductExternalId: optionalTrim(product?.providerProductExternalId),
+    providerCode: safeTrim(product?.providerCode),
+    ...(Object.prototype.hasOwnProperty.call(product || {}, "providerExecutionEnabled")
+      ? { providerExecutionEnabled: product?.providerExecutionEnabled === true }
+      : {}),
     supplierPrice: safeTrim(product?.supplierPrice),
     originalPrice: safeTrim(product?.originalPrice),
     finalPrice: safeTrim(product?.finalPrice),
