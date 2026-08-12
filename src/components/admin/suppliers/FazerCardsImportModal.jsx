@@ -124,16 +124,35 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
             <>
               <div className="grid gap-2 rounded-2xl bg-slate-50 p-3 text-[10px] font-bold text-slate-600 dark:bg-[#0B1220] dark:text-slate-300">
                 <div className="flex justify-between gap-3">
+                  <span>Family / mode</span>
+                  <strong dir="ltr">{preview?.familyKey || product.familyKey || "UNKNOWN"} / {preview?.fulfillmentMode || product.fulfillmentMode || "UNKNOWN"}</strong>
+                </div>
+                <div className="flex justify-between gap-3">
                   <span>Cost price</span>
                   <strong dir="ltr">{preview?.costPrice || product.costPrice} {preview?.currency || product.currency}</strong>
                 </div>
+                <div className="flex justify-between gap-3">
+                  <span>Stock</span>
+                  <strong dir="ltr">{preview?.stock ?? product.stockLabel ?? "Unknown"}</strong>
+                </div>
+                {(preview?.region || preview?.platform || product.region || product.platform) && (
+                  <div className="flex justify-between gap-3">
+                    <span>Region / platform</span>
+                    <strong dir="ltr">{[preview?.platform || product.platform, preview?.region || product.region].filter(Boolean).join(" / ")}</strong>
+                  </div>
+                )}
                 <div className="flex justify-between gap-3">
                   <span>External ID</span>
                   <strong dir="ltr" className="truncate">{preview?.externalProductId || product.externalProductId}</strong>
                 </div>
                 <p className="text-[9px] text-amber-600 dark:text-amber-300">
-                  {preview?.warning || "Product will be created inactive and hidden from customers."}
+                  {preview?.warning || "Product will be imported as inactive and not visible to customers."}
                 </p>
+                {(preview?.blockReason || product.blockReason) && (
+                  <p className="text-[9px] text-rose-600 dark:text-rose-300">
+                    Block reason: {preview?.blockReason || product.blockReason}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -168,7 +187,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
                     <span dir="ltr" className="text-slate-400">{field.key || field.id} / {field.type || "text"}</span>
                   </div>
                 )) : (
-                  <p className="text-[10px] font-bold text-rose-500">No required fields returned.</p>
+                  <p className="text-[10px] font-bold text-slate-400">No customer fields are required for this catalog item.</p>
                 )}
               </div>
 

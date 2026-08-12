@@ -35,6 +35,25 @@ function normalizeProviderStatus(provider = {}) {
   return value.isActive === false ? "inactive" : "active";
 }
 
+const FAZERCARDS_FAMILIES = [
+  "TOPUPS",
+  "GIFTCARDS",
+  "GAME_KEYS",
+  "TELEGRAM",
+  "STEAM_TOPUP",
+  "MANUAL_SERVICES",
+  "STEAM_GIFTS",
+];
+
+function normalizeCountBucket(value = {}) {
+  return {
+    blocked: toNumber(value.blocked, 0),
+    imported: toNumber(value.imported, 0),
+    supported: toNumber(value.supported, 0),
+    total: toNumber(value.total, 0),
+  };
+}
+
 function getProviderFromResponse(data) {
   return data?.provider || data || {};
 }
@@ -128,6 +147,8 @@ export function normalizeAdminProviderProduct(product = {}, index = 0) {
     categoryName: product.categoryName || product.category || "",
     costPrice: toDecimalString(product.costPrice ?? rawPrice),
     costPriceLabel: formatSupplierPrice(product.costPrice ?? rawPrice, currency),
+    executionBlocked: Boolean(product.executionBlocked),
+    familyKey: product.familyKey || "",
     fulfillmentMode: product.fulfillmentMode || "",
     imported: Boolean(product.imported),
     importedProduct: importedProduct ? {
@@ -156,6 +177,11 @@ export function normalizeAdminProviderProduct(product = {}, index = 0) {
     requiredFieldsLabel: requiredFields.length ? requiredFields.map((field) => field.label || field.key).join(", ") : "No fields",
     offerId: product.offerId || "",
     offerName: product.offerName || "",
+    platform: product.platform || "",
+    region: product.region || "",
+    stock: product.stock ?? null,
+    stockLabel: product.stock === undefined || product.stock === null ? "Unknown" : String(product.stock),
+    supportLevel: product.supportLevel || "",
     status: active ? "available" : "unavailable",
     statusLabel: active ? "Available" : "Unavailable",
     supplierId: providerId,
@@ -223,14 +249,24 @@ export function normalizeProviderSyncResult(data = {}) {
 export function normalizeFazerCardsImportPreview(preview = {}) {
   preview = preview || {};
   return {
+    blockReason: preview.blockReason || "",
     costPrice: preview.costPrice ?? "",
     currency: String(preview.currency || DEFAULT_CURRENCY).toUpperCase(),
+    executionBlocked: Boolean(preview.executionBlocked),
     externalProductId: preview.externalProductId || "",
+    familyKey: preview.familyKey || "",
+    fulfillmentMode: preview.fulfillmentMode || "",
+    maxQty: toNumber(preview.maxQty, 1),
+    minQty: toNumber(preview.minQty, 1),
+    platform: preview.platform || "",
     providerProductId: preview.providerProductId || "",
     providerProductName: preview.providerProductName || "",
+    region: preview.region || "",
     requiredFields: asArray(preview.requiredFields),
     suggestedOrderFields: asArray(preview.suggestedOrderFields),
     suggestedProductName: preview.suggestedProductName || preview.providerProductName || "",
+    supportLevel: preview.supportLevel || "",
+    stock: preview.stock ?? null,
     warning: preview.warning || "",
   };
 }
@@ -246,8 +282,12 @@ function normalizeImportedProduct(product = {}) {
     currency: String(safeValue.currency || DEFAULT_CURRENCY).toUpperCase(),
     executionType: safeValue.executionType || "",
     externalProductId: safeValue.externalProductId || "",
+    familyKey: safeValue.familyKey || "",
+    fulfillmentMode: safeValue.fulfillmentMode || "",
     isActive: safeValue.isActive !== false,
     name: safeValue.name || "",
+    providerBlockReason: safeValue.providerBlockReason || "",
+    providerExecutionBlocked: Boolean(safeValue.providerExecutionBlocked),
     providerExecutionEnabled: safeValue.providerExecutionEnabled !== false,
     status: safeValue.status || "",
     visibleInStore: safeValue.visibleInStore !== false,
@@ -491,6 +531,9 @@ export async function getFazerCardsProviderProducts(token, query = {}) {
       blocked: query.blocked,
       imported: query.imported,
       fulfillmentMode: query.fulfillmentMode,
+      familyKey: query.familyKey,
+      supportLevel: query.supportLevel,
+      blockReason: query.blockReason,
     }),
     token,
   });
@@ -504,6 +547,108 @@ export async function getFazerCardsProviderProducts(token, query = {}) {
       total: products.length,
     }),
     products,
+  };
+}
+
+export async function getFazerCardsCatalogFamilies(token) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/families", { token });
+  const families = asArray(response.data?.families ?? response.data).map((family) => ({
+    catalogAvailable: family.catalogAvailable !== false,
+    catalogEndpoints: asArray(family.catalogEndpoints),
+    displayName: family.displayName || humanizeToken(family.familyKey, "Family"),
+    executionAvailable: family.executionAvailable === true,
+    executionEnabled: family.executionEnabled === true,
+    executionGloballyGated: family.executionGloballyGated === true,
+    familyKey: family.familyKey || "",
+    fulfillmentMode: family.fulfillmentMode || "",
+    status: family.status || "",
+    supportLevel: family.supportLevel || "",
+    warning: family.warning || "",
+  }));
+
+  return {
+    families,
+    message: response.message,
+  };
+}
+
+export async function getFazerCardsCatalogSummary(token) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/summary", { token });
+  const byFamily = response.data?.byFamily || {};
+  const normalized = {};
+  FAZERCARDS_FAMILIES.forEach((familyKey) => {
+    normalized[familyKey] = normalizeCountBucket(byFamily[familyKey]);
+  });
+  Object.entries(byFamily).forEach(([familyKey, value]) => {
+    if (!normalized[familyKey]) normalized[familyKey] = normalizeCountBucket(value);
+  });
+
+  return {
+    byFamily: normalized,
+    message: response.message,
+    nextRecommendedFamilies: asArray(response.data?.nextRecommendedFamilies),
+    totalProviderProducts: toNumber(response.data?.totalProviderProducts, 0),
+  };
+}
+
+export async function syncFazerCardsCatalogFamily(token, payload = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/sync-family", {
+    body: compactObject({
+      cursor: payload.cursor,
+      family: payload.family,
+      limit: payload.limit,
+    }),
+    method: "POST",
+    token,
+  });
+
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function syncFazerCardsCatalogAll(token, payload = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/sync-all", {
+    body: compactObject({
+      cursors: payload.cursors,
+      families: payload.families,
+      includeSteamGifts: payload.includeSteamGifts,
+      limit: payload.limit,
+      limits: payload.limits,
+    }),
+    method: "POST",
+    token,
+  });
+
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function getFazerCardsProductReadiness(token, productId) {
+  const response = await apiRequest(`/admin/providers/fazercards/products/${productId}/readiness`, { token });
+  return {
+    message: response.message,
+    readiness: response.data || {},
+  };
+}
+
+export async function dryRunFazerCardsProduct(token, productId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/fazercards/products/${productId}/dry-run`, {
+    body: compactObject({
+      fields: payload.fields || {},
+      orderId: payload.orderId,
+      quantity: payload.quantity,
+    }),
+    method: "POST",
+    token,
+  });
+
+  return {
+    dryRun: response.data || {},
+    message: response.message,
   };
 }
 

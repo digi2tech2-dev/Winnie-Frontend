@@ -374,12 +374,26 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     firstNonEmpty(
       product.providerPrice,
       product.supplierPrice,
+      product.providerCostPrice,
+      product.costPrice,
+      providerProduct?.costPrice,
       providerProduct?.supplierPrice,
       providerProduct?.rawPrice,
       providerProduct?.price,
       product.rawPrice,
     ),
   );
+  const familyKey = safeTrim(product.familyKey || providerProduct?.familyKey);
+  const fulfillmentMode = safeTrim(product.fulfillmentMode || providerProduct?.fulfillmentMode);
+  const providerCategory = safeTrim(product.providerCategory || providerProduct?.category);
+  const providerCategoryName = safeTrim(product.providerCategoryName || providerProduct?.categoryName || providerCategory);
+  const providerOfferId = safeTrim(product.providerOfferId || providerProduct?.offerId);
+  const providerOfferName = safeTrim(product.providerOfferName || providerProduct?.offerName);
+  const providerRegion = safeTrim(product.providerRegion || providerProduct?.region);
+  const providerPlatform = safeTrim(product.providerPlatform || providerProduct?.platform);
+  const providerStock = firstNonEmpty(product.providerStock, providerProduct?.stock);
+  const providerBlockReason = safeTrim(product.providerBlockReason || providerProduct?.blockReason);
+  const providerExecutionBlocked = firstBoolean(product.providerExecutionBlocked, providerProduct?.executionBlocked);
 
   return {
     ...product,
@@ -411,14 +425,30 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     providerId: toId(product.provider) || toId(product.providerId),
     providerCode: safeTrim(product.providerCode || provider?.providerCode || provider?.code || provider?.slug),
     providerExecutionEnabled: product.providerExecutionEnabled === undefined ? undefined : product.providerExecutionEnabled === true,
+    providerExecutionBlocked: providerExecutionBlocked === undefined ? false : providerExecutionBlocked === true,
+    providerBlockReason,
+    familyKey,
+    fulfillmentMode,
+    providerCategory,
+    providerCategoryName,
+    providerOfferId,
+    providerOfferName,
+    providerRegion,
+    providerPlatform,
+    providerStock: providerStock === undefined ? null : providerStock,
+    providerProductBlockReason: providerProduct?.blockReason || "",
     providerName: provider?.name || product.currentProviderName || "",
     providerProductActive: providerProduct?.isActive === undefined ? null : providerProduct.isActive !== false,
     providerProductExternalId: providerProduct?.externalProductId || product.providerProductExternalId || product.externalProductId || "",
+    providerProductFamilyKey: providerProduct?.familyKey || familyKey,
+    providerProductFulfillmentMode: providerProduct?.fulfillmentMode || fulfillmentMode,
     providerProductId: toId(product.providerProduct) || toId(product.providerProductId),
     providerProductLastSyncedAt: providerProduct?.lastSyncedAt || null,
     providerProductMaxQty: providerProduct?.maxQty ?? product.providerProductMaxQty ?? null,
     providerProductMinQty: providerProduct?.minQty ?? product.providerProductMinQty ?? null,
     providerProductName: providerProduct?.translatedName || providerProduct?.rawName || providerProduct?.name || product.providerProductName || product.currentProviderProductName || "",
+    providerProductRequiredFields: asArray(providerProduct?.requiredFields || product.requiredFields),
+    providerProductSupportLevel: providerProduct?.supportLevel || "",
     syncLimits: syncLimitsFromProvider,
     syncLimitsFromProvider,
     syncName: syncNameFromProvider,
@@ -737,7 +767,7 @@ export function normalizeProductProviderOption(provider = {}) {
 export function normalizeProductProviderProductOption(product = {}) {
   const id = getItemId(product);
   const currency = String(product.currency || DEFAULT_CURRENCY).toUpperCase();
-  const rawPrice = firstNonEmpty(product.rawPrice, product.supplierPrice, product.price, product.providerPrice);
+  const rawPrice = firstNonEmpty(product.costPrice, product.rawPrice, product.supplierPrice, product.price, product.providerPrice);
   const externalProductId = safeTrim(product.externalProductId || product.externalId);
 
   return {
@@ -745,14 +775,28 @@ export function normalizeProductProviderProductOption(product = {}) {
     _id: product._id ?? id,
     category: safeTrim(product.category || product.categoryLabel),
     categoryLabel: safeTrim(product.categoryLabel || product.category),
+    categoryName: safeTrim(product.categoryName || product.categoryLabel || product.category),
     currency,
+    blockReason: safeTrim(product.blockReason),
+    executionBlocked: product.executionBlocked === true,
     externalId: externalProductId,
     externalProductId,
+    familyKey: safeTrim(product.familyKey),
+    fulfillmentMode: safeTrim(product.fulfillmentMode),
     isActive: product.isActive !== false,
+    isBlocked: product.isBlocked === true,
+    isSupported: product.isSupported === true,
     maxQty: product.maxQty ?? null,
     minQty: product.minQty ?? null,
     name: safeTrim(product.name) || "Provider product",
+    offerId: safeTrim(product.offerId),
+    offerName: safeTrim(product.offerName),
+    platform: safeTrim(product.platform),
     rawPrice: toDecimalString(rawPrice),
+    region: safeTrim(product.region),
+    requiredFields: asArray(product.requiredFields),
+    stock: product.stock ?? null,
+    supportLevel: safeTrim(product.supportLevel),
     supplierPrice: toDecimalString(rawPrice),
     price: toDecimalString(rawPrice),
     priceLabel: formatSupplierPrice(rawPrice, currency),

@@ -1,7 +1,28 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, Boxes, ChevronLeft, ChevronRight, Download, RefreshCw, Search, X } from "lucide-react";
+import { AlertTriangle, Boxes, ChevronLeft, ChevronRight, Download, Eye, FlaskConical, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 import ConnectionStatusBadge from "./ConnectionStatusBadge";
+
+const FAZERCARDS_FAMILY_TABS = [
+  { key: "TOPUPS", label: "TOPUPS" },
+  { key: "GIFTCARDS", label: "GIFTCARDS" },
+  { key: "GAME_KEYS", label: "GAME_KEYS" },
+  { key: "TELEGRAM", label: "TELEGRAM" },
+  { key: "STEAM_TOPUP", label: "STEAM_TOPUP" },
+  { key: "MANUAL_SERVICES", label: "MANUAL_SERVICES" },
+  { key: "STEAM_GIFTS", label: "STEAM_GIFTS" },
+];
+
+const FULFILLMENT_MODES = [
+  "TOPUP_WITH_FIELDS",
+  "CODE_DELIVERY",
+  "TELEGRAM_STARS_TOPUP",
+  "TELEGRAM_PREMIUM",
+  "STEAM_TOPUP_WITH_LOGIN",
+  "MANUAL_SERVICE",
+  "STEAM_GIFT_INVITE",
+  "UNKNOWN",
+];
 
 export default function SupplierProductsModal({
   actionKey = "",
@@ -11,6 +32,10 @@ export default function SupplierProductsModal({
   loading = false,
   onClose,
   onFilterChange,
+  onFazerCardsDryRun,
+  onFazerCardsReadiness,
+  onFazerCardsSyncAll,
+  onFazerCardsSyncFamily,
   onImport,
   onPageChange,
   onSearch,
@@ -18,12 +43,20 @@ export default function SupplierProductsModal({
   pagination,
   products = [],
   supplier,
+  fazerCardsCatalog = {},
 }) {
   const [query, setQuery] = useState("");
 
   if (!supplier) return null;
 
   const syncBusy = actionKey === `${supplier?.id}:sync`;
+  const syncAllBusy = actionKey === `${supplier?.id}:sync-all`;
+  const activeFamily = filters.familyKey || "";
+  const familySummary = fazerCardsCatalog.summary?.byFamily || {};
+  const familyList = fazerCardsCatalog.families?.length ? fazerCardsCatalog.families : FAZERCARDS_FAMILY_TABS;
+  const syncResult = fazerCardsCatalog.syncResult;
+  const steamGiftsWarning = familyList.find((family) => family.familyKey === "STEAM_GIFTS")?.warning
+    || "STEAM_GIFTS catalog endpoint returned 404 in production and is currently unavailable.";
 
   const updateFilter = (patch) => onFilterChange?.({ ...filters, ...patch });
 
@@ -41,15 +74,27 @@ export default function SupplierProductsModal({
               {(pagination?.total ?? products.length).toLocaleString("ar-EG-u-nu-latn")} synced supplier products
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onSync?.(supplier)}
-            disabled={syncBusy || loading || !supplier?.active}
-            className="inline-flex h-9 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:opacity-60"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${syncBusy ? "animate-spin" : ""}`} />
-            Sync
-          </button>
+          {fazerCards ? (
+            <button
+              type="button"
+              onClick={() => onFazerCardsSyncAll?.(supplier)}
+              disabled={syncAllBusy || loading || !supplier?.active}
+              className="inline-flex h-9 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncAllBusy ? "animate-spin" : ""}`} />
+              Sync All
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onSync?.(supplier)}
+              disabled={syncBusy || loading || !supplier?.active}
+              className="inline-flex h-9 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncBusy ? "animate-spin" : ""}`} />
+              Sync
+            </button>
+          )}
           <button type="button" onClick={onClose} disabled={syncBusy} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-white/[0.07]">
             <X className="h-4 w-4" />
           </button>
@@ -78,7 +123,75 @@ export default function SupplierProductsModal({
           </div>
 
           {fazerCards && (
-            <div className="grid gap-2 sm:grid-cols-5">
+            <div className="grid gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => updateFilter({ familyKey: "" })}
+                  className={`rounded-full px-3 py-1.5 text-[8px] font-black ${!activeFamily ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
+                >
+                  ALL
+                </button>
+                {FAZERCARDS_FAMILY_TABS.map((family) => (
+                  <button
+                    key={family.key}
+                    type="button"
+                    onClick={() => updateFilter({ familyKey: family.key })}
+                    className={`rounded-full px-3 py-1.5 text-[8px] font-black ${activeFamily === family.key ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
+                  >
+                    {family.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                {FAZERCARDS_FAMILY_TABS.map((family) => {
+                  const bucket = familySummary[family.key] || {};
+                  return (
+                    <button
+                      key={family.key}
+                      type="button"
+                      onClick={() => updateFilter({ familyKey: family.key })}
+                      className={`rounded-xl border p-2 text-left ${activeFamily === family.key ? "border-violet-300 bg-violet-50 dark:border-violet-400/30 dark:bg-violet-500/10" : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#0B1220]"}`}
+                    >
+                      <span className="block truncate text-[8px] font-black text-slate-500 dark:text-slate-300">{family.key}</span>
+                      <strong className="mt-1 block text-sm font-black text-slate-900 dark:text-white">{bucket.total ?? 0}</strong>
+                      <span className="text-[7px] font-bold text-slate-400">
+                        S {bucket.supported ?? 0} | B {bucket.blocked ?? 0} | I {bucket.imported ?? 0}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-2 text-[9px] font-bold text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 flex-1">{steamGiftsWarning}</span>
+                <button
+                  type="button"
+                  onClick={() => onFazerCardsSyncFamily?.(activeFamily || "TOPUPS")}
+                  disabled={loading || !supplier?.active || Boolean(actionKey)}
+                  className="inline-flex h-8 items-center gap-1 rounded-xl bg-slate-900 px-3 text-[8px] font-black text-white disabled:opacity-60 dark:bg-white dark:text-slate-950"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Sync Family
+                </button>
+              </div>
+
+              {syncResult && (
+                <div className="grid gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-2 text-[9px] font-bold text-slate-500 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-300">
+                  <span>
+                    Last sync: created {syncResult.totals?.providerProductsCreated ?? syncResult.providerProductsCreated ?? 0}, updated {syncResult.totals?.providerProductsUpdated ?? syncResult.providerProductsUpdated ?? 0}
+                  </span>
+                  {Object.entries(syncResult.results || {}).map(([familyKey, result]) => (
+                    <span key={familyKey} dir="ltr">
+                      {familyKey}: next {result?.nextCursor || "-"} | more {result?.hasMore ? "yes" : "no"}{result?.skipped ? " | skipped" : ""}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid gap-2 sm:grid-cols-6">
               <input
                 value={filters.category || ""}
                 onChange={(event) => updateFilter({ category: event.target.value })}
@@ -111,16 +224,22 @@ export default function SupplierProductsModal({
                 <option value="">All imports</option>
                 <option value="false">Not imported</option>
                 <option value="true">Imported</option>
-              </select>
+                </select>
               <select
-                value={filters.fulfillmentMode || "TOPUP_WITH_FIELDS"}
+                value={filters.fulfillmentMode || ""}
                 onChange={(event) => updateFilter({ fulfillmentMode: event.target.value })}
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               >
                 <option value="">All modes</option>
-                <option value="TOPUP_WITH_FIELDS">Top-up fields</option>
-                <option value="UNKNOWN">Unknown</option>
+                {FULFILLMENT_MODES.map((mode) => <option key={mode} value={mode}>{mode}</option>)}
               </select>
+              <input
+                value={filters.blockReason || ""}
+                onChange={(event) => updateFilter({ blockReason: event.target.value })}
+                placeholder="Block reason"
+                className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
+              />
+              </div>
             </div>
           )}
         </form>
@@ -148,7 +267,14 @@ export default function SupplierProductsModal({
                   </p>
                   {fazerCards && (
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black">
+                      <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{product.familyKey || "UNKNOWN"}</span>
+                      <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">{product.fulfillmentMode || "UNKNOWN"}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.categoryName || product.category || "No category"}</span>
+                      {(product.region || product.platform) && (
+                        <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{[product.platform, product.region].filter(Boolean).join(" / ")}</span>
+                      )}
+                      <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">Stock {product.stockLabel || "Unknown"}</span>
+                      {product.supportLevel && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.supportLevel}</span>}
                       <span className="rounded-full bg-sky-100 px-2 py-1 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">{product.requiredFieldsLabel}</span>
                       <span className={`rounded-full px-2 py-1 ${product.isSupported ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200" : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"}`}>
                         {product.isSupported ? "Supported" : "Unsupported"}
@@ -166,15 +292,44 @@ export default function SupplierProductsModal({
                   <strong dir="ltr" className="text-[11px] text-violet-600 dark:text-violet-300">{fazerCards ? product.costPriceLabel : product.priceLabel}</strong>
                   <ConnectionStatusBadge status={product.active ? "connected" : "failed"} />
                   {fazerCards && (
-                    <button
-                      type="button"
-                      disabled={loading || !product.isSupported || product.isBlocked}
-                      onClick={() => onImport?.(product)}
-                      className="inline-flex h-8 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      {product.imported ? "Update" : "Import"}
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-1.5 sm:flex-col sm:items-end">
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => onImport?.(product)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[9px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-slate-300"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Preview
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading || product.familyKey === "STEAM_GIFTS"}
+                        onClick={() => onImport?.(product)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        {product.imported ? "Update" : "Import"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading || !product.importedProduct?.id}
+                        onClick={() => onFazerCardsReadiness?.(product)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-emerald-200 px-3 text-[9px] font-black text-emerald-700 disabled:opacity-50 dark:border-emerald-400/20 dark:text-emerald-200"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Readiness
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading || !product.importedProduct?.id}
+                        onClick={() => onFazerCardsDryRun?.(product)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-amber-200 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:border-amber-400/20 dark:text-amber-200"
+                      >
+                        <FlaskConical className="h-3.5 w-3.5" />
+                        Dry-run
+                      </button>
+                    </div>
                   )}
                 </div>
               </article>

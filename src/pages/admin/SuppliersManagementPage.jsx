@@ -4,10 +4,16 @@ import {
   checkAdminProviderOrder,
   createAdminProvider,
   deleteAdminProvider,
+  dryRunFazerCardsProduct,
+  getFazerCardsCatalogFamilies,
+  getFazerCardsCatalogSummary,
+  getFazerCardsProductReadiness,
   getFazerCardsProviderProducts,
   getAdminProviderBalance,
   getAdminProviderProducts,
   getAdminProviders,
+  syncFazerCardsCatalogAll,
+  syncFazerCardsCatalogFamily,
   syncAdminProviderProducts,
   testAdminProvider,
   toggleAdminProvider,
@@ -29,11 +35,13 @@ import { useAuth } from "../../context/AuthContext";
 const productPageSize = 30;
 
 const defaultFazerCardsFilters = {
+  blockReason: "",
   blocked: "",
   category: "",
-  fulfillmentMode: "TOPUP_WITH_FIELDS",
+  familyKey: "TOPUPS",
+  fulfillmentMode: "",
   imported: "",
-  supported: "true",
+  supported: "",
 };
 
 const emptyProductsState = {
@@ -45,6 +53,14 @@ const emptyProductsState = {
   products: [],
   search: "",
   supplier: null,
+};
+
+const emptyFazerCatalogState = {
+  error: "",
+  families: [],
+  loading: false,
+  summary: null,
+  syncResult: null,
 };
 
 function getProviderCode(provider) {
@@ -72,6 +88,7 @@ export default function SuppliersManagementPage() {
   const [connectionResults, setConnectionResults] = useState({});
   const [providerProductsTotal, setProviderProductsTotal] = useState(0);
   const [productsState, setProductsState] = useState(emptyProductsState);
+  const [fazerCatalog, setFazerCatalog] = useState(emptyFazerCatalogState);
   const [fazerImportProduct, setFazerImportProduct] = useState(null);
   const [toolsFor, setToolsFor] = useState(null);
   const [xenaFor, setXenaFor] = useState(null);
@@ -174,6 +191,29 @@ export default function SuppliersManagementPage() {
   const requestToggle = (supplier) => setConfirm({ kind: "toggle", supplier });
   const requestArchive = (supplier) => setConfirm({ kind: "archive", supplier });
 
+  const loadFazerCatalogMeta = useCallback(async ({ silent = false } = {}) => {
+    if (!token) return;
+    if (!silent) setFazerCatalog((current) => ({ ...current, error: "", loading: true }));
+
+    const [familiesResult, summaryResult] = await Promise.allSettled([
+      getFazerCardsCatalogFamilies(token),
+      getFazerCardsCatalogSummary(token),
+    ]);
+
+    const nextError = [familiesResult, summaryResult]
+      .filter((result) => result.status === "rejected")
+      .map((result) => result.reason?.userMessage || result.reason?.message || "Could not load FazerCards catalog metadata.")
+      .join(" ");
+
+    setFazerCatalog((current) => ({
+      ...current,
+      error: nextError,
+      families: familiesResult.status === "fulfilled" ? familiesResult.value.families : current.families,
+      loading: false,
+      summary: summaryResult.status === "fulfilled" ? summaryResult.value : current.summary,
+    }));
+  }, [token]);
+
   const runConfirmedAction = async () => {
     const { kind, supplier } = confirm;
     if (!token || !supplier || actionKey) return;
@@ -233,6 +273,8 @@ export default function SuppliersManagementPage() {
     }));
 
     try {
+      if (fazerCards) void loadFazerCatalogMeta({ silent: true });
+
       const result = fazerCards
         ? await getFazerCardsProviderProducts(token, {
             ...effectiveFilters,
@@ -301,6 +343,167 @@ export default function SuppliersManagementPage() {
     }));
   };
 
+  const runFazerCardsSyncFamily = async (familyKey = "TOPUPS") => {
+    const supplier = productsState.supplier;
+    const normalizedFamily = String(familyKey || productsState.filters.familyKey || "TOPUPS").toUpperCase();
+    if (!token || !supplier || actionKey) return;
+
+    if (normalizedFamily === "STEAM_GIFTS") {
+      showToast({
+        type: "warning",
+        title: "STEAM_GIFTS unavailable",
+        message: "FazerCards returned HTTP 404 for this catalog family in production, so it remains disabled.",
+      });
+      return;
+    }
+
+    setActionKey(`${supplier.id}:sync-family:${normalizedFamily}`);
+    try {
+      const result = await syncFazerCardsCatalogFamily(token, {
+        family: normalizedFamily,
+        limit: 20,
+      });
+      setFazerCatalog((current) => ({
+        ...current,
+        syncResult: {
+          results: { [normalizedFamily]: result.result },
+          totals: {
+            providerProductsCreated: result.result.providerProductsCreated || 0,
+            providerProductsUpdated: result.result.providerProductsUpdated || 0,
+          },
+        },
+      }));
+      showToast({
+        type: "success",
+        title: `${normalizedFamily} synced`,
+        message: `Created ${result.result.providerProductsCreated || 0}, updated ${result.result.providerProductsUpdated || 0}.`,
+      });
+      await loadFazerCatalogMeta({ silent: true });
+      await loadProviderProducts(supplier, {
+        filters: { ...productsState.filters, familyKey: normalizedFamily },
+        page: 1,
+        search: productsState.search,
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "FazerCards family sync failed",
+        message: error.userMessage || error.message || "Could not sync FazerCards family.",
+      });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const runFazerCardsSyncAll = async () => {
+    const supplier = productsState.supplier;
+    if (!token || !supplier || actionKey) return;
+    if (!window.confirm("Run read-only FazerCards sync for all catalog families? No order endpoint will be called and no Winnie products will be created.")) return;
+
+    setActionKey(`${supplier.id}:sync-all`);
+    try {
+      const result = await syncFazerCardsCatalogAll(token, {
+        includeSteamGifts: true,
+        limit: 20,
+      });
+      setFazerCatalog((current) => ({ ...current, syncResult: result.result }));
+      showToast({
+        type: result.result.errors?.length ? "warning" : "success",
+        title: "FazerCards sync-all finished",
+        message: `Created ${result.result.totals?.providerProductsCreated || 0}, updated ${result.result.totals?.providerProductsUpdated || 0}.`,
+      });
+      await loadFazerCatalogMeta({ silent: true });
+      await loadProviderProducts(supplier, {
+        filters: productsState.filters,
+        page: 1,
+        search: productsState.search,
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "FazerCards sync-all failed",
+        message: error.userMessage || error.message || "Could not run FazerCards sync-all.",
+      });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleFazerCardsReadiness = async (providerProduct) => {
+    const importedProductId = providerProduct?.importedProduct?.id;
+    if (!token || !importedProductId || actionKey) {
+      showToast({ type: "warning", title: "Import first", message: "Readiness checks run against the imported Winnie Product." });
+      return;
+    }
+
+    setActionKey(`${providerProduct.id}:readiness`);
+    try {
+      const result = await getFazerCardsProductReadiness(token, importedProductId);
+      const readiness = result.readiness || {};
+      const checks = readiness.checks || {};
+      const passed = Object.values(checks).filter((value) => value === true).length;
+      const total = Object.keys(checks).length;
+      showToast({
+        type: readiness.readyForLiveExecution ? "success" : "warning",
+        title: "FazerCards readiness",
+        message: `${readiness.readyForLiveExecution ? "Ready" : "Not ready"} (${passed}/${total} checks). ${(readiness.warnings || [])[0] || ""}`,
+      });
+    } catch (error) {
+      showToast({ type: "error", title: "Readiness failed", message: error.userMessage || "Could not check readiness." });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleFazerCardsDryRun = async (providerProduct) => {
+    const importedProductId = providerProduct?.importedProduct?.id;
+    if (!token || !importedProductId || actionKey) {
+      showToast({ type: "warning", title: "Import first", message: "Dry-run previews run against the imported Winnie Product." });
+      return;
+    }
+
+    const requiredFields = providerProduct.requiredFields || [];
+    let fields = {};
+    if (requiredFields.length) {
+      const template = requiredFields.reduce((acc, field) => {
+        const key = field.key || field.id || field.label;
+        if (key) acc[key] = "";
+        return acc;
+      }, {});
+      const rawFields = window.prompt("Enter dry-run fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
+      if (rawFields === null) return;
+      try {
+        fields = JSON.parse(rawFields || "{}");
+      } catch {
+        showToast({ type: "error", title: "Invalid JSON", message: "Dry-run fields must be valid JSON." });
+        return;
+      }
+    }
+
+    const rawQuantity = providerProduct.fulfillmentMode === "TOPUP_WITH_FIELDS"
+      ? "1"
+      : window.prompt("Dry-run quantity. This does not create an order.", "1");
+    if (rawQuantity === null) return;
+
+    setActionKey(`${providerProduct.id}:dry-run`);
+    try {
+      const result = await dryRunFazerCardsProduct(token, importedProductId, {
+        fields,
+        quantity: Number(rawQuantity || 1),
+      });
+      const dryRun = result.dryRun || {};
+      showToast({
+        type: "success",
+        title: "FazerCards dry-run built",
+        message: `${dryRun.wouldCall || "No live endpoint"} preview created. No provider order was called.`,
+      });
+    } catch (error) {
+      showToast({ type: "error", title: "Dry-run failed", message: error.userMessage || "Could not build dry-run preview." });
+    } finally {
+      setActionKey("");
+    }
+  };
+
   const handleFazerCardsImported = async (result) => {
     showToast({
       type: "success",
@@ -314,6 +517,7 @@ export default function SuppliersManagementPage() {
         search: productsState.search,
       });
     }
+    await loadFazerCatalogMeta({ silent: true });
     await loadSuppliers({ silent: true });
   };
 
@@ -376,12 +580,17 @@ export default function SuppliersManagementPage() {
       {productsState.supplier && (
         <SupplierProductsModal
           actionKey={actionKey}
-          error={productsState.error}
+          error={productsState.error || fazerCatalog.error}
+          fazerCardsCatalog={fazerCatalog}
           fazerCards={isFazerCardsSupplier(productsState.supplier)}
           filters={productsState.filters}
           loading={productsState.loading}
           onClose={() => setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } })}
           onFilterChange={updateFazerCardsFilters}
+          onFazerCardsDryRun={handleFazerCardsDryRun}
+          onFazerCardsReadiness={handleFazerCardsReadiness}
+          onFazerCardsSyncAll={runFazerCardsSyncAll}
+          onFazerCardsSyncFamily={runFazerCardsSyncFamily}
           onImport={setFazerImportProduct}
           onPageChange={(page) => loadProviderProducts(productsState.supplier, { filters: productsState.filters, page, search: productsState.search })}
           onSearch={(search, filters) => loadProviderProducts(productsState.supplier, { filters, page: 1, search })}

@@ -414,6 +414,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
               onProviderChange={changeProvider}
               onProviderProductSelect={selectProviderProduct}
               providerLink={providerLink}
+              token={token}
             />
           )}
           {activeTab === "settings" && <ProductSettings value={form} onChange={update} />}
@@ -482,11 +483,17 @@ function mergeSelectedProductOption(products = [], selectedProductId = "", produ
     {
       id: safeTrim(selectedProductId),
       externalProductId: safeTrim(product?.providerProductExternalId),
+      familyKey: safeTrim(product?.familyKey || product?.providerProductFamilyKey),
+      fulfillmentMode: safeTrim(product?.fulfillmentMode || product?.providerProductFulfillmentMode),
       maxQty: product?.providerProductMaxQty ?? null,
       minQty: product?.providerProductMinQty ?? null,
       name: selectedName,
+      platform: safeTrim(product?.providerPlatform),
       priceLabel: "",
       rawPrice: safeTrim(product?.supplierPrice || product?.providerPrice),
+      region: safeTrim(product?.providerRegion),
+      requiredFields: Array.isArray(product?.providerProductRequiredFields) ? product.providerProductRequiredFields : [],
+      stock: product?.providerStock ?? null,
       supplierPrice: safeTrim(product?.supplierPrice || product?.providerPrice),
       providerName: safeTrim(product?.providerName),
     },
@@ -524,6 +531,19 @@ function buildProviderProductSelectionPatch(providerProduct, current) {
     providerProductMaxQty: providerProduct?.maxQty ?? null,
     providerProductMinQty: providerProduct?.minQty ?? null,
     providerProductName: safeTrim(providerProduct?.name),
+    familyKey: safeTrim(providerProduct?.familyKey),
+    fulfillmentMode: safeTrim(providerProduct?.fulfillmentMode),
+    providerBlockReason: safeTrim(providerProduct?.blockReason),
+    providerCategory: safeTrim(providerProduct?.category),
+    providerCategoryName: safeTrim(providerProduct?.categoryName || providerProduct?.categoryLabel || providerProduct?.category),
+    providerExecutionBlocked: providerProduct?.executionBlocked === true,
+    providerOfferId: safeTrim(providerProduct?.offerId),
+    providerOfferName: safeTrim(providerProduct?.offerName),
+    providerPlatform: safeTrim(providerProduct?.platform),
+    providerProductRequiredFields: Array.isArray(providerProduct?.requiredFields) ? providerProduct.requiredFields : [],
+    providerProductSupportLevel: safeTrim(providerProduct?.supportLevel),
+    providerRegion: safeTrim(providerProduct?.region),
+    providerStock: providerProduct?.stock ?? null,
     supplierPrice,
     supplierMin: providerProduct?.minQty ?? 0,
     supplierMax: providerProduct?.maxQty ?? 0,

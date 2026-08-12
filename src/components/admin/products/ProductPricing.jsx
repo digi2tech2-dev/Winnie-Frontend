@@ -1,5 +1,6 @@
-import { AlertTriangle, Bot, CheckCircle2, Link2, RefreshCw, Search, UserRound } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { AlertTriangle, Bot, CheckCircle2, FlaskConical, Link2, RefreshCw, Search, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { dryRunFazerCardsProduct, getFazerCardsProductReadiness } from "../../../api/adminProviders";
 import { formatSupplierPrice } from "../../../api/adminProducts";
 import { Field, inputClassName, Section } from "./BasicProductInfo";
 
@@ -21,21 +22,34 @@ export default function ProductPricing({
   onProviderChange,
   onProviderProductSelect,
   providerLink = emptyProviderLink,
+  token,
   value,
 }) {
   const automatic = value.linkType === "automatic";
   const selectedProvider = providerLink.providers.find((provider) => provider.id === value.providerId);
   const selectedProduct = providerLink.providerProducts.find((product) => product.id === value.providerProductId)
     || getCurrentProductSummary(value);
+  const selectedExternalId = safeTrim(selectedProduct?.externalProductId || value.providerProductExternalId);
   const selectedProviderCode = safeTrim(selectedProvider?.providerCode || selectedProvider?.code || value.providerCode).toUpperCase().replace(/-/g, "_");
-  const isFazerCards = selectedProviderCode === "FAZER_CARDS" || selectedProviderCode === "FAZERCARDS";
+  const isFazerCards = selectedProviderCode === "FAZER_CARDS" || selectedProviderCode === "FAZERCARDS" || selectedExternalId.startsWith("FAZER_");
   const priceSynced = Boolean(value.syncPriceFromProvider);
   const limitsSynced = Boolean(value.syncLimitsFromProvider);
   const searchValue = value.providerProductSearch || "";
   const providerProductCount = providerLink.pagination?.total ?? providerLink.providerProducts.length;
+  const productId = safeTrim(value.id || value._id);
+  const providerMeta = getFazerCardsProviderMeta(value, selectedProduct);
+  const [providerTool, setProviderTool] = useState({
+    busy: "",
+    dryRun: null,
+    error: "",
+    readiness: null,
+  });
   const searchTimerRef = useRef(null);
 
   useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+  useEffect(() => {
+    setProviderTool({ busy: "", dryRun: null, error: "", readiness: null });
+  }, [productId, value.providerProductId]);
 
   const updateLimit = (field, nextValue) => {
     onPatch({
@@ -59,6 +73,63 @@ export default function ProductPricing({
     searchTimerRef.current = setTimeout(() => {
       if (value.providerId) onProductSearch(nextValue);
     }, 450);
+  };
+
+  const runFazerCardsReadiness = async () => {
+    if (!token || !productId || providerTool.busy) return;
+    setProviderTool((current) => ({ ...current, busy: "readiness", error: "", readiness: null }));
+    try {
+      const result = await getFazerCardsProductReadiness(token, productId);
+      setProviderTool((current) => ({ ...current, busy: "", readiness: result.readiness || null }));
+    } catch (error) {
+      setProviderTool((current) => ({
+        ...current,
+        busy: "",
+        error: error.userMessage || error.message || "Could not check FazerCards readiness.",
+      }));
+    }
+  };
+
+  const runFazerCardsDryRun = async () => {
+    if (!token || !productId || providerTool.busy) return;
+
+    const requiredFields = providerMeta.requiredFields || [];
+    let fields = {};
+    if (requiredFields.length) {
+      const template = requiredFields.reduce((acc, field) => {
+        const key = field.key || field.id || field.label;
+        if (key) acc[key] = "";
+        return acc;
+      }, {});
+      const rawFields = window.prompt("Enter dry-run fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
+      if (rawFields === null) return;
+      try {
+        fields = JSON.parse(rawFields || "{}");
+      } catch {
+        setProviderTool((current) => ({ ...current, error: "Dry-run fields must be valid JSON." }));
+        return;
+      }
+    }
+
+    const rawQuantity = providerMeta.fulfillmentMode === "TOPUP_WITH_FIELDS"
+      ? "1"
+      : window.prompt("Dry-run quantity. This does not create an order.", "1");
+    if (rawQuantity === null) return;
+
+    setProviderTool((current) => ({ ...current, busy: "dry-run", dryRun: null, error: "" }));
+    try {
+      const result = await dryRunFazerCardsProduct(token, productId, {
+        fields,
+        quantity: Number(rawQuantity || 1),
+      });
+      setProviderTool((current) => ({ ...current, busy: "", dryRun: result.dryRun || null }));
+    } catch (error) {
+      setProviderTool((current) => ({
+        ...current,
+        busy: "",
+        error: error.userMessage || error.message || "Could not build FazerCards dry-run preview.",
+      }));
+    }
   };
 
   return (
@@ -209,12 +280,67 @@ export default function ProductPricing({
 
           {isFazerCards && (
             <div className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-3 text-[10px] font-bold text-amber-900 dark:text-amber-100">
+              <div className="mb-3 grid gap-1 sm:grid-cols-3">
+                <SummaryItem label="Provider" value="FazerCards" />
+                <SummaryItem label="Family" value={providerMeta.familyKey || "UNKNOWN"} />
+                <SummaryItem label="Mode" value={providerMeta.fulfillmentMode || "UNKNOWN"} />
+                <SummaryItem label="External ID" value={providerMeta.externalProductId || "-"} />
+                <SummaryItem label="Provider cost" value={providerMeta.priceLabel || "-"} />
+                <SummaryItem label="Stock" value={providerMeta.stockLabel || "Unknown"} />
+                <SummaryItem label="Region" value={providerMeta.region || "-"} />
+                <SummaryItem label="Platform" value={providerMeta.platform || "-"} />
+                <SummaryItem label="Block reason" value={providerMeta.blockReason || "-"} />
+              </div>
               <CheckboxField
                 checked={Boolean(value.providerExecutionEnabled)}
-                label="Enable FazerCards real top-up execution"
+                disabled={Boolean(value.providerExecutionBlocked)}
+                label="Enable FazerCards provider execution"
                 onChange={(checked) => onPatch({ providerExecutionEnabled: checked })}
               />
-              <p className="mt-2 leading-5">Only enable this for a tested imported top-up product. Product visibility is still controlled separately.</p>
+              <p className="mt-2 leading-5">
+                Execution remains behind backend environment gates. Product visibility is controlled separately.
+              </p>
+              {value.providerExecutionBlocked && (
+                <p className="mt-1 rounded-xl bg-rose-500/10 px-3 py-2 text-rose-700 dark:text-rose-200">
+                  Provider execution is blocked for this product{providerMeta.blockReason ? `: ${providerMeta.blockReason}` : "."}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={runFazerCardsReadiness}
+                  disabled={!token || !productId || Boolean(providerTool.busy)}
+                  className="inline-flex h-9 items-center gap-1 rounded-xl border border-emerald-300/40 px-3 text-[9px] font-black text-emerald-700 disabled:opacity-50 dark:text-emerald-200"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {providerTool.busy === "readiness" ? "Checking..." : "Readiness"}
+                </button>
+                <button
+                  type="button"
+                  onClick={runFazerCardsDryRun}
+                  disabled={!token || !productId || Boolean(providerTool.busy)}
+                  className="inline-flex h-9 items-center gap-1 rounded-xl border border-amber-300/40 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:text-amber-100"
+                >
+                  <FlaskConical className="h-3.5 w-3.5" />
+                  {providerTool.busy === "dry-run" ? "Building..." : "Dry-run"}
+                </button>
+              </div>
+              {providerTool.error && (
+                <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">{providerTool.error}</p>
+              )}
+              {providerTool.readiness && (
+                <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-[9px] font-bold text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  <p className="font-black">Ready for live execution: {providerTool.readiness.readyForLiveExecution ? "yes" : "no"}</p>
+                  {(providerTool.readiness.warnings || []).slice(0, 3).map((warning) => <p key={warning}>{warning}</p>)}
+                </div>
+              )}
+              {providerTool.dryRun && (
+                <div className="mt-2 rounded-xl border border-slate-200 bg-white/70 p-2 text-[9px] font-bold text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-200">
+                  <p className="font-black">Would call: {providerTool.dryRun.wouldCall || "No live endpoint"}</p>
+                  <pre dir="ltr" className="mt-1 max-h-28 overflow-auto rounded-lg bg-slate-950 p-2 text-left text-[8px] text-slate-100">{JSON.stringify(providerTool.dryRun.payload || {}, null, 2)}</pre>
+                  <p className="mt-1 text-amber-600 dark:text-amber-300">Dry-run only. No provider order was created.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -279,10 +405,10 @@ function ProviderProductButton({ onClick, product, selected }) {
   );
 }
 
-function CheckboxField({ checked, label, onChange }) {
+function CheckboxField({ checked, disabled = false, label, onChange }) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-200">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-violet-600" />
+    <label className={`flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-200 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-violet-600" />
       <span>{label}</span>
     </label>
   );
@@ -314,12 +440,42 @@ function getCurrentProductSummary(value) {
   return {
     id: safeTrim(value.providerProductId),
     externalProductId: safeTrim(value.providerProductExternalId),
+    familyKey: safeTrim(value.familyKey || value.providerProductFamilyKey),
+    fulfillmentMode: safeTrim(value.fulfillmentMode || value.providerProductFulfillmentMode),
     maxQty: value.providerProductMaxQty ?? null,
     minQty: value.providerProductMinQty ?? null,
     name: safeTrim(value.providerProductName),
+    platform: safeTrim(value.providerPlatform),
     priceLabel: supplierPrice ? formatSupplierPrice(supplierPrice) : "",
     rawPrice: supplierPrice,
+    region: safeTrim(value.providerRegion),
+    requiredFields: Array.isArray(value.providerProductRequiredFields) ? value.providerProductRequiredFields : [],
+    stock: value.providerStock ?? null,
     supplierPrice,
+  };
+}
+
+function getFazerCardsProviderMeta(value = {}, selectedProduct = {}) {
+  const familyKey = safeTrim(value.familyKey || selectedProduct?.familyKey || value.providerProductFamilyKey);
+  const fulfillmentMode = safeTrim(value.fulfillmentMode || selectedProduct?.fulfillmentMode || value.providerProductFulfillmentMode);
+  const stock = value.providerStock ?? selectedProduct?.stock ?? null;
+  const supplierPrice = safeTrim(value.supplierPrice || selectedProduct?.supplierPrice || selectedProduct?.rawPrice || selectedProduct?.price);
+
+  return {
+    blockReason: safeTrim(value.providerBlockReason || selectedProduct?.blockReason),
+    externalProductId: safeTrim(value.providerProductExternalId || selectedProduct?.externalProductId),
+    familyKey,
+    fulfillmentMode,
+    platform: safeTrim(value.providerPlatform || selectedProduct?.platform),
+    priceLabel: supplierPrice ? formatSupplierPrice(supplierPrice) : selectedProduct?.priceLabel || "",
+    region: safeTrim(value.providerRegion || selectedProduct?.region),
+    requiredFields: Array.isArray(value.providerProductRequiredFields)
+      ? value.providerProductRequiredFields
+      : Array.isArray(selectedProduct?.requiredFields)
+        ? selectedProduct.requiredFields
+        : [],
+    stock,
+    stockLabel: stock === undefined || stock === null || stock === "" ? "Unknown" : String(stock),
   };
 }
 
