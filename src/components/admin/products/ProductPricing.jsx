@@ -331,6 +331,21 @@ export default function ProductPricing({
               {providerTool.readiness && (
                 <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-[9px] font-bold text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
                   <p className="font-black">Ready for live execution: {providerTool.readiness.readyForLiveExecution ? "yes" : "no"}</p>
+                  {providerTool.readiness.contract && (
+                    <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                      <SummaryItem label="Support stage" value={providerTool.readiness.supportStage || providerTool.readiness.contract.supportStage || "-"} />
+                      <SummaryItem label="Execution stage" value={providerTool.readiness.executionStage || providerTool.readiness.contract.executionStage || "-"} />
+                      <SummaryItem label="Customer purchase" value={providerTool.readiness.canCustomerPurchase ? "ready" : "not ready"} />
+                      <SummaryItem label="Live pilot" value={providerTool.readiness.canLivePilot ? "available" : "not available"} />
+                      <SummaryItem label="Storage" value={providerTool.readiness.contract.storageStrategy || "-"} />
+                      <SummaryItem label="Delivery" value={providerTool.readiness.contract.customerDeliveryStrategy || "-"} />
+                    </div>
+                  )}
+                  {providerTool.readiness.contract?.providerPayloadSchema && (
+                    <pre dir="ltr" className="mt-2 max-h-24 overflow-auto rounded-lg bg-slate-950 p-2 text-left text-[8px] text-slate-100">{JSON.stringify(providerTool.readiness.contract.providerPayloadSchema, null, 2)}</pre>
+                  )}
+                  {(providerTool.readiness.blockers || []).slice(0, 3).map((blocker) => <p key={blocker}>Blocker: {blocker}</p>)}
+                  {(providerTool.readiness.missingCapabilities || []).slice(0, 3).map((capability) => <p key={capability}>Missing: {capability}</p>)}
                   {(providerTool.readiness.warnings || []).slice(0, 3).map((warning) => <p key={warning}>{warning}</p>)}
                 </div>
               )}

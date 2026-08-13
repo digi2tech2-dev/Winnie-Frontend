@@ -7,6 +7,7 @@ import {
   dryRunFazerCardsProduct,
   getFazerCardsCatalogFamilies,
   getFazerCardsCatalogSummary,
+  getFazerCardsContractsSummary,
   getFazerCardsProductReadiness,
   getFazerCardsProviderProducts,
   getAdminProviderBalance,
@@ -56,6 +57,7 @@ const emptyProductsState = {
 };
 
 const emptyFazerCatalogState = {
+  contractsSummary: null,
   error: "",
   families: [],
   loading: false,
@@ -195,18 +197,20 @@ export default function SuppliersManagementPage() {
     if (!token) return;
     if (!silent) setFazerCatalog((current) => ({ ...current, error: "", loading: true }));
 
-    const [familiesResult, summaryResult] = await Promise.allSettled([
+    const [familiesResult, summaryResult, contractsResult] = await Promise.allSettled([
       getFazerCardsCatalogFamilies(token),
       getFazerCardsCatalogSummary(token),
+      getFazerCardsContractsSummary(token),
     ]);
 
-    const nextError = [familiesResult, summaryResult]
+    const nextError = [familiesResult, summaryResult, contractsResult]
       .filter((result) => result.status === "rejected")
       .map((result) => result.reason?.userMessage || result.reason?.message || "Could not load FazerCards catalog metadata.")
       .join(" ");
 
     setFazerCatalog((current) => ({
       ...current,
+      contractsSummary: contractsResult.status === "fulfilled" ? contractsResult.value : current.contractsSummary,
       error: nextError,
       families: familiesResult.status === "fulfilled" ? familiesResult.value.families : current.families,
       loading: false,
@@ -493,9 +497,11 @@ export default function SuppliersManagementPage() {
       });
       const dryRun = result.dryRun || {};
       showToast({
-        type: "success",
-        title: "FazerCards dry-run built",
-        message: `${dryRun.wouldCall || "No live endpoint"} preview created. No provider order was called.`,
+        type: dryRun.success === false ? "warning" : "success",
+        title: dryRun.success === false ? "FazerCards contract unconfirmed" : "FazerCards dry-run built",
+        message: dryRun.success === false
+          ? dryRun.message || "This family does not have a confirmed provider payload contract yet. No provider order was called."
+          : `${dryRun.wouldCall || "No live endpoint"} preview created. No provider order was called.`,
       });
     } catch (error) {
       showToast({ type: "error", title: "Dry-run failed", message: error.userMessage || "Could not build dry-run preview." });

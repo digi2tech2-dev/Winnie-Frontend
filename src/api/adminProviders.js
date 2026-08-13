@@ -54,6 +54,31 @@ function normalizeCountBucket(value = {}) {
   };
 }
 
+function normalizeFazerCardsContract(contract = {}) {
+  const value = contract || {};
+  return {
+    blockers: asArray(value.blockers),
+    canCustomerPurchase: value.canCustomerPurchase === true,
+    canDryRun: value.canDryRun === true,
+    canImportDraft: value.canImportDraft === true,
+    canLivePilot: value.canLivePilot === true,
+    catalogStatus: value.catalogStatus || "",
+    customerDeliveryStrategy: value.customerDeliveryStrategy || "",
+    customerInputSchema: value.customerInputSchema || { fields: [] },
+    displayName: value.displayName || humanizeToken(value.familyKey, "Family"),
+    executionStage: value.executionStage || "",
+    expectedResponseSchema: value.expectedResponseSchema || {},
+    familyKey: value.familyKey || "",
+    fulfillmentMode: value.fulfillmentMode || "",
+    providerPayloadSchema: value.providerPayloadSchema || {},
+    requiredCapabilities: asArray(value.requiredCapabilities),
+    riskLevel: value.riskLevel || "",
+    storageStrategy: value.storageStrategy || "",
+    supportStage: value.supportStage || "",
+    warnings: asArray(value.warnings),
+  };
+}
+
 function getProviderFromResponse(data) {
   return data?.provider || data || {};
 }
@@ -588,6 +613,44 @@ export async function getFazerCardsCatalogSummary(token) {
     message: response.message,
     nextRecommendedFamilies: asArray(response.data?.nextRecommendedFamilies),
     totalProviderProducts: toNumber(response.data?.totalProviderProducts, 0),
+  };
+}
+
+export async function getFazerCardsContracts(token) {
+  const response = await apiRequest("/admin/providers/fazercards/contracts", { token });
+  return {
+    contracts: asArray(response.data?.contracts ?? response.data).map(normalizeFazerCardsContract),
+    message: response.message,
+  };
+}
+
+export async function getFazerCardsContract(token, familyKey) {
+  const response = await apiRequest(`/admin/providers/fazercards/contracts/${encodeURIComponent(familyKey)}`, { token });
+  return {
+    contract: normalizeFazerCardsContract(response.data?.contract || response.data || {}),
+    message: response.message,
+  };
+}
+
+export async function getFazerCardsContractsSummary(token) {
+  const response = await apiRequest("/admin/providers/fazercards/contracts/summary", { token });
+  const families = {};
+  Object.entries(response.data?.families || {}).forEach(([familyKey, value]) => {
+    families[familyKey] = {
+      blockers: asArray(value.blockers),
+      canCustomerPurchase: value.canCustomerPurchase === true,
+      canDryRun: value.canDryRun === true,
+      canImportDraft: value.canImportDraft === true,
+      canLivePilot: value.canLivePilot === true,
+      executionStage: value.executionStage || "",
+      supportStage: value.supportStage || "",
+    };
+  });
+
+  return {
+    families,
+    message: response.message,
+    nextBestExecutionOrder: asArray(response.data?.nextBestExecutionOrder),
   };
 }
 

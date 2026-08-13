@@ -53,6 +53,7 @@ export default function SupplierProductsModal({
   const syncAllBusy = actionKey === `${supplier?.id}:sync-all`;
   const activeFamily = filters.familyKey || "";
   const familySummary = fazerCardsCatalog.summary?.byFamily || {};
+  const contractSummary = fazerCardsCatalog.contractsSummary?.families || {};
   const familyList = fazerCardsCatalog.families?.length ? fazerCardsCatalog.families : FAZERCARDS_FAMILY_TABS;
   const syncResult = fazerCardsCatalog.syncResult;
   const steamGiftsWarning = familyList.find((family) => family.familyKey === "STEAM_GIFTS")?.warning
@@ -147,6 +148,7 @@ export default function SupplierProductsModal({
               <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-7">
                 {FAZERCARDS_FAMILY_TABS.map((family) => {
                   const bucket = familySummary[family.key] || {};
+                  const contract = contractSummary[family.key] || {};
                   return (
                     <button
                       key={family.key}
@@ -159,6 +161,8 @@ export default function SupplierProductsModal({
                       <span className="text-[7px] font-bold text-slate-400">
                         S {bucket.supported ?? 0} | B {bucket.blocked ?? 0} | I {bucket.imported ?? 0}
                       </span>
+                      <span className="mt-1 block truncate text-[7px] font-black text-violet-500 dark:text-violet-200">{contract.supportStage || "CATALOG"}</span>
+                      <span className="block truncate text-[7px] font-bold text-slate-400">{contract.executionStage || "NONE"}</span>
                     </button>
                   );
                 })}
@@ -255,7 +259,10 @@ export default function SupplierProductsModal({
           {loading ? (
             <p className="py-8 text-center text-xs font-black text-slate-400">Loading supplier products...</p>
           ) : products.length ? (
-            products.map((product) => (
+            products.map((product) => {
+              const contract = contractSummary[product.familyKey] || {};
+              const firstBlocker = contract.blockers?.[0] || "";
+              return (
               <article key={product.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220] sm:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
                   <h3 className="truncate text-[11px] font-black dark:text-white">{product.name}</h3>
@@ -269,6 +276,8 @@ export default function SupplierProductsModal({
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black">
                       <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{product.familyKey || "UNKNOWN"}</span>
                       <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">{product.fulfillmentMode || "UNKNOWN"}</span>
+                      {contract.supportStage && <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">{contract.supportStage}</span>}
+                      {contract.executionStage && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{contract.executionStage}</span>}
                       <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.categoryName || product.category || "No category"}</span>
                       {(product.region || product.platform) && (
                         <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{[product.platform, product.region].filter(Boolean).join(" / ")}</span>
@@ -285,6 +294,7 @@ export default function SupplierProductsModal({
                       <span className={`rounded-full px-2 py-1 ${product.imported ? "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200" : "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-300"}`}>
                         {product.imported ? "Imported" : "Not imported"}
                       </span>
+                      {firstBlocker && <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{firstBlocker}</span>}
                     </div>
                   )}
                 </div>
@@ -333,7 +343,8 @@ export default function SupplierProductsModal({
                   )}
                 </div>
               </article>
-            ))
+              );
+            })
           ) : (
             <p className="py-8 text-center text-xs font-black text-slate-400">No supplier products found.</p>
           )}
