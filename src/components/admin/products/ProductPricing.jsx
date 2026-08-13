@@ -297,6 +297,30 @@ export default function ProductPricing({
                 label="Enable FazerCards provider execution"
                 onChange={(checked) => onPatch({ providerExecutionEnabled: checked })}
               />
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <CheckboxField
+                  checked={Boolean(value.customerPurchaseEnabled)}
+                  label="Allow customer purchase"
+                  onChange={(checked) => onPatch({ customerPurchaseEnabled: checked })}
+                />
+                <Field label="Provider execution mode">
+                  <select
+                    className={inputClassName}
+                    value={value.providerExecutionMode || "MANUAL_FULFILLMENT"}
+                    onChange={(event) => onPatch({
+                      providerExecutionMode: event.target.value,
+                      ...(event.target.value !== "AUTO_PROVIDER" ? { providerExecutionEnabled: false } : {}),
+                    })}
+                  >
+                    <option value="AUTO_PROVIDER">AUTO_PROVIDER</option>
+                    <option value="MANUAL_FULFILLMENT">MANUAL_FULFILLMENT</option>
+                    <option value="DISABLED">DISABLED</option>
+                  </select>
+                </Field>
+              </div>
+              <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
+                Enabling customer purchase makes this product visible only when it is active, visible in store, and available.
+              </p>
               <p className="mt-2 leading-5">
                 Execution remains behind backend environment gates. Product visibility is controlled separately.
               </p>

@@ -168,3 +168,17 @@ export async function getCustomerOrder(token, orderId) {
   const response = await apiRequest(`/me/orders/${orderId}`, { token });
   return normalizeOrder(response.data || {});
 }
+
+export async function revealCustomerOrderDeliveredCodes(token, orderId) {
+  const response = await apiRequest(`/me/orders/${orderId}/delivered-codes`, { token });
+  const data = response.data || {};
+  return {
+    ...data,
+    items: asArray(data.items).map((item) => ({
+      ...item,
+      code: item.code || "",
+      pin: item.pin || "",
+      serial: item.serial || "",
+    })),
+  };
+}

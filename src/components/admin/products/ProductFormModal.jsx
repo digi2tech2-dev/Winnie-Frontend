@@ -372,6 +372,18 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       syncLimits: Boolean(effectiveForm.syncLimitsFromProvider),
       syncName: Boolean(effectiveForm.syncNameFromProvider),
       syncPrice: Boolean(effectiveForm.syncPriceFromProvider),
+      ...(Object.prototype.hasOwnProperty.call(effectiveForm, "customerPurchaseEnabled")
+        ? { customerPurchaseEnabled: Boolean(effectiveForm.customerPurchaseEnabled) }
+        : {}),
+      ...(effectiveForm.providerExecutionMode
+        ? { providerExecutionMode: effectiveForm.providerExecutionMode }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(effectiveForm, "providerExecutionBlocked")
+        ? { providerExecutionBlocked: Boolean(effectiveForm.providerExecutionBlocked) }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(effectiveForm, "providerBlockReason")
+        ? { providerBlockReason: effectiveForm.providerBlockReason || "" }
+        : {}),
       ...(Object.prototype.hasOwnProperty.call(effectiveForm, "providerExecutionEnabled")
         ? { providerExecutionEnabled: Boolean(effectiveForm.providerExecutionEnabled) }
         : {}),
@@ -452,9 +464,13 @@ function buildInitialProductForm(product) {
     providerProductId: safeTrim(product?.providerProductId),
     providerProductExternalId: optionalTrim(product?.providerProductExternalId),
     providerCode: safeTrim(product?.providerCode),
+    customerPurchaseEnabled: product?.customerPurchaseEnabled === undefined ? true : product?.customerPurchaseEnabled === true,
+    providerExecutionMode: product?.providerExecutionMode || "MANUAL_FULFILLMENT",
     ...(Object.prototype.hasOwnProperty.call(product || {}, "providerExecutionEnabled")
       ? { providerExecutionEnabled: product?.providerExecutionEnabled === true }
       : {}),
+    providerExecutionBlocked: product?.providerExecutionBlocked === true,
+    providerBlockReason: product?.providerBlockReason || "",
     supplierPrice: safeTrim(product?.supplierPrice),
     originalPrice: safeTrim(product?.originalPrice),
     finalPrice: safeTrim(product?.finalPrice),
