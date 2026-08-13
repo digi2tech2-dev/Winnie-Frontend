@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Boxes, CloudCog, Plus, RefreshCw, Search, Server } from "lucide-react";
 import {
+  addFazerCardsManualOrderNote,
+  bulkUpdateFazerCardsLaunch,
   checkAdminProviderOrder,
+  completeFazerCardsManualOrder,
   createAdminProvider,
   deleteAdminProvider,
   dryRunFazerCardsProduct,
+  failFazerCardsManualOrder,
   getFazerCardsCatalogFamilies,
   getFazerCardsCatalogSummary,
   getFazerCardsContractsSummary,
+  getFazerCardsLaunchHealth,
+  getFazerCardsManualOrders,
   getFazerCardsProductReadiness,
   getFazerCardsProviderProducts,
   getAdminProviderBalance,
@@ -22,6 +28,7 @@ import {
 } from "../../api/adminProviders";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import FazerCardsImportModal from "../../components/admin/suppliers/FazerCardsImportModal";
+import FazerCardsLaunchOpsPanel from "../../components/admin/suppliers/FazerCardsLaunchOpsPanel";
 import SupplierCard from "../../components/admin/suppliers/SupplierCard";
 import SupplierFormModal from "../../components/admin/suppliers/SupplierFormModal";
 import SupplierProductsModal from "../../components/admin/suppliers/SupplierProductsModal";
@@ -65,6 +72,15 @@ const emptyFazerCatalogState = {
   syncResult: null,
 };
 
+const emptyFazerLaunchOpsState = {
+  bulkResult: null,
+  error: "",
+  health: null,
+  loading: false,
+  manualFilters: { familyKey: "" },
+  manualOrders: [],
+};
+
 function getProviderCode(provider) {
   return String(provider?.providerCode || provider?.code || provider?.provider?.providerCode || "").toUpperCase() || null;
 }
@@ -91,6 +107,7 @@ export default function SuppliersManagementPage() {
   const [providerProductsTotal, setProviderProductsTotal] = useState(0);
   const [productsState, setProductsState] = useState(emptyProductsState);
   const [fazerCatalog, setFazerCatalog] = useState(emptyFazerCatalogState);
+  const [fazerLaunchOps, setFazerLaunchOps] = useState(emptyFazerLaunchOpsState);
   const [fazerImportProduct, setFazerImportProduct] = useState(null);
   const [toolsFor, setToolsFor] = useState(null);
   const [xenaFor, setXenaFor] = useState(null);
@@ -140,6 +157,11 @@ export default function SuppliersManagementPage() {
     { label: "غير النشطين", value: suppliers.filter((supplier) => !supplier.active).length, icon: RefreshCw },
     { label: "منتجات الموردين", value: providerProductsTotal, icon: Boxes },
   ], [providerProductsTotal, suppliers]);
+
+  const fazerCardsSupplier = useMemo(
+    () => suppliers.find((supplier) => isFazerCardsSupplier(supplier)) || null,
+    [suppliers],
+  );
 
   const saveSupplier = async (values) => {
     if (!token || saving) return;
@@ -433,6 +455,135 @@ export default function SuppliersManagementPage() {
     }
   };
 
+  const loadFazerLaunchOps = useCallback(async ({ silent = false, filters = fazerLaunchOps.manualFilters } = {}) => {
+    if (!token) return;
+    if (!silent) setFazerLaunchOps((current) => ({ ...current, error: "", loading: true }));
+
+    const [healthResult, manualResult] = await Promise.allSettled([
+      getFazerCardsLaunchHealth(token),
+      getFazerCardsManualOrders(token, {
+        familyKey: filters.familyKey || undefined,
+        limit: 20,
+        page: 1,
+      }),
+    ]);
+
+    const error = [healthResult, manualResult]
+      .filter((result) => result.status === "rejected")
+      .map((result) => result.reason?.userMessage || result.reason?.message || "Could not load FazerCards launch operations.")
+      .join(" ");
+
+    setFazerLaunchOps((current) => ({
+      ...current,
+      error,
+      health: healthResult.status === "fulfilled" ? healthResult.value.health : current.health,
+      loading: false,
+      manualFilters: filters,
+      manualOrders: manualResult.status === "fulfilled" ? manualResult.value.manualOrders : current.manualOrders,
+    }));
+  }, [fazerLaunchOps.manualFilters, token]);
+
+  const handleFazerManualFilterChange = async (filters) => {
+    setFazerLaunchOps((current) => ({ ...current, manualFilters: filters }));
+    await loadFazerLaunchOps({ filters });
+  };
+
+  const handleFazerBulkLaunch = async (payload) => {
+    if (!token || fazerLaunchOps.loading) return;
+    if (!payload.dryRun && !window.confirm("Apply these FazerCards launch settings? This may make selected products visible to customers.")) return;
+
+    setFazerLaunchOps((current) => ({ ...current, error: "", loading: true }));
+    try {
+      const result = await bulkUpdateFazerCardsLaunch(token, payload);
+      setFazerLaunchOps((current) => ({ ...current, bulkResult: result.result }));
+      showToast({
+        type: result.result.failed ? "warning" : "success",
+        title: payload.dryRun ? "Launch preview ready" : "Launch settings updated",
+        message: `${result.result.updated || result.result.wouldUpdate || 0} ok, ${result.result.failed || 0} failed.`,
+      });
+      await loadFazerLaunchOps({ silent: true });
+      if (productsState.supplier && isFazerCardsSupplier(productsState.supplier)) {
+        await loadProviderProducts(productsState.supplier, {
+          filters: productsState.filters,
+          page: productsState.page,
+          search: productsState.search,
+        });
+      }
+    } catch (error) {
+      setFazerLaunchOps((current) => ({ ...current, error: error.userMessage || "Could not update FazerCards launch settings." }));
+      showToast({ type: "error", title: "Launch update failed", message: error.userMessage || "Could not update FazerCards launch settings." });
+    } finally {
+      setFazerLaunchOps((current) => ({ ...current, loading: false }));
+    }
+  };
+
+  const handleCompleteManualOrder = async (order) => {
+    if (!token || !order?.id) return;
+    const note = window.prompt("Completion note", "Manual fulfillment completed.");
+    if (note === null) return;
+    let deliveredCodes = [];
+    if (order.fulfillmentMode === "CODE_DELIVERY") {
+      const raw = window.prompt("Delivered codes JSON array. Codes are stored encrypted and will not be shown in lists.", "[{\"code\":\"\",\"pin\":\"\",\"serial\":\"\"}]");
+      if (raw === null) return;
+      try {
+        deliveredCodes = JSON.parse(raw || "[]");
+      } catch {
+        showToast({ type: "error", title: "Invalid JSON", message: "Delivered codes must be a JSON array." });
+        return;
+      }
+    }
+
+    setFazerLaunchOps((current) => ({ ...current, loading: true }));
+    try {
+      await completeFazerCardsManualOrder(token, order.id, { adminNote: note, deliveredCodes });
+      showToast({ type: "success", title: "Manual order completed", message: "The order was marked completed." });
+      await loadFazerLaunchOps({ silent: true });
+    } catch (error) {
+      showToast({ type: "error", title: "Complete failed", message: error.userMessage || "Could not complete manual order." });
+    } finally {
+      setFazerLaunchOps((current) => ({ ...current, loading: false }));
+    }
+  };
+
+  const handleFailManualOrder = async (order) => {
+    if (!token || !order?.id) return;
+    const reason = window.prompt("Failure reason", "Could not fulfill manually.");
+    if (!reason) return;
+    const refund = window.confirm("Refund this order if it has been debited? Refund is idempotent.");
+
+    setFazerLaunchOps((current) => ({ ...current, loading: true }));
+    try {
+      const result = await failFazerCardsManualOrder(token, order.id, { reason, refund });
+      showToast({
+        type: "warning",
+        title: "Manual order failed",
+        message: result.result.refunded ? "Order failed and refund was processed once." : "Order failed without refund.",
+      });
+      await loadFazerLaunchOps({ silent: true });
+    } catch (error) {
+      showToast({ type: "error", title: "Fail failed", message: error.userMessage || "Could not fail manual order." });
+    } finally {
+      setFazerLaunchOps((current) => ({ ...current, loading: false }));
+    }
+  };
+
+  const handleNoteManualOrder = async (order) => {
+    if (!token || !order?.id) return;
+    const adminNote = window.prompt("Internal note", "");
+    if (!adminNote) return;
+
+    setFazerLaunchOps((current) => ({ ...current, loading: true }));
+    try {
+      await addFazerCardsManualOrderNote(token, order.id, { adminNote });
+      showToast({ type: "success", title: "Note added", message: "Internal note saved." });
+      await loadFazerLaunchOps({ silent: true });
+    } catch (error) {
+      showToast({ type: "error", title: "Note failed", message: error.userMessage || "Could not add note." });
+    } finally {
+      setFazerLaunchOps((current) => ({ ...current, loading: false }));
+    }
+  };
+
   const handleFazerCardsReadiness = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) {
@@ -555,6 +706,23 @@ export default function SuppliersManagementPage() {
             products={globalSearch.products}
             searched={globalSearch.searched}
           />
+
+          {fazerCardsSupplier && (
+            <FazerCardsLaunchOpsPanel
+              bulkResult={fazerLaunchOps.bulkResult}
+              error={fazerLaunchOps.error}
+              filters={fazerLaunchOps.manualFilters}
+              health={fazerLaunchOps.health}
+              loading={fazerLaunchOps.loading}
+              manualOrders={fazerLaunchOps.manualOrders}
+              onBulkLaunch={handleFazerBulkLaunch}
+              onCompleteManual={handleCompleteManualOrder}
+              onFailManual={handleFailManualOrder}
+              onLoad={loadFazerLaunchOps}
+              onManualFilterChange={handleFazerManualFilterChange}
+              onNoteManual={handleNoteManualOrder}
+            />
+          )}
 
           {suppliers.length ? (
             <div className="admin-suppliers-list grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

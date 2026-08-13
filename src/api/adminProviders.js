@@ -690,6 +690,125 @@ export async function syncFazerCardsCatalogAll(token, payload = {}) {
   };
 }
 
+export async function getFazerCardsCatalogSyncStatus(token) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/sync-status", { token });
+  return {
+    message: response.message,
+    status: response.data || {},
+  };
+}
+
+export async function getFazerCardsLaunchHealth(token) {
+  const response = await apiRequest("/admin/providers/fazercards/launch-health", { token });
+  return {
+    health: response.data || {},
+    message: response.message,
+  };
+}
+
+export async function getFazerCardsManualOrders(token, query = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/orders/manual", {
+    query: compactObject({
+      familyKey: query.familyKey,
+      fulfillmentMode: query.fulfillmentMode,
+      from: query.from,
+      limit: query.limit || 20,
+      page: query.page || 1,
+      productId: query.productId,
+      status: query.status,
+      to: query.to,
+      userId: query.userId,
+    }),
+    token,
+  });
+
+  return {
+    manualOrders: asArray(response.data),
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page || 1,
+      limit: query.limit || 20,
+      total: asArray(response.data).length,
+    }),
+  };
+}
+
+export async function getFazerCardsManualOrder(token, orderId) {
+  const response = await apiRequest(`/admin/providers/fazercards/orders/${encodeURIComponent(orderId)}/manual`, { token });
+  return {
+    message: response.message,
+    order: response.data?.order || response.data || {},
+  };
+}
+
+export async function completeFazerCardsManualOrder(token, orderId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/fazercards/orders/${encodeURIComponent(orderId)}/manual/complete`, {
+    body: compactObject({
+      adminNote: payload.adminNote,
+      proof: payload.proof,
+      deliveredCodes: payload.deliveredCodes,
+    }),
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function failFazerCardsManualOrder(token, orderId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/fazercards/orders/${encodeURIComponent(orderId)}/manual/fail`, {
+    body: compactObject({
+      reason: payload.reason,
+      refund: payload.refund,
+    }),
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function addFazerCardsManualOrderNote(token, orderId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/fazercards/orders/${encodeURIComponent(orderId)}/manual/note`, {
+    body: compactObject({
+      adminNote: payload.adminNote,
+      proof: payload.proof,
+    }),
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function bulkUpdateFazerCardsLaunch(token, payload = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/products/bulk-update-launch", {
+    body: compactObject({
+      customerPurchaseEnabled: payload.customerPurchaseEnabled,
+      dryRun: payload.dryRun,
+      isActive: payload.isActive,
+      productIds: payload.productIds,
+      providerBlockReason: payload.providerBlockReason,
+      providerExecutionBlocked: payload.providerExecutionBlocked,
+      providerExecutionMode: payload.providerExecutionMode,
+      status: payload.status,
+      visibleInStore: payload.visibleInStore,
+    }),
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
 export async function getFazerCardsProductReadiness(token, productId) {
   const response = await apiRequest(`/admin/providers/fazercards/products/${productId}/readiness`, { token });
   return {

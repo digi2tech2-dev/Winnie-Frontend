@@ -138,6 +138,11 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
             {order.rejectionReason}
           </p>
         )}
+        {order.customerStatusMessage && (
+          <p className="mt-5 rounded-2xl border border-sky-400/25 bg-sky-400/12 px-4 py-3 text-sm font-bold text-sky-700 dark:text-sky-200">
+            {order.customerStatusMessage}
+          </p>
+        )}
         {Object.keys(customerValues).length > 0 && (
           <div className="mt-8">
             <h2 className="text-xl font-black">{t("details.submittedDetails")}</h2>
