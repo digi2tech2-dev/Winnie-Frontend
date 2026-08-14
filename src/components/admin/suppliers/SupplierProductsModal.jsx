@@ -54,13 +54,16 @@ export default function SupplierProductsModal({
 
   const syncBusy = actionKey === `${supplier?.id}:sync`;
   const syncAllBusy = actionKey === `${supplier?.id}:sync-all`;
-  const activeFamily = filters.familyKey || "";
+  const activeFamily = String(filters.familyKey || "").toUpperCase();
   const familySummary = fazerCardsCatalog.summary?.byFamily || {};
   const contractSummary = fazerCardsCatalog.contractsSummary?.families || {};
   const familyList = fazerCardsCatalog.families?.length ? fazerCardsCatalog.families : FAZERCARDS_FAMILY_TABS;
   const syncResult = fazerCardsCatalog.syncResult;
   const steamGiftsWarning = familyList.find((family) => family.familyKey === "STEAM_GIFTS")?.warning
     || "STEAM_GIFTS catalog endpoint returned 404 in production and is currently unavailable.";
+  const visibleProducts = fazerCards && activeFamily
+    ? products.filter((product) => String(product?.familyKey || "").toUpperCase() === activeFamily)
+    : products;
 
   const updateFilter = (patch) => onFilterChange?.({ ...filters, ...patch });
   const copyProductId = async (productId) => {
@@ -271,8 +274,8 @@ export default function SupplierProductsModal({
 
           {loading ? (
             <p className="py-8 text-center text-xs font-black text-slate-400">Loading supplier products...</p>
-          ) : products.length ? (
-            products.map((product) => {
+          ) : visibleProducts.length ? (
+            visibleProducts.map((product) => {
               const contract = contractSummary[product.familyKey] || {};
               const firstBlocker = contract.blockers?.[0] || "";
               const imported = product.importedProduct || null;

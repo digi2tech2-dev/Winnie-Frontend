@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Boxes, CloudCog, Plus, RefreshCw, Search, Server } from "lucide-react";
 import {
   addFazerCardsManualOrderNote,
@@ -112,6 +112,7 @@ export default function SuppliersManagementPage() {
   const [fazerImportProduct, setFazerImportProduct] = useState(null);
   const [toolsFor, setToolsFor] = useState(null);
   const [xenaFor, setXenaFor] = useState(null);
+  const providerProductsRequestRef = useRef(0);
   const [globalSearch, setGlobalSearch] = useState({
     error: "",
     loading: false,
@@ -288,6 +289,8 @@ export default function SuppliersManagementPage() {
     const effectiveFilters = fazerCards
       ? { ...defaultFazerCardsFilters, ...(filters || productsState.filters || {}) }
       : {};
+    const requestId = providerProductsRequestRef.current + 1;
+    providerProductsRequestRef.current = requestId;
 
     setProductsState((current) => ({
       ...current,
@@ -295,6 +298,7 @@ export default function SuppliersManagementPage() {
       filters: effectiveFilters,
       loading: true,
       page,
+      products: fazerCards ? [] : current.products,
       search,
       supplier,
     }));
@@ -315,6 +319,7 @@ export default function SuppliersManagementPage() {
             page,
             search,
           });
+      if (providerProductsRequestRef.current !== requestId) return;
       setProductsState({
         error: "",
         filters: effectiveFilters,
@@ -326,6 +331,7 @@ export default function SuppliersManagementPage() {
         supplier,
       });
     } catch (error) {
+      if (providerProductsRequestRef.current !== requestId) return;
       setProductsState((current) => ({
         ...current,
         error: error.userMessage || "تعذر تحميل منتجات المورد.",
@@ -364,10 +370,28 @@ export default function SuppliersManagementPage() {
   };
 
   const updateFazerCardsFilters = (filters) => {
+    const supplier = productsState.supplier;
+    if (!token || !supplier || !isFazerCardsSupplier(supplier)) return;
+    const nextFilters = { ...defaultFazerCardsFilters, ...filters };
     setProductsState((current) => ({
       ...current,
-      filters: { ...defaultFazerCardsFilters, ...filters },
+      error: "",
+      filters: nextFilters,
+      loading: true,
+      page: 1,
+      pagination: { ...current.pagination, page: 1 },
+      products: [],
     }));
+    void loadProviderProducts(supplier, {
+      filters: nextFilters,
+      page: 1,
+      search: productsState.search,
+    });
+  };
+
+  const closeProviderProductsModal = () => {
+    providerProductsRequestRef.current += 1;
+    setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } });
   };
 
   const runFazerCardsSyncFamily = async (familyKey = "TOPUPS") => {
@@ -828,7 +852,7 @@ export default function SuppliersManagementPage() {
           fazerCards={isFazerCardsSupplier(productsState.supplier)}
           filters={productsState.filters}
           loading={productsState.loading}
-          onClose={() => setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } })}
+          onClose={closeProviderProductsModal}
           onFilterChange={updateFazerCardsFilters}
           onFazerCardsDisable={handleFazerProductDisable}
           onFazerCardsDryRun={handleFazerCardsDryRun}

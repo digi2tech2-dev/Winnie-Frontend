@@ -580,6 +580,7 @@ export async function getAdminProviderProducts(token, providerId, query = {}) {
 }
 
 export async function getFazerCardsProviderProducts(token, query = {}) {
+  const familyKey = query.familyKey ? String(query.familyKey).trim().toUpperCase() : "";
   const response = await apiRequest("/admin/providers/fazercards/provider-products", {
     query: compactObject({
       page: query.page || 1,
@@ -590,7 +591,7 @@ export async function getFazerCardsProviderProducts(token, query = {}) {
       blocked: query.blocked,
       imported: query.imported,
       fulfillmentMode: query.fulfillmentMode,
-      familyKey: query.familyKey,
+      familyKey: familyKey === "ALL" ? "" : familyKey,
       supportLevel: query.supportLevel,
       blockReason: query.blockReason,
     }),
