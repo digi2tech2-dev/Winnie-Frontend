@@ -182,6 +182,37 @@ function mapStatusToIsActive(value) {
   return undefined;
 }
 
+function normalizeCustomerVisibilityStatus(product = {}, fallback = {}) {
+  const source = product.customerVisibilityStatus && typeof product.customerVisibilityStatus === "object"
+    ? product.customerVisibilityStatus
+    : null;
+
+  if (source) {
+    return {
+      visibleToCustomer: source.visibleToCustomer === true,
+      reasons: asArray(source.reasons).map((reason) => String(reason || "").trim()).filter(Boolean),
+    };
+  }
+
+  const status = normalizeStatusValue(fallback.status ?? product.status);
+  const providerCode = safeTrim(product.providerCode || product.provider?.providerCode || product.provider?.code || product.provider?.slug)
+    .toUpperCase()
+    .replace(/-/g, "_");
+  const isFazerCards = providerCode === "FAZER_CARDS" || providerCode === "FAZERCARDS";
+  const reasons = [];
+  if (fallback.isActive !== true) reasons.push("isActive=false");
+  if (fallback.visibleInStore === false) reasons.push("visibleInStore=false");
+  if (isFazerCards && status !== "available") reasons.push(`status=${status || "missing"}`);
+  if (isFazerCards && fallback.customerPurchaseEnabled !== true) reasons.push("customerPurchaseEnabled=false");
+  if (fallback.isPaused === true) reasons.push("isPaused=true");
+  if (fallback.isAvailableForApi === false) reasons.push("isAvailableForApi=false");
+
+  return {
+    visibleToCustomer: reasons.length === 0,
+    reasons,
+  };
+}
+
 function normalizeExtraFields(fields = []) {
   return asArray(fields)
     .map((field, index) => {
@@ -318,14 +349,10 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
   const visibleInStore = product.visibleInStore !== false;
   const backendIsPaused = product.isPaused === true || product.paused === true;
   const backendStatus = String(product.status || "").toLowerCase();
-  const savedAvailabilityPreferences = getProductAvailabilityPreferences(id);
-  const savedStatus = normalizeStatusValue(savedAvailabilityPreferences.status);
-  const productStatus = !isActive || backendStatus === "unavailable" || savedStatus === "unavailable"
+  const productStatus = !isActive || backendStatus === "unavailable"
     ? "unavailable"
     : "available";
-  const isPaused = ["available", "unavailable"].includes(savedStatus)
-    ? Boolean(savedAvailabilityPreferences.paused)
-    : backendIsPaused;
+  const isPaused = backendIsPaused;
   const priceValue = toDecimalString(firstNonEmpty(product.finalPrice, product.basePrice, product.price, 0));
   const provider = product.provider && typeof product.provider === "object" ? product.provider : null;
   const providerProduct = product.providerProduct && typeof product.providerProduct === "object" ? product.providerProduct : null;
@@ -394,6 +421,15 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
   const providerStock = firstNonEmpty(product.providerStock, providerProduct?.stock);
   const providerBlockReason = safeTrim(product.providerBlockReason || providerProduct?.blockReason);
   const providerExecutionBlocked = firstBoolean(product.providerExecutionBlocked, providerProduct?.executionBlocked);
+  const customerPurchaseEnabled = product.customerPurchaseEnabled === undefined ? true : product.customerPurchaseEnabled === true;
+  const customerVisibilityStatus = normalizeCustomerVisibilityStatus(product, {
+    customerPurchaseEnabled,
+    isActive,
+    isAvailableForApi: product.isAvailableForApi,
+    isPaused,
+    status: productStatus,
+    visibleInStore,
+  });
 
   return {
     ...product,
@@ -424,7 +460,10 @@ export function normalizeAdminProduct(product = {}, index = 0, categoryLookup = 
     paused: isPaused,
     providerId: toId(product.provider) || toId(product.providerId),
     providerCode: safeTrim(product.providerCode || provider?.providerCode || provider?.code || provider?.slug),
-    customerPurchaseEnabled: product.customerPurchaseEnabled === undefined ? true : product.customerPurchaseEnabled === true,
+    customerPurchaseEnabled,
+    customerVisibilityStatus,
+    visibleToCustomer: customerVisibilityStatus.visibleToCustomer,
+    visibilityReasons: customerVisibilityStatus.reasons,
     providerExecutionEnabled: product.providerExecutionEnabled === undefined ? undefined : product.providerExecutionEnabled === true,
     providerExecutionMode: product.providerExecutionMode || "MANUAL_FULFILLMENT",
     providerExecutionBlocked: providerExecutionBlocked === undefined ? false : providerExecutionBlocked === true,
@@ -556,6 +595,8 @@ export function buildAdminProductPayload(form = {}, options = {}) {
     providerExecutionMode: form.providerExecutionMode || undefined,
     providerExecutionBlocked: hasOwn(form, "providerExecutionBlocked") ? Boolean(form.providerExecutionBlocked) : undefined,
     providerBlockReason: hasOwn(form, "providerBlockReason") ? optionalTrim(form.providerBlockReason) : undefined,
+    familyKey: hasOwn(form, "familyKey") ? optionalTrim(form.familyKey) : undefined,
+    fulfillmentMode: hasOwn(form, "fulfillmentMode") ? optionalTrim(form.fulfillmentMode) : undefined,
     isActive,
     visibleInStore: includeVisibility ? visibleInStore : undefined,
     isPaused: includePaused ? isPaused : undefined,

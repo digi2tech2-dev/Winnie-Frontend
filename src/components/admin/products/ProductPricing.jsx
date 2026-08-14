@@ -38,6 +38,9 @@ export default function ProductPricing({
   const providerProductCount = providerLink.pagination?.total ?? providerLink.providerProducts.length;
   const productId = safeTrim(value.id || value._id);
   const providerMeta = getFazerCardsProviderMeta(value, selectedProduct);
+  const visibilityStatus = value.customerVisibilityStatus || {};
+  const visibleToCustomer = value.visibleToCustomer === true || visibilityStatus.visibleToCustomer === true;
+  const visibilityReasons = value.visibilityReasons || visibilityStatus.reasons || [];
   const [providerTool, setProviderTool] = useState({
     busy: "",
     dryRun: null,
@@ -290,7 +293,13 @@ export default function ProductPricing({
                 <SummaryItem label="Region" value={providerMeta.region || "-"} />
                 <SummaryItem label="Platform" value={providerMeta.platform || "-"} />
                 <SummaryItem label="Block reason" value={providerMeta.blockReason || "-"} />
+                <SummaryItem label="Customer visibility" value={visibleToCustomer ? "Visible to customers" : "Not visible to customers"} />
               </div>
+              {!visibleToCustomer && visibilityReasons.length > 0 && (
+                <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
+                  Missing launch gates: {visibilityReasons.join(", ")}
+                </p>
+              )}
               <CheckboxField
                 checked={Boolean(value.providerExecutionEnabled)}
                 disabled={Boolean(value.providerExecutionBlocked)}

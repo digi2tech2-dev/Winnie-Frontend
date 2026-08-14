@@ -176,13 +176,7 @@ export function normalizeAdminProviderProduct(product = {}, index = 0) {
     familyKey: product.familyKey || "",
     fulfillmentMode: product.fulfillmentMode || "",
     imported: Boolean(product.imported),
-    importedProduct: importedProduct ? {
-      id: toId(importedProduct.id || importedProduct._id),
-      isActive: importedProduct.isActive !== false,
-      name: importedProduct.name || "",
-      status: importedProduct.status || "",
-      visibleInStore: importedProduct.visibleInStore !== false,
-    } : null,
+    importedProduct: normalizeImportedLaunchProduct(importedProduct),
     isActive: active,
     isBlocked: Boolean(product.isBlocked),
     isSupported: Boolean(product.isSupported),
@@ -268,6 +262,46 @@ export function normalizeProviderSyncResult(data = {}) {
     totalFetched: toNumber(data.totalFetched, 0),
     updated: toNumber(data.updated, 0),
     upserted: toNumber(data.upserted, 0),
+  };
+}
+
+function normalizeImportedLaunchProduct(importedProduct) {
+  if (!importedProduct) return null;
+  const id = toId(importedProduct.id || importedProduct._id);
+  const visibility = importedProduct.customerVisibilityStatus && typeof importedProduct.customerVisibilityStatus === "object"
+    ? importedProduct.customerVisibilityStatus
+    : {};
+  const reasons = asArray(importedProduct.visibilityReasons || visibility.reasons)
+    .map((reason) => String(reason || "").trim())
+    .filter(Boolean);
+  const isActive = importedProduct.isActive !== false;
+  const visibleInStore = importedProduct.visibleInStore !== false;
+  const status = importedProduct.status || "";
+  const customerPurchaseEnabled = importedProduct.customerPurchaseEnabled === true;
+  const visibleToCustomer = importedProduct.visibleToCustomer === true
+    || visibility.visibleToCustomer === true
+    || (isActive && visibleInStore && status === "available" && customerPurchaseEnabled && reasons.length === 0);
+
+  return {
+    id,
+    _id: importedProduct._id ?? id,
+    customerPurchaseEnabled,
+    customerVisibilityStatus: {
+      visibleToCustomer,
+      reasons,
+    },
+    familyKey: importedProduct.familyKey || "",
+    fulfillmentMode: importedProduct.fulfillmentMode || "",
+    isActive,
+    name: importedProduct.name || "",
+    providerBlockReason: importedProduct.providerBlockReason || "",
+    providerExecutionBlocked: importedProduct.providerExecutionBlocked === true,
+    providerExecutionEnabled: importedProduct.providerExecutionEnabled === true,
+    providerExecutionMode: importedProduct.providerExecutionMode || "",
+    status,
+    visibleInStore,
+    visibleToCustomer,
+    visibilityReasons: reasons,
   };
 }
 
@@ -794,6 +828,26 @@ export async function bulkUpdateFazerCardsLaunch(token, payload = {}) {
       dryRun: payload.dryRun,
       isActive: payload.isActive,
       productIds: payload.productIds,
+      providerBlockReason: payload.providerBlockReason,
+      providerExecutionBlocked: payload.providerExecutionBlocked,
+      providerExecutionMode: payload.providerExecutionMode,
+      status: payload.status,
+      visibleInStore: payload.visibleInStore,
+    }),
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function launchFazerCardsProduct(token, productId, payload = {}) {
+  const response = await apiRequest(`/admin/providers/fazercards/products/${encodeURIComponent(productId)}/launch`, {
+    body: compactObject({
+      customerPurchaseEnabled: payload.customerPurchaseEnabled,
+      isActive: payload.isActive,
       providerBlockReason: payload.providerBlockReason,
       providerExecutionBlocked: payload.providerExecutionBlocked,
       providerExecutionMode: payload.providerExecutionMode,

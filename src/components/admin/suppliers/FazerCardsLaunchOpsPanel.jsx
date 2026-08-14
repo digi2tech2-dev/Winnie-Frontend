@@ -134,6 +134,9 @@ export default function FazerCardsLaunchOpsPanel({
             placeholder="Paste imported Winnie Product IDs, one per line or comma-separated"
             className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-white p-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
           />
+          <p className="mt-1 text-[9px] font-bold text-slate-400">
+            Use Winnie Product IDs from imported products, not supplier ProviderProduct IDs.
+          </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <select
               value={mode}
@@ -165,9 +168,12 @@ export default function FazerCardsLaunchOpsPanel({
             <div className="mt-2 max-h-28 overflow-auto rounded-xl border border-slate-200 bg-white p-2 text-[9px] font-bold text-slate-500 dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
               <p>{bulkResult.dryRun ? "Dry-run" : "Applied"}: {bulkResult.updated || bulkResult.wouldUpdate || 0} ok, {bulkResult.failed || 0} failed.</p>
               {(bulkResult.results || []).slice(0, 8).map((item) => (
-                <p key={item.productId} dir="ltr" className={item.ok ? "text-emerald-600" : "text-rose-600"}>
-                  {item.productId}: {item.ok ? item.requestedMode : (item.errors || []).map((error) => error.code).join(", ")}
-                </p>
+                <div key={item.productId} dir="ltr" className={item.ok ? "text-emerald-600" : "text-rose-600"}>
+                  <p>{item.productId}: {item.ok ? `${item.requestedMode} | visible=${String(Boolean(item.visibleToCustomer))}` : (item.errors || []).map((error) => error.code).join(", ")}</p>
+                  {item.ok && Array.isArray(item.visibilityReasons) && item.visibilityReasons.length > 0 && (
+                    <p className="text-amber-600 dark:text-amber-200">Reasons: {item.visibilityReasons.join(", ")}</p>
+                  )}
+                </div>
               ))}
             </div>
           )}

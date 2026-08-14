@@ -19,6 +19,7 @@ import {
   getAdminProviderBalance,
   getAdminProviderProducts,
   getAdminProviders,
+  launchFazerCardsProduct,
   syncFazerCardsCatalogAll,
   syncFazerCardsCatalogFamily,
   syncAdminProviderProducts,
@@ -517,6 +518,74 @@ export default function SuppliersManagementPage() {
     }
   };
 
+  const refreshFazerLaunchSurfaces = async () => {
+    await loadFazerLaunchOps({ silent: true });
+    if (productsState.supplier && isFazerCardsSupplier(productsState.supplier)) {
+      await loadProviderProducts(productsState.supplier, {
+        filters: productsState.filters,
+        page: productsState.page,
+        search: productsState.search,
+      });
+    }
+  };
+
+  const handleFazerProductLaunchManual = async (providerProduct) => {
+    const importedProductId = providerProduct?.importedProduct?.id;
+    if (!token || !importedProductId || actionKey) return;
+    if (!window.confirm("Launch this imported Winnie Product for customer purchase using manual fulfillment?")) return;
+
+    setActionKey(`${providerProduct.id}:launch-manual`);
+    try {
+      const result = await launchFazerCardsProduct(token, importedProductId, {
+        customerPurchaseEnabled: true,
+        isActive: true,
+        visibleInStore: true,
+        status: "available",
+        providerExecutionMode: "MANUAL_FULFILLMENT",
+      });
+      const launchStatus = result.result?.launchStatus || result.result?.result?.customerVisibilityStatus || {};
+      showToast({
+        type: launchStatus.visibleToCustomer === true ? "success" : "warning",
+        title: "Launch settings updated",
+        message: launchStatus.visibleToCustomer === true
+          ? "Product is now visible to customers."
+          : `Product saved, but not visible: ${(launchStatus.reasons || []).join(", ") || "check launch status."}`,
+      });
+      await refreshFazerLaunchSurfaces();
+    } catch (error) {
+      showToast({ type: "error", title: "Launch failed", message: error.userMessage || "Could not launch this FazerCards product." });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleFazerProductDisable = async (providerProduct) => {
+    const importedProductId = providerProduct?.importedProduct?.id;
+    if (!token || !importedProductId || actionKey) return;
+    if (!window.confirm("Disable this imported Winnie Product and hide it from customers?")) return;
+
+    const providerExecutionMode = providerProduct.familyKey === "STEAM_GIFTS"
+      ? "DISABLED"
+      : "MANUAL_FULFILLMENT";
+
+    setActionKey(`${providerProduct.id}:disable`);
+    try {
+      await launchFazerCardsProduct(token, importedProductId, {
+        customerPurchaseEnabled: false,
+        isActive: false,
+        visibleInStore: false,
+        status: "unavailable",
+        providerExecutionMode,
+      });
+      showToast({ type: "success", title: "Product disabled", message: "Product is hidden from customers." });
+      await refreshFazerLaunchSurfaces();
+    } catch (error) {
+      showToast({ type: "error", title: "Disable failed", message: error.userMessage || "Could not disable this FazerCards product." });
+    } finally {
+      setActionKey("");
+    }
+  };
+
   const handleCompleteManualOrder = async (order) => {
     if (!token || !order?.id) return;
     const note = window.prompt("Completion note", "Manual fulfillment completed.");
@@ -761,7 +830,9 @@ export default function SuppliersManagementPage() {
           loading={productsState.loading}
           onClose={() => setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } })}
           onFilterChange={updateFazerCardsFilters}
+          onFazerCardsDisable={handleFazerProductDisable}
           onFazerCardsDryRun={handleFazerCardsDryRun}
+          onFazerCardsLaunchManual={handleFazerProductLaunchManual}
           onFazerCardsReadiness={handleFazerCardsReadiness}
           onFazerCardsSyncAll={runFazerCardsSyncAll}
           onFazerCardsSyncFamily={runFazerCardsSyncFamily}

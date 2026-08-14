@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, Boxes, ChevronLeft, ChevronRight, Download, Eye, FlaskConical, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, Boxes, ChevronLeft, ChevronRight, Copy, Download, Eye, FlaskConical, Power, RefreshCw, Rocket, Search, ShieldCheck, X } from "lucide-react";
 import ConnectionStatusBadge from "./ConnectionStatusBadge";
 
 const FAZERCARDS_FAMILY_TABS = [
@@ -33,6 +33,8 @@ export default function SupplierProductsModal({
   onClose,
   onFilterChange,
   onFazerCardsDryRun,
+  onFazerCardsDisable,
+  onFazerCardsLaunchManual,
   onFazerCardsReadiness,
   onFazerCardsSyncAll,
   onFazerCardsSyncFamily,
@@ -46,6 +48,7 @@ export default function SupplierProductsModal({
   fazerCardsCatalog = {},
 }) {
   const [query, setQuery] = useState("");
+  const [copiedId, setCopiedId] = useState("");
 
   if (!supplier) return null;
 
@@ -60,6 +63,16 @@ export default function SupplierProductsModal({
     || "STEAM_GIFTS catalog endpoint returned 404 in production and is currently unavailable.";
 
   const updateFilter = (patch) => onFilterChange?.({ ...filters, ...patch });
+  const copyProductId = async (productId) => {
+    if (!productId) return;
+    try {
+      await navigator.clipboard?.writeText(productId);
+      setCopiedId(productId);
+      window.setTimeout(() => setCopiedId(""), 1600);
+    } catch {
+      setCopiedId("");
+    }
+  };
 
   return createPortal(
     <div
@@ -262,6 +275,9 @@ export default function SupplierProductsModal({
             products.map((product) => {
               const contract = contractSummary[product.familyKey] || {};
               const firstBlocker = contract.blockers?.[0] || "";
+              const imported = product.importedProduct || null;
+              const visibleToCustomer = imported?.visibleToCustomer === true;
+              const visibilityReasons = imported?.visibilityReasons || imported?.customerVisibilityStatus?.reasons || [];
               return (
               <article key={product.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220] sm:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
@@ -295,6 +311,36 @@ export default function SupplierProductsModal({
                         {product.imported ? "Imported" : "Not imported"}
                       </span>
                       {firstBlocker && <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{firstBlocker}</span>}
+                    </div>
+                  )}
+                  {fazerCards && imported && (
+                    <div className="mt-2 rounded-xl border border-slate-200 bg-white p-2 text-[9px] font-bold text-slate-500 dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span dir="ltr" className="rounded bg-slate-100 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">Winnie Product ID: {imported.id}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyProductId(imported.id)}
+                          className="inline-flex h-6 items-center gap-1 rounded-lg border border-slate-200 px-2 text-[8px] font-black text-slate-600 dark:border-white/10 dark:text-slate-300"
+                        >
+                          <Copy className="h-3 w-3" />
+                          {copiedId === imported.id ? "Copied" : "Copy Product ID"}
+                        </button>
+                        <span className={`rounded-full px-2 py-1 ${visibleToCustomer ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200" : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"}`}>
+                          {visibleToCustomer ? "Visible to customers" : "Not visible to customers"}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        <span className={imported.isActive ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>active={String(Boolean(imported.isActive))}</span>
+                        <span className={imported.visibleInStore ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>visibleInStore={String(Boolean(imported.visibleInStore))}</span>
+                        <span>status={imported.status || "-"}</span>
+                        <span className={imported.customerPurchaseEnabled ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>customerPurchaseEnabled={String(Boolean(imported.customerPurchaseEnabled))}</span>
+                        <span>mode={imported.providerExecutionMode || "-"}</span>
+                      </div>
+                      {!visibleToCustomer && visibilityReasons.length > 0 && (
+                        <p className="mt-1 text-[8px] font-black text-amber-600 dark:text-amber-200">
+                          {visibilityReasons.join(", ")}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -338,6 +384,24 @@ export default function SupplierProductsModal({
                       >
                         <FlaskConical className="h-3.5 w-3.5" />
                         Dry-run
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading || !product.importedProduct?.id || actionKey === `${product.id}:launch-manual`}
+                        onClick={() => onFazerCardsLaunchManual?.(product)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
+                      >
+                        <Rocket className="h-3.5 w-3.5" />
+                        Launch Manual
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading || !product.importedProduct?.id || actionKey === `${product.id}:disable`}
+                        onClick={() => onFazerCardsDisable?.(product)}
+                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-rose-200 px-3 text-[9px] font-black text-rose-700 disabled:opacity-50 dark:border-rose-400/20 dark:text-rose-200"
+                      >
+                        <Power className="h-3.5 w-3.5" />
+                        Disable
                       </button>
                     </div>
                   )}

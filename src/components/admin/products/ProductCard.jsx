@@ -41,7 +41,12 @@ export default function ProductCard({ actionBusy = false, mainCategory, onDelete
       <td className="px-4 py-3 text-xs font-bold text-slate-300">{mainCategory?.name || "غير محدد"}</td>
       <td dir="ltr" className="whitespace-nowrap px-4 py-3 text-right text-xs font-black text-emerald-400">{formatUsdPrice(product.finalPrice)}</td>
       <td className="px-4 py-3"><OrderLimits product={product} /></td>
-      <td className="px-4 py-3"><ProductStatus status={displayStatus} /></td>
+      <td className="px-4 py-3">
+        <div className="space-y-1">
+          <ProductStatus status={displayStatus} />
+          <CustomerVisibilityBadge product={product} />
+        </div>
+      </td>
       <td className="px-4 py-3"><ProductActions actionBusy={actionBusy} product={product} onDelete={onDelete} onEdit={onEdit} onProviderLink={onProviderLink} onProviderSync={onProviderSync} onTogglePause={onTogglePause} /></td>
     </tr>
   );
@@ -57,7 +62,10 @@ export function ProductMobileCard({ actionBusy = false, mainCategory, onDelete, 
           <p className="truncate text-[10px] font-black leading-4 text-slate-100">{product.nameAr}</p>
           <p className="truncate text-[7px] font-bold leading-3 text-slate-500">{product.nameEn || "منتج يدوي"}</p>
         </div>
-        <ProductStatus status={displayStatus} compact />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <ProductStatus status={displayStatus} compact />
+          <CustomerVisibilityBadge compact product={product} />
+        </div>
       </div>
       <div className="grid grid-cols-[minmax(0,0.72fr)_minmax(128px,1.28fr)] gap-1">
         <MobileMeta label="القسم الرئيسي" value={mainCategory?.name || "غير محدد"} />
@@ -147,6 +155,23 @@ function ProductStatus({ compact = false, status }) {
   const labels = { available: "نشط", unavailable: "غير متوفر", paused: "موقوف" };
   const tone = status === "available" ? "bg-emerald-500/15 text-emerald-400" : status === "paused" ? "bg-amber-500/15 text-amber-400" : "bg-rose-500/15 text-rose-400";
   return <span className={`inline-flex justify-center rounded-full font-black ${compact ? "min-w-[44px] px-1.5 py-1 text-[7px]" : "min-w-[58px] px-3 py-1.5 text-[10px]"} ${tone}`}>{labels[status] || status}</span>;
+}
+
+function CustomerVisibilityBadge({ compact = false, product }) {
+  const status = product.customerVisibilityStatus || {};
+  const visible = product.visibleToCustomer === true || status.visibleToCustomer === true;
+  const reasons = product.visibilityReasons || status.reasons || [];
+  const label = visible ? "Visible to customers" : "Not visible to customers";
+  const tone = visible ? "bg-emerald-500/10 text-emerald-300" : "bg-amber-500/10 text-amber-300";
+
+  return (
+    <span
+      title={visible ? label : reasons.join(", ") || label}
+      className={`inline-flex max-w-full justify-center rounded-full font-black ${compact ? "px-1.5 py-0.5 text-[6px]" : "px-2 py-1 text-[8px]"} ${tone}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 function ProductActions({ actionBusy, compact = false, onDelete, onEdit, onProviderLink, onProviderSync, onTogglePause, product }) {
