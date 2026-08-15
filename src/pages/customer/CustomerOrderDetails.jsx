@@ -29,7 +29,8 @@ function getStepState(orderStatus, stepStatus) {
 export default function CustomerOrderDetails({ basePath = "/customer" }) {
   const { id } = useParams();
   const { token } = useAuth();
-  const { t } = useTranslation("orders");
+  const { t, i18n } = useTranslation("orders");
+  const isArabic = i18n.language?.startsWith("ar");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -90,6 +91,11 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
 
   const customerValues = order.customerInput?.values || {};
   const canRevealCodes = order.status === "COMPLETED" && order.hasDeliveredCodes === true;
+  const customerStatusMessage = getCustomerStatusMessage(order, isArabic);
+  const fulfillmentNotice = order.fulfillmentNotice
+    ? getManualFulfillmentMessage(isArabic)
+    : "";
+  const revealLabels = getCodeRevealLabels(isArabic);
 
   const revealCodes = async () => {
     if (!token || !id || revealState.busy) return;
@@ -138,9 +144,9 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
             {order.rejectionReason}
           </p>
         )}
-        {order.customerStatusMessage && (
+        {customerStatusMessage && (
           <p className="mt-5 rounded-2xl border border-sky-400/25 bg-sky-400/12 px-4 py-3 text-sm font-bold text-sky-700 dark:text-sky-200">
-            {order.customerStatusMessage}
+            {customerStatusMessage}
           </p>
         )}
         {Object.keys(customerValues).length > 0 && (
@@ -153,17 +159,17 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
             </div>
           </div>
         )}
-        {order.fulfillmentNotice && (
+        {fulfillmentNotice && (
           <p className="mt-5 rounded-2xl border border-amber-400/25 bg-amber-400/12 px-4 py-3 text-sm font-bold text-amber-700 dark:text-amber-200">
-            {order.fulfillmentNotice}
+            {fulfillmentNotice}
           </p>
         )}
         {canRevealCodes && (
           <div className="mt-8 rounded-lg border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-400/20 dark:bg-emerald-500/10">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-black">Delivered code</h2>
-                <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-200">Reveal is available for this completed digital order.</p>
+                <h2 className="text-lg font-black">{revealLabels.title}</h2>
+                <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-200">{revealLabels.ready}</p>
               </div>
               <button
                 type="button"
@@ -172,7 +178,7 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
                 className="interactive-ring inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-xs font-black text-white disabled:opacity-60"
               >
                 <Eye className="h-4 w-4" />
-                {revealState.busy ? "Revealing..." : "Reveal code"}
+                {revealState.busy ? revealLabels.revealing : revealLabels.reveal}
               </button>
             </div>
             {revealState.error && (
@@ -182,9 +188,9 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
               <div className="mt-4 grid gap-3">
                 {revealState.result.items.map((item, index) => (
                   <div key={item.id || index} className="rounded-lg border border-emerald-200 bg-white/80 p-3 dark:border-emerald-400/20 dark:bg-[#111827]">
-                    {item.code && <SecretLine label="Code" value={item.code} copied={revealState.copied} onCopy={copyValue} />}
-                    {item.pin && <SecretLine label="PIN" value={item.pin} copied={revealState.copied} onCopy={copyValue} />}
-                    {item.serial && <SecretLine label="Serial" value={item.serial} copied={revealState.copied} onCopy={copyValue} />}
+                    {item.code && <SecretLine label={revealLabels.code} value={item.code} copied={revealState.copied} onCopy={copyValue} copyLabel={revealLabels.copy} copiedLabel={revealLabels.copied} />}
+                    {item.pin && <SecretLine label={revealLabels.pin} value={item.pin} copied={revealState.copied} onCopy={copyValue} copyLabel={revealLabels.copy} copiedLabel={revealLabels.copied} />}
+                    {item.serial && <SecretLine label={revealLabels.serial} value={item.serial} copied={revealState.copied} onCopy={copyValue} copyLabel={revealLabels.copy} copiedLabel={revealLabels.copied} />}
                   </div>
                 ))}
               </div>
@@ -217,7 +223,7 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
   );
 }
 
-function SecretLine({ copied, label, onCopy, value }) {
+function SecretLine({ copied, copiedLabel, copyLabel, label, onCopy, value }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 py-1">
       <span>
@@ -230,10 +236,66 @@ function SecretLine({ copied, label, onCopy, value }) {
         className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-black text-slate-600 dark:border-white/10 dark:text-slate-200"
       >
         <Copy className="h-3.5 w-3.5" />
-        {copied === label ? "Copied" : "Copy"}
+        {copied === label ? copiedLabel : copyLabel}
       </button>
     </div>
   );
+}
+
+function getManualFulfillmentMessage(isArabic) {
+  return isArabic ? "طلبك قيد المراجعة والتنفيذ اليدوي" : "Your order is being processed manually.";
+}
+
+function getCustomerStatusMessage(order = {}, isArabic) {
+  const status = String(order.status || "").toUpperCase();
+  const refunded = order.refunded === true;
+  const hasCodes = order.hasDeliveredCodes === true;
+
+  if (isArabic) {
+    if (status === "COMPLETED" && hasCodes) return "الكود الرقمي جاهز للعرض";
+    if (status === "MANUAL_REVIEW") return "طلبك قيد المراجعة والتنفيذ اليدوي";
+    if (status === "PROCESSING" || status === "PENDING") return "طلبك قيد التنفيذ";
+    if (status === "COMPLETED") return "تم إكمال الطلب";
+    if ((status === "FAILED" || status === "CANCELED" || status === "CANCELLED") && refunded) return "تم رد الرصيد";
+    if (status === "FAILED" || status === "CANCELED" || status === "CANCELLED") return "فشل الطلب";
+    return order.customerStatusMessage || "";
+  }
+
+  if (status === "COMPLETED" && hasCodes) return "Your digital code is ready to reveal";
+  if (status === "MANUAL_REVIEW") return "Your order is under manual review and fulfillment.";
+  if (status === "PROCESSING" || status === "PENDING") return "Your order is being processed.";
+  if (status === "COMPLETED") return "Your order is complete.";
+  if ((status === "FAILED" || status === "CANCELED" || status === "CANCELLED") && refunded) return "Your balance has been refunded.";
+  if (status === "FAILED" || status === "CANCELED" || status === "CANCELLED") return "Your order failed.";
+  return order.customerStatusMessage || "";
+}
+
+function getCodeRevealLabels(isArabic) {
+  if (isArabic) {
+    return {
+      copied: "تم النسخ",
+      copy: "نسخ",
+      code: "الكود",
+      pin: "الرقم السري",
+      ready: "الكود الرقمي جاهز للعرض",
+      reveal: "عرض الكود",
+      revealing: "جار عرض الكود...",
+      serial: "السيريال",
+      title: "الكود المُسلّم",
+    };
+  }
+
+  return {
+    copied: "Copied",
+    copy: "Copy",
+    code: "CODE",
+    pin: "PIN",
+    ready: "Your digital code is ready to reveal",
+    reveal: "Reveal code",
+    revealing: "Revealing...",
+    serial: "SERIAL",
+    title: "Delivered code",
+  };
 }
 
 function Info({ label, value }) {

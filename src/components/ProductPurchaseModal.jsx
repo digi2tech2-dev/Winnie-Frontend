@@ -51,6 +51,7 @@ export default function ProductPurchaseModal({
   const xenaTargetFieldKey = xenaProduct ? getXenaTargetFieldKey(orderFields) : XENA_TARGET_FIELD_KEY;
   const providerFamilyKey = getProviderFamilyKey(product);
   const providerFulfillmentMode = getProviderFulfillmentMode(product);
+  const deliveryType = getProductDeliveryType(product);
   const [quantity, setQuantity] = useState("");
   const [accountId, setAccountId] = useState("");
   const [fieldValues, setFieldValues] = useState(() => createInitialFieldValues(orderFields));
@@ -99,6 +100,12 @@ export default function ProductPurchaseModal({
   const hasOrderFields = orderFields.length > 0;
   const canUseTopupFallbackField = providerFamilyKey === "TOPUPS" || providerFulfillmentMode === "TOPUP_WITH_FIELDS";
   const showFallbackAccountInput = !hasOrderFields && canUseTopupFallbackField;
+  const confirmButtonLabel = getConfirmButtonLabel({
+    deliveryType,
+    familyKey: providerFamilyKey,
+    fulfillmentMode: providerFulfillmentMode,
+    isArabic,
+  });
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
   const productImage = getProductImage(product);
   const missingRequiredField = orderFields.some((field) =>
@@ -521,7 +528,7 @@ export default function ProductPurchaseModal({
             type="submit"
             disabled={confirmDisabled}
           >
-            <span>{submitting ? t("purchase.creatingOrder") : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : isArabic ? "تأكيد الشحن" : "Confirm charge"}</span>
+            <span>{submitting ? t("purchase.creatingOrder") : quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : confirmButtonLabel}</span>
             {submitting ? <Loader2 className="is-spinning" /> : <Zap />}
           </button>
         </div>
@@ -676,6 +683,28 @@ function getProviderFulfillmentMode(product = {}) {
     || product.providerProduct?.fulfillmentMode
     || "",
   ).trim().toUpperCase();
+}
+
+function getProductDeliveryType(product = {}) {
+  return String(product.deliveryType || "").trim().toUpperCase();
+}
+
+function getConfirmButtonLabel({ deliveryType, familyKey, fulfillmentMode, isArabic }) {
+  const isTopup = familyKey === "TOPUPS" || fulfillmentMode === "TOPUP_WITH_FIELDS";
+  const isCodeDelivery = deliveryType === "CODE_DELIVERY"
+    || fulfillmentMode === "CODE_DELIVERY"
+    || familyKey === "GIFTCARDS"
+    || familyKey === "GAME_KEYS";
+
+  if (isArabic) {
+    if (isTopup) return "تأكيد الشحن";
+    if (isCodeDelivery) return "شراء الكود";
+    return "تأكيد الطلب";
+  }
+
+  if (isTopup) return "Confirm charge";
+  if (isCodeDelivery) return "Buy code";
+  return "Confirm order";
 }
 
 function createInitialFieldValues(fields) {
