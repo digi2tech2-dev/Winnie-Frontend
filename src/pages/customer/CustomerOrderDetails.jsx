@@ -243,18 +243,23 @@ function SecretLine({ copied, copiedLabel, copyLabel, label, onCopy, value }) {
 }
 
 function getManualFulfillmentMessage(isArabic) {
-  return isArabic ? "طلبك قيد المراجعة والتنفيذ اليدوي" : "Your order is being processed manually.";
+  return isArabic ? "طلبك قيد التنفيذ بواسطة الفريق" : "Our team is processing your order.";
 }
 
 function getCustomerStatusMessage(order = {}, isArabic) {
   const status = String(order.status || "").toUpperCase();
   const refunded = order.refunded === true;
   const hasCodes = order.hasDeliveredCodes === true;
+  const deliveryType = String(order.deliveryType || order.product?.deliveryType || "").toUpperCase();
+  const executionMode = String(order.providerExecutionMode || order.product?.providerExecutionMode || "").toUpperCase();
+  const teamFulfillment = deliveryType === "MANUAL_FULFILLMENT"
+    || executionMode === "MANUAL_FULFILLMENT"
+    || status === "MANUAL_REVIEW";
 
   if (isArabic) {
     if (status === "COMPLETED" && hasCodes) return "الكود الرقمي جاهز للعرض";
-    if (status === "MANUAL_REVIEW") return "طلبك قيد المراجعة والتنفيذ اليدوي";
-    if (status === "PROCESSING" || status === "PENDING") return "طلبك قيد التنفيذ";
+    if (teamFulfillment) return "طلبك قيد التنفيذ بواسطة الفريق";
+    if (status === "PROCESSING" || status === "PENDING") return "طلبك قيد التنفيذ تلقائياً";
     if (status === "COMPLETED") return "تم إكمال الطلب";
     if ((status === "FAILED" || status === "CANCELED" || status === "CANCELLED") && refunded) return "تم رد الرصيد";
     if (status === "FAILED" || status === "CANCELED" || status === "CANCELLED") return "فشل الطلب";
@@ -262,8 +267,8 @@ function getCustomerStatusMessage(order = {}, isArabic) {
   }
 
   if (status === "COMPLETED" && hasCodes) return "Your digital code is ready to reveal";
-  if (status === "MANUAL_REVIEW") return "Your order is under manual review and fulfillment.";
-  if (status === "PROCESSING" || status === "PENDING") return "Your order is being processed.";
+  if (teamFulfillment) return "Our team is processing your order.";
+  if (status === "PROCESSING" || status === "PENDING") return "Your order is being processed automatically.";
   if (status === "COMPLETED") return "Your order is complete.";
   if ((status === "FAILED" || status === "CANCELED" || status === "CANCELLED") && refunded) return "Your balance has been refunded.";
   if (status === "FAILED" || status === "CANCELED" || status === "CANCELLED") return "Your order failed.";

@@ -111,6 +111,14 @@ export default function ProductPurchaseModal({
     fulfillmentMode: providerFulfillmentMode,
     isArabic,
   });
+  const fulfillmentNotice = product?.fulfillmentNotice
+    || getFulfillmentNotice({
+      deliveryType,
+      executionMode: product?.providerExecutionMode,
+      familyKey: providerFamilyKey,
+      fulfillmentMode: providerFulfillmentMode,
+      isArabic,
+    });
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
   const productImage = getProductImage(product);
   const missingRequiredField = orderFields.some((field) =>
@@ -467,6 +475,13 @@ export default function ProductPurchaseModal({
           </span>
         </div>
 
+        {fulfillmentNotice && (
+          <p className="buy-modal__secure" dir={isArabic ? "rtl" : "ltr"}>
+            <ShieldCheck />
+            <span>{fulfillmentNotice}</span>
+          </p>
+        )}
+
         {packages.length > 1 && (
           <div className="buy-packages" aria-label={t("purchase.package")}>
             {packages.map((item, index) => (
@@ -715,6 +730,26 @@ function getConfirmButtonLabel({ deliveryType, familyKey, fulfillmentMode, isAra
   if (isTopup) return "Confirm charge";
   if (isCodeDelivery) return "Buy code";
   return "Confirm order";
+}
+
+function getFulfillmentNotice({ deliveryType, executionMode, familyKey, fulfillmentMode, isArabic }) {
+  const mode = String(executionMode || "").trim().toUpperCase();
+  const hasFazerFamily = Boolean(familyKey || fulfillmentMode);
+  if (!hasFazerFamily) return "";
+
+  const isManual = deliveryType === "MANUAL_FULFILLMENT" || mode === "MANUAL_FULFILLMENT";
+  const isAuto = mode === "AUTO_PROVIDER"
+    || (deliveryType !== "MANUAL_FULFILLMENT" && ["TOPUPS", "GIFTCARDS", "GAME_KEYS"].includes(familyKey));
+
+  if (isArabic) {
+    if (isManual) return "سيتم تنفيذ طلبك بواسطة فريقنا في أسرع وقت.";
+    if (isAuto) return "سيتم تنفيذ الطلب تلقائياً من المورد.";
+    return "";
+  }
+
+  if (isManual) return "Our team will process your order as soon as possible.";
+  if (isAuto) return "The order will be processed automatically by the supplier.";
+  return "";
 }
 
 function getIncompleteManualProductMessage(isArabic) {

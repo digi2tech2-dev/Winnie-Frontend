@@ -13,6 +13,8 @@ const FAZERCARDS_FAMILY_TABS = [
   { key: "STEAM_GIFTS", label: "STEAM_GIFTS" },
 ];
 
+const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS"]);
+
 const FULFILLMENT_MODES = [
   "TOPUP_WITH_FIELDS",
   "CODE_DELIVERY",
@@ -34,6 +36,7 @@ export default function SupplierProductsModal({
   onFilterChange,
   onFazerCardsDryRun,
   onFazerCardsDisable,
+  onFazerCardsEnableAuto,
   onFazerCardsLaunchManual,
   onFazerCardsReadiness,
   onFazerCardsSyncAll,
@@ -283,10 +286,16 @@ export default function SupplierProductsModal({
               const visibilityReasons = imported?.visibilityReasons || imported?.customerVisibilityStatus?.reasons || [];
               const manualFieldWarning = imported?.manualFieldWarning || "";
               const manualFieldSuggestions = imported?.manualFieldSuggestions || [];
+              const familyKey = String(product.familyKey || "").toUpperCase();
+              const autoProviderCapable = AUTO_PROVIDER_FAMILIES.has(familyKey);
               const launchManualDisabled = loading
                 || !product.importedProduct?.id
                 || Boolean(manualFieldWarning)
                 || actionKey === `${product.id}:launch-manual`;
+              const enableAutoDisabled = loading
+                || !product.importedProduct?.id
+                || !autoProviderCapable
+                || actionKey === `${product.id}:enable-auto`;
               return (
               <article key={product.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220] sm:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
@@ -325,17 +334,11 @@ export default function SupplierProductsModal({
                   {fazerCards && imported && (
                     <div className="mt-2 rounded-xl border border-slate-200 bg-white p-2 text-[9px] font-bold text-slate-500 dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span dir="ltr" className="rounded bg-slate-100 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">Winnie Product ID: {imported.id}</span>
-                        <button
-                          type="button"
-                          onClick={() => copyProductId(imported.id)}
-                          className="inline-flex h-6 items-center gap-1 rounded-lg border border-slate-200 px-2 text-[8px] font-black text-slate-600 dark:border-white/10 dark:text-slate-300"
-                        >
-                          <Copy className="h-3 w-3" />
-                          {copiedId === imported.id ? "Copied" : "Copy Product ID"}
-                        </button>
                         <span className={`rounded-full px-2 py-1 ${visibleToCustomer ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200" : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"}`}>
                           {visibleToCustomer ? "Visible to customers" : "Not visible to customers"}
+                        </span>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">
+                          {imported.providerExecutionMode === "AUTO_PROVIDER" ? "تنفيذ تلقائي من المورد" : imported.providerExecutionMode === "MANUAL_FULFILLMENT" ? "تنفيذ بواسطة الفريق" : "غير مفعل"}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -352,10 +355,24 @@ export default function SupplierProductsModal({
                       )}
                       {manualFieldWarning && (
                         <p className="mt-1 text-[8px] font-black text-rose-600 dark:text-rose-200">
-                          This manual product needs customer fields before launch.
-                          {manualFieldSuggestions.length ? ` Suggested: ${manualFieldSuggestions.join(" / ")}` : ""}
+                          هذا المنتج يحتاج حقولاً يملؤها العميل قبل النشر.
+                          {manualFieldSuggestions.length ? ` مقترح: ${manualFieldSuggestions.join(" / ")}` : ""}
                         </p>
                       )}
+                      <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 dark:border-white/10 dark:bg-white/[0.03]">
+                        <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">Details / Advanced</summary>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span dir="ltr" className="rounded bg-white px-2 py-1 text-slate-600 dark:bg-[#111827] dark:text-slate-200">Winnie Product ID: {imported.id}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyProductId(imported.id)}
+                            className="inline-flex h-6 items-center gap-1 rounded-lg border border-slate-200 px-2 text-[8px] font-black text-slate-600 dark:border-white/10 dark:text-slate-300"
+                          >
+                            <Copy className="h-3 w-3" />
+                            {copiedId === imported.id ? "Copied" : "Copy Product ID"}
+                          </button>
+                        </div>
+                      </details>
                     </div>
                   )}
                 </div>
@@ -380,25 +397,7 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                       >
                         <Download className="h-3.5 w-3.5" />
-                        {product.imported ? "Update" : "Import"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={loading || !product.importedProduct?.id}
-                        onClick={() => onFazerCardsReadiness?.(product)}
-                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-emerald-200 px-3 text-[9px] font-black text-emerald-700 disabled:opacity-50 dark:border-emerald-400/20 dark:text-emerald-200"
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Readiness
-                      </button>
-                      <button
-                        type="button"
-                        disabled={loading || !product.importedProduct?.id}
-                        onClick={() => onFazerCardsDryRun?.(product)}
-                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-amber-200 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:border-amber-400/20 dark:text-amber-200"
-                      >
-                        <FlaskConical className="h-3.5 w-3.5" />
-                        Dry-run
+                        {product.imported ? "Update linked product" : "Import"}
                       </button>
                       <button
                         type="button"
@@ -408,8 +407,44 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                       >
                         <Rocket className="h-3.5 w-3.5" />
-                        Launch Manual
+                        نشر بتنفيذ الفريق
                       </button>
+                      {autoProviderCapable && (
+                        <button
+                          type="button"
+                          disabled={enableAutoDisabled}
+                          onClick={() => onFazerCardsEnableAuto?.(product)}
+                          className="inline-flex h-8 items-center gap-1 rounded-xl bg-sky-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
+                        >
+                          <Rocket className="h-3.5 w-3.5" />
+                          Enable Auto Provider
+                        </button>
+                      )}
+                      <details className="w-full text-right sm:w-auto">
+                        <summary className="cursor-pointer rounded-xl border border-slate-200 px-3 py-2 text-[9px] font-black text-slate-500 dark:border-white/10 dark:text-slate-300">
+                          Advanced
+                        </summary>
+                        <div className="mt-1 flex flex-wrap justify-end gap-1.5">
+                          <button
+                            type="button"
+                            disabled={loading || !product.importedProduct?.id}
+                            onClick={() => onFazerCardsReadiness?.(product)}
+                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-emerald-200 px-3 text-[9px] font-black text-emerald-700 disabled:opacity-50 dark:border-emerald-400/20 dark:text-emerald-200"
+                          >
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Readiness
+                          </button>
+                          <button
+                            type="button"
+                            disabled={loading || !product.importedProduct?.id}
+                            onClick={() => onFazerCardsDryRun?.(product)}
+                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-amber-200 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:border-amber-400/20 dark:text-amber-200"
+                          >
+                            <FlaskConical className="h-3.5 w-3.5" />
+                            Payload preview
+                          </button>
+                        </div>
+                      </details>
                       <button
                         type="button"
                         disabled={loading || !product.importedProduct?.id || actionKey === `${product.id}:disable`}
@@ -417,7 +452,7 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl border border-rose-200 px-3 text-[9px] font-black text-rose-700 disabled:opacity-50 dark:border-rose-400/20 dark:text-rose-200"
                       >
                         <Power className="h-3.5 w-3.5" />
-                        Disable
+                        Disable product
                       </button>
                     </div>
                   )}

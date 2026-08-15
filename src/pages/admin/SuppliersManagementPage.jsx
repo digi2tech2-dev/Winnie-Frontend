@@ -42,6 +42,7 @@ import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
 const productPageSize = 30;
+const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS"]);
 
 const defaultFazerCardsFilters = {
   blockReason: "",
@@ -556,7 +557,7 @@ export default function SuppliersManagementPage() {
   const handleFazerProductLaunchManual = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) return;
-    if (!window.confirm("Launch this imported Winnie Product for customer purchase using manual fulfillment?")) return;
+    if (!window.confirm("نشر هذا المنتج للعملاء بتنفيذ بواسطة الفريق؟")) return;
 
     setActionKey(`${providerProduct.id}:launch-manual`);
     try {
@@ -570,14 +571,54 @@ export default function SuppliersManagementPage() {
       const launchStatus = result.result?.launchStatus || result.result?.result?.customerVisibilityStatus || {};
       showToast({
         type: launchStatus.visibleToCustomer === true ? "success" : "warning",
-        title: "Launch settings updated",
+        title: "تم تحديث إعدادات النشر",
         message: launchStatus.visibleToCustomer === true
-          ? "Product is now visible to customers."
-          : `Product saved, but not visible: ${(launchStatus.reasons || []).join(", ") || "check launch status."}`,
+          ? "المنتج ظاهر الآن للعملاء بتنفيذ بواسطة الفريق."
+          : `تم حفظ المنتج، لكنه غير ظاهر: ${(launchStatus.reasons || []).join(", ") || "راجع حالة النشر."}`,
       });
       await refreshFazerLaunchSurfaces();
     } catch (error) {
-      showToast({ type: "error", title: "Launch failed", message: error.userMessage || "Could not launch this FazerCards product." });
+      showToast({ type: "error", title: "تعذر النشر", message: error.userMessage || "تعذر نشر منتج FazerCards." });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleFazerProductEnableAutoProvider = async (providerProduct) => {
+    const importedProductId = providerProduct?.importedProduct?.id;
+    const familyKey = String(providerProduct?.familyKey || "").toUpperCase();
+    if (!token || !importedProductId || actionKey) return;
+    if (!AUTO_PROVIDER_FAMILIES.has(familyKey)) {
+      showToast({
+        type: "warning",
+        title: "التنفيذ التلقائي غير متاح",
+        message: "هذه العائلة تعمل بتنفيذ بواسطة الفريق فقط.",
+      });
+      return;
+    }
+    if (!window.confirm("تفعيل هذا المنتج للعملاء مع تنفيذ تلقائي من المورد؟ سيظل التنفيذ الحقيقي مرتبطاً بإعدادات السيرفر.")) return;
+
+    setActionKey(`${providerProduct.id}:enable-auto`);
+    try {
+      const result = await launchFazerCardsProduct(token, importedProductId, {
+        customerPurchaseEnabled: true,
+        isActive: true,
+        visibleInStore: true,
+        status: "available",
+        providerExecutionMode: "AUTO_PROVIDER",
+        providerExecutionEnabled: true,
+      });
+      const launchStatus = result.result?.launchStatus || result.result?.result?.customerVisibilityStatus || {};
+      showToast({
+        type: launchStatus.visibleToCustomer === true ? "success" : "warning",
+        title: "تم تفعيل التنفيذ التلقائي",
+        message: launchStatus.visibleToCustomer === true
+          ? "المنتج ظاهر للعملاء. سيبدأ التنفيذ التلقائي بعد تفعيل إعدادات المورد من السيرفر."
+          : `تم حفظ الإعدادات، لكن المنتج غير ظاهر: ${(launchStatus.reasons || []).join(", ") || "راجع حالة النشر."}`,
+      });
+      await refreshFazerLaunchSurfaces();
+    } catch (error) {
+      showToast({ type: "error", title: "تعذر تفعيل التنفيذ التلقائي", message: error.userMessage || "تعذر تحديث إعدادات المنتج." });
     } finally {
       setActionKey("");
     }
@@ -706,7 +747,7 @@ export default function SuppliersManagementPage() {
   const handleFazerCardsDryRun = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) {
-      showToast({ type: "warning", title: "Import first", message: "Dry-run previews run against the imported Winnie Product." });
+      showToast({ type: "warning", title: "Import first", message: "Payload previews run against the imported Winnie Product." });
       return;
     }
 
@@ -718,19 +759,19 @@ export default function SuppliersManagementPage() {
         if (key) acc[key] = "";
         return acc;
       }, {});
-      const rawFields = window.prompt("Enter dry-run fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
+      const rawFields = window.prompt("Enter payload preview fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
       if (rawFields === null) return;
       try {
         fields = JSON.parse(rawFields || "{}");
       } catch {
-        showToast({ type: "error", title: "Invalid JSON", message: "Dry-run fields must be valid JSON." });
+        showToast({ type: "error", title: "Invalid JSON", message: "Payload preview fields must be valid JSON." });
         return;
       }
     }
 
     const rawQuantity = providerProduct.fulfillmentMode === "TOPUP_WITH_FIELDS"
       ? "1"
-      : window.prompt("Dry-run quantity. This does not create an order.", "1");
+      : window.prompt("Payload preview quantity. This does not create an order.", "1");
     if (rawQuantity === null) return;
 
     setActionKey(`${providerProduct.id}:dry-run`);
@@ -742,13 +783,13 @@ export default function SuppliersManagementPage() {
       const dryRun = result.dryRun || {};
       showToast({
         type: dryRun.success === false ? "warning" : "success",
-        title: dryRun.success === false ? "FazerCards contract unconfirmed" : "FazerCards dry-run built",
+        title: dryRun.success === false ? "FazerCards contract unconfirmed" : "FazerCards payload preview built",
         message: dryRun.success === false
-          ? dryRun.message || "This family does not have a confirmed provider payload contract yet. No provider order was called."
-          : `${dryRun.wouldCall || "No live endpoint"} preview created. No provider order was called.`,
+          ? dryRun.message || "This family does not have a confirmed provider payload contract yet. No supplier order was created."
+          : `${dryRun.wouldCall || "No supplier endpoint"} preview created. No supplier order was created.`,
       });
     } catch (error) {
-      showToast({ type: "error", title: "Dry-run failed", message: error.userMessage || "Could not build dry-run preview." });
+      showToast({ type: "error", title: "Payload preview failed", message: error.userMessage || "Could not build the payload preview." });
     } finally {
       setActionKey("");
     }
@@ -856,6 +897,7 @@ export default function SuppliersManagementPage() {
           onFilterChange={updateFazerCardsFilters}
           onFazerCardsDisable={handleFazerProductDisable}
           onFazerCardsDryRun={handleFazerCardsDryRun}
+          onFazerCardsEnableAuto={handleFazerProductEnableAutoProvider}
           onFazerCardsLaunchManual={handleFazerProductLaunchManual}
           onFazerCardsReadiness={handleFazerCardsReadiness}
           onFazerCardsSyncAll={runFazerCardsSyncAll}

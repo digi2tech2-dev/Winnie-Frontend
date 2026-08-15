@@ -28,6 +28,21 @@ function parseProductIds(value) {
     .filter(Boolean);
 }
 
+function formatHealthWarning(warning) {
+  const text = String(warning || "");
+  const lower = text.toLowerCase();
+  if (lower.includes("real order") || lower.includes("real orders") || lower.includes("global real")) {
+    return "التنفيذ التلقائي غير مفعل حالياً من إعدادات السيرفر.";
+  }
+  if (lower.includes("code delivery")) {
+    return "تسليم الأكواد التلقائي غير مفعل حالياً من إعدادات السيرفر.";
+  }
+  if (lower.includes("manual review")) {
+    return text.replace(/manual review/gi, "انتظار التنفيذ");
+  }
+  return text;
+}
+
 export default function FazerCardsLaunchOpsPanel({
   bulkResult = null,
   health = null,
@@ -58,6 +73,7 @@ export default function FazerCardsLaunchOpsPanel({
       visibleInStore: true,
       status: "available",
       providerExecutionMode: mode,
+      providerExecutionEnabled: mode === "AUTO_PROVIDER",
       dryRun,
     });
   };
@@ -68,8 +84,8 @@ export default function FazerCardsLaunchOpsPanel({
         <div className="flex items-center gap-2">
           <Rocket className="h-5 w-5 text-violet-500" />
           <div>
-            <h2 className="text-sm font-black dark:text-white">FazerCards Launch Ops</h2>
-          <p className="text-[9px] font-bold text-slate-400">Manual fulfillment, launch gates, and bulk product controls.</p>
+            <h2 className="text-sm font-black dark:text-white">إدارة FazerCards</h2>
+          <p className="text-[9px] font-bold text-slate-400">متابعة التشغيل، نشر المنتجات، وتنفيذ الطلبات بواسطة الفريق.</p>
         </div>
       </div>
         <button
@@ -79,7 +95,7 @@ export default function FazerCardsLaunchOpsPanel({
           className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[9px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-slate-300"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          تحديث
         </button>
       </div>
 
@@ -94,20 +110,20 @@ export default function FazerCardsLaunchOpsPanel({
         <div className="rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220]">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-violet-500" />
-            <h3 className="text-[11px] font-black dark:text-white">Launch Health</h3>
+            <h3 className="text-[11px] font-black dark:text-white">حالة التشغيل</h3>
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <GateBadge label="API" enabled={health?.api?.enabled && health?.api?.connectionOk} />
-            <GateBadge label="Customer Purchase" enabled={health?.gates?.customerPurchaseEnabled} />
-            <GateBadge label="Real Orders" enabled={health?.gates?.realOrdersEnabled} />
-            <GateBadge label="Code Delivery" enabled={health?.gates?.codeDeliveryEnabled} />
+            <GateBadge label="شراء العملاء" enabled={health?.gates?.customerPurchaseEnabled} />
+            <GateBadge label="التنفيذ التلقائي" enabled={health?.gates?.realOrdersEnabled} />
+            <GateBadge label="تسليم الأكواد" enabled={health?.gates?.codeDeliveryEnabled} />
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <CountPill label="Visible" value={health?.products?.activeCustomerVisible} />
-            <CountPill label="Auto" value={health?.products?.autoProvider} />
-            <CountPill label="Manual" value={health?.products?.manualFulfillment} />
-            <CountPill label="Disabled" value={health?.products?.disabled} />
-            <CountPill label="Manual Review" value={health?.orders?.manualReview} />
+            <CountPill label="ظاهر للعملاء" value={health?.products?.activeCustomerVisible} />
+            <CountPill label="تلقائي" value={health?.products?.autoProvider} />
+            <CountPill label="تنفيذ الفريق" value={health?.products?.manualFulfillment} />
+            <CountPill label="معطل" value={health?.products?.disabled} />
+            <CountPill label="بانتظار التنفيذ" value={health?.orders?.manualReview} />
             <CountPill label="Completed 24h" value={health?.orders?.completed24h} />
             <CountPill label="Failed 24h" value={health?.orders?.failed24h} />
           </div>
@@ -116,7 +132,7 @@ export default function FazerCardsLaunchOpsPanel({
               {health.warnings.slice(0, 4).map((warning) => (
                 <p key={warning} className="flex items-start gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-200">
                   <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                  {warning}
+                  {formatHealthWarning(warning)}
                 </p>
               ))}
             </div>
@@ -126,16 +142,16 @@ export default function FazerCardsLaunchOpsPanel({
         <div className="rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220]">
           <div className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-violet-500" />
-            <h3 className="text-[11px] font-black dark:text-white">Bulk Launch Controls</h3>
+            <h3 className="text-[11px] font-black dark:text-white">نشر جماعي للمنتجات</h3>
           </div>
           <textarea
             value={idsText}
             onChange={(event) => setIdsText(event.target.value)}
-            placeholder="Paste imported Winnie Product IDs, one per line or comma-separated"
+            placeholder="ضع معرفات منتجات Winnie المستوردة، كل معرف في سطر أو مفصولة بفواصل"
             className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-white p-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
           />
           <p className="mt-1 text-[9px] font-bold text-slate-400">
-            Use Winnie Product IDs from imported products, not supplier ProviderProduct IDs.
+            استخدم معرف منتج Winnie المستورد، وليس معرف منتج المورد.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <select
@@ -143,9 +159,9 @@ export default function FazerCardsLaunchOpsPanel({
               onChange={(event) => setMode(event.target.value)}
               className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold dark:border-white/10 dark:bg-[#111827] dark:text-white"
             >
-              <option value="MANUAL_FULFILLMENT">MANUAL_FULFILLMENT</option>
-              <option value="AUTO_PROVIDER">AUTO_PROVIDER</option>
-              <option value="DISABLED">DISABLED</option>
+              <option value="MANUAL_FULFILLMENT">تنفيذ بواسطة الفريق</option>
+              <option value="AUTO_PROVIDER">تنفيذ تلقائي من المورد</option>
+              <option value="DISABLED">تعطيل</option>
             </select>
             <button
               type="button"
@@ -153,7 +169,7 @@ export default function FazerCardsLaunchOpsPanel({
               disabled={loading || productIds.length === 0}
               className="h-9 rounded-xl border border-violet-200 px-3 text-[9px] font-black text-violet-700 disabled:opacity-50 dark:border-violet-400/20 dark:text-violet-200"
             >
-              Dry-run Preview
+              معاينة التغييرات
             </button>
             <button
               type="button"
@@ -161,12 +177,12 @@ export default function FazerCardsLaunchOpsPanel({
               disabled={loading || productIds.length === 0}
               className="h-9 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:opacity-50"
             >
-              Apply
+              تطبيق
             </button>
           </div>
           {bulkResult && (
             <div className="mt-2 max-h-28 overflow-auto rounded-xl border border-slate-200 bg-white p-2 text-[9px] font-bold text-slate-500 dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
-              <p>{bulkResult.dryRun ? "Dry-run" : "Applied"}: {bulkResult.updated || bulkResult.wouldUpdate || 0} ok, {bulkResult.failed || 0} failed.</p>
+              <p>{bulkResult.dryRun ? "معاينة" : "تم التطبيق"}: {bulkResult.updated || bulkResult.wouldUpdate || 0} ok, {bulkResult.failed || 0} failed.</p>
               {(bulkResult.results || []).slice(0, 8).map((item) => (
                 <div key={item.productId} dir="ltr" className={item.ok ? "text-emerald-600" : "text-rose-600"}>
                   <p>{item.productId}: {item.ok ? `${item.requestedMode} | visible=${String(Boolean(item.visibleToCustomer))}` : (item.errors || []).map((error) => error.code).join(", ")}</p>
@@ -182,13 +198,13 @@ export default function FazerCardsLaunchOpsPanel({
 
       <div className="mt-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220]">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-[11px] font-black dark:text-white">Manual FazerCards Orders</h3>
+          <h3 className="text-[11px] font-black dark:text-white">طلبات FazerCards بانتظار التنفيذ</h3>
           <select
             value={filters.familyKey || ""}
             onChange={(event) => onManualFilterChange?.({ ...filters, familyKey: event.target.value })}
             className="h-8 rounded-xl border border-slate-200 bg-white px-2 text-[9px] font-bold dark:border-white/10 dark:bg-[#111827] dark:text-white"
           >
-            {familyOptions.map((family) => <option key={family || "ALL"} value={family}>{family || "All families"}</option>)}
+            {familyOptions.map((family) => <option key={family || "ALL"} value={family}>{family || "كل العائلات"}</option>)}
           </select>
         </div>
         <div className="mt-2 space-y-2">
@@ -205,14 +221,14 @@ export default function FazerCardsLaunchOpsPanel({
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  <button type="button" onClick={() => onCompleteManual?.(order)} className="h-8 rounded-xl bg-emerald-600 px-3 text-[8px] font-black text-white">Complete</button>
-                  <button type="button" onClick={() => onFailManual?.(order)} className="h-8 rounded-xl bg-rose-600 px-3 text-[8px] font-black text-white">Fail</button>
-                  <button type="button" onClick={() => onNoteManual?.(order)} className="h-8 rounded-xl border border-slate-200 px-3 text-[8px] font-black text-slate-600 dark:border-white/10 dark:text-slate-300">Note</button>
+                  <button type="button" onClick={() => onCompleteManual?.(order)} className="h-8 rounded-xl bg-emerald-600 px-3 text-[8px] font-black text-white">إكمال</button>
+                  <button type="button" onClick={() => onFailManual?.(order)} className="h-8 rounded-xl bg-rose-600 px-3 text-[8px] font-black text-white">فشل</button>
+                  <button type="button" onClick={() => onNoteManual?.(order)} className="h-8 rounded-xl border border-slate-200 px-3 text-[8px] font-black text-slate-600 dark:border-white/10 dark:text-slate-300">ملاحظة</button>
                 </div>
               </div>
             </article>
           )) : (
-            <p className="py-4 text-center text-[10px] font-black text-slate-400">No manual FazerCards orders found.</p>
+            <p className="py-4 text-center text-[10px] font-black text-slate-400">لا توجد طلبات FazerCards بانتظار التنفيذ.</p>
           )}
         </div>
       </div>

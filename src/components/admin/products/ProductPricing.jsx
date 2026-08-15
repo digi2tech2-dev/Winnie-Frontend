@@ -106,19 +106,19 @@ export default function ProductPricing({
         if (key) acc[key] = "";
         return acc;
       }, {});
-      const rawFields = window.prompt("Enter dry-run fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
+      const rawFields = window.prompt("Enter payload preview fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
       if (rawFields === null) return;
       try {
         fields = JSON.parse(rawFields || "{}");
       } catch {
-        setProviderTool((current) => ({ ...current, error: "Dry-run fields must be valid JSON." }));
+        setProviderTool((current) => ({ ...current, error: "Payload preview fields must be valid JSON." }));
         return;
       }
     }
 
     const rawQuantity = providerMeta.fulfillmentMode === "TOPUP_WITH_FIELDS"
       ? "1"
-      : window.prompt("Dry-run quantity. This does not create an order.", "1");
+      : window.prompt("Payload preview quantity. This does not create an order.", "1");
     if (rawQuantity === null) return;
 
     setProviderTool((current) => ({ ...current, busy: "dry-run", dryRun: null, error: "" }));
@@ -299,28 +299,28 @@ export default function ProductPricing({
               </div>
               {!visibleToCustomer && visibilityReasons.length > 0 && (
                 <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
-                  Missing launch gates: {visibilityReasons.join(", ")}
+                  لا يمكن نشر المنتج بعد: {visibilityReasons.join(", ")}
                 </p>
               )}
               {manualFieldWarning && (
                 <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">
-                  This manual product needs customer fields before launch.
-                  {manualFieldWarning.suggestions.length ? ` Suggested: ${manualFieldWarning.suggestions.join(" / ")}` : ""}
+                  هذا المنتج يحتاج حقولاً يملؤها العميل قبل النشر.
+                  {manualFieldWarning.suggestions.length ? ` مقترح: ${manualFieldWarning.suggestions.join(" / ")}` : ""}
                 </p>
               )}
               <CheckboxField
                 checked={Boolean(value.providerExecutionEnabled)}
                 disabled={Boolean(value.providerExecutionBlocked)}
-                label="Enable FazerCards provider execution"
+                label="تفعيل التنفيذ التلقائي من FazerCards"
                 onChange={(checked) => onPatch({ providerExecutionEnabled: checked })}
               />
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <CheckboxField
                   checked={Boolean(value.customerPurchaseEnabled)}
-                  label="Allow customer purchase"
+                  label="إتاحة الشراء للعملاء"
                   onChange={(checked) => onPatch({ customerPurchaseEnabled: checked })}
                 />
-                <Field label="Provider execution mode">
+                <Field label="Fulfillment type">
                   <select
                     className={inputClassName}
                     value={value.providerExecutionMode || "MANUAL_FULFILLMENT"}
@@ -329,55 +329,58 @@ export default function ProductPricing({
                       ...(event.target.value !== "AUTO_PROVIDER" ? { providerExecutionEnabled: false } : {}),
                     })}
                   >
-                    <option value="AUTO_PROVIDER">AUTO_PROVIDER</option>
-                    <option value="MANUAL_FULFILLMENT">MANUAL_FULFILLMENT</option>
-                    <option value="DISABLED">DISABLED</option>
+                    <option value="AUTO_PROVIDER">AUTO_PROVIDER - تنفيذ تلقائي من المورد</option>
+                    <option value="MANUAL_FULFILLMENT">TEAM_FULFILLMENT - تنفيذ بواسطة الفريق</option>
+                    <option value="DISABLED">DISABLED - غير مفعل</option>
                   </select>
                 </Field>
               </div>
               <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
-                Enabling customer purchase makes this product visible only when it is active, visible in store, and available.
+                سيظهر المنتج للعملاء فقط عندما يكون نشطاً، ظاهراً في المتجر، متاحاً، ومفعلاً للشراء.
               </p>
               <p className="mt-2 leading-5">
-                Execution remains behind backend environment gates. Product visibility is controlled separately.
+                التنفيذ التلقائي يظل مرتبطاً بإعدادات السيرفر، بينما نشر المنتج للعملاء يتم التحكم به من هنا.
               </p>
               {value.providerExecutionBlocked && (
                 <p className="mt-1 rounded-xl bg-rose-500/10 px-3 py-2 text-rose-700 dark:text-rose-200">
-                  Provider execution is blocked for this product{providerMeta.blockReason ? `: ${providerMeta.blockReason}` : "."}
+                  التنفيذ التلقائي غير مفعل لهذا المنتج{providerMeta.blockReason ? `: ${providerMeta.blockReason}` : "."}
                 </p>
               )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={runFazerCardsReadiness}
-                  disabled={!token || !productId || Boolean(providerTool.busy)}
-                  className="inline-flex h-9 items-center gap-1 rounded-xl border border-emerald-300/40 px-3 text-[9px] font-black text-emerald-700 disabled:opacity-50 dark:text-emerald-200"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {providerTool.busy === "readiness" ? "Checking..." : "Readiness"}
-                </button>
-                <button
-                  type="button"
-                  onClick={runFazerCardsDryRun}
-                  disabled={!token || !productId || Boolean(providerTool.busy)}
-                  className="inline-flex h-9 items-center gap-1 rounded-xl border border-amber-300/40 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:text-amber-100"
-                >
-                  <FlaskConical className="h-3.5 w-3.5" />
-                  {providerTool.busy === "dry-run" ? "Building..." : "Dry-run"}
-                </button>
-              </div>
+              <details className="mt-3 rounded-xl border border-slate-200 bg-white/70 p-2 dark:border-white/10 dark:bg-[#0B1220]">
+                <summary className="cursor-pointer text-[10px] font-black text-slate-600 dark:text-slate-200">Advanced provider tools</summary>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={runFazerCardsReadiness}
+                    disabled={!token || !productId || Boolean(providerTool.busy)}
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-emerald-300/40 px-3 text-[9px] font-black text-emerald-700 disabled:opacity-50 dark:text-emerald-200"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    {providerTool.busy === "readiness" ? "Checking..." : "Readiness"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runFazerCardsDryRun}
+                    disabled={!token || !productId || Boolean(providerTool.busy)}
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-amber-300/40 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:text-amber-100"
+                  >
+                    <FlaskConical className="h-3.5 w-3.5" />
+                    {providerTool.busy === "dry-run" ? "Building..." : "Payload preview"}
+                  </button>
+                </div>
+              </details>
               {providerTool.error && (
                 <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">{providerTool.error}</p>
               )}
               {providerTool.readiness && (
                 <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-[9px] font-bold text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-                  <p className="font-black">Ready for live execution: {providerTool.readiness.readyForLiveExecution ? "yes" : "no"}</p>
+                  <p className="font-black">Auto provider ready: {providerTool.readiness.readyForLiveExecution ? "yes" : "no"}</p>
                   {providerTool.readiness.contract && (
                     <div className="mt-2 grid gap-1 sm:grid-cols-2">
                       <SummaryItem label="Support stage" value={providerTool.readiness.supportStage || providerTool.readiness.contract.supportStage || "-"} />
                       <SummaryItem label="Execution stage" value={providerTool.readiness.executionStage || providerTool.readiness.contract.executionStage || "-"} />
                       <SummaryItem label="Customer purchase" value={providerTool.readiness.canCustomerPurchase ? "ready" : "not ready"} />
-                      <SummaryItem label="Live pilot" value={providerTool.readiness.canLivePilot ? "available" : "not available"} />
+                      <SummaryItem label="Controlled provider run" value={providerTool.readiness.canLivePilot ? "available" : "not available"} />
                       <SummaryItem label="Storage" value={providerTool.readiness.contract.storageStrategy || "-"} />
                       <SummaryItem label="Delivery" value={providerTool.readiness.contract.customerDeliveryStrategy || "-"} />
                     </div>
@@ -392,9 +395,9 @@ export default function ProductPricing({
               )}
               {providerTool.dryRun && (
                 <div className="mt-2 rounded-xl border border-slate-200 bg-white/70 p-2 text-[9px] font-bold text-slate-700 dark:border-white/10 dark:bg-[#0B1220] dark:text-slate-200">
-                  <p className="font-black">Would call: {providerTool.dryRun.wouldCall || "No live endpoint"}</p>
+                  <p className="font-black">Would call: {providerTool.dryRun.wouldCall || "No supplier endpoint"}</p>
                   <pre dir="ltr" className="mt-1 max-h-28 overflow-auto rounded-lg bg-slate-950 p-2 text-left text-[8px] text-slate-100">{JSON.stringify(providerTool.dryRun.payload || {}, null, 2)}</pre>
-                  <p className="mt-1 text-amber-600 dark:text-amber-300">Dry-run only. No provider order was created.</p>
+                  <p className="mt-1 text-amber-600 dark:text-amber-300">معاينة فقط. لم يتم إنشاء طلب لدى المورد.</p>
                 </div>
               )}
             </div>
