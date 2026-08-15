@@ -293,6 +293,10 @@ function normalizeImportedLaunchProduct(importedProduct) {
     familyKey: importedProduct.familyKey || "",
     fulfillmentMode: importedProduct.fulfillmentMode || "",
     isActive,
+    manualFieldSuggestions: asArray(importedProduct.manualFieldSuggestions)
+      .map((item) => String(item || "").trim())
+      .filter(Boolean),
+    manualFieldWarning: importedProduct.manualFieldWarning || "",
     name: importedProduct.name || "",
     providerBlockReason: importedProduct.providerBlockReason || "",
     providerExecutionBlocked: importedProduct.providerExecutionBlocked === true,

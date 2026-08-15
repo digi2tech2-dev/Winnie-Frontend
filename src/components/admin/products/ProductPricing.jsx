@@ -13,6 +13,7 @@ const emptyProviderLink = {
 };
 
 const safeTrim = (value) => String(value ?? "").trim();
+const asArray = (value) => (Array.isArray(value) ? value : []);
 
 export default function ProductPricing({
   onChange,
@@ -41,6 +42,7 @@ export default function ProductPricing({
   const visibilityStatus = value.customerVisibilityStatus || {};
   const visibleToCustomer = value.visibleToCustomer === true || visibilityStatus.visibleToCustomer === true;
   const visibilityReasons = value.visibilityReasons || visibilityStatus.reasons || [];
+  const manualFieldWarning = isFazerCards ? getManualFieldWarning(value, providerMeta) : null;
   const [providerTool, setProviderTool] = useState({
     busy: "",
     dryRun: null,
@@ -300,6 +302,12 @@ export default function ProductPricing({
                   Missing launch gates: {visibilityReasons.join(", ")}
                 </p>
               )}
+              {manualFieldWarning && (
+                <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">
+                  This manual product needs customer fields before launch.
+                  {manualFieldWarning.suggestions.length ? ` Suggested: ${manualFieldWarning.suggestions.join(" / ")}` : ""}
+                </p>
+              )}
               <CheckboxField
                 checked={Boolean(value.providerExecutionEnabled)}
                 disabled={Boolean(value.providerExecutionBlocked)}
@@ -525,6 +533,53 @@ function getFazerCardsProviderMeta(value = {}, selectedProduct = {}) {
     stock,
     stockLabel: stock === undefined || stock === null || stock === "" ? "Unknown" : String(stock),
   };
+}
+
+function getManualFieldWarning(value = {}, providerMeta = {}) {
+  const familyKey = safeTrim(value.familyKey || providerMeta.familyKey).toUpperCase();
+  const fulfillmentMode = safeTrim(value.fulfillmentMode || providerMeta.fulfillmentMode).toUpperCase();
+  const executionMode = safeTrim(value.providerExecutionMode || "MANUAL_FULFILLMENT").toUpperCase();
+  if (executionMode !== "MANUAL_FULFILLMENT") return null;
+  if (fulfillmentMode === "CODE_DELIVERY" || familyKey === "GIFTCARDS" || familyKey === "GAME_KEYS") return null;
+
+  const configuredFields = [
+    ...asArray(value.extraFields),
+    ...asArray(value.orderFields),
+    ...asArray(value.dynamicFields),
+    ...asArray(providerMeta.requiredFields),
+  ]
+    .map((field) => ({
+      key: safeTrim(field.key || field.name || field.id),
+      label: safeTrim(field.label || field.title || field.name || field.key),
+      required: field.required !== false,
+      isActive: field.isActive !== false && field.active !== false,
+    }))
+    .filter((field) => field.isActive && field.required && (field.key || field.label));
+
+  const identityText = [
+    value.name,
+    value.nameAr,
+    value.nameEn,
+    value.externalProductId,
+    value.providerProductExternalId,
+    providerMeta.externalProductId,
+  ].map(safeTrim).join(" ");
+  const loginLike = /\b(via\s+login|login|username|account)\b/i.test(identityText);
+  const hasLoginField = configuredFields.some((field) =>
+    /(login|username|user[_\s-]?name|account|user[_\s-]?id|player[_\s-]?id|uid|profile|roblox)/i.test(`${field.key} ${field.label}`),
+  );
+
+  const suggestions = [];
+  if (familyKey === "TELEGRAM") suggestions.push("telegram_username");
+  if (familyKey === "STEAM_TOPUP") suggestions.push("steam_login", "steam_profile", "steam_username");
+  if (familyKey === "MANUAL_SERVICES") suggestions.push("account_username");
+  if (familyKey === "TOPUPS") suggestions.push("user_id", "account_id", "player_id");
+  if (loginLike) suggestions.push("roblox_username", "account_username", "login");
+
+  if (!configuredFields.length || (loginLike && !hasLoginField)) {
+    return { suggestions: [...new Set(suggestions)] };
+  }
+  return null;
 }
 
 function getExactSupplierPrice(providerProduct) {

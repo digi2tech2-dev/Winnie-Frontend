@@ -281,6 +281,12 @@ export default function SupplierProductsModal({
               const imported = product.importedProduct || null;
               const visibleToCustomer = imported?.visibleToCustomer === true;
               const visibilityReasons = imported?.visibilityReasons || imported?.customerVisibilityStatus?.reasons || [];
+              const manualFieldWarning = imported?.manualFieldWarning || "";
+              const manualFieldSuggestions = imported?.manualFieldSuggestions || [];
+              const launchManualDisabled = loading
+                || !product.importedProduct?.id
+                || Boolean(manualFieldWarning)
+                || actionKey === `${product.id}:launch-manual`;
               return (
               <article key={product.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220] sm:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
@@ -344,6 +350,12 @@ export default function SupplierProductsModal({
                           {visibilityReasons.join(", ")}
                         </p>
                       )}
+                      {manualFieldWarning && (
+                        <p className="mt-1 text-[8px] font-black text-rose-600 dark:text-rose-200">
+                          This manual product needs customer fields before launch.
+                          {manualFieldSuggestions.length ? ` Suggested: ${manualFieldSuggestions.join(" / ")}` : ""}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -390,7 +402,8 @@ export default function SupplierProductsModal({
                       </button>
                       <button
                         type="button"
-                        disabled={loading || !product.importedProduct?.id || actionKey === `${product.id}:launch-manual`}
+                        disabled={launchManualDisabled}
+                        title={manualFieldWarning || undefined}
                         onClick={() => onFazerCardsLaunchManual?.(product)}
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                       >

@@ -95,11 +95,16 @@ export default function ProductPurchaseModal({
   const requiredFieldValues = xenaProduct
     ? buildXenaCompatibleFieldValues(fieldValues, verifiedXenaUid)
     : fieldValues;
-  const displayError = localError || xenaVerification.error || submitError || quantityWarning || quoteError;
-  const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const hasOrderFields = orderFields.length > 0;
   const canUseTopupFallbackField = providerFamilyKey === "TOPUPS" || providerFulfillmentMode === "TOPUP_WITH_FIELDS";
   const showFallbackAccountInput = !hasOrderFields && canUseTopupFallbackField;
+  const manualConfigurationIncomplete = product?.purchaseDisabled === true
+    || (deliveryType === "MANUAL_FULFILLMENT" && !hasOrderFields && !showFallbackAccountInput);
+  const configurationError = manualConfigurationIncomplete
+    ? product?.purchaseUnavailableReason || getIncompleteManualProductMessage(isArabic)
+    : "";
+  const displayError = configurationError || localError || xenaVerification.error || submitError || quantityWarning || quoteError;
+  const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const confirmButtonLabel = getConfirmButtonLabel({
     deliveryType,
     familyKey: providerFamilyKey,
@@ -122,6 +127,7 @@ export default function ProductPurchaseModal({
     || xenaVerification.loading
     || quoteForQuantity?.isQuantityValid === false
     || (quoteForQuantity?.canSubmit === false && quoteForQuantity?.hasEnoughBalance !== false)
+    || manualConfigurationIncomplete
     || !isQuantityWithinBounds
     || missingRequiredField
     || missingFallbackAccount
@@ -145,7 +151,7 @@ export default function ProductPurchaseModal({
   useEffect(() => {
     const numericQuantity = Number(quantity);
 
-    if (productUnavailable || !token || !productId || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
+    if (productUnavailable || manualConfigurationIncomplete || !token || !productId || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       setQuote(null);
       setQuoteLoading(false);
       setQuoteError("");
@@ -179,7 +185,7 @@ export default function ProductPurchaseModal({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [productId, productUnavailable, quantity, t, token]);
+  }, [manualConfigurationIncomplete, productId, productUnavailable, quantity, t, token]);
 
   useEffect(() => {
     setXenaVerification({
@@ -287,6 +293,10 @@ export default function ProductPurchaseModal({
     // an input. A purchase must only start from the visible confirmation button.
     if (event.nativeEvent?.submitter !== confirmButtonRef.current) return;
     if (submitting || quoteLoading) return;
+    if (manualConfigurationIncomplete) {
+      setLocalError(configurationError || getIncompleteManualProductMessage(isArabic));
+      return;
+    }
 
     const numericQuantity = Number(quantity);
     if (!Number.isInteger(numericQuantity) || numericQuantity < minQuantity || numericQuantity > maxQuantity) {
@@ -705,6 +715,12 @@ function getConfirmButtonLabel({ deliveryType, familyKey, fulfillmentMode, isAra
   if (isTopup) return "Confirm charge";
   if (isCodeDelivery) return "Buy code";
   return "Confirm order";
+}
+
+function getIncompleteManualProductMessage(isArabic) {
+  return isArabic
+    ? "هذا المنتج غير متاح مؤقتاً لأن بيانات الطلب المطلوبة غير مكتملة."
+    : "This product is temporarily unavailable because required order fields are not configured.";
 }
 
 function createInitialFieldValues(fields) {
