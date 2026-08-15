@@ -43,6 +43,10 @@ export default function ProductPricing({
   const visibleToCustomer = value.visibleToCustomer === true || visibilityStatus.visibleToCustomer === true;
   const visibilityReasons = value.visibilityReasons || visibilityStatus.reasons || [];
   const manualFieldWarning = isFazerCards ? getManualFieldWarning(value, providerMeta) : null;
+  const requiredFieldsLabel = asArray(providerMeta.requiredFields)
+    .map((field) => field.label || field.key || field.name)
+    .filter(Boolean)
+    .join("، ") || "لا توجد حقول إضافية";
   const [providerTool, setProviderTool] = useState({
     busy: "",
     dryRun: null,
@@ -286,16 +290,10 @@ export default function ProductPricing({
           {isFazerCards && (
             <div className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-3 text-[10px] font-bold text-amber-900 dark:text-amber-100">
               <div className="mb-3 grid gap-1 sm:grid-cols-3">
-                <SummaryItem label="Provider" value="FazerCards" />
-                <SummaryItem label="Family" value={providerMeta.familyKey || "UNKNOWN"} />
-                <SummaryItem label="Mode" value={providerMeta.fulfillmentMode || "UNKNOWN"} />
-                <SummaryItem label="External ID" value={providerMeta.externalProductId || "-"} />
-                <SummaryItem label="Provider cost" value={providerMeta.priceLabel || "-"} />
-                <SummaryItem label="Stock" value={providerMeta.stockLabel || "Unknown"} />
-                <SummaryItem label="Region" value={providerMeta.region || "-"} />
-                <SummaryItem label="Platform" value={providerMeta.platform || "-"} />
-                <SummaryItem label="Block reason" value={providerMeta.blockReason || "-"} />
                 <SummaryItem label="Customer visibility" value={visibleToCustomer ? "Visible to customers" : "Not visible to customers"} />
+                <SummaryItem label="Fulfillment" value={value.providerExecutionMode === "AUTO_PROVIDER" ? "تنفيذ تلقائي من المورد" : value.providerExecutionMode === "DISABLED" ? "معطل" : "تنفيذ الطلب"} />
+                <SummaryItem label="Required fields" value={requiredFieldsLabel} />
+                <SummaryItem label="Stock" value={providerMeta.stockLabel || "Unknown"} />
               </div>
               {!visibleToCustomer && visibilityReasons.length > 0 && (
                 <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
@@ -320,7 +318,7 @@ export default function ProductPricing({
                   label="إتاحة الشراء للعملاء"
                   onChange={(checked) => onPatch({ customerPurchaseEnabled: checked })}
                 />
-                <Field label="Fulfillment type">
+                <Field label="طريقة التنفيذ">
                   <select
                     className={inputClassName}
                     value={value.providerExecutionMode || "MANUAL_FULFILLMENT"}
@@ -329,9 +327,9 @@ export default function ProductPricing({
                       ...(event.target.value !== "AUTO_PROVIDER" ? { providerExecutionEnabled: false } : {}),
                     })}
                   >
-                    <option value="AUTO_PROVIDER">AUTO_PROVIDER - تنفيذ تلقائي من المورد</option>
-                    <option value="MANUAL_FULFILLMENT">TEAM_FULFILLMENT - تنفيذ بواسطة الفريق</option>
-                    <option value="DISABLED">DISABLED - غير مفعل</option>
+                    <option value="AUTO_PROVIDER">تنفيذ تلقائي من المورد</option>
+                    <option value="MANUAL_FULFILLMENT">تنفيذ الطلب</option>
+                    <option value="DISABLED">معطل</option>
                   </select>
                 </Field>
               </div>
@@ -343,11 +341,21 @@ export default function ProductPricing({
               </p>
               {value.providerExecutionBlocked && (
                 <p className="mt-1 rounded-xl bg-rose-500/10 px-3 py-2 text-rose-700 dark:text-rose-200">
-                  التنفيذ التلقائي غير مفعل لهذا المنتج{providerMeta.blockReason ? `: ${providerMeta.blockReason}` : "."}
+                  هذا المنتج يحتاج مراجعة إعدادات التنفيذ{providerMeta.blockReason ? `: ${providerMeta.blockReason}` : "."}
                 </p>
               )}
               <details className="mt-3 rounded-xl border border-slate-200 bg-white/70 p-2 dark:border-white/10 dark:bg-[#0B1220]">
                 <summary className="cursor-pointer text-[10px] font-black text-slate-600 dark:text-slate-200">Advanced provider tools</summary>
+                <div className="mt-2 grid gap-1 sm:grid-cols-3">
+                  <SummaryItem label="Provider" value="FazerCards" />
+                  <SummaryItem label="Family" value={providerMeta.familyKey || "UNKNOWN"} />
+                  <SummaryItem label="Mode" value={providerMeta.fulfillmentMode || "UNKNOWN"} />
+                  <SummaryItem label="External ID" value={providerMeta.externalProductId || "-"} />
+                  <SummaryItem label="Provider cost" value={providerMeta.priceLabel || "-"} />
+                  <SummaryItem label="Region" value={providerMeta.region || "-"} />
+                  <SummaryItem label="Platform" value={providerMeta.platform || "-"} />
+                  <SummaryItem label="Block reason" value={providerMeta.blockReason || "-"} />
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     type="button"

@@ -62,8 +62,7 @@ export default function SupplierProductsModal({
   const contractSummary = fazerCardsCatalog.contractsSummary?.families || {};
   const familyList = fazerCardsCatalog.families?.length ? fazerCardsCatalog.families : FAZERCARDS_FAMILY_TABS;
   const syncResult = fazerCardsCatalog.syncResult;
-  const steamGiftsWarning = familyList.find((family) => family.familyKey === "STEAM_GIFTS")?.warning
-    || "STEAM_GIFTS catalog endpoint returned 404 in production and is currently unavailable.";
+  const steamGiftsWarning = "هذه العائلة غير متاحة حالياً من المورد.";
   const visibleProducts = fazerCards && activeFamily
     ? products.filter((product) => String(product?.familyKey || "").toUpperCase() === activeFamily)
     : products;
@@ -300,35 +299,43 @@ export default function SupplierProductsModal({
               <article key={product.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220] sm:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
                   <h3 className="truncate text-[11px] font-black dark:text-white">{product.name}</h3>
-                  <p dir="ltr" className="mt-1 text-right text-[9px] font-bold text-slate-400">
-                    {product.externalProductId || product.id}
-                  </p>
+                  {!fazerCards && (
+                    <p dir="ltr" className="mt-1 text-right text-[9px] font-bold text-slate-400">
+                      {product.externalProductId || product.id}
+                    </p>
+                  )}
                   <p className="mt-1 text-[9px] font-bold text-slate-500 dark:text-slate-300">
                     Qty {product.minQty} - {product.maxQty} | Last sync {product.lastSyncedAtLabel}
                   </p>
                   {fazerCards && (
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black">
-                      <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{product.familyKey || "UNKNOWN"}</span>
-                      <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">{product.fulfillmentMode || "UNKNOWN"}</span>
-                      {contract.supportStage && <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">{contract.supportStage}</span>}
-                      {contract.executionStage && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{contract.executionStage}</span>}
                       <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.categoryName || product.category || "No category"}</span>
                       {(product.region || product.platform) && (
                         <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{[product.platform, product.region].filter(Boolean).join(" / ")}</span>
                       )}
                       <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">Stock {product.stockLabel || "Unknown"}</span>
-                      {product.supportLevel && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.supportLevel}</span>}
                       <span className="rounded-full bg-sky-100 px-2 py-1 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">{product.requiredFieldsLabel}</span>
                       <span className={`rounded-full px-2 py-1 ${product.isSupported ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200" : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"}`}>
                         {product.isSupported ? "Supported" : "Unsupported"}
                       </span>
-                      <span className={`rounded-full px-2 py-1 ${product.isBlocked ? "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200" : "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-300"}`}>
-                        {product.isBlocked ? product.blockReason || "Blocked" : "Not blocked"}
-                      </span>
                       <span className={`rounded-full px-2 py-1 ${product.imported ? "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200" : "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-300"}`}>
                         {product.imported ? "Imported" : "Not imported"}
                       </span>
-                      {firstBlocker && <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{firstBlocker}</span>}
+                      <details className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 dark:border-white/10 dark:bg-white/[0.03]">
+                        <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">Advanced</summary>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{product.familyKey || "UNKNOWN"}</span>
+                          <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">{product.fulfillmentMode || "UNKNOWN"}</span>
+                          {contract.supportStage && <span className="rounded-full bg-violet-100 px-2 py-1 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">{contract.supportStage}</span>}
+                          {contract.executionStage && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{contract.executionStage}</span>}
+                          {product.supportLevel && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.supportLevel}</span>}
+                          <span dir="ltr" className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.externalProductId || product.id}</span>
+                          <span className={`rounded-full px-2 py-1 ${product.isBlocked ? "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200" : "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-300"}`}>
+                            {product.isBlocked ? product.blockReason || "Blocked" : "Not blocked"}
+                          </span>
+                          {firstBlocker && <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{firstBlocker}</span>}
+                        </div>
+                      </details>
                     </div>
                   )}
                   {fazerCards && imported && (
@@ -338,7 +345,7 @@ export default function SupplierProductsModal({
                           {visibleToCustomer ? "Visible to customers" : "Not visible to customers"}
                         </span>
                         <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">
-                          {imported.providerExecutionMode === "AUTO_PROVIDER" ? "تنفيذ تلقائي من المورد" : imported.providerExecutionMode === "MANUAL_FULFILLMENT" ? "تنفيذ بواسطة الفريق" : "غير مفعل"}
+                          {imported.providerExecutionMode === "AUTO_PROVIDER" ? "تنفيذ تلقائي من المورد" : imported.providerExecutionMode === "MANUAL_FULFILLMENT" ? "تنفيذ الطلب" : "غير مفعل"}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -388,7 +395,7 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[9px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-slate-300"
                       >
                         <Eye className="h-3.5 w-3.5" />
-                        Preview
+                        معاينة
                       </button>
                       <button
                         type="button"
@@ -397,7 +404,7 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                       >
                         <Download className="h-3.5 w-3.5" />
-                        {product.imported ? "Update linked product" : "Import"}
+                        {product.imported ? "تحديث المنتج" : "استيراد المنتج"}
                       </button>
                       <button
                         type="button"
@@ -407,7 +414,7 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                       >
                         <Rocket className="h-3.5 w-3.5" />
-                        نشر بتنفيذ الفريق
+                        نشر المنتج
                       </button>
                       {autoProviderCapable && (
                         <button
@@ -417,7 +424,7 @@ export default function SupplierProductsModal({
                           className="inline-flex h-8 items-center gap-1 rounded-xl bg-sky-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                         >
                           <Rocket className="h-3.5 w-3.5" />
-                          Enable Auto Provider
+                          تفعيل التنفيذ التلقائي
                         </button>
                       )}
                       <details className="w-full text-right sm:w-auto">
@@ -441,7 +448,7 @@ export default function SupplierProductsModal({
                             className="inline-flex h-8 items-center gap-1 rounded-xl border border-amber-200 px-3 text-[9px] font-black text-amber-700 disabled:opacity-50 dark:border-amber-400/20 dark:text-amber-200"
                           >
                             <FlaskConical className="h-3.5 w-3.5" />
-                            Payload preview
+                            معاينة الطلب
                           </button>
                         </div>
                       </details>
@@ -452,7 +459,7 @@ export default function SupplierProductsModal({
                         className="inline-flex h-8 items-center gap-1 rounded-xl border border-rose-200 px-3 text-[9px] font-black text-rose-700 disabled:opacity-50 dark:border-rose-400/20 dark:text-rose-200"
                       >
                         <Power className="h-3.5 w-3.5" />
-                        Disable product
+                        تعطيل المنتج
                       </button>
                     </div>
                   )}

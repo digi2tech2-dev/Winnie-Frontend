@@ -20,6 +20,7 @@ import {
   getAdminProviderProducts,
   getAdminProviders,
   launchFazerCardsProduct,
+  publishEligibleFazerCardsProducts,
   syncFazerCardsCatalogAll,
   syncFazerCardsCatalogFamily,
   syncAdminProviderProducts,
@@ -403,8 +404,8 @@ export default function SuppliersManagementPage() {
     if (normalizedFamily === "STEAM_GIFTS") {
       showToast({
         type: "warning",
-        title: "STEAM_GIFTS unavailable",
-        message: "FazerCards returned HTTP 404 for this catalog family in production, so it remains disabled.",
+        title: "العائلة غير متاحة",
+        message: "هذه العائلة غير متاحة حالياً من المورد.",
       });
       return;
     }
@@ -543,6 +544,36 @@ export default function SuppliersManagementPage() {
     }
   };
 
+  const handlePublishEligibleFazerCards = async ({ providerExecutionMode = "MANUAL_FULFILLMENT", familyKey = "", dryRun = false } = {}) => {
+    if (!token || fazerLaunchOps.loading) return;
+    const isAuto = providerExecutionMode === "AUTO_PROVIDER";
+    const confirmMessage = isAuto
+      ? "تفعيل التنفيذ التلقائي للمنتجات المؤكدة؟ سيبدأ التنفيذ الفعلي فقط عند تفعيل إعدادات المورد من السيرفر."
+      : "نشر المنتجات المؤهلة للعملاء؟ المنتجات غير المكتملة ستظهر كأخطاء ولن تُنشر.";
+    if (!dryRun && !window.confirm(confirmMessage)) return;
+
+    setFazerLaunchOps((current) => ({ ...current, loading: true, error: "" }));
+    try {
+      const result = await publishEligibleFazerCardsProducts(token, {
+        familyKey,
+        providerExecutionMode,
+        dryRun,
+      });
+      setFazerLaunchOps((current) => ({ ...current, bulkResult: result.result }));
+      showToast({
+        type: result.result.failed ? "warning" : "success",
+        title: isAuto ? "تم تحديث التنفيذ التلقائي" : "تم نشر المنتجات",
+        message: `${result.result.updated || result.result.wouldUpdate || 0} منتج جاهز، ${result.result.failed || 0} بحاجة لمراجعة.`,
+      });
+      await refreshFazerLaunchSurfaces();
+    } catch (error) {
+      setFazerLaunchOps((current) => ({ ...current, error: error.userMessage || "Could not update FazerCards products." }));
+      showToast({ type: "error", title: "تعذر تحديث المنتجات", message: error.userMessage || "تعذر تحديث منتجات FazerCards." });
+    } finally {
+      setFazerLaunchOps((current) => ({ ...current, loading: false }));
+    }
+  };
+
   const refreshFazerLaunchSurfaces = async () => {
     await loadFazerLaunchOps({ silent: true });
     if (productsState.supplier && isFazerCardsSupplier(productsState.supplier)) {
@@ -557,7 +588,7 @@ export default function SuppliersManagementPage() {
   const handleFazerProductLaunchManual = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) return;
-    if (!window.confirm("نشر هذا المنتج للعملاء بتنفيذ بواسطة الفريق؟")) return;
+    if (!window.confirm("نشر هذا المنتج للعملاء؟")) return;
 
     setActionKey(`${providerProduct.id}:launch-manual`);
     try {
@@ -573,7 +604,7 @@ export default function SuppliersManagementPage() {
         type: launchStatus.visibleToCustomer === true ? "success" : "warning",
         title: "تم تحديث إعدادات النشر",
         message: launchStatus.visibleToCustomer === true
-          ? "المنتج ظاهر الآن للعملاء بتنفيذ بواسطة الفريق."
+          ? "المنتج ظاهر الآن للعملاء."
           : `تم حفظ المنتج، لكنه غير ظاهر: ${(launchStatus.reasons || []).join(", ") || "راجع حالة النشر."}`,
       });
       await refreshFazerLaunchSurfaces();
@@ -592,7 +623,7 @@ export default function SuppliersManagementPage() {
       showToast({
         type: "warning",
         title: "التنفيذ التلقائي غير متاح",
-        message: "هذه العائلة تعمل بتنفيذ بواسطة الفريق فقط.",
+        message: "هذه العائلة لا تدعم التنفيذ التلقائي حالياً.",
       });
       return;
     }
@@ -855,6 +886,7 @@ export default function SuppliersManagementPage() {
               onLoad={loadFazerLaunchOps}
               onManualFilterChange={handleFazerManualFilterChange}
               onNoteManual={handleNoteManualOrder}
+              onPublishEligible={handlePublishEligibleFazerCards}
             />
           )}
 

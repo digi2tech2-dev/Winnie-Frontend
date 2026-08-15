@@ -742,13 +742,13 @@ function getFulfillmentNotice({ deliveryType, executionMode, familyKey, fulfillm
     || (deliveryType !== "MANUAL_FULFILLMENT" && ["TOPUPS", "GIFTCARDS", "GAME_KEYS"].includes(familyKey));
 
   if (isArabic) {
-    if (isManual) return "سيتم تنفيذ طلبك بواسطة فريقنا في أسرع وقت.";
-    if (isAuto) return "سيتم تنفيذ الطلب تلقائياً من المورد.";
+    if (isManual) return "طلبك قيد التنفيذ.";
+    if (isAuto) return "يتم تنفيذ الطلب تلقائياً.";
     return "";
   }
 
-  if (isManual) return "Our team will process your order as soon as possible.";
-  if (isAuto) return "The order will be processed automatically by the supplier.";
+  if (isManual) return "Your order is being processed.";
+  if (isAuto) return "The order is processed automatically.";
   return "";
 }
 

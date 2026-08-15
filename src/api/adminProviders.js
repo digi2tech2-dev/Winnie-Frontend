@@ -835,9 +835,27 @@ export async function bulkUpdateFazerCardsLaunch(token, payload = {}) {
       productIds: payload.productIds,
       providerBlockReason: payload.providerBlockReason,
       providerExecutionBlocked: payload.providerExecutionBlocked,
+      providerExecutionEnabled: payload.providerExecutionEnabled,
       providerExecutionMode: payload.providerExecutionMode,
       status: payload.status,
       visibleInStore: payload.visibleInStore,
+    }),
+    method: "POST",
+    token,
+  });
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function publishEligibleFazerCardsProducts(token, payload = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/products/publish-eligible", {
+    body: compactObject({
+      dryRun: payload.dryRun,
+      familyKey: payload.familyKey,
+      limit: payload.limit,
+      providerExecutionMode: payload.providerExecutionMode,
     }),
     method: "POST",
     token,
@@ -855,6 +873,7 @@ export async function launchFazerCardsProduct(token, productId, payload = {}) {
       isActive: payload.isActive,
       providerBlockReason: payload.providerBlockReason,
       providerExecutionBlocked: payload.providerExecutionBlocked,
+      providerExecutionEnabled: payload.providerExecutionEnabled,
       providerExecutionMode: payload.providerExecutionMode,
       status: payload.status,
       visibleInStore: payload.visibleInStore,
