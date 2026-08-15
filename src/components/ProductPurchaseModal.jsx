@@ -49,6 +49,8 @@ export default function ProductPurchaseModal({
   const productUnavailable = isProductUnavailable(product);
   const xenaProduct = isXenaProduct(product);
   const xenaTargetFieldKey = xenaProduct ? getXenaTargetFieldKey(orderFields) : XENA_TARGET_FIELD_KEY;
+  const providerFamilyKey = getProviderFamilyKey(product);
+  const providerFulfillmentMode = getProviderFulfillmentMode(product);
   const [quantity, setQuantity] = useState("");
   const [accountId, setAccountId] = useState("");
   const [fieldValues, setFieldValues] = useState(() => createInitialFieldValues(orderFields));
@@ -95,14 +97,15 @@ export default function ProductPurchaseModal({
   const displayError = localError || xenaVerification.error || submitError || quantityWarning || quoteError;
   const isQuantityWarning = Boolean(quantityWarning) && displayError === quantityWarning;
   const hasOrderFields = orderFields.length > 0;
-  const showFallbackAccountInput = !hasOrderFields;
+  const canUseTopupFallbackField = providerFamilyKey === "TOPUPS" || providerFulfillmentMode === "TOPUP_WITH_FIELDS";
+  const showFallbackAccountInput = !hasOrderFields && canUseTopupFallbackField;
   const productTitle = product.name || (isArabic ? "المنتج" : "Product");
   const productImage = getProductImage(product);
   const missingRequiredField = orderFields.some((field) =>
     field.required !== false
     && !isRequiredFieldFilledForPurchase(field, requiredFieldValues, verifiedXenaUid),
   );
-  const missingFallbackAccount = !hasOrderFields && requireAccountId && !accountId.trim();
+  const missingFallbackAccount = showFallbackAccountInput && requireAccountId && !accountId.trim();
   const isQuantityWithinBounds = Number.isInteger(numericQuantity)
     && numericQuantity >= minQuantity
     && numericQuantity <= maxQuantity;
@@ -310,8 +313,8 @@ export default function ProductPurchaseModal({
       }
     }
 
-    const cleanAccountId = accountId.trim();
-    if (!hasOrderFields && requireAccountId && !cleanAccountId) {
+    const cleanAccountId = showFallbackAccountInput ? accountId.trim() : "";
+    if (showFallbackAccountInput && requireAccountId && !cleanAccountId) {
       setLocalError(t("purchase.accountRequired"));
       return;
     }
@@ -641,13 +644,38 @@ function getProductOrderFields(product = {}) {
   const orderFields = Array.isArray(product.orderFields)
     ? product.orderFields.map((field) => normalize(field, "key"))
     : [];
+  const requiredFields = Array.isArray(product.requiredFields)
+    ? product.requiredFields.map((field) => normalize(field, "key"))
+    : [];
   if (isXenaProduct(product) && orderFields.some((field) => field.isActive && isXenaTargetFieldKey(field.key))) {
     return orderFields.filter((field) => field.isActive && field.key);
   }
 
-  const source = dynamicFields.some((field) => field.isActive && field.key) ? dynamicFields : orderFields;
+  const source = dynamicFields.some((field) => field.isActive && field.key)
+    ? dynamicFields
+    : orderFields.some((field) => field.isActive && field.key)
+      ? orderFields
+      : requiredFields;
 
   return source.filter((field) => field.isActive && field.key);
+}
+
+function getProviderFamilyKey(product = {}) {
+  return String(
+    product.familyKey
+    || product.providerProductFamilyKey
+    || product.providerProduct?.familyKey
+    || "",
+  ).trim().toUpperCase();
+}
+
+function getProviderFulfillmentMode(product = {}) {
+  return String(
+    product.fulfillmentMode
+    || product.providerProductFulfillmentMode
+    || product.providerProduct?.fulfillmentMode
+    || "",
+  ).trim().toUpperCase();
 }
 
 function createInitialFieldValues(fields) {

@@ -33,8 +33,15 @@ function getPurchaseFields(product = {}) {
         isActive: field.isActive !== false,
       }))
     : [];
+  const requiredFields = Array.isArray(product.requiredFields)
+    ? product.requiredFields.map((field) => ({
+        key: field.key,
+        label: field.label || field.key,
+        isActive: field.isActive !== false,
+      }))
+    : [];
 
-  return [...dynamicFields, ...orderFields].filter((field) => field.isActive && field.key);
+  return [...dynamicFields, ...orderFields, ...requiredFields].filter((field) => field.isActive && field.key);
 }
 
 function buildSubmittedFieldList(product, values = {}) {
