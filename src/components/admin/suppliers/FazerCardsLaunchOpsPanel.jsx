@@ -24,6 +24,21 @@ function formatBalance(balance) {
   return `${formatNumber(balance)} USD`;
 }
 
+function formatDate(value) {
+  if (!value) return "-";
+  try {
+    return new Date(value).toLocaleString("ar-EG-u-nu-latn");
+  } catch {
+    return "-";
+  }
+}
+
+function formatWebhookStatus(status) {
+  if (status === "enabled") return "مفعل";
+  if (status === "missing_secret") return "السر غير مضبوط";
+  return "غير مفعل";
+}
+
 function MetricCard({ label, value, tone = "slate" }) {
   const toneClass = {
     amber: "bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-100",
@@ -106,6 +121,7 @@ export default function FazerCardsLaunchOpsPanel({
   onPublishEligible,
   filters = {},
   error = "",
+  webhookDeliveries = [],
 }) {
   const [idsText, setIdsText] = useState("");
   const [mode, setMode] = useState("MANUAL_FULFILLMENT");
@@ -205,6 +221,7 @@ export default function FazerCardsLaunchOpsPanel({
           <div>
             <div className="flex flex-wrap gap-1.5">
               <GateBadge label="API" enabled={health?.api?.enabled && health?.api?.connectionOk} />
+              <GateBadge label="Webhooks" enabled={health?.webhooks?.enabled && health?.webhooks?.secretConfigured} />
               <GateBadge label="شراء العملاء" enabled={health?.gates?.customerPurchaseEnabled} />
               <GateBadge label="إعدادات التنفيذ التلقائي" enabled={health?.gates?.realOrdersEnabled} />
               <GateBadge label="تسليم الأكواد" enabled={health?.gates?.codeDeliveryEnabled} />
@@ -219,6 +236,24 @@ export default function FazerCardsLaunchOpsPanel({
                 ))}
               </div>
             )}
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
+              <p className="text-[9px] font-black text-slate-400">FazerCards webhook</p>
+              <p className="mt-1 text-[9px] font-bold text-slate-600 dark:text-slate-200">
+                {formatWebhookStatus(health?.webhooks?.status)}
+              </p>
+              <code dir="ltr" className="mt-1 block break-all rounded-lg bg-slate-100 px-2 py-1 text-[9px] text-slate-600 dark:bg-white/5 dark:text-slate-200">
+                {health?.webhooks?.endpointUrl || "https://winniefun.com/api/webhooks/providers/fazercards"}
+              </code>
+              {!!webhookDeliveries.length && (
+                <div className="mt-2 max-h-28 space-y-1 overflow-auto">
+                  {webhookDeliveries.slice(0, 5).map((delivery) => (
+                    <p key={delivery.eventId || `${delivery.event}-${delivery.receivedAt}`} dir="ltr" className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
+                      {delivery.event || "event"} | {delivery.processingStatus || "-"} | {delivery.providerOrderId || "-"} | {delivery.statusBefore || "-"} -&gt; {delivery.statusAfter || "-"} | {formatDate(delivery.receivedAt)}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <div className="flex items-center gap-2">

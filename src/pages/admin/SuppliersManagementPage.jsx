@@ -16,6 +16,7 @@ import {
   getFazerCardsManualOrders,
   getFazerCardsProductReadiness,
   getFazerCardsProviderProducts,
+  getFazerCardsWebhookDeliveries,
   getAdminProviderBalance,
   getAdminProviderProducts,
   getAdminProviders,
@@ -82,6 +83,7 @@ const emptyFazerLaunchOpsState = {
   loading: false,
   manualFilters: { familyKey: "" },
   manualOrders: [],
+  webhookDeliveries: [],
 };
 
 function getProviderCode(provider) {
@@ -486,16 +488,17 @@ export default function SuppliersManagementPage() {
     if (!token) return;
     if (!silent) setFazerLaunchOps((current) => ({ ...current, error: "", loading: true }));
 
-    const [healthResult, manualResult] = await Promise.allSettled([
+    const [healthResult, manualResult, webhookResult] = await Promise.allSettled([
       getFazerCardsLaunchHealth(token),
       getFazerCardsManualOrders(token, {
         familyKey: filters.familyKey || undefined,
         limit: 20,
         page: 1,
       }),
+      getFazerCardsWebhookDeliveries(token, { limit: 10, page: 1 }),
     ]);
 
-    const error = [healthResult, manualResult]
+    const error = [healthResult, manualResult, webhookResult]
       .filter((result) => result.status === "rejected")
       .map((result) => result.reason?.userMessage || result.reason?.message || "Could not load FazerCards launch operations.")
       .join(" ");
@@ -507,6 +510,7 @@ export default function SuppliersManagementPage() {
       loading: false,
       manualFilters: filters,
       manualOrders: manualResult.status === "fulfilled" ? manualResult.value.manualOrders : current.manualOrders,
+      webhookDeliveries: webhookResult.status === "fulfilled" ? webhookResult.value.deliveries : current.webhookDeliveries,
     }));
   }, [fazerLaunchOps.manualFilters, token]);
 
@@ -880,6 +884,7 @@ export default function SuppliersManagementPage() {
               health={fazerLaunchOps.health}
               loading={fazerLaunchOps.loading}
               manualOrders={fazerLaunchOps.manualOrders}
+              webhookDeliveries={fazerLaunchOps.webhookDeliveries}
               onBulkLaunch={handleFazerBulkLaunch}
               onCompleteManual={handleCompleteManualOrder}
               onFailManual={handleFailManualOrder}

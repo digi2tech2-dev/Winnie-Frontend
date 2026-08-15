@@ -745,6 +745,29 @@ export async function getFazerCardsLaunchHealth(token) {
   };
 }
 
+export async function getFazerCardsWebhookDeliveries(token, query = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/webhooks/deliveries", {
+    query: compactObject({
+      event: query.event,
+      limit: query.limit || 10,
+      matched: query.matched,
+      page: query.page || 1,
+      processingStatus: query.processingStatus,
+    }),
+    token,
+  });
+
+  return {
+    deliveries: asArray(response.data),
+    message: response.message,
+    pagination: normalizePagination(response.pagination, {
+      page: query.page || 1,
+      limit: query.limit || 10,
+      total: asArray(response.data).length,
+    }),
+  };
+}
+
 export async function getFazerCardsManualOrders(token, query = {}) {
   const response = await apiRequest("/admin/providers/fazercards/orders/manual", {
     query: compactObject({
