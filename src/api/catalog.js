@@ -82,6 +82,7 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
   const categoryValue = subCategoryValue || product.category?._id || product.category || mainCategoryValue || "";
   const category = categoryLookup.get(String(categoryValue)) || categoryLookup.get(String(product.categorySlug || ""));
   const displayCurrency = String(product.displayCurrency || product.currency || DEFAULT_CURRENCY).toUpperCase();
+  const purchaseRateSnapshot = toNumber(product.purchaseRateSnapshot ?? product.exchangeRate ?? product.rateSnapshot, 0);
   const minQty = toNumber(product.minQty, 1);
   const maxQty = toNumber(product.maxQty, 999);
   const displayPrice = product.displayPrice ?? product.minTotalCustomerCurrency ?? product.finalPrice ?? product.sellingPrice ?? product.price ?? product.basePrice;
@@ -122,6 +123,9 @@ export function normalizeProduct(product = {}, index = 0, categoryLookup = new M
     discountPercent: discountPercentage,
     hasDiscount,
     displayCurrency,
+    purchaseRateSnapshot,
+    exchangeRate: purchaseRateSnapshot || product.exchangeRate || null,
+    rateType: product.rateType || (purchaseRateSnapshot ? "purchase" : undefined),
     displayPrice: numericPrice,
     displayPriceLabel,
     finalPrice: product.finalPrice,

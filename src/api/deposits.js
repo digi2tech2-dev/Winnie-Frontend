@@ -13,6 +13,7 @@ export function normalizeDeposit(deposit = {}) {
   const id = getItemId(deposit);
   const currency = String(deposit.currency || DEFAULT_CURRENCY).toUpperCase();
   const requestedAmount = toNumber(deposit.requestedAmount ?? deposit.amount, 0);
+  const expectedWalletCreditAmount = toNumber(deposit.expectedWalletCreditAmount ?? requestedAmount, requestedAmount);
   const status = String(deposit.status || "PENDING").toUpperCase();
 
   return {
@@ -22,7 +23,12 @@ export function normalizeDeposit(deposit = {}) {
     amountLabel: formatCurrency(requestedAmount, currency),
     createdAtLabel: formatDateTime(deposit.createdAt),
     currency,
+    depositRateSnapshot: toNumber(deposit.depositRateSnapshot ?? deposit.exchangeRate, 0),
+    expectedWalletCreditAmount,
+    rateType: deposit.rateType || "deposit",
     requestedAmount,
+    usdEquivalent: toNumber(deposit.usdEquivalent ?? deposit.amountUsd, 0),
+    walletCurrency: String(deposit.walletCurrency || currency).toUpperCase(),
     status,
     statusLabel: humanizeToken(status, "Pending"),
   };

@@ -30,6 +30,7 @@ export function normalizeOrder(order = {}) {
   const productName = product?.name || order.productName || "Order item";
   const currency = String(order.currency || DEFAULT_CURRENCY).toUpperCase();
   const amount = toNumber(order.chargedAmount ?? order.totalPrice ?? order.usdAmount, 0);
+  const purchaseRateSnapshot = toNumber(order.purchaseRateSnapshot ?? order.rateSnapshot, 0);
   const createdAt = order.createdAt || order.date || null;
   const orderNumber = order.orderNumber ? `#${order.orderNumber}` : id;
 
@@ -45,6 +46,8 @@ export function normalizeOrder(order = {}) {
     delivery: status === "COMPLETED" ? "Delivered" : humanizeToken(status, "Pending"),
     displayId: orderNumber,
     price: formatCurrency(amount, currency),
+    purchaseRateSnapshot,
+    rateType: order.rateType || (purchaseRateSnapshot ? "purchase" : undefined),
     product,
     productImage: product?.image || "",
     productName,
@@ -110,12 +113,15 @@ export async function createCustomerOrder(token, payload, options = {}) {
 export function normalizeOrderQuote(quote = {}) {
   const currency = String(quote.currency || DEFAULT_CURRENCY).toUpperCase();
   const chargedAmount = toNumber(quote.chargedAmount ?? quote.payableAmount, 0);
+  const purchaseRateSnapshot = toNumber(quote.purchaseRateSnapshot ?? quote.rateSnapshot, 0);
 
   return {
     ...quote,
     chargedAmount,
     currency,
     displayTotal: quote.displayTotal || formatCurrency(chargedAmount, currency),
+    purchaseRateSnapshot,
+    rateType: quote.rateType || (purchaseRateSnapshot ? "purchase" : undefined),
     hasEnoughBalance: quote.hasEnoughBalance !== false,
     isQuantityValid: quote.isQuantityValid !== false,
     quantityErrorCode: quote.quantityErrorCode || null,

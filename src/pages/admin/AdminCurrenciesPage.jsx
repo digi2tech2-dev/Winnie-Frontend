@@ -207,7 +207,7 @@ function Header({ busy, onCreate }) {
       </span>
       <div className="min-w-0 flex-1">
         <h1 className="text-2xl font-black dark:text-white">إدارة العملات</h1>
-        <p className="text-[9px] font-bold text-slate-400">سعر المنصة هو مصدر الحقيقة للتحويلات.</p>
+        <p className="text-[9px] font-bold text-slate-400">افصل بين سعر شحن المحفظة وسعر شراء المنتجات. سعر السوق مرجعي فقط.</p>
       </div>
       <button
         type="button"
@@ -244,12 +244,12 @@ function CurrencyCard({ currency, onDelete, onEdit, onToggle }) {
       </div>
 
       <div className="admin-currency-rate mt-3 rounded-2xl bg-violet-50 p-3 dark:bg-violet-500/[0.08]">
-        <p className="text-[8px] font-black text-violet-500">سعر المنصة مقابل 1 USD</p>
+        <p className="text-[8px] font-black text-violet-500">سعر شراء المنتجات مقابل 1 USD</p>
         <strong dir="ltr" className="mt-1 block text-right text-xl text-violet-700 dark:text-violet-300">
-          {currency.platformRate.toLocaleString("en-US", { maximumFractionDigits: 6 })} {currency.code}
+          {currency.purchaseRate.toLocaleString("en-US", { maximumFractionDigits: 6 })} {currency.code}
         </strong>
         <p dir="ltr" className="mt-2 text-right text-[8px] font-bold text-slate-400">
-          Market: {currency.marketRate ?? "-"} · Markup: {currency.markupPercentage}%
+          سعر الشحن: {currency.depositRate ?? "-"} · سعر السوق: {currency.marketRate ?? "-"}
         </p>
       </div>
 
@@ -278,7 +278,9 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
     marketRate: currency?.marketRate ?? "",
     markupPercentage: currency?.markupPercentage ?? 0,
     name: currency?.name || "",
-    platformRate: currency?.platformRate ?? 1,
+    depositRate: currency?.depositRate ?? currency?.platformRate ?? 1,
+    purchaseRate: currency?.purchaseRate ?? currency?.platformRate ?? 1,
+    platformRate: currency?.platformRate ?? currency?.purchaseRate ?? 1,
     symbol: currency?.symbol || "",
   }));
 
@@ -290,7 +292,9 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
       marketRate: currency?.marketRate ?? "",
       markupPercentage: currency?.markupPercentage ?? 0,
       name: currency?.name || "",
-      platformRate: currency?.platformRate ?? 1,
+      depositRate: currency?.depositRate ?? currency?.platformRate ?? 1,
+      purchaseRate: currency?.purchaseRate ?? currency?.platformRate ?? 1,
+      platformRate: currency?.platformRate ?? currency?.purchaseRate ?? 1,
       symbol: currency?.symbol || "",
     });
   }, [currency]);
@@ -300,14 +304,23 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
 
   const save = () => {
-    if (!form.code || !form.platformRate || Number(form.platformRate) <= 0) return;
+    if (
+      !form.code
+      || !form.depositRate
+      || !form.purchaseRate
+      || Number(form.depositRate) <= 0
+      || Number(form.purchaseRate) <= 0
+    ) return;
+    const purchaseRate = Number(form.purchaseRate);
     onSave({
       ...form,
       code: String(form.code).toUpperCase(),
       exists,
       marketRate: form.marketRate === "" ? null : Number(form.marketRate),
       markupPercentage: form.markupPercentage === "" ? 0 : Number(form.markupPercentage),
-      platformRate: Number(form.platformRate),
+      depositRate: Number(form.depositRate),
+      purchaseRate,
+      platformRate: purchaseRate,
     });
   };
 
@@ -332,7 +345,23 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
           <Field disabled={exists} label="الرمز" value={form.code} onChange={(value) => set("code", value.toUpperCase().slice(0, 3))} />
           <Field label="الاسم" value={form.name} onChange={(value) => set("name", value)} />
           <Field label="الرمز المختصر" value={form.symbol} onChange={(value) => set("symbol", value)} />
-          <Field label="سعر المنصة" type="number" value={form.platformRate} onChange={(value) => set("platformRate", value)} />
+          <Field
+            label="سعر شحن المحفظة"
+            help="يستخدم عند إضافة رصيد للمحفظة."
+            type="number"
+            value={form.depositRate}
+            onChange={(value) => set("depositRate", value)}
+          />
+          <Field
+            label="سعر شراء المنتجات"
+            help="يستخدم في عرض وخصم أسعار المنتجات."
+            type="number"
+            value={form.purchaseRate}
+            onChange={(value) => {
+              set("purchaseRate", value);
+              set("platformRate", value);
+            }}
+          />
           <Field label="سعر السوق" type="number" value={form.marketRate} onChange={(value) => set("marketRate", value)} />
           <Field label="نسبة الهامش %" type="number" value={form.markupPercentage} onChange={(value) => set("markupPercentage", value)} />
           <label className="admin-currency-modal-field">
@@ -365,11 +394,12 @@ function CurrencyModal({ busy, currency, open, onClose, onSave }) {
   return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
-function Field({ disabled = false, label, type = "text", value, onChange }) {
+function Field({ disabled = false, help = "", label, type = "text", value, onChange }) {
   return (
     <label className="admin-currency-modal-field">
       <span className="mb-1 block text-[9px] font-black text-slate-500">{label}</span>
       <input disabled={disabled} type={type} value={value} onChange={(event) => onChange(event.target.value)} className={`${input} admin-currency-modal-input disabled:cursor-not-allowed disabled:opacity-70`} />
+      {help && <span className="mt-1 block text-[8px] font-bold text-slate-400">{help}</span>}
     </label>
   );
 }

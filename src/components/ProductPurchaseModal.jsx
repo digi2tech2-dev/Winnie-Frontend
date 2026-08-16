@@ -868,6 +868,7 @@ function firstPositiveNumber(...values) {
 
 function getLocalEstimateRate(product = {}) {
   const explicitRate = firstPositiveNumber(
+    product.purchaseRateSnapshot,
     product.rateSnapshot,
     product.rate,
     product.displayRate,

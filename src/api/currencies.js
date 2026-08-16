@@ -5,6 +5,8 @@ export function normalizeCurrency(currency = {}) {
   const code = String(currency.code || currency.currency || "").trim().toUpperCase();
   const id = getItemId(currency, code);
   const platformRate = toNumber(currency.platformRate ?? currency.rate ?? currency.exchangeRate, 0);
+  const depositRate = toNumber(currency.depositRate ?? currency.effectiveDepositRate ?? platformRate, platformRate);
+  const purchaseRate = toNumber(currency.purchaseRate ?? currency.effectivePurchaseRate ?? platformRate, platformRate);
   const marketRate = currency.marketRate === null || currency.marketRate === undefined
     ? null
     : toNumber(currency.marketRate, 0);
@@ -21,7 +23,11 @@ export function normalizeCurrency(currency = {}) {
     markupPercentage: toNumber(currency.markupPercentage, 0),
     name: currency.name || code || "Currency",
     platformRate,
-    rate: platformRate,
+    depositRate,
+    purchaseRate,
+    rate: purchaseRate,
+    effectiveDepositRate: depositRate,
+    effectivePurchaseRate: purchaseRate,
     symbol: currency.symbol || code,
     updatedAt,
     updatedAtLabel: updatedAt ? formatDateTime(updatedAt, "ar-EG-u-nu-latn") : "-",

@@ -28,11 +28,14 @@ function nonNegativeNumber(value, fallback = 0) {
 }
 
 function buildCreateCurrencyPayload(values = {}) {
+  const purchaseRate = Number(values.purchaseRate ?? values.platformRate);
   return compactObject({
     code: String(values.code || "").toUpperCase(),
     name: values.name,
     symbol: values.symbol,
-    platformRate: Number(values.platformRate),
+    platformRate: Number(values.platformRate ?? purchaseRate),
+    depositRate: Number(values.depositRate ?? values.platformRate ?? purchaseRate),
+    purchaseRate,
     marketRate: optionalNumber(values.marketRate),
     markupPercentage: nonNegativeNumber(values.markupPercentage),
     isActive: values.isActive,
@@ -40,10 +43,13 @@ function buildCreateCurrencyPayload(values = {}) {
 }
 
 function buildUpdateCurrencyPayload(values = {}) {
+  const purchaseRate = Number(values.purchaseRate ?? values.platformRate);
   const payload = compactObject({
     name: values.name,
     symbol: values.symbol,
-    platformRate: Number(values.platformRate),
+    platformRate: Number(values.platformRate ?? purchaseRate),
+    depositRate: Number(values.depositRate ?? values.platformRate ?? purchaseRate),
+    purchaseRate,
     markupPercentage: nonNegativeNumber(values.markupPercentage),
     isActive: values.isActive,
     applyDebtAdjustment: values.applyDebtAdjustment === true,

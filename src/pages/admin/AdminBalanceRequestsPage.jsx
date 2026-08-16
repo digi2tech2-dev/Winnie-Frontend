@@ -408,7 +408,7 @@ function RequestDetails({ actionKey, request, onClose, onReview }) {
               <DetailInfo label="العملة" value={request.currency} />
               <DetailInfo label="الحالة" value={reviewStatus} />
               <DetailInfo label="طريقة الدفع" value={request.paymentMethodId || "-"} />
-              <DetailInfo label="سعر الصرف" value={request.exchangeRate ? String(request.exchangeRate) : "-"} dir="ltr" />
+              <DetailInfo label="سعر شحن المحفظة" value={request.depositRateSnapshot ? String(request.depositRateSnapshot) : request.exchangeRate ? String(request.exchangeRate) : "-"} dir="ltr" />
               <DetailInfo label="تاريخ الإنشاء" value={request.createdAtLabel} />
               <DetailInfo label="تاريخ المراجعة" value={request.reviewedAtLabel || "-"} />
               <DetailInfo label="راجعه" value={request.reviewedBy?.name || request.reviewedBy?.email || "-"} />
