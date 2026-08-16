@@ -106,11 +106,18 @@ function mapAuthFailure(error, fallbackMessage) {
   };
 }
 
+function isConfirmedAuthFailure(failure) {
+  return [401, 403].includes(Number(failure?.status || 0));
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(readStoredToken);
   const [user, setUser] = useState(readCachedUser);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState("");
+  const [authVerificationStatus, setAuthVerificationStatus] = useState(() => (
+    readStoredToken() ? "checking" : "signed_out"
+  ));
 
   const persistAuth = useCallback((nextToken, nextUser) => {
     const safeUser = normalizeUser(nextUser);
@@ -119,6 +126,7 @@ export function AuthProvider({ children }) {
     removeStorage(LEGACY_SESSION_KEY);
     setToken(nextToken || null);
     setUser(safeUser);
+    setAuthVerificationStatus(nextToken && safeUser ? "verified" : "signed_out");
   }, []);
 
   const clearAuth = useCallback(() => {
@@ -127,6 +135,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     setAuthError("");
+    setAuthVerificationStatus("signed_out");
   }, []);
 
   const refreshCurrentUser = useCallback(async (overrideToken, options = {}) => {
@@ -151,8 +160,12 @@ export function AuthProvider({ children }) {
     } catch (error) {
       const failure = mapAuthFailure(error, "Unable to refresh your session.");
       const preserveSession = options.preserveSessionOnError === true
-        && ![401, 403].includes(Number(failure.status || 0));
-      if (preserveSession) return failure;
+        && !isConfirmedAuthFailure(failure);
+      if (preserveSession) {
+        setAuthError(failure.message);
+        setAuthVerificationStatus("retryable_failed");
+        return { ...failure, retryable: true };
+      }
       clearAuth();
       setAuthError(failure.message);
       return failure;
@@ -198,16 +211,26 @@ export function AuthProvider({ children }) {
           clearStoredAuth();
           setToken(null);
           setUser(null);
+          setAuthVerificationStatus("signed_out");
           setIsLoading(false);
         }
         return;
       }
 
       setIsLoading(true);
+      setAuthVerificationStatus("checking");
       try {
         const currentUser = normalizeUser(await getCurrentUser(storedToken));
         if (!currentUser || !isActiveUser(currentUser)) {
-          throw new Error(getInactiveMessage(currentUser));
+          const message = getInactiveMessage(currentUser);
+          if (!cancelled) {
+            clearStoredAuth();
+            setToken(null);
+            setUser(null);
+            setAuthError(message);
+            setAuthVerificationStatus("signed_out");
+          }
+          return;
         }
         if (!cancelled) {
           persistAuth(storedToken, currentUser);
@@ -216,9 +239,16 @@ export function AuthProvider({ children }) {
       } catch (error) {
         const failure = mapAuthFailure(error, "Your session has expired. Please log in again.");
         if (!cancelled) {
-          clearStoredAuth();
-          setToken(null);
-          setUser(null);
+          if (isConfirmedAuthFailure(failure)) {
+            clearStoredAuth();
+            setToken(null);
+            setUser(null);
+            setAuthVerificationStatus("signed_out");
+          } else {
+            setToken(storedToken);
+            setUser(readCachedUser());
+            setAuthVerificationStatus("retryable_failed");
+          }
           setAuthError(failure.message);
         }
       } finally {
@@ -350,6 +380,7 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       authError,
+      authVerificationStatus,
       clearAuth,
       isAuthenticated: Boolean(token && user),
       isLoading,
@@ -362,7 +393,7 @@ export function AuthProvider({ children }) {
       token,
       user,
     }),
-    [authError, clearAuth, isLoading, login, loginWithGoogle, logout, refreshCurrentUser, register, token, user],
+    [authError, authVerificationStatus, clearAuth, isLoading, login, loginWithGoogle, logout, refreshCurrentUser, register, token, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
