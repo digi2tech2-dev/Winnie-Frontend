@@ -739,6 +739,33 @@ export async function getFazerCardsCatalogSyncStatus(token) {
   };
 }
 
+export async function searchFazerCardsSteamGiftIndex(token, query = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/steam-gifts/index/search", {
+    query: compactObject({
+      q: query.q,
+      limit: query.limit || 20,
+    }),
+    token,
+  });
+
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
+export async function refreshFazerCardsSteamGiftIndex(token) {
+  const response = await apiRequest("/admin/providers/fazercards/steam-gifts/index/refresh", {
+    method: "POST",
+    token,
+  });
+
+  return {
+    message: response.message,
+    result: response.data || {},
+  };
+}
+
 export async function getFazerCardsLaunchHealth(token) {
   const response = await apiRequest("/admin/providers/fazercards/launch-health", { token });
   return {

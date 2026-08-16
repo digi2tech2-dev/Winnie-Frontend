@@ -41,6 +41,8 @@ export default function SupplierProductsModal({
   onFazerCardsReadiness,
   onFazerCardsSyncAll,
   onFazerCardsSyncFamily,
+  onFazerCardsSteamGiftIndexRefresh,
+  onFazerCardsSteamGiftSearch,
   onImport,
   onPageChange,
   onSearch,
@@ -54,6 +56,16 @@ export default function SupplierProductsModal({
   const [copiedId, setCopiedId] = useState("");
   const [steamGiftAppId, setSteamGiftAppId] = useState("");
   const [steamGiftAppIdError, setSteamGiftAppIdError] = useState("");
+  const [steamGiftSearchQuery, setSteamGiftSearchQuery] = useState("");
+  const [steamGiftSearchState, setSteamGiftSearchState] = useState({
+    error: "",
+    indexEmpty: false,
+    items: [],
+    loading: false,
+    message: "",
+    searched: false,
+  });
+  const [steamGiftIndexRefreshing, setSteamGiftIndexRefreshing] = useState(false);
 
   if (!supplier) return null;
 
@@ -89,6 +101,53 @@ export default function SupplierProductsModal({
       activeFamily || "TOPUPS",
       steamGiftsSelected ? { appid: Number(steamGiftAppIdValue) } : {},
     );
+  };
+  const handleSteamGiftSearch = async (event) => {
+    event?.preventDefault?.();
+    if (!onFazerCardsSteamGiftSearch) return;
+    setSteamGiftSearchState((current) => ({ ...current, error: "", loading: true, searched: true }));
+    try {
+      const result = await onFazerCardsSteamGiftSearch(steamGiftSearchQuery);
+      setSteamGiftSearchState({
+        error: "",
+        indexEmpty: result?.indexEmpty === true,
+        items: Array.isArray(result?.items) ? result.items : [],
+        loading: false,
+        message: result?.message || "",
+        searched: true,
+      });
+    } catch (error) {
+      setSteamGiftSearchState({
+        error: error.userMessage || error.message || "تعذر البحث في فهرس Steam Gifts.",
+        indexEmpty: false,
+        items: [],
+        loading: false,
+        message: "",
+        searched: true,
+      });
+    }
+  };
+  const handleSteamGiftIndexRefresh = async () => {
+    if (!onFazerCardsSteamGiftIndexRefresh || steamGiftIndexRefreshing) return;
+    setSteamGiftIndexRefreshing(true);
+    try {
+      const result = await onFazerCardsSteamGiftIndexRefresh();
+      if (result) {
+        setSteamGiftSearchState((current) => ({
+          ...current,
+          message: result.warning || `تم تحديث الفهرس: ${result.returned || 0} لعبة.`,
+        }));
+      }
+    } finally {
+      setSteamGiftIndexRefreshing(false);
+    }
+  };
+  const handleSteamGiftResultSync = (item) => {
+    const appid = Number(item?.appid);
+    if (!Number.isFinite(appid) || appid <= 0) return;
+    setSteamGiftAppId(String(appid));
+    setSteamGiftAppIdError("");
+    onFazerCardsSyncFamily?.("STEAM_GIFTS", { appid });
   };
   const copyProductId = async (productId) => {
     if (!productId) return;
@@ -209,28 +268,110 @@ export default function SupplierProductsModal({
               </div>
 
               {steamGiftsSelected && (
-                <div className="grid gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-[#0B1220]">
-                  <label className="text-[8px] font-black text-slate-500 dark:text-slate-300" htmlFor="steam-gift-appid">
-                    Steam AppID
-                  </label>
-                  <input
-                    id="steam-gift-appid"
-                    dir="ltr"
-                    inputMode="numeric"
-                    value={steamGiftAppId}
-                    onChange={(event) => {
-                      setSteamGiftAppId(event.target.value);
-                      setSteamGiftAppIdError("");
-                    }}
-                    placeholder="مثال: 730"
-                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
-                  />
-                  <p className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
-                    Steam Gifts تتم مزامنتها بلعبة واحدة فقط لتجنب سحب الكتالوج الكبير.
-                  </p>
-                  {steamGiftAppIdError && (
-                    <p className="text-[8px] font-black text-rose-600 dark:text-rose-200">{steamGiftAppIdError}</p>
+                <div className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-[#0B1220]">
+                  <div className="grid gap-1">
+                    <label className="text-[8px] font-black text-slate-500 dark:text-slate-300" htmlFor="steam-gift-search">
+                      Search Steam Gifts
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="steam-gift-search"
+                        value={steamGiftSearchQuery}
+                        onChange={(event) => setSteamGiftSearchQuery(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") handleSteamGiftSearch(event);
+                        }}
+                        placeholder="ابحث باسم اللعبة أو AppID"
+                        className="h-9 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSteamGiftSearch}
+                        disabled={steamGiftSearchState.loading}
+                        className="inline-flex h-9 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[8px] font-black text-white disabled:opacity-60"
+                      >
+                        <Search className="h-3.5 w-3.5" />
+                        بحث
+                      </button>
+                    </div>
+                    <p className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
+                      البحث يستخدم الفهرس المحلي فقط ولا يستدعي المورد أثناء الكتابة.
+                    </p>
+                  </div>
+
+                  {steamGiftSearchState.searched && (
+                    <div className="grid gap-1 rounded-xl bg-white p-2 text-[9px] font-bold text-slate-500 dark:bg-[#111827] dark:text-slate-300">
+                      {steamGiftSearchState.loading ? (
+                        <span>Searching...</span>
+                      ) : steamGiftSearchState.error ? (
+                        <span className="text-rose-600 dark:text-rose-200">{steamGiftSearchState.error}</span>
+                      ) : steamGiftSearchState.indexEmpty ? (
+                        <span>{steamGiftSearchState.message || "فهرس Steam Gifts فارغ. حدّث الفهرس أو اكتب AppID يدويًا."}</span>
+                      ) : steamGiftSearchState.items.length ? (
+                        steamGiftSearchState.items.map((item) => (
+                          <div key={item.appid} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 px-2 py-1 dark:border-white/10">
+                            <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                            <span dir="ltr" className="text-slate-400">AppID {item.appid}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleSteamGiftResultSync(item)}
+                              disabled={loading || Boolean(actionKey)}
+                              className="h-7 rounded-lg bg-slate-900 px-2 text-[8px] font-black text-white disabled:opacity-60 dark:bg-white dark:text-slate-950"
+                            >
+                              مزامنة هذه اللعبة
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <span>لا توجد نتائج. جرّب AppID أو اسمًا آخر.</span>
+                      )}
+                    </div>
                   )}
+
+                  <div className="grid gap-1">
+                    <label className="text-[8px] font-black text-slate-500 dark:text-slate-300" htmlFor="steam-gift-appid">
+                      Steam AppID
+                    </label>
+                    <input
+                      id="steam-gift-appid"
+                      dir="ltr"
+                      inputMode="numeric"
+                      value={steamGiftAppId}
+                      onChange={(event) => {
+                        setSteamGiftAppId(event.target.value);
+                        setSteamGiftAppIdError("");
+                      }}
+                      placeholder="مثال: 730"
+                      className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
+                    />
+                    <p className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
+                      Steam Gifts تتم مزامنتها بلعبة واحدة فقط لتجنب سحب الكتالوج الكبير.
+                    </p>
+                    {steamGiftAppIdError && (
+                      <p className="text-[8px] font-black text-rose-600 dark:text-rose-200">{steamGiftAppIdError}</p>
+                    )}
+                  </div>
+
+                  <details className="rounded-xl border border-slate-200 bg-white px-2 py-1 dark:border-white/10 dark:bg-[#111827]">
+                    <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">Advanced</summary>
+                    <div className="mt-2 grid gap-1">
+                      <p className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
+                        يتم تحديث الفهرس فقط ولا يتم إنشاء منتجات. قد يستغرق وقتًا بسبب حجم الكتالوج.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleSteamGiftIndexRefresh}
+                        disabled={steamGiftIndexRefreshing || loading || Boolean(actionKey)}
+                        className="inline-flex h-8 w-fit items-center gap-1 rounded-xl border border-slate-200 px-3 text-[8px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-slate-300"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${steamGiftIndexRefreshing ? "animate-spin" : ""}`} />
+                        تحديث فهرس الألعاب
+                      </button>
+                      {steamGiftSearchState.message && (
+                        <p className="text-[8px] font-bold text-slate-400">{steamGiftSearchState.message}</p>
+                      )}
+                    </div>
+                  </details>
                 </div>
               )}
 

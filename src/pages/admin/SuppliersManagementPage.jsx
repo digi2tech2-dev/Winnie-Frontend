@@ -22,6 +22,8 @@ import {
   getAdminProviders,
   launchFazerCardsProduct,
   publishEligibleFazerCardsProducts,
+  refreshFazerCardsSteamGiftIndex,
+  searchFazerCardsSteamGiftIndex,
   syncFazerCardsCatalogAll,
   syncFazerCardsCatalogFamily,
   syncAdminProviderProducts,
@@ -450,6 +452,39 @@ export default function SuppliersManagementPage() {
         title: "FazerCards family sync failed",
         message: error.userMessage || error.message || "Could not sync FazerCards family.",
       });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const searchSteamGiftIndex = async (query = "") => {
+    if (!token) return { items: [], indexEmpty: true };
+    const result = await searchFazerCardsSteamGiftIndex(token, { q: query, limit: 20 });
+    return result.result || {};
+  };
+
+  const refreshSteamGiftIndex = async () => {
+    const supplier = productsState.supplier;
+    if (!token || !supplier || actionKey) return null;
+    if (!window.confirm("تحديث فهرس Steam Gifts فقط؟ لن يتم إنشاء منتجات ولن يتم تنفيذ أي طلب.")) return null;
+
+    setActionKey(`${supplier.id}:steam-gift-index-refresh`);
+    try {
+      const result = await refreshFazerCardsSteamGiftIndex(token);
+      const data = result.result || {};
+      showToast({
+        type: data.warning ? "warning" : "success",
+        title: "تم تحديث فهرس Steam Gifts",
+        message: `تمت فهرسة ${data.returned || 0} لعبة. جديد ${data.upserted || 0}، تحديث ${data.updated || 0}.`,
+      });
+      return data;
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "تعذر تحديث الفهرس",
+        message: error.userMessage || error.message || "تعذر تحديث فهرس Steam Gifts.",
+      });
+      throw error;
     } finally {
       setActionKey("");
     }
@@ -944,6 +979,8 @@ export default function SuppliersManagementPage() {
           onFazerCardsReadiness={handleFazerCardsReadiness}
           onFazerCardsSyncAll={runFazerCardsSyncAll}
           onFazerCardsSyncFamily={runFazerCardsSyncFamily}
+          onFazerCardsSteamGiftIndexRefresh={refreshSteamGiftIndex}
+          onFazerCardsSteamGiftSearch={searchSteamGiftIndex}
           onImport={setFazerImportProduct}
           onPageChange={(page) => loadProviderProducts(productsState.supplier, { filters: productsState.filters, page, search: productsState.search })}
           onSearch={(search, filters) => loadProviderProducts(productsState.supplier, { filters, page: 1, search })}
