@@ -114,12 +114,15 @@ export function normalizeOrderQuote(quote = {}) {
   const currency = String(quote.currency || DEFAULT_CURRENCY).toUpperCase();
   const chargedAmount = toNumber(quote.chargedAmount ?? quote.payableAmount, 0);
   const purchaseRateSnapshot = toNumber(quote.purchaseRateSnapshot ?? quote.rateSnapshot, 0);
+  const totalUsd = toNumber(quote.totalUsd ?? quote.usdAmount ?? quote.subtotalUsd, 0);
 
   return {
     ...quote,
     chargedAmount,
     currency,
     displayTotal: quote.displayTotal || formatCurrency(chargedAmount, currency),
+    totalUsd,
+    usdAmount: toNumber(quote.usdAmount ?? totalUsd, totalUsd),
     purchaseRateSnapshot,
     rateType: quote.rateType || (purchaseRateSnapshot ? "purchase" : undefined),
     hasEnoughBalance: quote.hasEnoughBalance !== false,

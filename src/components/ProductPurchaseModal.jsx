@@ -77,6 +77,11 @@ export default function ProductPurchaseModal({
     || (quoteForQuantity ? formatCurrencyAmount(quoteForQuantity.chargedAmount ?? quoteForQuantity.payableAmount, quoteForQuantity.currency) : "")
     || (localEstimate ? formatCurrencyAmount(localEstimate.amount, localEstimate.currency) : "")
     || (quoteLoading ? t("common:states.loading", { defaultValue: "Loading..." }) : "");
+  const quoteUsdTotal = quoteForQuantity ? getQuoteUsdTotal(quoteForQuantity) : null;
+  const showUsdEquivalent = Boolean(
+    quoteUsdTotal
+    && String(quoteForQuantity?.currency || "").toUpperCase() !== "USD",
+  );
   const totalLabel = quoteForQuantity
     ? t("purchase.total")
     : t("purchase.estimatedTotal", { defaultValue: isArabic ? "الإجمالي التقديري" : "Estimated total" });
@@ -458,6 +463,12 @@ export default function ProductPurchaseModal({
           <div className="buy-summary__item buy-summary__item--total">
             <span>{totalLabel}</span>
             <strong dir="ltr">{displayTotal}</strong>
+            {showUsdEquivalent && (
+              <small className="buy-summary__usd-equivalent" dir={isArabic ? "rtl" : "ltr"}>
+                {isArabic ? "ما يعادل " : "≈ "}
+                <span dir="ltr">{formatUsdAmount(quoteUsdTotal)}</span>
+              </small>
+            )}
           </div>
         </section>
 
@@ -891,6 +902,15 @@ function getLocalEstimateRate(product = {}) {
   return null;
 }
 
+function getQuoteUsdTotal(quote = {}) {
+  return firstPositiveNumber(
+    quote.totalUsd,
+    quote.usdAmount,
+    quote.subtotalUsd,
+    quote.priceUsd,
+  );
+}
+
 function calculateTotal(price, quantity) {
   const text = String(price);
   const dollarMatch = text.match(/(?:\$\s*([\d.]+)|([\d.]+)\s*\$)/);
@@ -931,6 +951,10 @@ function formatCurrencyAmount(value, currency = "USD") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number(value) || 0);
+}
+
+function formatUsdAmount(value) {
+  return `USD ${formatPlainAmount(value)}`;
 }
 
 function formatAmount(value) {

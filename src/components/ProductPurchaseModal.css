@@ -402,6 +402,22 @@
   line-height: 1.15;
 }
 
+.buy-summary__usd-equivalent {
+  display: block;
+  overflow: hidden;
+  margin-top: 5px;
+  color: rgba(220, 226, 255, 0.68);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buy-summary__usd-equivalent span {
+  unicode-bidi: isolate;
+}
+
 .buy-quantity {
   display: inline-flex;
   width: min(190px, 100%);
@@ -1147,7 +1163,8 @@ html:not(.dark) .buy-row {
 }
 
 html:not(.dark) .buy-balance-card span,
-html:not(.dark) .buy-summary__item > span {
+html:not(.dark) .buy-summary__item > span,
+html:not(.dark) .buy-summary__usd-equivalent {
   color: #526078;
 }
 
@@ -1332,6 +1349,11 @@ html:not(.dark) .buy-modal__error--quantity-warning {
 .buy-summary__item--total strong {
   margin-top: 5px !important;
   font-size: 13px !important;
+}
+
+.buy-summary__usd-equivalent {
+  margin-top: 3px !important;
+  font-size: 8.5px !important;
 }
 
 .buy-quantity {
