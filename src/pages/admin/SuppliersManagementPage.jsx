@@ -44,7 +44,7 @@ import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
 const productPageSize = 30;
-const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS"]);
+const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "STEAM_GIFTS", "MANUAL_SERVICES"]);
 
 const defaultFazerCardsFilters = {
   blockReason: "",
@@ -398,23 +398,28 @@ export default function SuppliersManagementPage() {
     setProductsState({ ...emptyProductsState, filters: { ...defaultFazerCardsFilters } });
   };
 
-  const runFazerCardsSyncFamily = async (familyKey = "TOPUPS") => {
+  const runFazerCardsSyncFamily = async (familyKey = "TOPUPS", options = {}) => {
     const supplier = productsState.supplier;
     const normalizedFamily = String(familyKey || productsState.filters.familyKey || "TOPUPS").toUpperCase();
     if (!token || !supplier || actionKey) return;
 
+    const steamGiftAppId = String(options?.appid ?? "").trim();
     if (normalizedFamily === "STEAM_GIFTS") {
-      showToast({
-        type: "warning",
-        title: "العائلة غير متاحة",
-        message: "هذه العائلة غير متاحة حالياً من المورد.",
-      });
-      return;
+      const numericAppId = Number(steamGiftAppId);
+      if (!steamGiftAppId || !Number.isFinite(numericAppId) || numericAppId <= 0) {
+        showToast({
+          type: "warning",
+          title: "AppID مطلوب",
+          message: "اكتب AppID أولاً لمزامنة Steam Gifts",
+        });
+        return;
+      }
     }
 
     setActionKey(`${supplier.id}:sync-family:${normalizedFamily}`);
     try {
       const result = await syncFazerCardsCatalogFamily(token, {
+        appid: normalizedFamily === "STEAM_GIFTS" ? Number(steamGiftAppId) : undefined,
         family: normalizedFamily,
         limit: 20,
       });

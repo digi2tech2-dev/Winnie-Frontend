@@ -698,6 +698,8 @@ export async function syncFazerCardsCatalogFamily(token, payload = {}) {
     body: compactObject({
       cursor: payload.cursor,
       family: payload.family,
+      appid: payload.appid,
+      gameName: payload.gameName,
       limit: payload.limit,
     }),
     method: "POST",

@@ -76,7 +76,7 @@ function formatHealthWarning(warning) {
     return "يتطلب تفعيل تسليم الأكواد من إعدادات السيرفر.";
   }
   if (lower.includes("steam gifts")) {
-    return "Steam Gifts غير متاحة حالياً من المورد.";
+    return "Steam Gifts متاحة بالمزامنة حسب AppID فقط.";
   }
   if (lower.includes("manual review")) {
     return text.replace(/manual review/gi, "قيد التنفيذ");

@@ -13,7 +13,7 @@ const FAZERCARDS_FAMILY_TABS = [
   { key: "STEAM_GIFTS", label: "STEAM_GIFTS" },
 ];
 
-const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS"]);
+const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "STEAM_GIFTS", "MANUAL_SERVICES"]);
 
 const FULFILLMENT_MODES = [
   "TOPUP_WITH_FIELDS",
@@ -52,22 +52,44 @@ export default function SupplierProductsModal({
 }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState("");
+  const [steamGiftAppId, setSteamGiftAppId] = useState("");
+  const [steamGiftAppIdError, setSteamGiftAppIdError] = useState("");
 
   if (!supplier) return null;
 
   const syncBusy = actionKey === `${supplier?.id}:sync`;
   const syncAllBusy = actionKey === `${supplier?.id}:sync-all`;
   const activeFamily = String(filters.familyKey || "").toUpperCase();
+  const steamGiftsSelected = activeFamily === "STEAM_GIFTS";
+  const steamGiftAppIdValue = steamGiftAppId.trim();
   const familySummary = fazerCardsCatalog.summary?.byFamily || {};
   const contractSummary = fazerCardsCatalog.contractsSummary?.families || {};
   const familyList = fazerCardsCatalog.families?.length ? fazerCardsCatalog.families : FAZERCARDS_FAMILY_TABS;
   const syncResult = fazerCardsCatalog.syncResult;
-  const steamGiftsWarning = "هذه العائلة غير متاحة حالياً من المورد.";
+  const syncFamilyHint = steamGiftsSelected
+    ? "Steam Gifts تتم مزامنتها بلعبة واحدة فقط لتجنب سحب الكتالوج الكبير."
+    : "اختر عائلة لمزامنة منتجاتها من المورد.";
   const visibleProducts = fazerCards && activeFamily
     ? products.filter((product) => String(product?.familyKey || "").toUpperCase() === activeFamily)
     : products;
 
-  const updateFilter = (patch) => onFilterChange?.({ ...filters, ...patch });
+  const updateFilter = (patch) => {
+    if (Object.prototype.hasOwnProperty.call(patch, "familyKey")) {
+      setSteamGiftAppIdError("");
+    }
+    onFilterChange?.({ ...filters, ...patch });
+  };
+  const handleSyncFamily = () => {
+    if (steamGiftsSelected && !steamGiftAppIdValue) {
+      setSteamGiftAppIdError("اكتب AppID أولاً لمزامنة Steam Gifts");
+      return;
+    }
+    setSteamGiftAppIdError("");
+    onFazerCardsSyncFamily?.(
+      activeFamily || "TOPUPS",
+      steamGiftsSelected ? { appid: Number(steamGiftAppIdValue) } : {},
+    );
+  };
   const copyProductId = async (productId) => {
     if (!productId) return;
     try {
@@ -179,19 +201,45 @@ export default function SupplierProductsModal({
                       <span className="text-[7px] font-bold text-slate-400">
                         S {bucket.supported ?? 0} | B {bucket.blocked ?? 0} | I {bucket.imported ?? 0}
                       </span>
-                      <span className="mt-1 block truncate text-[7px] font-black text-violet-500 dark:text-violet-200">{contract.supportStage || "CATALOG"}</span>
+                      <span className="mt-1 block truncate text-[7px] font-black text-violet-500 dark:text-violet-200">{family.key === "STEAM_GIFTS" ? "ON_DEMAND_SYNC" : contract.supportStage || "CATALOG"}</span>
                       <span className="block truncate text-[7px] font-bold text-slate-400">{contract.executionStage || "NONE"}</span>
                     </button>
                   );
                 })}
               </div>
 
+              {steamGiftsSelected && (
+                <div className="grid gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-white/10 dark:bg-[#0B1220]">
+                  <label className="text-[8px] font-black text-slate-500 dark:text-slate-300" htmlFor="steam-gift-appid">
+                    Steam AppID
+                  </label>
+                  <input
+                    id="steam-gift-appid"
+                    dir="ltr"
+                    inputMode="numeric"
+                    value={steamGiftAppId}
+                    onChange={(event) => {
+                      setSteamGiftAppId(event.target.value);
+                      setSteamGiftAppIdError("");
+                    }}
+                    placeholder="مثال: 730"
+                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
+                  />
+                  <p className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
+                    Steam Gifts تتم مزامنتها بلعبة واحدة فقط لتجنب سحب الكتالوج الكبير.
+                  </p>
+                  {steamGiftAppIdError && (
+                    <p className="text-[8px] font-black text-rose-600 dark:text-rose-200">{steamGiftAppIdError}</p>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-2 text-[9px] font-bold text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span className="min-w-0 flex-1">{steamGiftsWarning}</span>
+                <span className="min-w-0 flex-1">{syncFamilyHint}</span>
                 <button
                   type="button"
-                  onClick={() => onFazerCardsSyncFamily?.(activeFamily || "TOPUPS")}
+                  onClick={handleSyncFamily}
                   disabled={loading || !supplier?.active || Boolean(actionKey)}
                   className="inline-flex h-8 items-center gap-1 rounded-xl bg-slate-900 px-3 text-[8px] font-black text-white disabled:opacity-60 dark:bg-white dark:text-slate-950"
                 >
@@ -399,7 +447,7 @@ export default function SupplierProductsModal({
                       </button>
                       <button
                         type="button"
-                        disabled={loading || product.familyKey === "STEAM_GIFTS"}
+                        disabled={loading}
                         onClick={() => onImport?.(product)}
                         className="inline-flex h-8 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-400"
                       >
@@ -468,7 +516,11 @@ export default function SupplierProductsModal({
               );
             })
           ) : (
-            <p className="py-8 text-center text-xs font-black text-slate-400">No supplier products found.</p>
+            <p className="py-8 text-center text-xs font-black text-slate-400">
+              {fazerCards && activeFamily === "STEAM_GIFTS"
+                ? "اكتب AppID واضغط Sync Family لإضافة منتجات Steam Gifts."
+                : "No supplier products found."}
+            </p>
           )}
         </div>
 
