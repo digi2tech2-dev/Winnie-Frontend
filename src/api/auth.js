@@ -65,6 +65,18 @@ export async function completeGoogleProfile(token, payload) {
   };
 }
 
+export async function exchangeGoogleCode(code) {
+  const response = await apiRequest("/auth/google/exchange-code", {
+    method: "POST",
+    body: compactPayload({ code }),
+  });
+
+  return {
+    ...(response.data || {}),
+    message: response.message,
+  };
+}
+
 export async function verifyTwoFactor(payload) {
   const response = await apiRequest("/auth/verify-2fa", {
     method: "POST",

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { exchangeGoogleCode } from "../../api/auth";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import { getDefaultRouteForRole } from "../../utils/authRoles";
@@ -26,7 +27,7 @@ export default function GoogleCallback() {
     const error = getQueryParam(params, "error");
     const status = getQueryParam(params, "status");
     const responseMessage = getQueryParam(params, "message");
-    const token = getQueryParam(params, "token") || getQueryParam(params, "accessToken");
+    const code = getQueryParam(params, "code");
 
     const fail = (nextMessage) => {
       if (cancelled) return;
@@ -42,7 +43,7 @@ export default function GoogleCallback() {
       };
     }
 
-    if (!token) {
+    if (!code) {
       fail(responseMessage || (status === "pending" ? "Your account is awaiting approval." : "Google login did not return a valid session."));
       return () => {
         cancelled = true;
@@ -50,21 +51,32 @@ export default function GoogleCallback() {
     }
 
     const completeLogin = async () => {
-      const result = await refreshCurrentUser(token);
-      if (cancelled) return;
+      try {
+        const exchange = await exchangeGoogleCode(code);
+        if (!exchange.token) {
+          fail(exchange.message || "Google login did not return a valid session.");
+          return;
+        }
 
-      if (!result.ok) {
-        fail(result.message || "Google login did not return a valid session.");
-        return;
+        window.history.replaceState(null, document.title, location.pathname);
+        const result = await refreshCurrentUser(exchange.token);
+        if (cancelled) return;
+
+        if (!result.ok) {
+          fail(result.message || "Google login did not return a valid session.");
+          return;
+        }
+
+        if (shouldCompleteGoogleProfile(result.user, params)) {
+          navigate("/auth/google/complete", { replace: true });
+          return;
+        }
+
+        showToast({ type: "success", title: "Google login", message: "Logged in successfully." });
+        navigate(getDefaultRouteForRole(result.user?.role), { replace: true });
+      } catch (requestError) {
+        fail(requestError.userMessage || requestError.message || "Google login did not return a valid session.");
       }
-
-      if (shouldCompleteGoogleProfile(result.user, params)) {
-        navigate("/auth/google/complete", { replace: true });
-        return;
-      }
-
-      showToast({ type: "success", title: "Google login", message: "Logged in successfully." });
-      navigate(getDefaultRouteForRole(result.user?.role), { replace: true });
     };
 
     void completeLogin();
@@ -72,7 +84,7 @@ export default function GoogleCallback() {
     return () => {
       cancelled = true;
     };
-  }, [location.search, navigate, refreshCurrentUser, showToast]);
+  }, [location.pathname, location.search, navigate, refreshCurrentUser, showToast]);
 
   return (
     <div className="mx-auto grid min-h-[calc(100vh-92px)] max-w-[720px] place-items-center px-4 py-8 text-center">
