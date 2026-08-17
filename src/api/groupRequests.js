@@ -109,7 +109,7 @@ export function normalizeGroupRequest(request = {}) {
     proofImageOriginalName: request.proofImageOriginalName || "",
     proofImagePath: request.proofImagePath || "",
     proofImageSize: request.proofImageSize ?? null,
-    proofImageUrl: resolveBackendAssetUrl(request.proofImageUrl || request.proofImagePath) || "",
+    proofImageUrl: resolveBackendAssetUrl(request.proofImageUrl) || "",
     reason: request.reason || "",
     requestedGroup: normalizeGroupForRequest(request.requestedGroup),
     requestType,

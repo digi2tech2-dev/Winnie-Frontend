@@ -55,6 +55,7 @@ export function normalizeAdminDeposit(deposit = {}) {
   const amountUsd = toNumber(deposit.amountUsd, 0);
   const status = String(deposit.status || "PENDING").toUpperCase();
   const receiptImage = deposit.receiptImage || deposit.receipt || "";
+  const receiptUrl = deposit.receiptUrl || deposit.signedReceiptUrl || "";
 
   return {
     ...deposit,
@@ -76,7 +77,7 @@ export function normalizeAdminDeposit(deposit = {}) {
     notes: deposit.notes || "",
     paymentMethodId: deposit.paymentMethodId || "",
     receiptImage,
-    receiptUrl: resolveReceiptUrl(receiptImage),
+    receiptUrl: resolveReceiptUrl(receiptUrl),
     requestedAmount,
     reviewedAt: deposit.reviewedAt || null,
     reviewedAtLabel: deposit.reviewedAt ? formatDateTime(deposit.reviewedAt, "ar-EG-u-nu-latn") : "",
@@ -87,12 +88,36 @@ export function normalizeAdminDeposit(deposit = {}) {
   };
 }
 
+export async function getAdminDepositReceiptUrl(token, id) {
+  const response = await apiRequest(`/admin/deposits/${id}/receipt-url`, { token });
+  return {
+    expiresAt: response.data?.expiresAt || null,
+    expiresIn: response.data?.expiresIn || null,
+    url: resolveReceiptUrl(response.data?.url || ""),
+  };
+}
+
+async function withSignedReceiptUrl(token, deposit) {
+  if (!deposit?.id || !deposit.receiptImage) return deposit;
+
+  try {
+    const signed = await getAdminDepositReceiptUrl(token, deposit.id);
+    return { ...deposit, receiptUrl: signed.url };
+  } catch (_) {
+    return { ...deposit, receiptUrl: "" };
+  }
+}
+
 export async function getAdminDeposits(token, query = {}) {
   const response = await apiRequest("/admin/deposits", {
     token,
     query: compactObject(query),
   });
-  const deposits = asArray(response.data).map(normalizeAdminDeposit);
+  const deposits = await Promise.all(
+    asArray(response.data)
+      .map(normalizeAdminDeposit)
+      .map((deposit) => withSignedReceiptUrl(token, deposit)),
+  );
 
   return {
     deposits,
@@ -108,8 +133,13 @@ export async function getAdminDeposits(token, query = {}) {
 
 export async function getAdminDeposit(token, id) {
   const response = await apiRequest(`/admin/deposits/${id}`, { token });
+  const deposit = await withSignedReceiptUrl(
+    token,
+    normalizeAdminDeposit(response.data?.deposit || response.data || {}),
+  );
+
   return {
-    deposit: normalizeAdminDeposit(response.data?.deposit || response.data || {}),
+    deposit,
     message: response.message,
   };
 }
@@ -124,7 +154,7 @@ export async function approveDeposit(token, id, payload = {}) {
   });
 
   return {
-    deposit: normalizeAdminDeposit(response.data?.deposit || response.data || {}),
+    deposit: await withSignedReceiptUrl(token, normalizeAdminDeposit(response.data?.deposit || response.data || {})),
     message: response.message,
   };
 }
@@ -139,7 +169,7 @@ export async function rejectDeposit(token, id, payload = {}) {
   });
 
   return {
-    deposit: normalizeAdminDeposit(response.data?.deposit || response.data || {}),
+    deposit: await withSignedReceiptUrl(token, normalizeAdminDeposit(response.data?.deposit || response.data || {})),
     message: response.message,
   };
 }
