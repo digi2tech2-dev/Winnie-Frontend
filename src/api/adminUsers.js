@@ -26,6 +26,24 @@ function normalizeGroup(group) {
   };
 }
 
+function normalizeApiAccess(value = {}) {
+  const source = value.apiAccess || value.developerAccess || value;
+  const enabled = source.enabled === true || source.isApiEnabled === true || source.apiAccessEnabled === true;
+
+  return {
+    enabled,
+    apiAccessEnabled: enabled,
+    hasApiKey: source.hasApiKey === true,
+    apiKeyPrefix: source.apiKeyPrefix || source.prefix || null,
+    apiKeyLast4: source.apiKeyLast4 || source.last4 || null,
+    apiKeyCreatedAt: source.apiKeyCreatedAt || source.createdAt || null,
+    apiKeyLastRotatedAt: source.apiKeyLastRotatedAt || source.lastRotatedAt || source.rotatedAt || null,
+    apiKeyRevokedAt: source.apiKeyRevokedAt || source.revokedAt || null,
+    apiKeyLastUsedAt: source.apiKeyLastUsedAt || source.lastUsedAt || null,
+    legacyKeyPresent: source.legacyKeyPresent === true,
+  };
+}
+
 export function normalizeAdminUser(user = {}) {
   const id = getItemId(user);
   const group = normalizeGroup(user.groupId || user.group);
@@ -39,12 +57,26 @@ export function normalizeAdminUser(user = {}) {
   const creditLimit = toNumber(user.creditLimit ?? user.debtLimit, 0);
   const creditUsed = toNumber(user.creditUsed, 0);
 
+  const apiAccess = normalizeApiAccess({
+    ...user,
+    enabled: user.isApiEnabled === true || user.apiAccessEnabled === true || user.apiAccess?.enabled === true || user.developerAccess?.enabled === true,
+  });
+
   return {
     ...user,
     id,
     _id: user._id ?? id,
     approvedAt: user.approvedAt || null,
-    apiAccessEnabled: user.isApiEnabled === true || user.apiAccessEnabled === true || user.apiAccess?.enabled === true || user.developerAccess?.enabled === true,
+    apiAccess,
+    apiAccessEnabled: apiAccess.enabled,
+    hasApiKey: apiAccess.hasApiKey,
+    apiKeyPrefix: apiAccess.apiKeyPrefix,
+    apiKeyLast4: apiAccess.apiKeyLast4,
+    apiKeyCreatedAt: apiAccess.apiKeyCreatedAt,
+    apiKeyLastRotatedAt: apiAccess.apiKeyLastRotatedAt,
+    apiKeyRevokedAt: apiAccess.apiKeyRevokedAt,
+    apiKeyLastUsedAt: apiAccess.apiKeyLastUsedAt,
+    legacyKeyPresent: apiAccess.legacyKeyPresent,
     avatar: user.avatar || "",
     blockedAt,
     blockReason: user.blockReason || "",
@@ -236,15 +268,42 @@ export async function changeAdminUserPassword(token, id, newPassword) {
 }
 
 export async function updateAdminUserApiAccess(token, id, enabled) {
-  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}`, {
-    body: { isApiEnabled: Boolean(enabled) },
-    method: "PATCH",
+  const action = enabled ? "enable" : "disable";
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/api-access/${action}`, {
+    method: "POST",
     token,
   });
+  const data = response.data || {};
 
   return {
     message: response.message,
-    user: normalizeAdminUser(response.data?.user || response.data || {}),
+    apiKey: data.apiKey || null,
+    apiAccess: normalizeApiAccess(data.apiAccess || {}),
+    user: normalizeAdminUser(data.user || {}),
+  };
+}
+
+export async function getAdminUserApiAccess(token, id) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/api-access`, { token });
+  const data = response.data || {};
+  return {
+    message: response.message,
+    apiAccess: normalizeApiAccess(data.apiAccess || data),
+    user: normalizeAdminUser(data.user || {}),
+  };
+}
+
+export async function regenerateAdminUserApiKey(token, id) {
+  const response = await apiRequest(`/admin/users/${encodeURIComponent(id)}/api-access/regenerate`, {
+    method: "POST",
+    token,
+  });
+  const data = response.data || {};
+  return {
+    message: response.message,
+    apiKey: data.apiKey || null,
+    apiAccess: normalizeApiAccess(data.apiAccess || {}),
+    user: normalizeAdminUser(data.user || {}),
   };
 }
 

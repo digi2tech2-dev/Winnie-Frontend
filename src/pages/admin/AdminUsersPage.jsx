@@ -31,6 +31,7 @@ import {
   deleteAdminUser,
   getAdminUser,
   getAdminUsers,
+  regenerateAdminUserApiKey,
   rejectUser,
   restoreAdminUser,
   unblockAdminUser,
@@ -203,6 +204,7 @@ export default function AdminUsersPage() {
   const [passwordModal, setPasswordModal] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
   const [actionKey, setActionKey] = useState("");
+  const [generatedApiKey, setGeneratedApiKey] = useState(null);
 
   const selectedUser = users.find((user) => user.id === selectedUserId) || null;
   const actionMenuUser = users.find((user) => user.id === openActionUserId) || null;
@@ -385,6 +387,7 @@ export default function AdminUsersPage() {
         result = await restoreAdminUser(token, confirmation.userId);
       } else if (confirmation.action === "enableApi" || confirmation.action === "disableApi") {
         result = await updateAdminUserApiAccess(token, confirmation.userId, confirmation.action === "enableApi");
+        setGeneratedApiKey(result?.apiKey ? { userId: confirmation.userId, key: result.apiKey } : null);
       }
 
       showToast({
@@ -396,6 +399,31 @@ export default function AdminUsersPage() {
     } catch (requestError) {
       const message = getErrorMessage(requestError, "فشل تنفيذ الإجراء.");
       showToast({ type: "error", title: "فشل الإجراء", message });
+    } finally {
+      setActionKey("");
+    }
+  };
+
+  const handleRegenerateApiKey = async (user) => {
+    if (!token || !user?.id) return;
+    const key = `regenerateApi:${user.id}`;
+    setActionKey(key);
+
+    try {
+      const result = await regenerateAdminUserApiKey(token, user.id);
+      setGeneratedApiKey(result?.apiKey ? { userId: user.id, key: result.apiKey } : null);
+      if (result?.user?.id) {
+        setUsers((current) => current.map((item) => (item.id === user.id ? result.user : item)));
+      }
+      showToast({
+        type: "success",
+        title: result.message || "API key regenerated",
+        message: result.apiKey ? "Copy the new key now. It will not be shown again." : "",
+      });
+      await loadUsers();
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, "Failed to regenerate API key.");
+      showToast({ type: "error", title: "API key regeneration failed", message });
     } finally {
       setActionKey("");
     }
@@ -648,6 +676,8 @@ export default function AdminUsersPage() {
             onOpenWallet={() => openUserWallet(selectedUser.id)}
             onPassword={() => openPasswordModal(selectedUser)}
             onApiAccess={() => requestApiAccessChange(selectedUser)}
+            onRegenerateApiKey={() => handleRegenerateApiKey(selectedUser)}
+            generatedApiKey={generatedApiKey?.userId === selectedUser.id ? generatedApiKey.key : ""}
             onReject={() => requestUserReview(selectedUser, "reject")}
             onRestore={() => handleRestoreUser(selectedUser)}
             onUnblock={() => handleUnblockUser(selectedUser)}
@@ -966,7 +996,7 @@ function StatusBadge({ status, label }) {
   );
 }
 
-function UserDrawer({ user, busy, onApiAccess, onApprove, onBlock, onClose, onCopy, onOpenWallet, onPassword, onReject, onRestore, onUnblock, onUpdateIdentityVerification }) {
+function UserDrawer({ user, busy, generatedApiKey = "", onApiAccess, onApprove, onBlock, onClose, onCopy, onOpenWallet, onPassword, onRegenerateApiKey, onReject, onRestore, onUnblock, onUpdateIdentityVerification }) {
   const canReview = user.displayStatus !== "DELETED" && user.status === "PENDING";
   const [identityReason, setIdentityReason] = useState(user.identityVerificationReason || "");
 
@@ -1120,6 +1150,29 @@ function UserDrawer({ user, busy, onApiAccess, onApprove, onBlock, onClose, onCo
                   {user.apiAccessEnabled ? "API مفعّل" : "API غير مفعّل"}
                 </span>
               </div>
+              <div className="admin-user-info-grid mt-4">
+                <InfoItem label="Key prefix" value={user.apiKeyPrefix || "-"} ltr />
+                <InfoItem label="Key last 4" value={user.apiKeyLast4 || "-"} ltr />
+                <InfoItem label="Last rotated" value={formatDate(user.apiKeyLastRotatedAt || user.apiKeyCreatedAt)} />
+                <InfoItem label="Last used" value={formatDate(user.apiKeyLastUsedAt)} />
+                <InfoItem label="Has active key" value={user.hasApiKey ? "Yes" : "No"} />
+                <InfoItem label="Legacy key" value={user.legacyKeyPresent ? "Present" : "No"} />
+              </div>
+              {generatedApiKey && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-400/20 dark:bg-amber-400/10">
+                  <p className="text-xs font-black text-slate-950 dark:text-white">One-time API key</p>
+                  <code dir="ltr" className="mt-2 block break-all rounded-xl bg-white p-3 text-left text-xs font-bold text-slate-800 dark:bg-slate-950 dark:text-slate-100">{generatedApiKey}</code>
+                  <p className="mt-2 text-[11px] font-bold text-amber-700 dark:text-amber-200">Copy it now. It will not be shown again.</p>
+                  <button
+                    type="button"
+                    onClick={() => onCopy(generatedApiKey)}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-700"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span>Copy API key</span>
+                  </button>
+                </div>
+              )}
               {user.displayStatus !== "DELETED" && (
                 <button
                   type="button"
@@ -1129,6 +1182,17 @@ function UserDrawer({ user, busy, onApiAccess, onApprove, onBlock, onClose, onCo
                 >
                   <Braces className="h-4 w-4" />
                   <span>{user.apiAccessEnabled ? "إيقاف API" : "تفعيل API"}</span>
+                </button>
+              )}
+              {user.displayStatus !== "DELETED" && (
+                <button
+                  type="button"
+                  onClick={onRegenerateApiKey}
+                  disabled={busy || !user.apiAccessEnabled}
+                  className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Regenerate key</span>
                 </button>
               )}
             </div>

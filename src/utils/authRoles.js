@@ -66,6 +66,11 @@ export function normalizeUser(rawUser) {
   const id = rawUser.id || rawUser._id || rawUser.userId || "";
   const normalizedRole = normalizeRole(rawUser.role);
   const group = rawUser.group || rawUser.groupId || null;
+  const apiAccess = rawUser.apiAccess || rawUser.developerAccess || {};
+  const apiAccessEnabled = rawUser.isApiEnabled === true
+    || rawUser.apiAccessEnabled === true
+    || apiAccess.enabled === true
+    || apiAccess.apiAccessEnabled === true;
 
   return {
     ...rawUser,
@@ -78,7 +83,15 @@ export function normalizeUser(rawUser) {
     tier: rawUser.tier || group?.name || getRoleLabel(rawUser.role),
     group,
     walletBalance: rawUser.walletBalance ?? 0,
-    apiAccessEnabled: rawUser.isApiEnabled === true || rawUser.apiAccessEnabled === true || rawUser.apiAccess?.enabled === true || rawUser.developerAccess?.enabled === true,
+    apiAccessEnabled,
+    apiAccess: {
+      enabled: apiAccessEnabled,
+      hasApiKey: rawUser.hasApiKey === true || apiAccess.hasApiKey === true,
+      apiKeyPrefix: rawUser.apiKeyPrefix || apiAccess.apiKeyPrefix || null,
+      apiKeyLast4: rawUser.apiKeyLast4 || apiAccess.apiKeyLast4 || null,
+      apiKeyLastRotatedAt: rawUser.apiKeyLastRotatedAt || apiAccess.apiKeyLastRotatedAt || null,
+      apiKeyLastUsedAt: rawUser.apiKeyLastUsedAt || apiAccess.apiKeyLastUsedAt || null,
+    },
     identityVerificationRequired: rawUser.identityVerificationRequired === true,
     identityVerificationReason: rawUser.identityVerificationReason || "",
   };

@@ -17,7 +17,6 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
 import { getMyDeveloperAccess, rotateMyDeveloperToken } from "../../api/developerAccess";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
@@ -50,7 +49,7 @@ const guideSteps = [
   },
   {
     title: "أرسل التوكن",
-    text: "أضف api-token إلى Header في كل طلب ترسله.",
+    text: "أضف X-API-Key إلى Header في كل طلب ترسله.",
   },
   {
     title: "ميّز كل طلب",
@@ -88,7 +87,6 @@ async function writeClipboard(value) {
 export default function DeveloperApiPage() {
   const { token, user } = useAuth();
   const { showToast } = useToast();
-  const location = useLocation();
   const [access, setAccess] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -174,7 +172,7 @@ export default function DeveloperApiPage() {
   const curlExample = useMemo(() => [
     "curl --request GET \\",
     "  --url '" + exampleBaseUrl + "/products' \\",
-    "  --header 'api-token: YOUR_API_TOKEN' \\",
+    "  --header 'X-API-Key: YOUR_API_KEY' \\",
     "  --header 'Accept: application/json'",
   ].join("\n"), [exampleBaseUrl]);
   const javascriptExample = useMemo(() => [
@@ -183,7 +181,7 @@ export default function DeveloperApiPage() {
     "  {",
     "    method: 'POST',",
     "    headers: {",
-    "      'api-token': 'YOUR_API_TOKEN',",
+    "      'X-API-Key': 'YOUR_API_KEY',",
     "      'Content-Type': 'application/json',",
     "    },",
     "    body: JSON.stringify({",
@@ -215,10 +213,17 @@ export default function DeveloperApiPage() {
   }
 
   if (user?.apiAccessEnabled !== true || access?.enabled === false) {
-    const dashboardPath = location.pathname.startsWith("/admin/user")
-      ? "/admin/user/dashboard"
-      : "/customer/dashboard";
-    return <Navigate to={dashboardPath} replace />;
+    return (
+      <section dir="rtl" className="mx-auto grid min-h-[420px] max-w-3xl place-items-center px-4">
+        <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_18px_55px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0a1020]">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300">
+            <Braces className="h-6 w-6" />
+          </span>
+          <h1 className="mt-4 text-xl font-black text-slate-950 dark:text-white">واجهة API غير مفعلة لحسابك</h1>
+          <p className="mt-2 text-sm font-bold leading-7 text-slate-500 dark:text-slate-300">تواصل مع الإدارة لتفعيلها.</p>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -267,7 +272,7 @@ export default function DeveloperApiPage() {
             featured
             icon={KeyRound}
             label="API TOKEN"
-            hint="api-token"
+            hint="X-API-Key"
             value={apiToken}
             placeholder="اضغط تغيير API Token لإنشاء توكن جديد وعرضه"
             secret
@@ -275,6 +280,11 @@ export default function DeveloperApiPage() {
             onToggle={() => setTokenVisible((current) => !current)}
             onCopy={() => copyValue(apiToken, "API Token")}
           />
+          <div className="developer-api-subcard grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.035] sm:grid-cols-3">
+            <MetaItem label="Key prefix" value={access?.apiKeyPrefix || "-"} />
+            <MetaItem label="Key last 4" value={access?.apiKeyLast4 || "-"} />
+            <MetaItem label="Last used" value={formatDate(access?.lastUsedAt)} />
+          </div>
           <CredentialCard
             icon={Link2}
             label="API URL"
@@ -382,7 +392,7 @@ export default function DeveloperApiPage() {
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
                 <div className="text-xs font-medium leading-6 text-slate-600 dark:text-slate-300">
                   <p className="font-black text-slate-950 dark:text-white">حماية بيانات الربط</p>
-                  <p className="mt-1">لا تضع التوكن في الواجهة الأمامية أو مستودع Git. خزّنه في متغيرات البيئة على الخادم، وأرسله في header باسم api-token، واستخدم HTTPS فقط.</p>
+                  <p className="mt-1">لا تضع التوكن في الواجهة الأمامية أو مستودع Git. خزّنه في متغيرات البيئة على الخادم، وأرسله في header باسم X-API-Key، واستخدم HTTPS فقط.</p>
                 </div>
               </div>
             </div>
@@ -512,6 +522,15 @@ function GuideStep({ number, text, title }) {
       <h3 className="mt-4 text-sm font-black text-slate-950 dark:text-white">{title}</h3>
       <p className="mt-1.5 text-xs font-medium leading-6 text-slate-500 dark:text-slate-400">{text}</p>
     </article>
+  );
+}
+
+function MetaItem({ label, value }) {
+  return (
+    <div>
+      <p className="text-[10px] font-black uppercase text-slate-400">{label}</p>
+      <strong dir="ltr" className="mt-1 block break-all text-sm font-black text-slate-900 dark:text-white">{value}</strong>
+    </div>
   );
 }
 
