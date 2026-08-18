@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { filterMainCategories, getPublicCatalog } from "../../api/catalog";
+import { filterMainCategories, getPublicBestSellingProducts, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 import BestSellingSection from "../../components/home/BestSellingSection";
@@ -15,7 +15,7 @@ import { canPurchaseProduct } from "../../utils/productAvailability";
 export default function PublicHome() {
   const navigate = useNavigate();
   const { t } = useTranslation("home");
-  const [catalog, setCatalog] = useState({ categories: [], products: [] });
+  const [catalog, setCatalog] = useState({ categories: [], products: [], bestSellingProducts: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [purchaseItem, setPurchaseItem] = useState(null);
@@ -28,16 +28,20 @@ export default function PublicHome() {
       setError("");
 
       try {
-        const result = await getPublicCatalog({ page: 1, limit: 12 });
+        const [result, bestSelling] = await Promise.all([
+          getPublicCatalog({ page: 1, limit: 12 }),
+          getPublicBestSellingProducts({ page: 1, limit: 6 }),
+        ]);
         if (!cancelled) {
           setCatalog({
             categories: result.categories,
             products: result.products,
+            bestSellingProducts: bestSelling.products,
           });
         }
       } catch (requestError) {
         if (!cancelled) {
-          setCatalog({ categories: [], products: [] });
+          setCatalog({ categories: [], products: [], bestSellingProducts: [] });
           setError(requestError.userMessage || t("public.catalogLoadError"));
         }
       } finally {
@@ -94,7 +98,7 @@ export default function PublicHome() {
           />
           <BestSellingSection
             forceRtl
-            items={catalog.products}
+            items={catalog.bestSellingProducts}
             onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
             onViewAll={openProducts}
           />

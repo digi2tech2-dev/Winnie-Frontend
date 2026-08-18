@@ -3,7 +3,9 @@ import {
   Activity,
   BellRing,
   Clock3,
+  ChevronDown,
   Edit3,
+  Filter,
   Info,
   MessageCircle,
   Plus,
@@ -122,6 +124,7 @@ export default function AdminWhatsAppNotificationsPage() {
   const [recipients, setRecipients] = useState([]);
   const [logs, setLogs] = useState([]);
   const [filters, setFilters] = useState({ status: "", eventType: "", recipientType: "" });
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const lastChecked = status?._checkedAt || null;
 
@@ -401,6 +404,20 @@ export default function AdminWhatsAppNotificationsPage() {
         description="تابع نتيجة كل إشعار وأعد محاولة الرسائل الفاشلة"
         action={<span className="wa-admin-count-badge">{logs.length} سجل</span>}
       >
+        <div className="mb-3 overflow-hidden rounded-[13px] border border-slate-200 dark:border-white/[0.07]">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+            aria-controls="whatsapp-logs-filters-content"
+            className="flex min-h-11 w-full items-center gap-2 px-3 text-right transition hover:bg-slate-50 dark:hover:bg-white/[0.04]"
+          >
+            <Filter className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+            <b className="flex-1 text-xs font-black text-slate-900 dark:text-white">الفلاتر</b>
+            <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+          </button>
+          <div id="whatsapp-logs-filters-content" className={`grid transition-[grid-template-rows] duration-300 ${filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          <div className={filtersOpen ? "overflow-visible" : "overflow-hidden"}>
         <div className="wa-admin-filters">
           <Select label="الحالة" value={filters.status} options={statusFilterOptions} onChange={(value) => setFilters((current) => ({ ...current, status: value }))} />
           <Select label="نوع الحدث" value={filters.eventType} options={eventFilterOptions} onChange={(value) => setFilters((current) => ({ ...current, eventType: value }))} />
@@ -409,6 +426,9 @@ export default function AdminWhatsAppNotificationsPage() {
             <RefreshCw className={busy === "logs" ? "animate-spin" : ""} />
             تطبيق الفلاتر
           </button>
+        </div>
+          </div>
+          </div>
         </div>
 
         {logs.length ? (

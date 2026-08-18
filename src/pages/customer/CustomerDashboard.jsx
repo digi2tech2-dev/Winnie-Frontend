@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { Camera, X } from "lucide-react";
 import { resolveBackendAssetUrl } from "../../api/adapters";
-import { filterMainCategories, getCustomerCatalog } from "../../api/catalog";
+import {
+  filterMainCategories,
+  getCustomerBestSellingProducts,
+  getCustomerCatalog,
+} from "../../api/catalog";
 import BestSellingSection from "../../components/home/BestSellingSection";
 import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
 import CustomerReviews from "../../components/home/CustomerReviews";
@@ -16,6 +20,7 @@ import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 const initialDashboardData = {
   categories: [],
   products: [],
+  bestSellingProducts: [],
 };
 
 const profileAvatarKey = "winnie-profile-avatar";
@@ -76,9 +81,16 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
 
     const loadCatalog = async () => {
       try {
-        const catalog = await getCustomerCatalog(token, { page: 1, limit: 48 });
+        const [catalog, bestSelling] = await Promise.all([
+          getCustomerCatalog(token, { page: 1, limit: 48 }),
+          getCustomerBestSellingProducts(token, { page: 1, limit: 6 }),
+        ]);
         if (!cancelled) {
-          setDashboardData({ categories: catalog.categories, products: catalog.products });
+          setDashboardData({
+            categories: catalog.categories,
+            products: catalog.products,
+            bestSellingProducts: bestSelling.products,
+          });
         }
       } catch {
         if (!cancelled) setDashboardData(initialDashboardData);
@@ -115,6 +127,10 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
   const visibleProducts = useMemo(
     () => dashboardData.products.filter((product) => product?.visibleInStore !== false && product?.visible !== false),
     [dashboardData.products],
+  );
+  const visibleBestSellingProducts = useMemo(
+    () => dashboardData.bestSellingProducts.filter((product) => product?.visibleInStore !== false && product?.visible !== false),
+    [dashboardData.bestSellingProducts],
   );
   const openProductPurchase = (product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"));
   const backendAvatarUrl = resolveBackendAssetUrl(user?.avatar);
@@ -169,7 +185,7 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
       <CategoryShowcaseSection categories={mainCategories} forceRtl onSelect={goCategory} />
       <BestSellingSection
         forceRtl
-        items={visibleProducts}
+        items={visibleBestSellingProducts}
         onSelect={openProductPurchase}
         onViewAll={goGames}
       />

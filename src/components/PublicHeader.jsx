@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Building2, CircleUserRound, Home, Languages, LayoutGrid, LogIn, Menu, Moon, SunMedium, UserPlus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,7 @@ import ProductPurchaseModal from "./ProductPurchaseModal";
 import ThemeToggle from "./ThemeToggle";
 import { BrandName } from "./Brand";
 import { canPurchaseProduct } from "../utils/productAvailability";
+import { getSidebarNavIdentity } from "../utils/sidebarNavStyle";
 
 const purchaseLinks = [
   {
@@ -240,8 +241,9 @@ function PublicPurchaseSidebar({ open, onClose }) {
       />
 
       <aside
-        dir="rtl"
-        className={`fixed bottom-3 right-3 top-3 flex w-[min(82vw,286px)] flex-col rounded-[28px] border border-[#D7EAFE] bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_58%,#F5F3FF_100%)] p-3 text-slate-950 shadow-[0_24px_90px_rgba(14,165,233,0.22)] transition duration-300 dark:border-white/10 dark:bg-[#0A0F1D] dark:text-[#F8F9FA] dark:shadow-[0_0_42px_rgba(139,92,246,0.30)] ${
+        dir={language === "ar" ? "rtl" : "ltr"}
+        data-sidebar-variant="public"
+        className={`public-purchase-sidebar app-sidebar fixed bottom-3 right-3 top-3 flex w-[min(82vw,286px)] flex-col rounded-[28px] border border-[#D7EAFE] bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_58%,#F5F3FF_100%)] p-3 text-slate-950 shadow-[0_24px_90px_rgba(14,165,233,0.22)] transition duration-300 dark:border-white/10 dark:bg-[#0A0F1D] dark:text-[#F8F9FA] dark:shadow-[0_0_42px_rgba(139,92,246,0.30)] ${
           open ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none translate-x-[calc(100%_+_1rem)] opacity-0"
         }`}
         style={{ zIndex: PUBLIC_SIDEBAR_PANEL_Z_INDEX }}
@@ -250,7 +252,7 @@ function PublicPurchaseSidebar({ open, onClose }) {
         aria-hidden={!open}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="rounded-[22px] border border-[#CDEBFF] bg-[linear-gradient(135deg,#E0F2FE_0%,#FFFFFF_46%,#F5F3FF_100%)] p-2.5 shadow-[0_14px_32px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#0D1324,#1A1024)] dark:shadow-none">
+        <div className="public-sidebar-brand-card rounded-[22px] border border-[#CDEBFF] bg-[linear-gradient(135deg,#E0F2FE_0%,#FFFFFF_46%,#F5F3FF_100%)] p-2.5 shadow-[0_14px_32px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#0D1324,#1A1024)] dark:shadow-none">
           <div className="flex items-center justify-between gap-2.5">
             <div className="min-w-0 flex-1 text-center">
               <div dir="ltr" className="mx-auto flex min-w-0 w-fit items-center justify-center gap-1 text-left">
@@ -274,20 +276,20 @@ function PublicPurchaseSidebar({ open, onClose }) {
           </div>
         </div>
 
-        <nav className="mt-3 flex-1 space-y-1.5">
+        <nav className="public-sidebar-nav no-scrollbar mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto">
           {purchaseLinks.map(({ labelKey, path, icon: Icon, iconClass }) => (
             <SidebarLink key={path} to={path} icon={Icon} iconClass={iconClass} label={t(labelKey)} onClick={onClose} />
           ))}
         </nav>
 
-        <div className="mb-2.5 space-y-1.5">
+        <div className="public-sidebar-auth mb-2.5 space-y-1.5">
           <div className="grid grid-cols-2 gap-1.5">
             {authLinks.map(({ labelKey, path, icon: Icon, className }) => (
               <Link
                 key={path}
                 to={path}
                 onClick={onClose}
-                className={`flex min-h-10 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-center text-xs font-black transition hover:-translate-y-0.5 ${className}`}
+                className={`public-sidebar-auth-link flex min-h-10 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-center text-xs font-black transition hover:-translate-y-0.5 ${className}`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="min-w-0 leading-5">{t(labelKey)}</span>
@@ -298,7 +300,7 @@ function PublicPurchaseSidebar({ open, onClose }) {
           <Link
             to="/login"
             onClick={onClose}
-            className="group block rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)]"
+            className="public-sidebar-google group block rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)]"
           >
             <span className="flex min-h-10 items-center justify-center gap-2 rounded-[15px] bg-white px-3 text-center text-xs font-black text-slate-800 transition group-hover:bg-[#F8FCFF] dark:bg-[#111827] dark:text-white dark:group-hover:bg-[#0D1324]">
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
@@ -309,7 +311,7 @@ function PublicPurchaseSidebar({ open, onClose }) {
           </Link>
         </div>
 
-        <div className="mb-2.5 space-y-2 rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 shadow-[0_10px_24px_rgba(14,165,233,0.10)] dark:border-white/10 dark:bg-[#0D1324] dark:shadow-none">
+        <div className="public-sidebar-settings mb-2.5 space-y-2 rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 shadow-[0_10px_24px_rgba(14,165,233,0.10)] dark:border-white/10 dark:bg-[#0D1324] dark:shadow-none">
           <p className="text-sm font-black text-slate-950 dark:text-white">{t("sidebar.settings")}</p>
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -317,8 +319,8 @@ function PublicPurchaseSidebar({ open, onClose }) {
               <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-[#8A94A7]">{language === "ar" ? t("language.arabic") : t("language.english")}</p>
             </div>
             <div className="inline-flex rounded-2xl border border-sky-100 bg-slate-50 p-1 text-[10px] font-black dark:border-white/10 dark:bg-[#111827]">
-              <button type="button" onClick={() => setLanguage("ar")} className={`rounded-xl px-2 py-1.5 ${language === "ar" ? "bg-[#7C3AED] text-white" : "text-slate-500 dark:text-[#8A94A7]"}`}>AR</button>
-              <button type="button" onClick={() => setLanguage("en")} className={`rounded-xl px-2 py-1.5 ${language === "en" ? "bg-[#38BDF8] text-[#050816]" : "text-slate-500 dark:text-[#8A94A7]"}`}>EN</button>
+              <button type="button" onClick={() => setLanguage("ar")} aria-pressed={language === "ar"} className={`rounded-xl px-2 py-1.5 ${language === "ar" ? "bg-[#7C3AED] text-white" : "text-slate-500 dark:text-[#8A94A7]"}`}>AR</button>
+              <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`rounded-xl px-2 py-1.5 ${language === "en" ? "bg-[#38BDF8] text-[#050816]" : "text-slate-500 dark:text-[#8A94A7]"}`}>EN</button>
             </div>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -332,7 +334,7 @@ function PublicPurchaseSidebar({ open, onClose }) {
           </div>
         </div>
 
-        <p className="rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 text-[11px] font-semibold leading-5 text-slate-600 shadow-[0_10px_24px_rgba(14,165,233,0.08)] dark:border-white/10 dark:bg-[#0D1324] dark:text-[#8A94A7] dark:shadow-none">
+        <p className="public-sidebar-note rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 text-[11px] font-semibold leading-5 text-slate-600 shadow-[0_10px_24px_rgba(14,165,233,0.08)] dark:border-white/10 dark:bg-[#0D1324] dark:text-[#8A94A7] dark:shadow-none">
           {t("sidebar.purchaseNote")}
         </p>
       </aside>
@@ -347,18 +349,22 @@ function PublicPurchaseSidebar({ open, onClose }) {
 }
 
 function SidebarLink({ to, icon: Icon, iconClass, label, onClick }) {
+  const navIdentity = getSidebarNavIdentity(to);
+
   return (
-    <Link
+    <NavLink
       to={to}
       onClick={onClick}
-      className="flex h-12 items-center gap-2.5 rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 text-start shadow-[0_10px_24px_rgba(14,165,233,0.10)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:bg-[#F8FCFF] hover:shadow-[0_14px_30px_rgba(124,58,237,0.13)] dark:border-white/10 dark:bg-[#111827] dark:shadow-none dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
+      data-nav-tone={navIdentity.tone}
+      data-nav-shape={navIdentity.shape}
+      className="public-sidebar-nav-link flex h-12 items-center gap-2.5 rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 text-start shadow-[0_10px_24px_rgba(14,165,233,0.10)] transition hover:-translate-y-0.5 hover:border-[#C4B5FD] hover:bg-[#F8FCFF] hover:shadow-[0_14px_30px_rgba(124,58,237,0.13)] dark:border-white/10 dark:bg-[#111827] dark:shadow-none dark:hover:border-[#A855F7]/55 dark:hover:bg-[#1A2335]"
     >
-      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${iconClass}`}>
+      <span className={`public-sidebar-nav-icon sidebar-premium-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl ${iconClass}`}>
         <Icon className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xs font-black text-slate-800 dark:text-white">{label}</span>
+        <span className="public-sidebar-nav-label block text-xs font-black text-slate-800 dark:text-white">{label}</span>
       </span>
-    </Link>
+    </NavLink>
   );
 }

@@ -22,7 +22,7 @@ const statusOptions = [
 ];
 
 export default function OrdersFilters({ filters, onChange, onApply, onReset, activeCount = 0 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const update = (key) => (event) => onChange(key, event.target.value);
   const updateDateRange = (range) => {
     Object.entries(range).forEach(([key, value]) => onChange(key, value));

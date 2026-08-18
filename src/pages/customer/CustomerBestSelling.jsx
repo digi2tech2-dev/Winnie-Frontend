@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { getCustomerProducts, getPublicCatalog } from "../../api/catalog";
+import { getCustomerBestSellingProducts, getPublicBestSellingProducts } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
@@ -35,10 +35,10 @@ export default function CustomerBestSelling({ loginOnPurchase = false, basePath 
       setError("");
       try {
         if (useBackendProducts) {
-          const result = await getCustomerProducts(token, { page: 1, limit: pageSize });
+          const result = await getCustomerBestSellingProducts(token, { page: 1, limit: pageSize });
           if (!cancelled) setBackendProducts(result.products);
         } else {
-          const result = await getPublicCatalog({ page: 1, limit: pageSize });
+          const result = await getPublicBestSellingProducts({ page: 1, limit: pageSize });
           if (!cancelled) setPublicProducts(result.products);
         }
       } catch (requestError) {

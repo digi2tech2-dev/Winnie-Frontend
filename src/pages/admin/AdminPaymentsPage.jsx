@@ -335,9 +335,10 @@ export default function AdminPaymentsPage() {
         onReset={resetFilters}
       />
 
-      <section aria-labelledby="payments-list-title">
-        <div className="mb-3 flex items-end justify-between gap-3 px-1">
+      <section aria-labelledby="payments-list-title" className="admin-payments-workspace">
+        <div className="admin-payments-list-heading mb-3 flex items-end justify-between gap-3 px-1">
           <div>
+            <p className="admin-payments-list-kicker">سجل العمليات</p>
             <h2 id="payments-list-title" className="text-base font-black text-slate-950 dark:text-white">قائمة المدفوعات</h2>
             <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-[#8A94A7]">
               تم تحميل {visiblePayments.length.toLocaleString("ar-EG-u-nu-latn")} من {(pagination.total || payments.length).toLocaleString("ar-EG-u-nu-latn")}
@@ -347,7 +348,7 @@ export default function AdminPaymentsPage() {
             type="button"
             onClick={loadPayments}
             disabled={loading}
-            className="inline-flex h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300"
+            className="admin-payments-refresh-button inline-flex h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             تحديث
@@ -440,13 +441,13 @@ function Header({ onRefresh, refreshing }) {
   return (
     <section className="admin-payments-hero relative overflow-hidden rounded-[26px] border border-violet-200/70 bg-gradient-to-l from-white via-sky-50/80 to-violet-50/80 p-5 shadow-[0_18px_48px_rgba(124,58,237,0.09)] sm:p-6 dark:border-white/[0.08] dark:bg-[linear-gradient(135deg,#111827,#0D1324_58%,#17152A)] dark:shadow-[0_0_26px_rgba(139,92,246,0.14)]">
       <div className="relative flex items-center gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
+        <span className="admin-payments-hero-icon grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] to-[#3B82F6] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
           <ReceiptText className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-black text-slate-950 sm:text-3xl dark:text-white">إدارة المدفوعات</h1>
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
+            <span className="admin-payments-connection inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
               <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               متصل بالخادم
             </span>
@@ -459,7 +460,7 @@ function Header({ onRefresh, refreshing }) {
           type="button"
           onClick={onRefresh}
           disabled={refreshing}
-          className="hidden h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300 sm:inline-flex"
+          className="admin-payments-hero-refresh hidden h-10 items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 text-[10px] font-black text-violet-700 transition hover:bg-violet-50 disabled:opacity-60 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-300 sm:inline-flex"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           تحديث
@@ -478,7 +479,7 @@ function Stat({ icon: Icon, label, value, tone }) {
   };
 
   return (
-    <article className="admin-payments-stat rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]">
+    <article className={`admin-payments-stat admin-payments-stat--${tone} rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]`}>
       <div className={`mb-3 inline-grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br ${tones[tone] || tones.violet}`}>
         <Icon className="h-5 w-5" />
       </div>
@@ -491,7 +492,7 @@ function Stat({ icon: Icon, label, value, tone }) {
 }
 
 function Filters({ activeCount, filters, onApply, onChange, onReset }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const updateDateRange = (range) => {
     Object.entries(range).forEach(([key, value]) => onChange(key, value));
   };
@@ -581,7 +582,7 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
         <p className="truncate text-xs font-black text-slate-800 dark:text-white">{payment.userName}</p>
         <p className="truncate text-[10px] font-bold text-slate-400">{payment.userEmail || shortValue(payment.userId, 12)}</p>
       </div>
-      <span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600 dark:bg-white/10 dark:text-slate-300">
+      <span className="admin-payment-gateway w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600 dark:bg-white/10 dark:text-slate-300">
         {payment.gatewayLabel}
       </span>
       <StatusBadge status={payment.status} label={payment.statusLabel} />
@@ -593,14 +594,14 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
         <p className="text-xs font-black text-slate-950 dark:text-white">{payment.gatewayAmountLabel}</p>
         <p className="text-[10px] font-bold text-slate-400">{payment.exchangeRateSource || "بوابة الدفع"}</p>
       </div>
-      <span className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${payment.credited ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : "bg-slate-500/10 text-slate-500 dark:text-slate-300"}`}>
+      <span className={`admin-payment-credit w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${payment.credited ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300" : "bg-slate-500/10 text-slate-500 dark:text-slate-300"}`}>
         {payment.credited ? "أُضيف الرصيد" : "لم يُضف الرصيد"}
       </span>
       <div className="admin-payment-actions flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => onDetails(payment.id)}
-          className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-black text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
+          className="admin-payment-action admin-payment-action--details inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-black text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
         >
           <Eye className="h-3.5 w-3.5" />
           التفاصيل
@@ -610,7 +611,7 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
             type="button"
             onClick={() => onSync(payment.id)}
             disabled={Boolean(actionKey)}
-            className="inline-flex h-9 items-center gap-2 rounded-xl bg-violet-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
+            className="admin-payment-action admin-payment-action--sync inline-flex h-9 items-center gap-2 rounded-xl bg-violet-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
             مزامنة
@@ -621,7 +622,7 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
             type="button"
             onClick={() => onMatch(payment.id)}
             disabled={Boolean(actionKey)}
-            className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
+            className="admin-payment-action admin-payment-action--match inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-[10px] font-black text-white disabled:opacity-60"
           >
             <CheckCircle2 className={`h-3.5 w-3.5 ${matching ? "animate-pulse" : ""}`} />
             مطابقة
@@ -634,7 +635,7 @@ function PaymentRow({ actionKey, onDetails, onMatch, onSync, payment }) {
 
 function StatusBadge({ label, status }) {
   return (
-    <span className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${statusStyles[status] || statusStyles.PENDING}`}>
+    <span className={`admin-payment-status w-fit rounded-full px-2.5 py-1 text-[10px] font-black ${statusStyles[status] || statusStyles.PENDING}`}>
       {statusLabels[status] || label}
     </span>
   );

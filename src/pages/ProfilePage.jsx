@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Phone, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
+import { Bookmark, Eye, EyeOff, Globe2, KeyRound, LockKeyhole, LogOut, MoreHorizontal, Pencil, Save, Settings, Share2, ShieldCheck, UserRound, X } from "lucide-react";
+import { PhoneInput } from "react-international-phone";
+import "react-international-phone/style.css";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { resolveBackendAssetUrl } from "../api/adapters";
@@ -12,19 +14,22 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ToastProvider";
 
 const profileCountries = ["United States", "Egypt", "Saudi Arabia", "United Arab Emirates", "Kuwait", "Qatar"];
-const countryDialCodes = {
-  "United States": "+1",
-  Egypt: "+20",
-  "Saudi Arabia": "+966",
-  "United Arab Emirates": "+971",
-  Kuwait: "+965",
-  Qatar: "+974",
-  "الولايات المتحدة": "+1",
-  "مصر": "+20",
-  "السعودية": "+966",
-  "الإمارات": "+971",
-  "الكويت": "+965",
-  "قطر": "+974",
+const profileCountryIso2 = {
+  "United States": "us",
+  Egypt: "eg",
+  "Saudi Arabia": "sa",
+  "United Arab Emirates": "ae",
+  Kuwait: "kw",
+  Qatar: "qa",
+};
+
+const profileCountryDialCodes = {
+  us: "+1",
+  eg: "+20",
+  sa: "+966",
+  ae: "+971",
+  kw: "+965",
+  qa: "+974",
 };
 
 const countryAliases = {
@@ -39,6 +44,16 @@ const countryAliases = {
 function normalizeCountryValue(value) {
   if (!value) return "";
   return countryAliases[value] || value;
+}
+
+function normalizePhoneValue(value, country) {
+  const phone = String(value || "").trim();
+  if (!phone || phone.startsWith("+")) return phone;
+  if (phone.startsWith("00")) return `+${phone.slice(2)}`;
+
+  const countryIso2 = profileCountryIso2[normalizeCountryValue(country)] || "eg";
+  const dialCode = profileCountryDialCodes[countryIso2] || "+20";
+  return `${dialCode}${phone.replace(/^0+/, "")}`;
 }
 
 export default function ProfilePage({ basePath = "/customer" }) {
@@ -293,7 +308,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
   return (
     <div
       dir="rtl"
-      className="customer-profile-page -mx-4 -mt-2 min-h-[calc(100vh-120px)] overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
+      className="customer-profile-page -mx-4 -mt-2 min-h-[calc(100vh-120px)] bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
     >
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={changeAvatar} />
       <section className="customer-profile-hero relative min-h-[390px] overflow-hidden bg-[linear-gradient(135deg,#BAF1FF_0%,#E8E0FF_48%,#FFC2DC_100%)] px-4 pb-7 pt-5 dark:bg-[linear-gradient(135deg,#070A1E_0%,#111827_48%,#24133D_100%)] sm:min-h-[460px] sm:px-8 sm:pb-8 sm:pt-7">
@@ -426,13 +441,12 @@ function EditProfilePanel({
   const [country, setCountry] = useState(initialCountry);
   const [form, setForm] = useState({
     name: displayName || "",
-    phone: phoneValue || "",
+    phone: normalizePhoneValue(phoneValue, initialCountry),
     username: usernameValue || "",
   });
-  const selectedDialCode = countryDialCodes[country] || "";
   const dirty =
     form.name.trim() !== (displayName || "").trim() ||
-    form.phone.trim() !== (phoneValue || "").trim() ||
+    form.phone.trim() !== normalizePhoneValue(phoneValue, initialCountry).trim() ||
     form.username.trim() !== (usernameValue || "").trim();
 
   const updateField = (field, value) => {
@@ -452,7 +466,7 @@ function EditProfilePanel({
   };
 
   return (
-    <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] overflow-hidden rounded-[24px] border border-violet-300/55 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.16),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.14),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-4 shadow-[0_24px_64px_rgba(91,33,182,0.16),inset_0_1px_0_rgba(255,255,255,0.92)] backdrop-blur-2xl dark:border-violet-400/25 dark:bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.24),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.13),transparent_44%),linear-gradient(180deg,#0D1324_0%,#070B19_100%)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.34),0_0_30px_rgba(124,58,237,0.12)] sm:p-5">
+    <section className="relative z-10 mx-auto mt-4 w-[calc(100%-32px)] max-w-[760px] overflow-visible rounded-[24px] border border-violet-300/55 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.16),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.14),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-4 shadow-[0_24px_64px_rgba(91,33,182,0.16),inset_0_1px_0_rgba(255,255,255,0.92)] backdrop-blur-2xl dark:border-violet-400/25 dark:bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.24),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.13),transparent_44%),linear-gradient(180deg,#0D1324_0%,#070B19_100%)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.34),0_0_30px_rgba(124,58,237,0.12)] sm:p-5">
       <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/80 to-transparent" />
       <div className="flex items-center gap-3">
         <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/35 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-blue-500 text-white shadow-[0_12px_28px_rgba(124,58,237,0.30),0_0_18px_rgba(59,130,246,0.12)]">
@@ -478,11 +492,11 @@ function EditProfilePanel({
           helper={t("panel.usernameHelper")}
         />
         <Field label={t("panel.email")} defaultValue={email} readOnly helper={t("panel.emailHelper")} />
-        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} helper={t("panel.countryHelper")} helperAction={<WhatsAppSupportButton topic="country" />} />
-        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} helperAction={<WhatsAppSupportButton />} />
+        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} helper={t("panel.countryHelper")} helperAction={<WhatsAppSupportButton accountEmail={email} accountName={form.name || displayName} topic="country" />} />
+        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} helperAction={<WhatsAppSupportButton accountEmail={email} accountName={form.name || displayName} />} />
         <ProfilePhoneField
           label={t("panel.phone")}
-          countryCode={selectedDialCode}
+          defaultCountry={profileCountryIso2[country] || "eg"}
           value={form.phone}
           onChange={(value) => updateField("phone", value)}
         />
@@ -512,9 +526,9 @@ function EditProfilePanel({
           readOnly
           helper={t("panel.emailHelper")}
         />
-        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} helper={t("panel.countryHelper")} helperAction={<WhatsAppSupportButton topic="country" />} />
-        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} helperAction={<WhatsAppSupportButton />} />
-        <ProfilePhoneField label={t("panel.phone")} countryCode={selectedDialCode} readOnly value={phone} onChange={setPhone} />
+        <CountrySelectField disabled label={t("panel.country")} value={country} options={profileCountries} onChange={setCountry} helper={t("panel.countryHelper")} helperAction={<WhatsAppSupportButton accountEmail={email} accountName={displayName} topic="country" />} />
+        <Field label={t("panel.currency")} defaultValue={currencyValue} readOnly helper={t("panel.currencyHelper")} helperAction={<WhatsAppSupportButton accountEmail={email} accountName={displayName} />} />
+        <ProfilePhoneField label={t("panel.phone")} defaultCountry={profileCountryIso2[country] || "eg"} readOnly value={phone} onChange={setPhone} />
         <button
           type="button"
           disabled
@@ -866,32 +880,54 @@ function CountrySelectField({ disabled = false, label, value, options, onChange,
   );
 }
 
-function ProfilePhoneField({ label, countryCode, readOnly = false, value, onChange }) {
+function ProfilePhoneField({ label, defaultCountry = "eg", readOnly = false, value, onChange }) {
   const { t } = useTranslation("profile");
+  const [countryPickerKey, setCountryPickerKey] = useState(0);
+
+  const handlePhoneChange = (phone, meta) => {
+    onChange(phone);
+    if (phone === `+${meta.country.dialCode}`) setCountryPickerKey((current) => current + 1);
+  };
 
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-2 block text-sm font-black text-violet-800 dark:text-violet-200">{label}</span>
-      <span className="relative block">
-        <Phone className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-fuchsia-500 dark:text-fuchsia-300" />
-        <input
-          dir="ltr"
-          type="tel"
-          inputMode="tel"
-          readOnly={readOnly}
-          aria-readonly={readOnly}
+      <div onClickCapture={(event) => {
+        if (event.target.closest(".react-international-phone-country-selector-button")) event.preventDefault();
+      }}>
+        <PhoneInput
+          key={countryPickerKey}
+          defaultCountry={defaultCountry}
+          preferredCountries={["eg", "sa", "ae", "kw", "qa", "us"]}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-violet-200/80 bg-white/80 px-4 pl-20 pr-12 text-left font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition read-only:cursor-default read-only:bg-violet-50 read-only:text-violet-700 placeholder:text-slate-400 focus:border-violet-500/75 focus:ring-4 focus:ring-violet-500/15 dark:border-violet-400/20 dark:bg-[#050816]/85 dark:text-white dark:shadow-none dark:read-only:bg-[#1A1730] dark:read-only:text-violet-200 dark:placeholder:text-[#8A94A7]"
+          onChange={handlePhoneChange}
+          forceDialCode
+          disabled={readOnly}
+          inputProps={{
+            dir: "ltr",
+            inputMode: "tel",
+            autoComplete: "tel",
+            "aria-label": label,
+            "aria-readonly": readOnly,
+          }}
+          className="profile-phone-field w-full [--react-international-phone-border-radius:0.75rem] [--react-international-phone-height:3rem]"
+          inputClassName="!h-12 !min-w-0 !flex-1 !rounded-l-xl !border-violet-200/80 !bg-white/80 !px-4 !text-left !font-semibold !text-slate-950 !shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] placeholder:!text-slate-400 focus:!border-violet-500/75 focus:!ring-4 focus:!ring-violet-500/15 dark:!border-violet-400/20 dark:!bg-[#050816]/85 dark:!text-white dark:!shadow-none"
+          countrySelectorStyleProps={{
+            buttonClassName: "!h-12 !rounded-r-xl !border-violet-200/80 !bg-gradient-to-r !from-violet-50 !to-blue-50 !px-2 dark:!border-violet-400/20 dark:!from-[#17112b] dark:!to-[#0D1730]",
+            flagClassName: "!h-6 !w-6",
+            dropdownArrowClassName: "!border-t-violet-600 dark:!border-t-violet-300",
+            dropdownStyleProps: {
+              className: "!z-[100] !max-h-[min(60vh,30rem)] !w-[calc(100vw-2rem)] !rounded-xl !border !border-violet-200 !bg-white !py-1 !shadow-2xl sm:!w-[19rem] dark:!border-violet-400/25 dark:!bg-[#11182B] dark:!text-white",
+              listItemClassName: "!min-h-10 !px-3 hover:!bg-violet-50 dark:hover:!bg-violet-500/15",
+              listItemCountryNameClassName: "!text-sm !font-semibold",
+              listItemDialCodeClassName: "!font-bold !text-violet-600 dark:!text-violet-300",
+              listItemSelectedClassName: "!bg-violet-100 dark:!bg-violet-500/20",
+              listItemFocusedClassName: "!bg-violet-100 dark:!bg-violet-500/20",
+            },
+          }}
         />
-        <span
-          dir="ltr"
-          className="pointer-events-none absolute left-3 top-1/2 grid h-8 min-w-14 -translate-y-1/2 select-none place-items-center rounded-lg border border-blue-300/55 bg-gradient-to-r from-blue-50 to-violet-50 px-2 text-sm font-black text-blue-700 dark:border-blue-400/20 dark:bg-[linear-gradient(90deg,rgba(59,130,246,0.16),rgba(124,58,237,0.12))] dark:text-sky-200"
-          title={t("panel.countryCodeTitle")}
-        >
-          {countryCode}
-        </span>
-      </span>
+      </div>
+      <span className="mt-2 block text-xs font-bold text-slate-500 dark:text-[#8A94A7]">{t("panel.countryCodeTitle")}</span>
     </label>
   );
 }

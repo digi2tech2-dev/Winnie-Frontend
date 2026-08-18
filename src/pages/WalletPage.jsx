@@ -232,7 +232,7 @@ function BalancePanel({ error, loading, onShowTransactions, wallet }) {
         <div className="wallet-balance-info min-w-0 text-center">
           <p className="text-[13px] font-bold text-slate-500 dark:text-white/[0.68] sm:text-sm">{t("summary.currentBalance")}</p>
           <div className="mt-1.5">
-            <p dir="ltr" className="break-words text-[clamp(1.65rem,5vw,2.55rem)] font-black leading-none text-slate-950 dark:text-white">{loading ? t("summary.loadingShort") : balanceLabel}</p>
+            <p dir="ltr" className="wallet-balance-amount text-[clamp(1.65rem,5vw,2.55rem)] font-black leading-none text-slate-950 dark:text-white">{loading ? t("summary.loadingShort") : balanceLabel}</p>
             <p className="mt-1 text-xs font-bold text-slate-500 dark:text-white/70 sm:text-sm">{currency}</p>
           </div>
         </div>

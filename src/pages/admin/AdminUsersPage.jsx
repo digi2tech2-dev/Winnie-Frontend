@@ -4,6 +4,7 @@ import {
   Ban,
   Braces,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Eye,
   Filter,
@@ -197,6 +198,7 @@ export default function AdminUsersPage() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [openActionUserId, setOpenActionUserId] = useState(null);
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
@@ -502,8 +504,22 @@ export default function AdminUsersPage() {
         ))}
       </section>
 
-      <form
-        className="admin-users-filter-panel admin-users-toolbar"
+      <section className="admin-users-filter-panel overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          aria-controls="admin-users-filters-content"
+          className="flex min-h-12 w-full items-center gap-2 px-4 text-right transition hover:bg-slate-50/70 dark:hover:bg-white/[0.04]"
+        >
+          <Filter className="h-4 w-4 text-violet-500" />
+          <b className="flex-1 text-sm font-black text-slate-950 dark:text-white">الفلاتر</b>
+          <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+        </button>
+        <div id="admin-users-filters-content" className={`grid transition-[grid-template-rows] duration-300 ${filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className={filtersOpen ? "overflow-visible" : "overflow-hidden"}>
+        <form
+        className="admin-users-toolbar"
         onSubmit={(event) => {
           event.preventDefault();
           setPage(1);
@@ -551,6 +567,9 @@ export default function AdminUsersPage() {
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </form>
+        </div>
+        </div>
+      </section>
 
       <section className="admin-users-table-card">
         <div className="admin-users-table-head">

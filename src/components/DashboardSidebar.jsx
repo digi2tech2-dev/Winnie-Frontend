@@ -7,6 +7,7 @@ import { iconMap } from "./icons";
 import { verifyAdminSecurityPin } from "../api/adminSecurityPin";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { getSidebarNavIdentity } from "../utils/sidebarNavStyle";
 
 const profileAvatarKey = "winnie-profile-avatar";
 const profileAvatarChangedEvent = "winnie-profile-avatar-change";
@@ -29,25 +30,6 @@ const adminToolItems = [
   { label: "إعدادات النظام", path: "/admin/tools/settings", icon: "Settings" },
   { label: "طلبات الوكلاء الفرعيين", path: "/admin/tools/sub-agents", icon: "UserPlus" },
 ];
-const adminToolLabelsEn = {
-  "/admin/tools/dashboard": "Admin Dashboard",
-  "/admin/tools/users": "User Management",
-  "/admin/tools/supervisors": "Moderator Management",
-  "/admin/tools/orders": "Orders",
-  "/admin/tools/payments": "Payments",
-  "/admin/tools/financial-reports": "Financial Reports",
-  "/admin/tools/balance-requests": "Add Balance Requests",
-  "/admin/tools/admin-wallet-adjustments": "Admin Shipping",
-  "/admin/tools/products": "Product Management",
-  "/admin/tools/groups": "Groups Management",
-  "/admin/tools/suppliers": "Supplier Management",
-  "/admin/tools/payment-methods": "Payment Methods",
-  "/admin/tools/currencies": "Currency Management",
-  "/admin/tools/whatsapp-notifications": "WhatsApp Notifications",
-  "/admin/tools/settings": "System Settings",
-  "/admin/tools/sub-agents": "Sub-agent Requests",
-};
-
 function getStoredProfileAvatar() {
   try {
     return localStorage.getItem(profileAvatarKey) || "";
@@ -66,6 +48,28 @@ function getStoredAdminToolsUnlocked() {
   } catch {
     return false;
   }
+}
+
+function formatSidebarAccountId(accountId) {
+  const value = String(accountId || "").trim();
+  if (value.length <= 14) return value;
+  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+}
+
+function formatSidebarRole(role, language, fallback) {
+  const value = String(role || "").trim();
+  if (!value) return fallback;
+
+  const labels = {
+    admin: language === "ar" ? "مدير النظام" : "Administrator",
+    administrator: language === "ar" ? "مدير النظام" : "Administrator",
+    supervisor: language === "ar" ? "مشرف" : "Supervisor",
+    moderator: language === "ar" ? "مشرف" : "Moderator",
+    user: language === "ar" ? "عضو" : "Member",
+    customer: language === "ar" ? "عميل" : "Customer",
+  };
+
+  return labels[value.toLowerCase()] || value;
 }
 
 export default function DashboardSidebar({ items, open, onClose, walletBalance, variant = "customer" }) {
@@ -97,27 +101,31 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
   const [adminGateVerifying, setAdminGateVerifying] = useState(false);
   const [adminExitConfirmOpen, setAdminExitConfirmOpen] = useState(false);
   const sidebarAvatarUrl = (isImageAvatar(user?.avatar) ? user.avatar : "") || profileAvatarUrl;
-  const sidebarAvatarInitial = String(user?.avatar || user?.name || "W").slice(0, 1).toUpperCase();
+  const sidebarDisplayName = String(user?.name || user?.username || user?.email || "W").trim();
   const sidebarAccountId = user?.id || (variant === "customer" ? "usr_admin_001" : "");
+  const sidebarAccountIdDisplay = formatSidebarAccountId(sidebarAccountId);
   const visibleItems = variant === "admin" ? [] : items;
   const adminUserItems = variant === "admin" ? items : [];
   const adminUserNavActive = variant === "admin" && isAdminUserPath(location.pathname);
+  const sidebarLanguage = variant === "admin" ? "ar" : language;
   const userSectionLabel = adminToolsOpen
-    ? (language === "ar" ? "الرجوع لصلاحيات المستخدم" : "Back to User Permissions")
-    : (language === "ar" ? "المستخدم" : "User");
+    ? (sidebarLanguage === "ar" ? "الرجوع لصلاحيات المستخدم" : "Back to User Permissions")
+    : (sidebarLanguage === "ar" ? "المستخدم" : "User");
   const userSectionTitle = adminToolsOpen
-    ? (language === "ar" ? "الرجوع لصلاحيات المستخدم" : "Back to User Permissions")
-    : (language === "ar" ? "فتح صفحات المستخدم" : "Open user pages");
+    ? (sidebarLanguage === "ar" ? "الرجوع لصلاحيات المستخدم" : "Back to User Permissions")
+    : (sidebarLanguage === "ar" ? "فتح صفحات المستخدم" : "Open user pages");
   const UserSectionIcon = adminToolsOpen ? iconMap.UserCog : UserIcon;
-  const sidebarText = variant === "admin" ? sidebarCopy[language] : {
+  const sidebarText = variant === "admin" ? sidebarCopy.ar : {
     defaultUser: t("app.defaultUser"),
     language: t("language.label"),
     member: t("app.member"),
     walletBalance: t("sidebar.walletBalance"),
   };
-  const sidebarRoleLabel = variant === "admin"
-    ? (user?.backendRole || user?.role || sidebarText.member)
-    : (user?.tier || sidebarText.member);
+  const sidebarRoleLabel = formatSidebarRole(
+    variant === "admin" ? (user?.backendRole || user?.role) : user?.tier,
+    sidebarLanguage,
+    sidebarText.member,
+  );
 
   useEffect(() => {
     const refreshAvatar = () => setProfileAvatarUrl(getStoredProfileAvatar());
@@ -317,8 +325,8 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
           </button>
         </div>
 
-        <div className="sidebar-profile-card mt-3 shrink-0 rounded-[22px] bg-gradient-to-br from-[#FBCFE8] via-[#E0F2FE] to-[#DDD6FE] p-px shadow-[0_18px_38px_rgba(14,165,233,0.10)] dark:from-[#7C3AED]/55 dark:via-[#1b1634] dark:to-[#DB2777]/35 dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[19px] bg-[#EFFBFF] p-2 dark:bg-[#0D1324] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="sidebar-profile-card mt-2.5 shrink-0 rounded-[19px] bg-gradient-to-br from-[#FBCFE8] via-[#E0F2FE] to-[#DDD6FE] p-px shadow-[0_12px_26px_rgba(14,165,233,0.09)] dark:from-[#7C3AED]/55 dark:via-[#1b1634] dark:to-[#DB2777]/35 dark:shadow-[0_0_18px_rgba(139,92,246,0.14)]">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-[18px] bg-[#EFFBFF] p-1.5 dark:bg-[#0D1324] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <button
             type="button"
             onClick={handleUserButtonClick}
@@ -326,52 +334,55 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
             aria-label={variant === "admin" ? "فتح صفحات المستخدم" : t("sidebar.profile")}
             title={variant === "admin" ? "صفحات المستخدم" : t("sidebar.profile")}
           >
-            <div className="grid h-10 w-10 overflow-hidden rounded-2xl bg-gradient-to-br from-[#7C3AED] via-[#8B5CF6] to-[#A855F7] text-lg font-black text-white shadow-[0_0_20px_rgba(139,92,246,0.32)] ring-2 ring-white/70 transition hover:ring-[#8B5CF6]/60 dark:ring-white/10 dark:hover:ring-[#A855F7]/65">
+            <div className="grid h-9 w-9 overflow-hidden rounded-xl bg-gradient-to-br from-[#7C3AED] via-[#8B5CF6] to-[#A855F7] text-white shadow-[0_0_16px_rgba(139,92,246,0.28)] ring-2 ring-white/70 transition hover:ring-[#8B5CF6]/60 dark:ring-white/10 dark:hover:ring-[#A855F7]/65">
               {sidebarAvatarUrl ? (
                 <img src={sidebarAvatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span className="grid h-full w-full place-items-center">{sidebarAvatarInitial}</span>
+                <span className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_35%_22%,rgba(255,255,255,0.32),transparent_32%)]">
+                  <UserIcon className="h-4.5 w-4.5 stroke-[2.2]" aria-hidden="true" />
+                </span>
               )}
             </div>
-            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400 dark:border-[#0D1324]" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 dark:border-[#0D1324]" />
           </button>
           <div className="min-w-0">
+            <p className="truncate text-[12px] font-black leading-4 text-slate-950 dark:text-white">{sidebarDisplayName || sidebarText.defaultUser}</p>
             <button
               type="button"
               onClick={copyAccountId}
-              className="flex h-4 max-w-full items-center gap-1 text-right text-[10px] font-black text-[#7C3AED] transition hover:text-[#A855F7] dark:text-[#C084FC] dark:hover:text-[#E9D5FF]"
+              className="mt-0.5 inline-flex max-w-full items-center gap-1 rounded-md bg-white/65 px-1.5 py-0.5 text-right text-[8px] font-bold tracking-wide text-slate-500 transition hover:bg-white hover:text-[#7C3AED] dark:bg-white/[0.06] dark:text-[#AAB3C2] dark:hover:bg-white/[0.10] dark:hover:text-[#E9D5FF]"
               title={variant === "admin" ? "اضغط لنسخ معرّف الحساب" : t("sidebar.copyAccountId")}
               aria-label={variant === "admin" ? `نسخ معرّف الحساب ${sidebarAccountId}` : t("sidebar.copyAccountIdAria", { id: sidebarAccountId })}
             >
-              <Copy className="h-3 w-3 shrink-0" />
-              <span className="truncate">{sidebarAccountId}</span>
+              <span className="text-[7px] font-black text-[#8B5CF6] dark:text-[#C084FC]">ID</span>
+              <span dir="ltr" className="truncate">{sidebarAccountIdDisplay}</span>
+              <Copy className="h-2.5 w-2.5 shrink-0" />
             </button>
-            <p className="truncate text-[13px] font-black text-slate-950 dark:text-white">{user?.name || sidebarText.defaultUser}</p>
-            <p className="mt-1 inline-flex max-w-full rounded-lg bg-[#F5F3FF] px-2 py-0.5 text-[10px] font-bold text-[#8B5CF6] dark:bg-[#1A2335] dark:text-[#A78BFA]">
+            <p className="mt-0.5 inline-flex max-w-full rounded-full border border-violet-100 bg-[#F5F3FF] px-1.5 py-0.5 text-[8px] font-bold text-[#8B5CF6] dark:border-violet-400/15 dark:bg-[#1A2335] dark:text-[#C4B5FD]">
               {sidebarRoleLabel}
             </p>
           </div>
           <button
             type="button"
             onClick={handleLogout}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-500 transition hover:border-rose-200 hover:bg-rose-100 dark:border-rose-400/20 dark:bg-[#2A1020] dark:text-rose-200 dark:hover:border-rose-300/40 dark:hover:bg-[#3A1225]"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-rose-100 bg-rose-50 text-rose-500 transition hover:border-rose-200 hover:bg-rose-100 dark:border-rose-400/20 dark:bg-[#2A1020] dark:text-rose-200 dark:hover:border-rose-300/40 dark:hover:bg-[#3A1225]"
             aria-label={variant === "admin" ? "تسجيل الخروج" : t("sidebar.logout")}
             title={variant === "admin" ? "تسجيل الخروج" : t("sidebar.logout")}
           >
-            <LogOutIcon className="h-4.5 w-4.5" />
+            <LogOutIcon className="h-4 w-4" />
           </button>
           </div>
         </div>
 
         {variant === "customer" && (
-          <div className="mt-2 flex h-10 w-full shrink-0 items-center justify-between gap-2 rounded-2xl border border-sky-100 bg-white/90 px-2.5 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]">
+          <div className="sidebar-language-card mt-2 flex h-10 w-full shrink-0 items-center justify-between gap-2 rounded-2xl border border-sky-100 bg-white/90 px-2.5 text-xs font-black text-slate-600 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]">
             <span className="inline-flex items-center gap-1.5">
               <Languages className="h-4 w-4 text-[#8B5CF6]" />
               {sidebarText.language}
             </span>
             <span className="inline-flex rounded-xl bg-slate-50 p-0.5 dark:bg-[#111827]">
-              <button type="button" onClick={() => setLanguage("ar")} className={`rounded-lg px-2 py-1 ${language === "ar" ? "bg-[#7C3AED] text-white" : "text-slate-500 dark:text-[#8A94A7]"}`}>AR</button>
-              <button type="button" onClick={() => setLanguage("en")} className={`rounded-lg px-2 py-1 ${language === "en" ? "bg-[#38BDF8] text-[#050816]" : "text-slate-500 dark:text-[#8A94A7]"}`}>EN</button>
+              <button type="button" onClick={() => setLanguage("ar")} aria-pressed={language === "ar"} className={`sidebar-language-option rounded-lg px-2 py-1 ${language === "ar" ? "bg-[#7C3AED] text-white" : "text-slate-500 dark:text-[#8A94A7]"}`}>AR</button>
+              <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`sidebar-language-option rounded-lg px-2 py-1 ${language === "en" ? "bg-[#38BDF8] text-[#050816]" : "text-slate-500 dark:text-[#8A94A7]"}`}>EN</button>
             </span>
           </div>
         )}
@@ -381,7 +392,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
             <button
               type="button"
               onClick={handleUserButtonClick}
-              className={`group flex h-12 w-full items-center gap-3 rounded-[22px] border px-3 text-right text-[13px] font-black transition hover:-translate-y-0.5 ${
+              className={`sidebar-mode-switch group flex h-12 w-full items-center gap-3 rounded-[22px] border px-3 text-right text-[13px] font-black transition hover:-translate-y-0.5 ${
                 adminToolsOpen
                   ? "border-[#BAE6FD] bg-[linear-gradient(135deg,rgba(239,246,255,0.96),rgba(236,253,245,0.94),rgba(255,247,237,0.9))] text-slate-900 shadow-[0_18px_36px_rgba(14,165,233,0.13)] hover:border-[#38BDF8] dark:border-violet-400/30 dark:bg-[linear-gradient(135deg,rgba(76,29,149,0.45),rgba(30,41,59,0.84),rgba(14,116,144,0.22))] dark:text-white dark:hover:border-fuchsia-400/50"
                   : adminUserNavActive
@@ -413,12 +424,12 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
             <button
               type="button"
               onClick={handleAdminButtonClick}
-              className={`group flex h-11 w-full items-center gap-3 overflow-hidden rounded-[22px] border px-3 text-right text-[13px] font-black transition hover:-translate-y-0.5 ${
+              className={`sidebar-mode-switch group flex h-11 w-full items-center gap-3 overflow-hidden rounded-[22px] border px-3 text-right text-[13px] font-black transition hover:-translate-y-0.5 ${
                 adminToolsOpen
                   ? "border-violet-400/60 bg-[linear-gradient(135deg,rgba(245,243,255,0.96),rgba(239,246,255,0.94),rgba(253,242,248,0.9))] text-slate-950 shadow-[0_18px_36px_rgba(124,58,237,0.15)] dark:border-violet-400/40 dark:bg-[linear-gradient(135deg,rgba(76,29,149,0.48),rgba(30,41,59,0.82),rgba(157,23,77,0.28))] dark:text-white dark:shadow-[0_0_22px_rgba(139,92,246,0.16)]"
                   : "border-violet-200 bg-[linear-gradient(135deg,rgba(245,243,255,0.94),rgba(240,249,255,0.9),rgba(253,242,248,0.88))] text-slate-800 shadow-[0_14px_30px_rgba(124,58,237,0.09)] hover:border-violet-400 hover:text-slate-950 dark:border-violet-400/20 dark:bg-[linear-gradient(135deg,rgba(46,16,101,0.34),rgba(15,23,42,0.88),rgba(49,46,129,0.32))] dark:text-violet-100 dark:hover:border-fuchsia-400/45 dark:hover:text-white"
               }`}
-              title={language === "ar" ? "الأدمن" : "Admin"}
+              title="الأدمن"
               aria-expanded={adminToolsOpen}
             >
               <span className="relative grid h-9 w-9 shrink-0 -rotate-3 place-items-center rounded-[18px] bg-[linear-gradient(135deg,#6366F1,#A855F7,#EC4899)] text-white shadow-[0_10px_24px_rgba(139,92,246,0.24)] ring-2 ring-white/80 transition group-hover:rotate-0 dark:bg-[linear-gradient(135deg,#7C3AED,#A855F7,#EC4899)] dark:shadow-[0_8px_22px_rgba(168,85,247,0.28)] dark:ring-white/10">
@@ -435,21 +446,26 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
               <div className="space-y-1.5 pe-4">
                 {adminToolItems.map((item) => {
                   const Icon = iconMap[item.icon] || iconMap.Gauge;
+                  const navIdentity = getSidebarNavIdentity(item.path);
                   return (
                     <NavLink
                       key={item.label}
                       to={item.path}
                       onClick={onClose}
+                      data-nav-tone={navIdentity.tone}
+                      data-nav-shape={navIdentity.shape}
                       className={({ isActive }) =>
-                        `flex h-10 w-full items-center gap-3 rounded-2xl px-3 text-right text-[13px] font-bold transition ${
+                        `sidebar-tool-link admin-user-nav-link group relative flex h-10 w-full items-center gap-3 overflow-hidden rounded-2xl px-3 text-right text-[13px] font-bold transition ${
                           isActive
                             ? "bg-violet-50 text-violet-700 shadow-[inset_3px_0_0_#8B5CF6] dark:bg-violet-500/15 dark:text-violet-100 dark:shadow-[inset_3px_0_0_#A855F7]"
                             : "text-slate-500 hover:bg-violet-50 hover:text-violet-700 dark:text-[#9CA3AF] dark:hover:bg-violet-500/10 dark:hover:text-violet-100"
                         }`
                       }
                     >
-                      <Icon className="sidebar-stable-tool-icon h-4 w-4 shrink-0 text-violet-600 transition dark:text-violet-300" />
-                      <span className="flex-1">{language === "en" ? adminToolLabelsEn[item.path] : item.label}</span>
+                      <span className="admin-user-nav-icon sidebar-tool-icon sidebar-premium-icon grid h-7 w-7 shrink-0 place-items-center">
+                        <Icon className="h-3.5 w-3.5 stroke-[2] transition" />
+                      </span>
+                      <span className="flex-1">{item.label}</span>
                       {item.badge && (
                         <span className="grid min-w-5 place-items-center rounded-lg bg-violet-600 px-1.5 py-0.5 text-[11px] font-black text-white dark:bg-violet-500">
                           {item.badge}
@@ -481,11 +497,14 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
 
                 {adminUserItems.map((item) => {
                   const Icon = iconMap[item.icon] || iconMap.Home;
+                  const navIdentity = getSidebarNavIdentity(item.path);
                   return (
                     <NavLink
                       key={item.path}
                       to={item.path}
                       onClick={onClose}
+                      data-nav-tone={navIdentity.tone}
+                      data-nav-shape={navIdentity.shape}
                       className={({ isActive }) =>
                         `admin-user-nav-link group relative flex h-10 w-full items-center gap-2.5 overflow-hidden rounded-[15px] border px-2.5 text-right text-[13px] font-black transition duration-200 hover:-translate-y-px ${
                           isActive
@@ -494,7 +513,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
                         }`
                       }
                     >
-                      <span className="admin-user-nav-icon sidebar-stable-nav-icon relative grid h-7 w-7 shrink-0 place-items-center rounded-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 transition duration-200 group-hover:border-indigo-300 group-hover:bg-indigo-100 group-hover:text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200 dark:group-hover:text-indigo-200">
+                      <span className="admin-user-nav-icon sidebar-premium-icon sidebar-stable-nav-icon relative grid h-7 w-7 shrink-0 place-items-center rounded-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 transition duration-200 group-hover:border-indigo-300 group-hover:bg-indigo-100 group-hover:text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200 dark:group-hover:text-indigo-200">
                         <Icon className="h-3.5 w-3.5 stroke-[2]" />
                       </span>
                       <span className="relative min-w-0 flex-1 truncate">{item.label}</span>
@@ -532,11 +551,14 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
         {variant === "customer" && <nav className="no-scrollbar mt-3 flex-1 space-y-2.5 overflow-y-auto pb-4">
           {visibleItems.map((item) => {
             const Icon = iconMap[item.icon] || iconMap.Home;
+            const navIdentity = getSidebarNavIdentity(item.path);
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
+                data-nav-tone={navIdentity.tone}
+                data-nav-shape={navIdentity.shape}
                 className={({ isActive }) =>
                   `admin-user-nav-link group relative flex h-11 w-full items-center gap-2.5 overflow-hidden rounded-[15px] border px-2.5 text-right text-sm font-black transition duration-200 hover:-translate-y-px ${
                     isActive
@@ -545,7 +567,7 @@ export default function DashboardSidebar({ items, open, onClose, walletBalance, 
                   }`
                 }
               >
-                <span className="admin-user-nav-icon sidebar-stable-nav-icon relative grid h-7 w-7 shrink-0 place-items-center rounded-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 transition duration-200 group-hover:border-indigo-300 group-hover:bg-indigo-100 group-hover:text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200 dark:group-hover:text-indigo-200">
+                <span className="admin-user-nav-icon sidebar-premium-icon sidebar-stable-nav-icon relative grid h-7 w-7 shrink-0 place-items-center rounded-[10px] border border-indigo-200 bg-indigo-50 text-indigo-700 transition duration-200 group-hover:border-indigo-300 group-hover:bg-indigo-100 group-hover:text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200 dark:group-hover:text-indigo-200">
                   <Icon className="h-3.5 w-3.5 stroke-[2]" />
                 </span>
                 <span className="relative min-w-0 flex-1 truncate">{item.label}</span>

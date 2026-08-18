@@ -10,6 +10,7 @@ import {
   toNumber,
 } from "./adapters";
 import { isProductVisibleInStore } from "../utils/productAvailability";
+import { sortProductsByBestSelling } from "../utils/bestSellingProducts";
 
 const toneClasses = [
   "from-[#7C3AED] via-[#8B5CF6] to-[#38BDF8]",
@@ -207,6 +208,24 @@ export async function getCustomerProduct(token, productId) {
   return normalizeProduct(response.data || {});
 }
 
+// The server remains the source of truth for the best-selling ranking. The
+// client keeps a small defensive sort so responses that include sales counters
+// are rendered correctly even if an older API deployment ignores sort params.
+export async function getCustomerBestSellingProducts(token, query = {}) {
+  const result = await getCustomerProducts(token, {
+    page: 1,
+    limit: 100,
+    ...query,
+    sortBy: "salesCount",
+    sortOrder: "desc",
+  });
+
+  return {
+    ...result,
+    products: sortProductsByBestSelling(result.products),
+  };
+}
+
 export async function verifyProductTarget(token, productId, targetUid) {
   const response = await apiRequest(`/products/${productId}/target-verification`, {
     body: { targetUid },
@@ -287,6 +306,21 @@ export function filterProductsByCategory(products, category) {
 
     return values.some((value) => accepted.has(value));
   });
+}
+
+export async function getPublicBestSellingProducts(query = {}) {
+  const result = await getPublicCatalog({
+    page: 1,
+    limit: 100,
+    ...query,
+    sortBy: "salesCount",
+    sortOrder: "desc",
+  });
+
+  return {
+    ...result,
+    products: sortProductsByBestSelling(result.products),
+  };
 }
 
 export function filterMainCategories(categories = []) {

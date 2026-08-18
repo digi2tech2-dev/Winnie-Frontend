@@ -59,6 +59,14 @@
   grid-area: info;
 }
 
+.wallet-page .wallet-balance-amount {
+  overflow: visible;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  word-break: normal;
+}
+
 .wallet-page .wallet-stat-card,
 .wallet-page .wallet-security-feature {
   border: 1px solid rgb(124 58 237 / 0.14);
@@ -360,6 +368,21 @@ html.dark .wallet-page .payment-method-label-shell {
   .wallet-page .wallet-history-button {
     max-width: 92px;
     padding-inline: 0.4rem;
+  }
+
+  .wallet-page .wallet-balance-amount {
+    font-size: clamp(1.05rem, 4.45vw, 1.25rem);
+    letter-spacing: -0.055em;
+  }
+}
+
+@media (max-width: 370px) {
+  .wallet-page .wallet-balance-layout {
+    grid-template-columns: minmax(62px, 0.64fr) minmax(112px, 1.1fr) clamp(64px, 22vw, 80px);
+  }
+
+  .wallet-page .wallet-balance-amount {
+    font-size: 0.98rem;
   }
 }
 

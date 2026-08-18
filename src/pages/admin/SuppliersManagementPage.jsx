@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Boxes, CloudCog, Plus, RefreshCw, Search, Server } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Boxes, CloudCog, Plus, RefreshCw, Search, Server, Sparkles } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import {
   addFazerCardsManualOrderNote,
   bulkUpdateFazerCardsLaunch,
@@ -33,7 +34,7 @@ import {
 } from "../../api/adminProviders";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import FazerCardsImportModal from "../../components/admin/suppliers/FazerCardsImportModal";
-import FazerCardsLaunchOpsPanel from "../../components/admin/suppliers/FazerCardsLaunchOpsPanel";
+import FazerCardsSpecialProviderPage from "../../components/admin/suppliers/FazerCardsSpecialProviderPage";
 import SupplierCard from "../../components/admin/suppliers/SupplierCard";
 import SupplierFormModal from "../../components/admin/suppliers/SupplierFormModal";
 import SupplierProductsModal from "../../components/admin/suppliers/SupplierProductsModal";
@@ -102,6 +103,8 @@ function isFazerCardsSupplier(supplier) {
 export default function SuppliersManagementPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const location = useLocation();
+  const specialProviderPage = location.pathname.endsWith("/special-provider");
   const [suppliers, setSuppliers] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -235,7 +238,7 @@ export default function SuppliersManagementPage() {
 
     const nextError = [familiesResult, summaryResult, contractsResult]
       .filter((result) => result.status === "rejected")
-      .map((result) => result.reason?.userMessage || result.reason?.message || "Could not load FazerCards catalog metadata.")
+      .map((result) => result.reason?.userMessage || result.reason?.message || "تعذر تحميل بيانات كتالوج FazerCards.")
       .join(" ");
 
     setFazerCatalog((current) => ({
@@ -247,6 +250,11 @@ export default function SuppliersManagementPage() {
       summary: summaryResult.status === "fulfilled" ? summaryResult.value : current.summary,
     }));
   }, [token]);
+
+  useEffect(() => {
+    if (!specialProviderPage || !fazerCardsSupplier) return;
+    void loadFazerCatalogMeta();
+  }, [fazerCardsSupplier, loadFazerCatalogMeta, specialProviderPage]);
 
   const runConfirmedAction = async () => {
     const { kind, supplier } = confirm;
@@ -437,8 +445,8 @@ export default function SuppliersManagementPage() {
       }));
       showToast({
         type: "success",
-        title: `${normalizedFamily} synced`,
-        message: `Created ${result.result.providerProductsCreated || 0}, updated ${result.result.providerProductsUpdated || 0}.`,
+        title: `تمت مزامنة ${normalizedFamily}`,
+        message: `تمت إضافة ${result.result.providerProductsCreated || 0} وتحديث ${result.result.providerProductsUpdated || 0} منتج.`,
       });
       await loadFazerCatalogMeta({ silent: true });
       await loadProviderProducts(supplier, {
@@ -449,8 +457,8 @@ export default function SuppliersManagementPage() {
     } catch (error) {
       showToast({
         type: "error",
-        title: "FazerCards family sync failed",
-        message: error.userMessage || error.message || "Could not sync FazerCards family.",
+        title: "فشلت مزامنة فئة FazerCards",
+        message: error.userMessage || error.message || "تعذر مزامنة فئة FazerCards.",
       });
     } finally {
       setActionKey("");
@@ -493,7 +501,7 @@ export default function SuppliersManagementPage() {
   const runFazerCardsSyncAll = async () => {
     const supplier = productsState.supplier;
     if (!token || !supplier || actionKey) return;
-    if (!window.confirm("Run read-only FazerCards sync for all catalog families? No order endpoint will be called and no Winnie products will be created.")) return;
+    if (!window.confirm("هل تريد تشغيل مزامنة FazerCards للقراءة فقط لكل فئات الكتالوج؟ لن يتم استدعاء أي نقطة نهاية للطلبات ولن تُنشأ منتجات Winnie.")) return;
 
     setActionKey(`${supplier.id}:sync-all`);
     try {
@@ -504,8 +512,8 @@ export default function SuppliersManagementPage() {
       setFazerCatalog((current) => ({ ...current, syncResult: result.result }));
       showToast({
         type: result.result.errors?.length ? "warning" : "success",
-        title: "FazerCards sync-all finished",
-        message: `Created ${result.result.totals?.providerProductsCreated || 0}, updated ${result.result.totals?.providerProductsUpdated || 0}.`,
+        title: "اكتملت مزامنة FazerCards الشاملة",
+        message: `تمت إضافة ${result.result.totals?.providerProductsCreated || 0} وتحديث ${result.result.totals?.providerProductsUpdated || 0} منتج.`,
       });
       await loadFazerCatalogMeta({ silent: true });
       await loadProviderProducts(supplier, {
@@ -516,8 +524,8 @@ export default function SuppliersManagementPage() {
     } catch (error) {
       showToast({
         type: "error",
-        title: "FazerCards sync-all failed",
-        message: error.userMessage || error.message || "Could not run FazerCards sync-all.",
+        title: "فشلت مزامنة FazerCards الشاملة",
+        message: error.userMessage || error.message || "تعذر تشغيل مزامنة FazerCards الشاملة.",
       });
     } finally {
       setActionKey("");
@@ -540,7 +548,7 @@ export default function SuppliersManagementPage() {
 
     const error = [healthResult, manualResult, webhookResult]
       .filter((result) => result.status === "rejected")
-      .map((result) => result.reason?.userMessage || result.reason?.message || "Could not load FazerCards launch operations.")
+      .map((result) => result.reason?.userMessage || result.reason?.message || "تعذر تحميل عمليات تشغيل FazerCards.")
       .join(" ");
 
     setFazerLaunchOps((current) => ({
@@ -561,7 +569,7 @@ export default function SuppliersManagementPage() {
 
   const handleFazerBulkLaunch = async (payload) => {
     if (!token || fazerLaunchOps.loading) return;
-    if (!payload.dryRun && !window.confirm("Apply these FazerCards launch settings? This may make selected products visible to customers.")) return;
+    if (!payload.dryRun && !window.confirm("هل تريد تطبيق إعدادات نشر FazerCards؟ قد يؤدي ذلك إلى إظهار المنتجات المحددة للعملاء.")) return;
 
     setFazerLaunchOps((current) => ({ ...current, error: "", loading: true }));
     try {
@@ -569,8 +577,8 @@ export default function SuppliersManagementPage() {
       setFazerLaunchOps((current) => ({ ...current, bulkResult: result.result }));
       showToast({
         type: result.result.failed ? "warning" : "success",
-        title: payload.dryRun ? "Launch preview ready" : "Launch settings updated",
-        message: `${result.result.updated || result.result.wouldUpdate || 0} ok, ${result.result.failed || 0} failed.`,
+        title: payload.dryRun ? "أصبحت معاينة النشر جاهزة" : "تم تحديث إعدادات النشر",
+        message: `نجح ${result.result.updated || result.result.wouldUpdate || 0} وفشل ${result.result.failed || 0}.`,
       });
       await loadFazerLaunchOps({ silent: true });
       if (productsState.supplier && isFazerCardsSupplier(productsState.supplier)) {
@@ -581,8 +589,8 @@ export default function SuppliersManagementPage() {
         });
       }
     } catch (error) {
-      setFazerLaunchOps((current) => ({ ...current, error: error.userMessage || "Could not update FazerCards launch settings." }));
-      showToast({ type: "error", title: "Launch update failed", message: error.userMessage || "Could not update FazerCards launch settings." });
+      setFazerLaunchOps((current) => ({ ...current, error: error.userMessage || "تعذر تحديث إعدادات نشر FazerCards." }));
+      showToast({ type: "error", title: "فشل تحديث النشر", message: error.userMessage || "تعذر تحديث إعدادات نشر FazerCards." });
     } finally {
       setFazerLaunchOps((current) => ({ ...current, loading: false }));
     }
@@ -611,7 +619,7 @@ export default function SuppliersManagementPage() {
       });
       await refreshFazerLaunchSurfaces();
     } catch (error) {
-      setFazerLaunchOps((current) => ({ ...current, error: error.userMessage || "Could not update FazerCards products." }));
+      setFazerLaunchOps((current) => ({ ...current, error: error.userMessage || "تعذر تحديث منتجات FazerCards." }));
       showToast({ type: "error", title: "تعذر تحديث المنتجات", message: error.userMessage || "تعذر تحديث منتجات FazerCards." });
     } finally {
       setFazerLaunchOps((current) => ({ ...current, loading: false }));
@@ -702,7 +710,7 @@ export default function SuppliersManagementPage() {
   const handleFazerProductDisable = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) return;
-    if (!window.confirm("Disable this imported Winnie Product and hide it from customers?")) return;
+    if (!window.confirm("هل تريد تعطيل منتج Winnie المستورد وإخفاءه عن العملاء؟")) return;
 
     const providerExecutionMode = providerProduct.familyKey === "STEAM_GIFTS"
       ? "DISABLED"
@@ -717,10 +725,10 @@ export default function SuppliersManagementPage() {
         status: "unavailable",
         providerExecutionMode,
       });
-      showToast({ type: "success", title: "Product disabled", message: "Product is hidden from customers." });
+      showToast({ type: "success", title: "تم تعطيل المنتج", message: "أصبح المنتج مخفيًا عن العملاء." });
       await refreshFazerLaunchSurfaces();
     } catch (error) {
-      showToast({ type: "error", title: "Disable failed", message: error.userMessage || "Could not disable this FazerCards product." });
+      showToast({ type: "error", title: "فشل التعطيل", message: error.userMessage || "تعذر تعطيل منتج FazerCards هذا." });
     } finally {
       setActionKey("");
     }
@@ -728,16 +736,16 @@ export default function SuppliersManagementPage() {
 
   const handleCompleteManualOrder = async (order) => {
     if (!token || !order?.id) return;
-    const note = window.prompt("Completion note", "Manual fulfillment completed.");
+    const note = window.prompt("ملاحظة الإكمال", "تم تنفيذ الطلب يدويًا.");
     if (note === null) return;
     let deliveredCodes = [];
     if (order.fulfillmentMode === "CODE_DELIVERY") {
-      const raw = window.prompt("Delivered codes JSON array. Codes are stored encrypted and will not be shown in lists.", "[{\"code\":\"\",\"pin\":\"\",\"serial\":\"\"}]");
+      const raw = window.prompt("أدخل مصفوفة JSON للأكواد المسلّمة. تُحفظ الأكواد مشفّرة ولن تظهر في القوائم.", "[{\"code\":\"\",\"pin\":\"\",\"serial\":\"\"}]");
       if (raw === null) return;
       try {
         deliveredCodes = JSON.parse(raw || "[]");
       } catch {
-        showToast({ type: "error", title: "Invalid JSON", message: "Delivered codes must be a JSON array." });
+        showToast({ type: "error", title: "تنسيق JSON غير صالح", message: "يجب أن تكون الأكواد المسلّمة ضمن مصفوفة JSON." });
         return;
       }
     }
@@ -745,10 +753,10 @@ export default function SuppliersManagementPage() {
     setFazerLaunchOps((current) => ({ ...current, loading: true }));
     try {
       await completeFazerCardsManualOrder(token, order.id, { adminNote: note, deliveredCodes });
-      showToast({ type: "success", title: "Manual order completed", message: "The order was marked completed." });
+      showToast({ type: "success", title: "اكتمل الطلب اليدوي", message: "تم وضع علامة مكتمل على الطلب." });
       await loadFazerLaunchOps({ silent: true });
     } catch (error) {
-      showToast({ type: "error", title: "Complete failed", message: error.userMessage || "Could not complete manual order." });
+      showToast({ type: "error", title: "فشل الإكمال", message: error.userMessage || "تعذر إكمال الطلب اليدوي." });
     } finally {
       setFazerLaunchOps((current) => ({ ...current, loading: false }));
     }
@@ -756,21 +764,21 @@ export default function SuppliersManagementPage() {
 
   const handleFailManualOrder = async (order) => {
     if (!token || !order?.id) return;
-    const reason = window.prompt("Failure reason", "Could not fulfill manually.");
+    const reason = window.prompt("سبب الفشل", "تعذر تنفيذ الطلب يدويًا.");
     if (!reason) return;
-    const refund = window.confirm("Refund this order if it has been debited? Refund is idempotent.");
+    const refund = window.confirm("هل تريد رد رصيد هذا الطلب إذا تم خصمه؟ لن يُنفذ الاسترداد أكثر من مرة.");
 
     setFazerLaunchOps((current) => ({ ...current, loading: true }));
     try {
       const result = await failFazerCardsManualOrder(token, order.id, { reason, refund });
       showToast({
         type: "warning",
-        title: "Manual order failed",
-        message: result.result.refunded ? "Order failed and refund was processed once." : "Order failed without refund.",
+        title: "فشل الطلب اليدوي",
+        message: result.result.refunded ? "فشل الطلب وتمت معالجة الاسترداد مرة واحدة." : "فشل الطلب بدون استرداد.",
       });
       await loadFazerLaunchOps({ silent: true });
     } catch (error) {
-      showToast({ type: "error", title: "Fail failed", message: error.userMessage || "Could not fail manual order." });
+      showToast({ type: "error", title: "تعذر تسجيل الفشل", message: error.userMessage || "تعذر تسجيل فشل الطلب اليدوي." });
     } finally {
       setFazerLaunchOps((current) => ({ ...current, loading: false }));
     }
@@ -778,16 +786,16 @@ export default function SuppliersManagementPage() {
 
   const handleNoteManualOrder = async (order) => {
     if (!token || !order?.id) return;
-    const adminNote = window.prompt("Internal note", "");
+    const adminNote = window.prompt("ملاحظة داخلية", "");
     if (!adminNote) return;
 
     setFazerLaunchOps((current) => ({ ...current, loading: true }));
     try {
       await addFazerCardsManualOrderNote(token, order.id, { adminNote });
-      showToast({ type: "success", title: "Note added", message: "Internal note saved." });
+      showToast({ type: "success", title: "تمت إضافة الملاحظة", message: "تم حفظ الملاحظة الداخلية." });
       await loadFazerLaunchOps({ silent: true });
     } catch (error) {
-      showToast({ type: "error", title: "Note failed", message: error.userMessage || "Could not add note." });
+      showToast({ type: "error", title: "فشلت إضافة الملاحظة", message: error.userMessage || "تعذر إضافة الملاحظة." });
     } finally {
       setFazerLaunchOps((current) => ({ ...current, loading: false }));
     }
@@ -796,7 +804,7 @@ export default function SuppliersManagementPage() {
   const handleFazerCardsReadiness = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) {
-      showToast({ type: "warning", title: "Import first", message: "Readiness checks run against the imported Winnie Product." });
+      showToast({ type: "warning", title: "استورد المنتج أولاً", message: "تعمل فحوصات الجاهزية على منتج Winnie المستورد." });
       return;
     }
 
@@ -809,11 +817,11 @@ export default function SuppliersManagementPage() {
       const total = Object.keys(checks).length;
       showToast({
         type: readiness.readyForLiveExecution ? "success" : "warning",
-        title: "FazerCards readiness",
-        message: `${readiness.readyForLiveExecution ? "Ready" : "Not ready"} (${passed}/${total} checks). ${(readiness.warnings || [])[0] || ""}`,
+        title: "جاهزية FazerCards",
+        message: `${readiness.readyForLiveExecution ? "جاهز" : "غير جاهز"} (${passed}/${total} فحص). ${(readiness.warnings || [])[0] || ""}`,
       });
     } catch (error) {
-      showToast({ type: "error", title: "Readiness failed", message: error.userMessage || "Could not check readiness." });
+      showToast({ type: "error", title: "فشل فحص الجاهزية", message: error.userMessage || "تعذر التحقق من الجاهزية." });
     } finally {
       setActionKey("");
     }
@@ -822,7 +830,7 @@ export default function SuppliersManagementPage() {
   const handleFazerCardsDryRun = async (providerProduct) => {
     const importedProductId = providerProduct?.importedProduct?.id;
     if (!token || !importedProductId || actionKey) {
-      showToast({ type: "warning", title: "Import first", message: "Payload previews run against the imported Winnie Product." });
+      showToast({ type: "warning", title: "استورد المنتج أولاً", message: "تعمل معاينات الحمولة على منتج Winnie المستورد." });
       return;
     }
 
@@ -834,19 +842,19 @@ export default function SuppliersManagementPage() {
         if (key) acc[key] = "";
         return acc;
       }, {});
-      const rawFields = window.prompt("Enter payload preview fields JSON. This does not create an order.", JSON.stringify(template, null, 2));
+      const rawFields = window.prompt("أدخل حقول معاينة الحمولة بصيغة JSON. لن يؤدي ذلك إلى إنشاء طلب.", JSON.stringify(template, null, 2));
       if (rawFields === null) return;
       try {
         fields = JSON.parse(rawFields || "{}");
       } catch {
-        showToast({ type: "error", title: "Invalid JSON", message: "Payload preview fields must be valid JSON." });
+        showToast({ type: "error", title: "تنسيق JSON غير صالح", message: "يجب أن تكون حقول معاينة الحمولة بصيغة JSON صالحة." });
         return;
       }
     }
 
     const rawQuantity = providerProduct.fulfillmentMode === "TOPUP_WITH_FIELDS"
       ? "1"
-      : window.prompt("Payload preview quantity. This does not create an order.", "1");
+      : window.prompt("كمية معاينة الحمولة. لن يؤدي ذلك إلى إنشاء طلب.", "1");
     if (rawQuantity === null) return;
 
     setActionKey(`${providerProduct.id}:dry-run`);
@@ -858,13 +866,13 @@ export default function SuppliersManagementPage() {
       const dryRun = result.dryRun || {};
       showToast({
         type: dryRun.success === false ? "warning" : "success",
-        title: dryRun.success === false ? "FazerCards contract unconfirmed" : "FazerCards payload preview built",
+        title: dryRun.success === false ? "عقد FazerCards غير مؤكد" : "تم إنشاء معاينة حمولة FazerCards",
         message: dryRun.success === false
-          ? dryRun.message || "This family does not have a confirmed provider payload contract yet. No supplier order was created."
-          : `${dryRun.wouldCall || "No supplier endpoint"} preview created. No supplier order was created.`,
+          ? dryRun.message || "لا تحتوي هذه الفئة على عقد حمولة مؤكد للمورد حتى الآن. لم يتم إنشاء طلب للمورد."
+          : `تم إنشاء معاينة ${dryRun.wouldCall || "بدون استدعاء نقطة نهاية للمورد"}. لم يتم إنشاء طلب للمورد.`,
       });
     } catch (error) {
-      showToast({ type: "error", title: "Payload preview failed", message: error.userMessage || "Could not build the payload preview." });
+      showToast({ type: "error", title: "فشلت معاينة الحمولة", message: error.userMessage || "تعذر إنشاء معاينة الحمولة." });
     } finally {
       setActionKey("");
     }
@@ -873,8 +881,8 @@ export default function SuppliersManagementPage() {
   const handleFazerCardsImported = async (result) => {
     showToast({
       type: "success",
-      title: result.action === "updated" ? "Import updated" : "Product imported",
-      message: `${result.product.name || "FazerCards product"} was saved inactive and hidden from customers.`,
+      title: result.action === "updated" ? "تم تحديث الاستيراد" : "تم استيراد المنتج",
+      message: `تم حفظ ${result.product.name || "منتج FazerCards"} كمنتج غير مفعّل ومخفي عن العملاء.`,
     });
     if (productsState.supplier) {
       await loadProviderProducts(productsState.supplier, {
@@ -888,75 +896,89 @@ export default function SuppliersManagementPage() {
   };
 
   return (
-    <div dir="rtl" className="admin-suppliers-page space-y-4">
-      <Header onAdd={() => { setFormError(""); setForm(null); }} onRefresh={() => loadSuppliers()} refreshing={initialLoading} />
-
-      {initialLoading ? (
-        <SuppliersLoadingState />
-      ) : loadError ? (
-        <EmptyState icon={AlertTriangle} title="تعذر تحميل الموردين" description={loadError} actionLabel="حاول مجددًا" onAction={() => loadSuppliers()} />
+    <div dir="rtl" className="admin-suppliers-page supplier-control-room space-y-4">
+      {specialProviderPage ? (
+        <FazerCardsSpecialProviderPage
+          actionKey={actionKey}
+          catalog={fazerCatalog}
+          launchOps={fazerLaunchOps}
+          loadError={loadError}
+          loading={initialLoading}
+          onBulkLaunch={handleFazerBulkLaunch}
+          onCompleteManual={handleCompleteManualOrder}
+          onFailManual={handleFailManualOrder}
+          onLoadOperations={loadFazerLaunchOps}
+          onManualFilterChange={handleFazerManualFilterChange}
+          onNoteManual={handleNoteManualOrder}
+          onOpenFamily={(familyKey) => loadProviderProducts(fazerCardsSupplier, {
+            filters: { ...defaultFazerCardsFilters, familyKey: familyKey || "ALL" },
+            page: 1,
+          })}
+          onPublishEligible={handlePublishEligibleFazerCards}
+          onRefresh={() => {
+            void loadFazerCatalogMeta();
+            void loadFazerLaunchOps();
+            void loadSuppliers({ silent: true });
+          }}
+          onSyncAll={runFazerCardsSyncAll}
+          onSyncFamily={runFazerCardsSyncFamily}
+          supplier={fazerCardsSupplier}
+        />
       ) : (
         <>
-          <div className="admin-suppliers-stats grid grid-cols-2 gap-2 lg:grid-cols-4">
-            {stats.map(({ label, value, icon: Icon }) => (
-              <article key={label} className="admin-suppliers-stat rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
-                <Icon className="h-8 w-8 rounded-xl bg-violet-500/10 p-2 text-violet-600" />
-                <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG-u-nu-latn")}</strong>
-                <p className="text-[8px] font-black text-slate-400">{label}</p>
-              </article>
-            ))}
-          </div>
+          <Header onAdd={() => { setFormError(""); setForm(null); }} onRefresh={() => loadSuppliers()} refreshing={initialLoading} />
 
-          <SupplierSearchProducts
-            error={globalSearch.error}
-            loading={globalSearch.loading}
-            onSearch={searchAllProviderProducts}
-            pagination={globalSearch.pagination}
-            products={globalSearch.products}
-            searched={globalSearch.searched}
-          />
-
-          {fazerCardsSupplier && (
-            <FazerCardsLaunchOpsPanel
-              bulkResult={fazerLaunchOps.bulkResult}
-              error={fazerLaunchOps.error}
-              filters={fazerLaunchOps.manualFilters}
-              health={fazerLaunchOps.health}
-              loading={fazerLaunchOps.loading}
-              manualOrders={fazerLaunchOps.manualOrders}
-              webhookDeliveries={fazerLaunchOps.webhookDeliveries}
-              onBulkLaunch={handleFazerBulkLaunch}
-              onCompleteManual={handleCompleteManualOrder}
-              onFailManual={handleFailManualOrder}
-              onLoad={loadFazerLaunchOps}
-              onManualFilterChange={handleFazerManualFilterChange}
-              onNoteManual={handleNoteManualOrder}
-              onPublishEligible={handlePublishEligibleFazerCards}
-            />
-          )}
-
-          {suppliers.length ? (
-            <div className="admin-suppliers-list grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {suppliers.map((supplier) => (
-                <SupplierCard
-                  key={supplier.id}
-                  actionKey={actionKey}
-                  connectionResult={connectionResults[supplier.id]}
-                  onArchive={requestArchive}
-                  onEdit={(item) => { setFormError(""); setForm(item); }}
-                  onProducts={(item) => loadProviderProducts(item)}
-                  onSync={requestSync}
-                  onTest={testConnection}
-                  onToggle={requestToggle}
-                  onTools={setToolsFor}
-                  onXena={setXenaFor}
-                  productCountLabel="فتح الكتالوج"
-                  supplier={supplier}
-                />
-              ))}
-            </div>
+          {initialLoading ? (
+            <SuppliersLoadingState />
+          ) : loadError ? (
+            <EmptyState icon={AlertTriangle} title="تعذر تحميل الموردين" description={loadError} actionLabel="حاول مجددًا" onAction={() => loadSuppliers()} />
           ) : (
-            <EmptyState icon={Search} title="لا يوجد موردون" description="أضف موردًا لبدء مزامنة منتجاته." actionLabel="إضافة مورد" onAction={() => setForm(null)} />
+            <>
+              <div className="admin-suppliers-stats grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {stats.map(({ label, value, icon: Icon }) => (
+                  <article key={label} className="admin-suppliers-stat rounded-[20px] border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
+                    <Icon className="h-8 w-8 rounded-xl bg-violet-500/10 p-2 text-violet-600" />
+                    <strong className="mt-2 block text-2xl font-black dark:text-white">{value.toLocaleString("ar-EG-u-nu-latn")}</strong>
+                    <p className="text-[8px] font-black text-slate-400">{label}</p>
+                  </article>
+                ))}
+              </div>
+
+              {fazerCardsSupplier && <SpecialProviderPortal supplier={fazerCardsSupplier} />}
+
+              <SupplierSearchProducts
+                error={globalSearch.error}
+                loading={globalSearch.loading}
+                onSearch={searchAllProviderProducts}
+                pagination={globalSearch.pagination}
+                products={globalSearch.products}
+                searched={globalSearch.searched}
+              />
+
+              {suppliers.length ? (
+                <div className="admin-suppliers-list grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {suppliers.map((supplier) => (
+                    <SupplierCard
+                      key={supplier.id}
+                      actionKey={actionKey}
+                      connectionResult={connectionResults[supplier.id]}
+                      onArchive={requestArchive}
+                      onEdit={(item) => { setFormError(""); setForm(item); }}
+                      onProducts={(item) => loadProviderProducts(item)}
+                      onSync={requestSync}
+                      onTest={testConnection}
+                      onToggle={requestToggle}
+                      onTools={setToolsFor}
+                      onXena={setXenaFor}
+                      productCountLabel="فتح الكتالوج"
+                      supplier={supplier}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={Search} title="لا يوجد موردون" description="أضف موردًا لبدء مزامنة منتجاته." actionLabel="إضافة مورد" onAction={() => setForm(null)} />
+              )}
+            </>
           )}
         </>
       )}
@@ -1022,13 +1044,28 @@ export default function SuppliersManagementPage() {
   );
 }
 
+function SpecialProviderPortal({ supplier }) {
+  return (
+    <Link to="/admin/tools/suppliers/special-provider" className="fazer-special-portal">
+      <span className="fazer-special-portal-mark">F<Sparkles /></span>
+      <span className="fazer-special-portal-copy">
+        <small>مساحة تشغيل مستقلة</small>
+        <strong>صفحة مورد خاص</strong>
+        <p>إدارة {supplier.name} وعائلات المنتجات والجاهزية من واجهة حديثة مخصصة.</p>
+      </span>
+      <span className="fazer-special-portal-action">فتح الصفحة <ArrowLeft /></span>
+    </Link>
+  );
+}
+
 function Header({ onAdd, onRefresh, refreshing }) {
   return (
-    <section className="admin-suppliers-hero flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-sky-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
-      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><Server className="h-5 w-5" /></span>
+    <section className="admin-suppliers-hero supplier-control-hero flex items-center gap-3 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-sky-50 p-5 dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
+      <span className="supplier-control-hero-icon grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><Server className="h-5 w-5" /></span>
       <div className="min-w-0 flex-1">
+        <p className="supplier-control-kicker">مركز التحكم الذكي</p>
         <h1 className="text-2xl font-black dark:text-white">إدارة الموردين</h1>
-        <p className="text-[9px] font-bold text-slate-400">إدارة الموردين ومزامنة الكتالوج واختبار الاتصال وتصفح المنتجات.</p>
+        <p className="text-[9px] font-bold text-slate-400">راقب الاتصالات، نظّم الكتالوج، وأدر عمليات الشحن من مكان واحد.</p>
       </div>
       <button type="button" onClick={onRefresh} disabled={refreshing} className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-[9px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300">
         <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -1036,7 +1073,7 @@ function Header({ onAdd, onRefresh, refreshing }) {
       </button>
       <button type="button" onClick={onAdd} className="inline-flex h-10 items-center gap-1 rounded-xl bg-violet-600 px-3 text-[9px] font-black text-white">
         <Plus className="h-4 w-4" />
-        Add provider
+        إضافة مورد
       </button>
     </section>
   );

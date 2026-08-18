@@ -22,6 +22,8 @@ import { SkeletonBlock } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
 import AdminPagination from "../../components/admin/AdminPagination";
 
+const pageSize = 20;
+
 const statusMeta = {
   PENDING: ["قيد الانتظار", "bg-orange-500/10 text-orange-700 dark:text-orange-300"],
   APPROVED: ["مقبول", "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"],
@@ -60,12 +62,12 @@ export default function AdminBalanceRequestsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedDepositId = searchParams.get("details") || "";
   const [requests, setRequests] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, pages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, limit: pageSize, total: 0, pages: 1 });
   const [page, setPage] = useState(1);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [applied, setApplied] = useState({ query: "", status: "all" });
@@ -86,7 +88,7 @@ export default function AdminBalanceRequestsPage() {
     try {
       const result = await getAdminDeposits(token, {
         page,
-        limit: 15,
+        limit: pageSize,
         search: applied.query,
         status: applied.status === "all" ? undefined : applied.status,
       });
@@ -237,6 +239,17 @@ export default function AdminBalanceRequestsPage() {
         </div>
       )}
 
+      <section className="admin-balance-requests-workspace">
+        <div className="admin-balance-requests-list-heading">
+          <div>
+            <p>سجل طلبات الشحن</p>
+            <h2>طلبات إضافة الرصيد</h2>
+          </div>
+          <span>
+            صفحة {pagination.page.toLocaleString("ar-EG-u-nu-latn")} من {pagination.pages.toLocaleString("ar-EG-u-nu-latn")}
+          </span>
+        </div>
+
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, index) => <SkeletonBlock key={index} className="h-64 rounded-[23px]" />)}
@@ -249,6 +262,7 @@ export default function AdminBalanceRequestsPage() {
         <EmptyState icon={ReceiptText} title="لا توجد طلبات إضافة رصيد" description="ستظهر هنا طلبات إضافة الرصيد اليدوية التي يرسلها العملاء." />
       )}
       <AdminPagination {...pagination} loading={loading} onChange={setPage} />
+      </section>
 
       <RequestDetails
         actionKey={actionKey}
@@ -272,7 +286,7 @@ export default function AdminBalanceRequestsPage() {
 function Header({ onRefresh, refreshing }) {
   return (
     <section className="admin-balance-requests-hero flex flex-col gap-4 rounded-[26px] border border-violet-200 bg-gradient-to-l from-white to-violet-50 p-5 sm:flex-row sm:items-center dark:border-white/10 dark:bg-[linear-gradient(135deg,#111827,#17152A)]">
-      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><WalletCards className="h-5 w-5" /></span>
+      <span className="admin-balance-requests-hero-icon grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 text-white"><WalletCards className="h-5 w-5" /></span>
       <div className="min-w-0 flex-1">
         <h1 className="text-xl font-black leading-tight dark:text-white sm:text-2xl">طلبات إضافة الرصيد</h1>
         <p className="mt-1 text-sm font-bold leading-6 text-slate-500 dark:text-slate-300">قبول طلبات إضافة الرصيد أو رفضها بأمان من خلال الخادم</p>
@@ -281,7 +295,7 @@ function Header({ onRefresh, refreshing }) {
         type="button"
         onClick={onRefresh}
         disabled={refreshing}
-        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 text-sm font-black text-white disabled:opacity-60 sm:w-auto"
+        className="admin-balance-requests-refresh inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 text-sm font-black text-white disabled:opacity-60 sm:w-auto"
       >
         <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         تحديث
@@ -298,7 +312,7 @@ function Stat({ icon: Icon, label, value, tone }) {
     violet: "bg-violet-500/10 text-violet-600",
   }[tone];
   return (
-    <article className="admin-balance-requests-stat rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#111827] sm:p-4">
+    <article className={`admin-balance-requests-stat admin-balance-requests-stat--${tone} rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)] dark:border-white/10 dark:bg-[#111827] sm:p-4`}>
       <div className="flex items-center gap-2">
         <Icon className={`h-8 w-8 shrink-0 rounded-xl p-2 sm:h-9 sm:w-9 sm:p-2.5 ${style}`} />
         <b className="block text-xl leading-none dark:text-white sm:text-2xl">{Number(value || 0).toLocaleString("ar-EG-u-nu-latn")}</b>
@@ -333,7 +347,7 @@ function RequestCard({ request, onDetails }) {
           <p className="mt-1 truncate text-[10px] font-black text-slate-600 dark:text-slate-300">{request.createdAtLabel}</p>
         </div>
       </div>
-      <button onClick={onDetails} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-violet-500/10 text-sm font-black text-violet-700 dark:text-violet-300">
+      <button onClick={onDetails} className="admin-balance-request-details mt-3 inline-flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-violet-500/10 text-sm font-black text-violet-700 dark:text-violet-300">
         <Eye className="h-4 w-4" />
         عرض التفاصيل
       </button>

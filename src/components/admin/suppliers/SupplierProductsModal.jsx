@@ -302,7 +302,7 @@ export default function SupplierProductsModal({
                   {steamGiftSearchState.searched && (
                     <div className="grid gap-1 rounded-xl bg-white p-2 text-[9px] font-bold text-slate-500 dark:bg-[#111827] dark:text-slate-300">
                       {steamGiftSearchState.loading ? (
-                        <span>Searching...</span>
+                        <span>جارٍ البحث...</span>
                       ) : steamGiftSearchState.error ? (
                         <span className="text-rose-600 dark:text-rose-200">{steamGiftSearchState.error}</span>
                       ) : steamGiftSearchState.indexEmpty ? (
@@ -353,7 +353,7 @@ export default function SupplierProductsModal({
                   </div>
 
                   <details className="rounded-xl border border-slate-200 bg-white px-2 py-1 dark:border-white/10 dark:bg-[#111827]">
-                    <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">Advanced</summary>
+                    <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">خيارات متقدمة</summary>
                     <div className="mt-2 grid gap-1">
                       <p className="text-[8px] font-bold text-slate-500 dark:text-slate-300">
                         يتم تحديث الفهرس فقط ولا يتم إنشاء منتجات. قد يستغرق وقتًا بسبب حجم الكتالوج.
@@ -396,7 +396,7 @@ export default function SupplierProductsModal({
                   </span>
                   {Object.entries(syncResult.results || {}).map(([familyKey, result]) => (
                     <span key={familyKey} dir="ltr">
-                      {familyKey}: next {result?.nextCursor || "-"} | more {result?.hasMore ? "yes" : "no"}{result?.skipped ? " | skipped" : ""}
+                      {familyKey}: التالي {result?.nextCursor || "-"} | المزيد {result?.hasMore ? "نعم" : "لا"}{result?.skipped ? " | تم التجاوز" : ""}
                     </span>
                   ))}
                 </div>
@@ -406,7 +406,7 @@ export default function SupplierProductsModal({
               <input
                 value={filters.category || ""}
                 onChange={(event) => updateFilter({ category: event.target.value })}
-                placeholder="Category"
+                placeholder="التصنيف"
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               />
               <select
@@ -414,40 +414,40 @@ export default function SupplierProductsModal({
                 onChange={(event) => updateFilter({ supported: event.target.value })}
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               >
-                <option value="">All support</option>
-                <option value="true">Supported</option>
-                <option value="false">Unsupported</option>
+                <option value="">كل حالات الدعم</option>
+                <option value="true">مدعوم</option>
+                <option value="false">غير مدعوم</option>
               </select>
               <select
                 value={filters.blocked ?? ""}
                 onChange={(event) => updateFilter({ blocked: event.target.value })}
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               >
-                <option value="">All blocked</option>
-                <option value="false">Not blocked</option>
-                <option value="true">Blocked</option>
+                <option value="">كل حالات الحظر</option>
+                <option value="false">غير محظور</option>
+                <option value="true">محظور</option>
               </select>
               <select
                 value={filters.imported ?? ""}
                 onChange={(event) => updateFilter({ imported: event.target.value })}
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               >
-                <option value="">All imports</option>
-                <option value="false">Not imported</option>
-                <option value="true">Imported</option>
+                <option value="">كل حالات الاستيراد</option>
+                <option value="false">غير مستورد</option>
+                <option value="true">تم استيراده</option>
                 </select>
               <select
                 value={filters.fulfillmentMode || ""}
                 onChange={(event) => updateFilter({ fulfillmentMode: event.target.value })}
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               >
-                <option value="">All modes</option>
+                <option value="">كل أنماط التنفيذ</option>
                 {FULFILLMENT_MODES.map((mode) => <option key={mode} value={mode}>{mode}</option>)}
               </select>
               <input
                 value={filters.blockReason || ""}
                 onChange={(event) => updateFilter({ blockReason: event.target.value })}
-                placeholder="Block reason"
+                placeholder="سبب الحظر"
                 className="h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white"
               />
               </div>
@@ -464,7 +464,7 @@ export default function SupplierProductsModal({
           )}
 
           {loading ? (
-            <p className="py-8 text-center text-xs font-black text-slate-400">Loading supplier products...</p>
+            <p className="py-8 text-center text-xs font-black text-slate-400">جارٍ تحميل منتجات المورد...</p>
           ) : visibleProducts.length ? (
             visibleProducts.map((product) => {
               const contract = contractSummary[product.familyKey] || {};
@@ -498,20 +498,20 @@ export default function SupplierProductsModal({
                   </p>
                   {fazerCards && (
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black">
-                      <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.categoryName || product.category || "No category"}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.categoryName || product.category || "بلا تصنيف"}</span>
                       {(product.region || product.platform) && (
                         <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{[product.platform, product.region].filter(Boolean).join(" / ")}</span>
                       )}
-                      <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">Stock {product.stockLabel || "Unknown"}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">المخزون: {product.stockLabel || "غير معروف"}</span>
                       <span className="rounded-full bg-sky-100 px-2 py-1 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">{product.requiredFieldsLabel}</span>
                       <span className={`rounded-full px-2 py-1 ${product.isSupported ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200" : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"}`}>
-                        {product.isSupported ? "Supported" : "Unsupported"}
+                        {product.isSupported ? "مدعوم" : "غير مدعوم"}
                       </span>
                       <span className={`rounded-full px-2 py-1 ${product.imported ? "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200" : "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-300"}`}>
-                        {product.imported ? "Imported" : "Not imported"}
+                        {product.imported ? "تم استيراده" : "غير مستورد"}
                       </span>
                       <details className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 dark:border-white/10 dark:bg-white/[0.03]">
-                        <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">Advanced</summary>
+                        <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">خيارات متقدمة</summary>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{product.familyKey || "UNKNOWN"}</span>
                           <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">{product.fulfillmentMode || "UNKNOWN"}</span>
@@ -520,7 +520,7 @@ export default function SupplierProductsModal({
                           {product.supportLevel && <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.supportLevel}</span>}
                           <span dir="ltr" className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.externalProductId || product.id}</span>
                           <span className={`rounded-full px-2 py-1 ${product.isBlocked ? "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200" : "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-300"}`}>
-                            {product.isBlocked ? product.blockReason || "Blocked" : "Not blocked"}
+                            {product.isBlocked ? product.blockReason || "محظور" : "غير محظور"}
                           </span>
                           {firstBlocker && <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">{firstBlocker}</span>}
                         </div>
@@ -531,17 +531,17 @@ export default function SupplierProductsModal({
                     <div className="mt-2 rounded-xl border border-slate-200 bg-white p-2 text-[9px] font-bold text-slate-500 dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`rounded-full px-2 py-1 ${visibleToCustomer ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200" : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"}`}>
-                          {visibleToCustomer ? "Visible to customers" : "Not visible to customers"}
+                          {visibleToCustomer ? "ظاهر للعملاء" : "غير ظاهر للعملاء"}
                         </span>
                         <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">
                           {imported.providerExecutionMode === "AUTO_PROVIDER" ? "تنفيذ تلقائي من المورد" : imported.providerExecutionMode === "MANUAL_FULFILLMENT" ? "تنفيذ الطلب" : "غير مفعل"}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1.5">
-                        <span className={imported.isActive ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>active={String(Boolean(imported.isActive))}</span>
-                        <span className={imported.visibleInStore ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>visibleInStore={String(Boolean(imported.visibleInStore))}</span>
+                        <span className={imported.isActive ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>مفعّل: {imported.isActive ? "نعم" : "لا"}</span>
+                        <span className={imported.visibleInStore ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>ظاهر بالمتجر: {imported.visibleInStore ? "نعم" : "لا"}</span>
                         <span>status={imported.status || "-"}</span>
-                        <span className={imported.customerPurchaseEnabled ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>customerPurchaseEnabled={String(Boolean(imported.customerPurchaseEnabled))}</span>
+                        <span className={imported.customerPurchaseEnabled ? "text-emerald-600 dark:text-emerald-200" : "text-amber-600 dark:text-amber-200"}>شراء العملاء: {imported.customerPurchaseEnabled ? "مسموح" : "غير مسموح"}</span>
                         <span>mode={imported.providerExecutionMode || "-"}</span>
                       </div>
                       {!visibleToCustomer && visibilityReasons.length > 0 && (
@@ -556,16 +556,16 @@ export default function SupplierProductsModal({
                         </p>
                       )}
                       <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 dark:border-white/10 dark:bg-white/[0.03]">
-                        <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">Details / Advanced</summary>
+                        <summary className="cursor-pointer text-[8px] font-black text-slate-500 dark:text-slate-300">التفاصيل والخيارات المتقدمة</summary>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span dir="ltr" className="rounded bg-white px-2 py-1 text-slate-600 dark:bg-[#111827] dark:text-slate-200">Winnie Product ID: {imported.id}</span>
+                          <span dir="ltr" className="rounded bg-white px-2 py-1 text-slate-600 dark:bg-[#111827] dark:text-slate-200">معرّف منتج Winnie: {imported.id}</span>
                           <button
                             type="button"
                             onClick={() => copyProductId(imported.id)}
                             className="inline-flex h-6 items-center gap-1 rounded-lg border border-slate-200 px-2 text-[8px] font-black text-slate-600 dark:border-white/10 dark:text-slate-300"
                           >
                             <Copy className="h-3 w-3" />
-                            {copiedId === imported.id ? "Copied" : "Copy Product ID"}
+                            {copiedId === imported.id ? "تم النسخ" : "نسخ معرّف المنتج"}
                           </button>
                         </div>
                       </details>
@@ -618,7 +618,7 @@ export default function SupplierProductsModal({
                       )}
                       <details className="w-full text-right sm:w-auto">
                         <summary className="cursor-pointer rounded-xl border border-slate-200 px-3 py-2 text-[9px] font-black text-slate-500 dark:border-white/10 dark:text-slate-300">
-                          Advanced
+                          خيارات متقدمة
                         </summary>
                         <div className="mt-1 flex flex-wrap justify-end gap-1.5">
                           <button
@@ -660,7 +660,7 @@ export default function SupplierProductsModal({
             <p className="py-8 text-center text-xs font-black text-slate-400">
               {fazerCards && activeFamily === "STEAM_GIFTS"
                 ? "اكتب AppID واضغط Sync Family لإضافة منتجات Steam Gifts."
-                : "No supplier products found."}
+                : "لا توجد منتجات للمورد."}
             </p>
           )}
         </div>

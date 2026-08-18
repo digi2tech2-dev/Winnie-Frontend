@@ -35,7 +35,7 @@ const statConfig = [
   },
 ];
 
-export default function OrdersStats({ orders, total }) {
+export default function OrdersStats({ orders, total, activeStatus = "all", onSelect }) {
   const values = {
     total: total ?? orders.length,
     processing: orders.filter((order) => order.status === "processing").length,
@@ -50,7 +50,16 @@ export default function OrdersStats({ orders, total }) {
         return (
           <article
             key={item.key}
-            className={`admin-orders-stat relative min-h-[112px] overflow-hidden rounded-[20px] border p-3 shadow-[0_12px_30px_rgba(15,23,42,0.055)] sm:min-h-[128px] sm:rounded-[24px] sm:p-4 dark:shadow-[0_0_20px_rgba(139,92,246,0.10)] ${item.card}`}
+            className={`admin-orders-stat relative min-h-[112px] overflow-hidden rounded-[20px] border p-3 text-right shadow-[0_12px_30px_rgba(15,23,42,0.055)] transition sm:min-h-[128px] sm:rounded-[24px] sm:p-4 dark:shadow-[0_0_20px_rgba(139,92,246,0.10)] ${item.card} ${onSelect ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(124,58,237,0.14)]" : ""} ${activeStatus === (item.key === "total" ? "all" : item.key === "manual" ? "manual_review" : item.key) ? "ring-2 ring-violet-500/30" : ""}`}
+            role={onSelect ? "button" : undefined}
+            tabIndex={onSelect ? 0 : undefined}
+            onClick={() => onSelect?.(item.key === "total" ? "all" : item.key === "manual" ? "manual_review" : item.key)}
+            onKeyDown={(event) => {
+              if (onSelect && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                onSelect(item.key === "total" ? "all" : item.key === "manual" ? "manual_review" : item.key);
+              }
+            }}
           >
             <span className={`absolute inset-y-3 right-0 w-1 rounded-l-full ${item.accent}`} aria-hidden="true" />
             <div className="flex items-start justify-between gap-2">

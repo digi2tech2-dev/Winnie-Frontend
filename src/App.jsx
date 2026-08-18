@@ -189,6 +189,7 @@ export default function App() {
               <Route path="products" element={<Animated><ProductsManagementPage /></Animated>} />
               <Route path="groups" element={<Animated><GroupsManagementPage /></Animated>} />
               <Route path="suppliers" element={<Animated><SuppliersManagementPage /></Animated>} />
+              <Route path="suppliers/special-provider" element={<Animated><SuppliersManagementPage /></Animated>} />
               <Route path="payment-methods" element={<Animated><PaymentMethodsPage /></Animated>} />
               <Route path="supervisors" element={<Animated><AdminSupervisorsPage /></Animated>} />
               <Route path="balance-requests" element={<Animated><AdminBalanceRequestsPage /></Animated>} />

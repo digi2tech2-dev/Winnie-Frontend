@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 import {
   addMonths,
@@ -47,14 +48,16 @@ export default function DateRangePicker({ allowAll = false, value, onChange }) {
   const [draftStart, setDraftStart] = useState(value.start);
   const [draftEnd, setDraftEnd] = useState(value.end);
   const [startTooltipVisible, setStartTooltipVisible] = useState(false);
+  const [useMobilePortal, setUseMobilePortal] = useState(() => window.matchMedia("(max-width: 640px)").matches);
   const pickerRef = useRef(null);
+  const popoverRef = useRef(null);
   const tooltipTimerRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
 
     const handlePointerDown = (event) => {
-      if (!pickerRef.current?.contains(event.target)) {
+      if (!pickerRef.current?.contains(event.target) && !popoverRef.current?.contains(event.target)) {
         setOpen(false);
       }
     };
@@ -62,6 +65,14 @@ export default function DateRangePicker({ allowAll = false, value, onChange }) {
     window.addEventListener("pointerdown", handlePointerDown);
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [open]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 640px)");
+    const syncViewport = () => setUseMobilePortal(mediaQuery.matches);
+    syncViewport();
+    mediaQuery.addEventListener("change", syncViewport);
+    return () => mediaQuery.removeEventListener("change", syncViewport);
+  }, []);
 
   useEffect(() => {
     setDraftStart(value.start);
@@ -137,7 +148,7 @@ export default function DateRangePicker({ allowAll = false, value, onChange }) {
   };
 
   return (
-    <div ref={pickerRef} className="relative">
+    <div ref={pickerRef} className={`admin-date-picker relative ${open ? "is-open" : ""}`}>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -158,8 +169,9 @@ export default function DateRangePicker({ allowAll = false, value, onChange }) {
         </span>
       </button>
 
-      {open && (
-        <div className="admin-date-popover">
+      {open && (() => {
+        const popover = (
+        <div ref={popoverRef} className={`admin-date-popover ${useMobilePortal ? "admin-date-popover--mobile-layer" : ""}`}>
           <span className="admin-date-ambient admin-date-ambient-one" />
           <span className="admin-date-ambient admin-date-ambient-two" />
 
@@ -227,7 +239,10 @@ export default function DateRangePicker({ allowAll = false, value, onChange }) {
             </div>
           </div>
         </div>
-      )}
+        );
+
+        return useMobilePortal ? createPortal(popover, document.body) : popover;
+      })()}
     </div>
   );
 }

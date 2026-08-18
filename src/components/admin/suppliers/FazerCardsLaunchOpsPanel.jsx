@@ -216,7 +216,7 @@ export default function FazerCardsLaunchOpsPanel({
       </div>
 
       <details className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-[#0B1220]">
-        <summary className="cursor-pointer text-[10px] font-black text-slate-500 dark:text-slate-300">Advanced</summary>
+        <summary className="cursor-pointer text-[10px] font-black text-slate-500 dark:text-slate-300">خيارات متقدمة</summary>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <div>
             <div className="flex flex-wrap gap-1.5">
@@ -237,7 +237,7 @@ export default function FazerCardsLaunchOpsPanel({
               </div>
             )}
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
-              <p className="text-[9px] font-black text-slate-400">FazerCards webhook</p>
+              <p className="text-[9px] font-black text-slate-400">إشعار FazerCards</p>
               <p className="mt-1 text-[9px] font-bold text-slate-600 dark:text-slate-200">
                 {formatWebhookStatus(health?.webhooks?.status)}
               </p>
@@ -263,7 +263,7 @@ export default function FazerCardsLaunchOpsPanel({
             <textarea
               value={idsText}
               onChange={(event) => setIdsText(event.target.value)}
-              placeholder="Winnie Product IDs"
+              placeholder="معرّفات منتجات Winnie"
               className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-white p-2 text-[10px] font-bold outline-none dark:border-white/10 dark:bg-[#111827] dark:text-white"
             />
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -313,8 +313,8 @@ export default function FazerCardsLaunchOpsPanel({
             <article key={order.id} className="rounded-xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-black dark:text-white">#{order.orderNumber || order.id} - {order.product?.name || "Order"}</p>
-                  <p className="text-[8px] font-bold text-slate-400">{order.familyKey} | {order.status} | {order.customer?.email || "customer"}</p>
+                  <p className="truncate text-[10px] font-black dark:text-white">#{order.orderNumber || order.id} - {order.product?.name || "طلب"}</p>
+                  <p className="text-[8px] font-bold text-slate-400">{order.familyKey} | {order.status} | {order.customer?.email || "العميل"}</p>
                   {!!order.submittedFields?.length && (
                     <p className="mt-1 text-[8px] font-bold text-slate-500 dark:text-slate-300">
                       {order.submittedFields.map((field) => `${field.label}: ${field.value}`).join(" | ")}

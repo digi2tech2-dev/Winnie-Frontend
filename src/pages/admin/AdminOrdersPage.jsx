@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, RefreshCw, Search, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleAlert, ClipboardList, RefreshCw, Search, Sparkles } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import {
   getAdminOrder,
@@ -52,6 +52,7 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState("");
   const [detailsError, setDetailsError] = useState("");
   const [actionKey, setActionKey] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
   const loadOrders = useCallback(async () => {
     if (!token) {
@@ -72,6 +73,7 @@ export default function AdminOrdersPage() {
       });
       setOrders(result.orders);
       setPagination(result.pagination);
+      setLastUpdatedAt(new Date());
     } catch (requestError) {
       const message = getErrorMessage(requestError, "تعذر تحميل الطلبات.");
       setOrders([]);
@@ -142,6 +144,15 @@ export default function AdminOrdersPage() {
     setPage(1);
   };
 
+  const applyQuickStatus = (status) => {
+    const nextFilters = { ...draftFilters, status };
+    setDraftFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+    setPage(1);
+  };
+
+  const attentionCount = orders.filter((order) => ["pending", "processing", "manual_review", "partial", "failed"].includes(order.status)).length;
+
   const closeDetails = useCallback(() => {
     if (actionKey) return;
     setSelectedOrderId(null);
@@ -190,42 +201,58 @@ export default function AdminOrdersPage() {
 
   return (
     <div dir="rtl" className="admin-orders-page space-y-4 sm:space-y-5">
-      <section className="admin-orders-hero relative overflow-hidden rounded-[24px] border border-violet-200/80 bg-[radial-gradient(circle_at_12%_0%,rgba(125,211,252,0.34),transparent_38%),radial-gradient(circle_at_92%_16%,rgba(244,114,182,0.24),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(245,243,255,0.96)_52%,rgba(236,254,255,0.94))] p-4 shadow-[0_20px_55px_rgba(109,40,217,0.13)] sm:rounded-[32px] sm:p-6 dark:border-violet-300/15 dark:bg-[radial-gradient(circle_at_10%_0%,rgba(56,189,248,0.16),transparent_36%),radial-gradient(circle_at_94%_10%,rgba(236,72,153,0.14),transparent_32%),linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,20,58,0.97)_55%,rgba(8,47,73,0.94))] dark:shadow-[0_24px_65px_rgba(0,0,0,0.34)]">
+      <section className="admin-orders-hero relative overflow-hidden rounded-[24px] border p-4 sm:rounded-[32px] sm:p-6">
         <span className="pointer-events-none absolute -left-10 -top-14 h-36 w-36 rounded-full border border-white/50 bg-white/20 blur-sm dark:border-white/5 dark:bg-cyan-300/5" />
         <span className="pointer-events-none absolute -bottom-16 right-1/3 h-36 w-36 rounded-full bg-violet-400/10 blur-3xl dark:bg-fuchsia-400/10" />
 
         <div className="admin-orders-hero-content relative flex flex-wrap items-center gap-3 sm:gap-4">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-gradient-to-br from-[#7C3AED] via-[#8B5CF6] to-[#38BDF8] text-white shadow-[0_12px_28px_rgba(124,58,237,0.25)]">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] text-white">
             <ClipboardList className="h-6 w-6" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="bg-gradient-to-l from-slate-950 via-violet-800 to-sky-700 bg-clip-text text-2xl font-black text-transparent sm:text-3xl dark:from-white dark:via-violet-200 dark:to-cyan-200">إدارة الطلبات</h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
+              <h1 className="text-2xl font-black sm:text-3xl">إدارة الطلبات</h1>
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black">
                 <i className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 متصل بالخادم
               </span>
             </div>
-            <p className="mt-2 text-xs font-bold leading-6 text-slate-600 sm:text-sm dark:text-slate-300">
-              متابعة طلبات العملاء الفعلية وإدارتها من الخادم.
-            </p>
+            <p className="mt-2 text-xs font-bold leading-6 text-slate-600 sm:text-sm dark:text-slate-300">مركز متابعة الطلبات، التنفيذ، والاستثناءات في مكان واحد.</p>
           </div>
           <button
             type="button"
             onClick={loadOrders}
             disabled={isLoading}
-            className="admin-orders-refresh interactive-ring order-last inline-flex min-h-11 basis-full items-center justify-center gap-2 rounded-2xl border border-violet-200/80 bg-white/75 px-4 text-xs font-black text-violet-700 shadow-[0_10px_24px_rgba(124,58,237,0.09)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-white disabled:opacity-60 sm:order-none sm:basis-auto dark:border-white/10 dark:bg-white/[0.065] dark:text-violet-200 dark:hover:bg-white/[0.1]"
+            className="admin-orders-refresh interactive-ring order-last inline-flex min-h-11 basis-full items-center justify-center gap-2 rounded-2xl px-4 text-xs font-black transition disabled:opacity-60 sm:order-none sm:basis-auto"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             تحديث
           </button>
-          <span className="hidden h-11 w-11 shrink-0 place-items-center rounded-2xl border border-fuchsia-200/70 bg-white/65 text-fuchsia-500 shadow-[0_10px_22px_rgba(217,70,239,0.1)] backdrop-blur-md sm:grid dark:border-white/10 dark:bg-white/[0.06] dark:text-fuchsia-300">
-            <Sparkles className="h-5 w-5" />
-          </span>
+          <span className="hidden h-11 w-11 shrink-0 place-items-center rounded-2xl sm:grid"><Sparkles className="h-5 w-5" /></span>
         </div>
       </section>
 
-      <OrdersStats orders={orders} total={pagination.total} />
+      <OrdersStats orders={orders} total={pagination.total} activeStatus={appliedFilters.status} onSelect={applyQuickStatus} />
+
+      <section aria-label="اختصارات متابعة الطلبات" className="rounded-[22px] border border-slate-200/80 bg-white/80 p-3 shadow-[0_12px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#111827]/85">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className={`grid h-10 w-10 place-items-center rounded-2xl ${attentionCount ? "bg-amber-500/12 text-amber-600 dark:text-amber-300" : "bg-emerald-500/12 text-emerald-600 dark:text-emerald-300"}`}>
+              {attentionCount ? <CircleAlert className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+            </span>
+            <div>
+              <p className="text-xs font-black text-slate-950 dark:text-white">{attentionCount ? `${attentionCount.toLocaleString("ar-EG-u-nu-latn")} طلبات تحتاج متابعة` : "لا توجد طلبات تحتاج متابعة الآن"}</p>
+              <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">اختر حالة للتركيز على طابور عمل محدد.</p>
+            </div>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-0.5 sm:justify-end">
+            <QuickStatus label="الكل" status="all" active={appliedFilters.status} onClick={applyQuickStatus} />
+            <QuickStatus label="بانتظار المتابعة" status="pending" active={appliedFilters.status} onClick={applyQuickStatus} />
+            <QuickStatus label="مراجعة يدوية" status="manual_review" active={appliedFilters.status} onClick={applyQuickStatus} />
+            <QuickStatus label="مكتملة" status="completed" active={appliedFilters.status} onClick={applyQuickStatus} />
+          </div>
+        </div>
+      </section>
 
       <OrdersFilters
         filters={draftFilters}
@@ -235,16 +262,16 @@ export default function AdminOrdersPage() {
         activeCount={activeFiltersCount}
       />
 
-      <section aria-labelledby="orders-list-title">
+      <section aria-labelledby="orders-list-title" className="rounded-[24px] border border-slate-200/75 bg-slate-50/65 p-3 shadow-[0_16px_38px_rgba(15,23,42,0.045)] dark:border-white/[0.07] dark:bg-[#0B1220]/45 sm:p-4">
         <div className="mb-3 flex items-end justify-between gap-3 px-1">
           <div>
-            <h2 id="orders-list-title" className="text-base font-black text-slate-950 dark:text-white">قائمة الطلبات</h2>
+            <h2 id="orders-list-title" className="text-base font-black text-slate-950 dark:text-white">سجل الطلبات</h2>
             <p className="mt-0.5 text-[10px] font-bold text-slate-500 dark:text-[#8A94A7]">
-              افتح التفاصيل لتنفيذ الإجراءات المعتمدة على الطلب.
+              اعرض بيانات الطلب المختصرة، ثم افتح التفاصيل للإجراءات والتتبع الكامل.
             </p>
           </div>
-          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-600 shadow-sm dark:border-white/10 dark:bg-[#111827] dark:text-slate-300">
-            تم تحميل {visibleOrders.length.toLocaleString("ar-EG-u-nu-latn")} من {(pagination.total || orders.length).toLocaleString("ar-EG-u-nu-latn")}
+          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black text-slate-600 shadow-sm dark:border-white/10 dark:bg-[#111827] dark:text-slate-300" title={lastUpdatedAt ? lastUpdatedAt.toLocaleString("ar-EG") : ""}>
+            عرض {visibleOrders.length.toLocaleString("ar-EG-u-nu-latn")} من {(pagination.total || orders.length).toLocaleString("ar-EG-u-nu-latn")}
           </span>
         </div>
 
@@ -258,7 +285,7 @@ export default function AdminOrdersPage() {
         {isLoading ? (
           <OrdersLoadingState />
         ) : visibleOrders.length > 0 ? (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             {visibleOrders.map((order) => (
               <OrderCard key={order.id} order={order} onDetails={setSelectedOrderId} />
             ))}
@@ -312,7 +339,7 @@ export default function AdminOrdersPage() {
 
 function OrdersLoadingState() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="جارٍ تحميل طلبات الإدارة" aria-busy="true">
+    <div className="grid gap-3 lg:grid-cols-2" aria-label="جارٍ تحميل طلبات الإدارة" aria-busy="true">
       {Array.from({ length: 6 }).map((_, index) => (
         <article key={index} className="rounded-[24px] border border-slate-200/80 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111827]">
           <div className="flex justify-between gap-3">
@@ -330,6 +357,19 @@ function OrdersLoadingState() {
         </article>
       ))}
     </div>
+  );
+}
+
+function QuickStatus({ label, status, active, onClick }) {
+  const isActive = active === status;
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(status)}
+      className={`shrink-0 rounded-xl border px-3 py-2 text-[10px] font-black transition ${isActive ? "border-violet-500 bg-violet-600 text-white shadow-[0_8px_18px_rgba(124,58,237,0.24)]" : "border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:border-violet-400/35 dark:hover:text-violet-200"}`}
+    >
+      {label}
+    </button>
   );
 }
 

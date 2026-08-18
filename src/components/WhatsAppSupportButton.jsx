@@ -2,12 +2,18 @@ import { useTranslation } from "react-i18next";
 
 const supportNumber = "971529330668";
 
-export default function WhatsAppSupportButton({ className = "", topic = "currency" }) {
+export default function WhatsAppSupportButton({ accountEmail = "", accountName = "", className = "", topic = "currency" }) {
   const { t, i18n } = useTranslation("common");
   const isCountryRequest = topic === "country";
-  const message = i18n.language?.startsWith("ar")
+  const isArabic = i18n.language?.startsWith("ar");
+  const requestMessage = isArabic
     ? isCountryRequest ? "مرحباً، أريد تغيير دولة الحساب." : "مرحباً، أريد تغيير عملة الحساب."
     : isCountryRequest ? "Hello, I would like to change my account country." : "Hello, I would like to change my account currency.";
+  const identity = [
+    accountName.trim() && (isArabic ? `الاسم: ${accountName.trim()}` : `Name: ${accountName.trim()}`),
+    accountEmail.trim() && (isArabic ? `البريد الإلكتروني: ${accountEmail.trim()}` : `Email: ${accountEmail.trim()}`),
+  ].filter(Boolean);
+  const message = [requestMessage, ...identity].join("\n");
   const url = `https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`;
 
   return (

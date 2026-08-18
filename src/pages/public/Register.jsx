@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Coins, Eye, EyeOff, Globe2, Lock, Mail, MailCheck, Phone, UserRound } from "lucide-react";
+import { FlagImage, defaultCountries, parseCountry } from "react-international-phone";
 import { useTranslation } from "react-i18next";
 import GoogleMark from "../../components/GoogleMark";
 import PolicyAgreement, { PoliciesModal } from "../../components/PolicyAgreement";
@@ -10,17 +12,30 @@ import { getPublicCurrencies } from "../../api/currencies";
 
 const REFERRAL_STORAGE_KEY = "winnie-referral-code";
 
-const countries = ["الولايات المتحدة", "مصر", "السعودية", "الإمارات", "الكويت", "قطر"];
-const countryDialCodes = {
-  "الولايات المتحدة": "+1",
-  مصر: "+20",
-  السعودية: "+966",
-  الإمارات: "+971",
-  الكويت: "+965",
-  قطر: "+974",
+const allCountries = defaultCountries.map(parseCountry).sort((first, second) => first.name.localeCompare(second.name));
+const countryAliases = {
+  "الولايات المتحدة": "United States",
+  مصر: "Egypt",
+  السعودية: "Saudi Arabia",
+  الإمارات: "United Arab Emirates",
+  الكويت: "Kuwait",
+  قطر: "Qatar",
 };
+const countryNames = typeof Intl.DisplayNames === "function"
+  ? new Intl.DisplayNames(["ar"], { type: "region" })
+  : null;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordPolicyPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+function getCountryOption(value) {
+  const normalized = countryAliases[String(value || "").trim()] || String(value || "").trim();
+  return allCountries.find((country) => country.name.toLowerCase() === normalized.toLowerCase() || country.iso2 === normalized.toLowerCase())
+    || allCountries.find((country) => country.iso2 === "us");
+}
+
+function getCountryLabel(country) {
+  return countryNames?.of(country.iso2.toUpperCase()) || country.name;
+}
 
 function withReferralAlias(errors = {}) {
   if (errors.referralCode && !errors.inviteCode) {
@@ -36,7 +51,7 @@ export default function Register() {
   const storedInviteCode = readStoredReferralCode();
   const [step, setStep] = useState("account");
   const [account, setAccount] = useState({ name: "", email: "", password: "", confirmPassword: "" });
-  const [details, setDetails] = useState({ country: countries[0], currency: "", phone: "", inviteCode: inviteCodeFromUrl || storedInviteCode });
+  const [details, setDetails] = useState({ country: "United States", currency: "", phone: "", inviteCode: inviteCodeFromUrl || storedInviteCode });
   const [currencyOptions, setCurrencyOptions] = useState([]);
   const [currenciesLoading, setCurrenciesLoading] = useState(true);
   const [currenciesError, setCurrenciesError] = useState("");
@@ -49,7 +64,7 @@ export default function Register() {
   const { showToast } = useToast();
   const { loginWithGoogle, register } = useAuth();
   const navigate = useNavigate();
-  const selectedDialCode = countryDialCodes[details.country] || "";
+  const selectedDialCode = getCountryOption(details.country)?.dialCode ? `+${getCountryOption(details.country).dialCode}` : "";
   const currencies = currencyOptions.map((currency) => currency.code);
 
   useEffect(() => {
@@ -67,7 +82,7 @@ export default function Register() {
         setCurrencyOptions(activeCurrencies);
         setDetails((current) => {
           if (activeCurrencies.some((currency) => currency.code === current.currency)) return current;
-          return { ...current, currency: activeCurrencies[0]?.code || "" };
+          return { ...current, currency: activeCurrencies.find((currency) => currency.code === "USD")?.code || activeCurrencies[0]?.code || "" };
         });
         if (!activeCurrencies.length) {
           const message = t("register.currenciesUnavailable");
@@ -122,9 +137,7 @@ export default function Register() {
     });
   };
 
-  const updateCountry = (country) => {
-    setDetails((current) => ({ ...current, country }));
-  };
+  const updateCountry = (country) => updateDetails("country", country);
 
   const ensurePolicyAgreement = () => {
     if (acceptedPolicies) return true;
@@ -332,7 +345,7 @@ export default function Register() {
 
           {step === "details" && (
             <form className="mt-8 space-y-5" onSubmit={(event) => event.preventDefault()}>
-              <SelectField icon={Globe2} label={t("register.country")} value={details.country} error={fieldErrors.country} options={countries} getOptionLabel={(value) => t(`register.countries.${countryLabelKeys[value] || value}`, { defaultValue: value })} onChange={updateCountry} />
+              <CountrySelectField label={t("register.country")} value={details.country} error={fieldErrors.country} onChange={updateCountry} />
               <SelectField icon={Coins} label={t("register.currency")} value={details.currency} error={fieldErrors.currency} options={currencies} onChange={(value) => updateDetails("currency", value)} />
               <PhoneField label={t("register.phone")} countryCode={selectedDialCode} value={details.phone} error={fieldErrors.phone} onChange={(value) => updateDetails("phone", value)} autoComplete="tel-national" />
               <Field icon={MailCheck} label={t("register.inviteCode")} value={details.inviteCode} error={fieldErrors.inviteCode} onChange={(value) => updateDetails("inviteCode", value)} />
@@ -430,14 +443,86 @@ function Field({ icon: Icon, label, value, onChange, type = "text", autoComplete
   );
 }
 
-const countryLabelKeys = {
-  "الولايات المتحدة": "United States",
-  مصر: "Egypt",
-  السعودية: "Saudi Arabia",
-  الإمارات: "United Arab Emirates",
-  الكويت: "Kuwait",
-  قطر: "Qatar",
-};
+function CountrySelectField({ label, value, onChange, error }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const selectedCountry = getCountryOption(value);
+  const normalizedSearch = search.trim().toLocaleLowerCase("ar");
+  const visibleCountries = useMemo(() => allCountries.filter((country) => {
+    if (!normalizedSearch) return true;
+    return `${country.name} ${country.iso2} ${country.dialCode} ${getCountryLabel(country)}`.toLocaleLowerCase("ar").includes(normalizedSearch);
+  }), [normalizedSearch]);
+
+  const close = () => {
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  return (
+    <div className="block">
+      <span className="mb-2 block text-sm font-black text-slate-600 dark:text-slate-300">{label}</span>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        className={`flex h-[54px] w-full items-center gap-3 rounded-2xl border bg-white/[0.82] px-4 text-right font-bold text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.06)] outline-none transition hover:border-pulse focus:ring-4 dark:bg-white/[0.075] dark:text-white ${error ? "border-rose-400 focus:ring-rose-500/15" : "border-white/80 focus:ring-pulse/15 dark:border-white/10"}`}
+      >
+        <span className="grid h-8 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 dark:bg-white/10">
+          <FlagImage iso2={selectedCountry?.iso2} size={24} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">{selectedCountry ? getCountryLabel(selectedCountry) : "-"}</span>
+        <Globe2 className="h-5 w-5 shrink-0 text-slate-400" />
+      </button>
+      {error && <span className="mt-2 block text-right text-xs font-black text-rose-500">{error}</span>}
+
+      {isOpen && createPortal(
+        <div className="fixed inset-0 z-[2600] flex items-end bg-slate-950/55 p-3 backdrop-blur-sm sm:items-center sm:justify-center" onMouseDown={(event) => event.target === event.currentTarget && close()}>
+          <section role="dialog" aria-modal="true" aria-label={label} className="flex max-h-[min(82dvh,42rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-[26px] border border-violet-200 bg-white shadow-2xl dark:border-violet-400/25 dark:bg-[#10192b]" onMouseDown={(event) => event.stopPropagation()}>
+            <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-300"><Globe2 className="h-5 w-5" /></span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-black text-slate-950 dark:text-white">اختر الدولة</h2>
+                <p className="mt-0.5 text-xs font-bold text-slate-500 dark:text-slate-400">جميع الدول متاحة مع علم الدولة ومفتاح الاتصال.</p>
+              </div>
+              <button type="button" onClick={close} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5" aria-label="إغلاق">
+                <span className="text-xl leading-none">×</span>
+              </button>
+            </header>
+            <div className="border-b border-slate-100 p-3 dark:border-white/10">
+              <label className="relative block">
+                <span className="sr-only">ابحث عن دولة</span>
+                <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن دولة أو مفتاح الاتصال" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 dark:border-white/10 dark:bg-[#091321] dark:text-white" />
+              </label>
+            </div>
+            <div className="min-h-0 overflow-y-auto p-2">
+              {visibleCountries.map((country) => {
+                const selected = country.iso2 === selectedCountry?.iso2;
+                return (
+                  <button
+                    key={country.iso2}
+                    type="button"
+                    onClick={() => {
+                      onChange(country.name);
+                      close();
+                    }}
+                    className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-right transition ${selected ? "bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-100" : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-white/[0.06]"}`}
+                  >
+                    <FlagImage iso2={country.iso2} size={25} />
+                    <span className="min-w-0 flex-1 truncate text-sm font-black">{getCountryLabel(country)}</span>
+                    <span dir="ltr" className="text-xs font-black text-violet-600 dark:text-violet-300">+{country.dialCode}</span>
+                  </button>
+                );
+              })}
+              {!visibleCountries.length && <p className="p-5 text-center text-sm font-bold text-slate-500 dark:text-slate-400">لا توجد دولة مطابقة.</p>}
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
+}
 
 function PhoneField({ label, countryCode, value, onChange, autoComplete, error }) {
   const { t } = useTranslation("auth");
@@ -464,7 +549,7 @@ function PhoneField({ label, countryCode, value, onChange, autoComplete, error }
         />
         <span
           dir="ltr"
-          className="pointer-events-none absolute left-3 top-1/2 grid h-9 min-w-14 -translate-y-1/2 select-none place-items-center rounded-xl border border-white/80 bg-white px-2 text-sm font-black text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-white/10 dark:text-slate-200"
+          className="phone-country-code-badge pointer-events-none absolute left-3 top-[54%] grid h-9 min-w-14 -translate-y-1/2 select-none place-items-center rounded-xl border px-2 text-sm font-black"
           title={t("register.countryCodeTitle")}
         >
           {countryCode}

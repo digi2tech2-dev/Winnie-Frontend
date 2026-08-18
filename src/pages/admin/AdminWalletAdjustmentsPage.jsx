@@ -4,6 +4,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Calculator,
+  ChevronDown,
   Filter,
   ListChecks,
   RefreshCw,
@@ -397,17 +398,30 @@ function SummaryCard({ icon: Icon, label, value, tone }) {
 }
 
 function Filters({ activeCount, allCurrenciesLabel, currencyOptions, filters, onApply, onChange, onReset }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <section className="admin-wallet-adjustments-filters rounded-[23px] border border-slate-200 bg-white dark:border-white/10 dark:bg-[#111827]">
-      <div className="flex min-h-14 items-center gap-2 border-b border-slate-100 px-4 dark:border-white/10">
-        <Filter className="h-4 w-4 text-violet-500" />
-        <b className="flex-1 text-sm text-slate-950 dark:text-white">الفلاتر</b>
-        {activeCount > 0 && (
-          <span className="rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-black text-violet-700 dark:text-violet-300">
-            {activeCount} مفعلة
-          </span>
-        )}
+      <div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          aria-expanded={isOpen}
+          aria-controls="wallet-adjustments-filters-content"
+          className={`flex min-h-14 w-full items-center gap-2 px-4 text-right transition hover:bg-slate-50 dark:hover:bg-white/[0.04] ${isOpen ? "border-b border-slate-100 dark:border-white/10" : ""}`}
+        >
+          <Filter className="h-4 w-4 text-violet-500" />
+          <b className="flex-1 text-sm text-slate-950 dark:text-white">الفلاتر</b>
+          {activeCount > 0 && (
+            <span className="rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-black text-violet-700 dark:text-violet-300">
+              {activeCount} مفعلة
+            </span>
+          )}
+          <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
       </div>
+      <div id="wallet-adjustments-filters-content" className={`grid transition-[grid-template-rows] duration-300 ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+      <div className={isOpen ? "overflow-visible" : "overflow-hidden"}>
       <form onSubmit={onApply} className="grid w-full max-w-full grid-cols-1 gap-3 overflow-visible p-4 sm:[grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))]">
         <label className="site-filter-search relative min-w-0 sm:col-span-2">
           <span className="site-filter-search-icon"><Search /></span>
@@ -458,6 +472,8 @@ function Filters({ activeCount, allCurrenciesLabel, currencyOptions, filters, on
           </button>
         </div>
       </form>
+      </div>
+      </div>
     </section>
   );
 }

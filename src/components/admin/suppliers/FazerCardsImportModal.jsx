@@ -24,7 +24,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
   const [savedProduct, setSavedProduct] = useState(null);
 
   const open = Boolean(product);
-  const title = product?.name || "FazerCards product";
+  const title = product?.name || "منتج FazerCards";
 
   useEffect(() => {
     let active = true;
@@ -54,7 +54,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
       })
       .catch((requestError) => {
         if (!active) return;
-        setError(requestError.userMessage || "Could not load import preview.");
+        setError(requestError.userMessage || "تعذر تحميل معاينة الاستيراد.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -84,7 +84,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
       setSavedProduct(result.product);
       onImported?.(result);
     } catch (requestError) {
-      setError(requestError.userMessage || "Could not import FazerCards product.");
+      setError(requestError.userMessage || "تعذر استيراد منتج FazerCards.");
     } finally {
       setSaving(false);
     }
@@ -99,7 +99,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
         <header className="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-white/10">
           <Download className="h-5 w-5 text-violet-500" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-black dark:text-white">Import FazerCards offer</h2>
+            <h2 className="truncate text-sm font-black dark:text-white">استيراد عرض FazerCards</h2>
             <p dir="ltr" className="truncate text-left text-[9px] font-bold text-slate-400">{title}</p>
           </div>
           <button type="button" onClick={onClose} disabled={saving} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-white/[0.07]">
@@ -118,95 +118,95 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-10 text-xs font-black text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading preview
+              جارٍ تحميل المعاينة
             </div>
           ) : (
             <>
               <div className="grid gap-2 rounded-2xl bg-slate-50 p-3 text-[10px] font-bold text-slate-600 dark:bg-[#0B1220] dark:text-slate-300">
                 <div className="flex justify-between gap-3">
-                  <span>Family / mode</span>
+                  <span>الفئة / نمط التنفيذ</span>
                   <strong dir="ltr">{preview?.familyKey || product.familyKey || "UNKNOWN"} / {preview?.fulfillmentMode || product.fulfillmentMode || "UNKNOWN"}</strong>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span>Cost price</span>
+                  <span>سعر التكلفة</span>
                   <strong dir="ltr">{preview?.costPrice || product.costPrice} {preview?.currency || product.currency}</strong>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span>Stock</span>
-                  <strong dir="ltr">{preview?.stock ?? product.stockLabel ?? "Unknown"}</strong>
+                  <span>المخزون</span>
+                  <strong dir="ltr">{preview?.stock ?? product.stockLabel ?? "غير معروف"}</strong>
                 </div>
                 {(preview?.region || preview?.platform || product.region || product.platform) && (
                   <div className="flex justify-between gap-3">
-                    <span>Region / platform</span>
+                    <span>المنطقة / المنصة</span>
                     <strong dir="ltr">{[preview?.platform || product.platform, preview?.region || product.region].filter(Boolean).join(" / ")}</strong>
                   </div>
                 )}
                 <div className="flex justify-between gap-3">
-                  <span>External ID</span>
+                  <span>المعرّف الخارجي</span>
                   <strong dir="ltr" className="truncate">{preview?.externalProductId || product.externalProductId}</strong>
                 </div>
                 <p className="text-[9px] text-amber-600 dark:text-amber-300">
-                  {preview?.warning || "Product will be imported as inactive and not visible to customers."}
+                  {preview?.warning || "سيتم استيراد المنتج كمسودة غير مفعّلة ولن يكون ظاهرًا للعملاء."}
                 </p>
                 {(preview?.blockReason || product.blockReason) && (
                   <p className="text-[9px] text-rose-600 dark:text-rose-300">
-                    Block reason: {preview?.blockReason || product.blockReason}
+                    سبب الحظر: {preview?.blockReason || product.blockReason}
                   </p>
                 )}
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
-                  Product name
+                  اسم المنتج
                   <input value={form.name} onChange={(event) => update("name", event.target.value)} required minLength={2} maxLength={200} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
                 </label>
                 <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
-                  Sell price
+                  سعر البيع
                   <input type="number" min="0.000001" step="0.000001" value={form.sellPrice} onChange={(event) => update("sellPrice", event.target.value)} required className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
                 </label>
                 <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
-                  Currency
+                  العملة
                   <input value={form.currency} onChange={(event) => update("currency", event.target.value.toUpperCase())} maxLength={3} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
                 </label>
                 <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
-                  Internal category
+                  القسم الداخلي
                   <input value={form.categoryId} onChange={(event) => update("categoryId", event.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
                 </label>
               </div>
 
               <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
-                Description
+                الوصف
                 <textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={3} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
               </label>
 
               <div className="grid gap-2 rounded-2xl border border-slate-200 p-3 dark:border-white/10">
-                <p className="text-[10px] font-black text-slate-500 dark:text-slate-300">Required order fields</p>
+                <p className="text-[10px] font-black text-slate-500 dark:text-slate-300">الحقول المطلوبة للطلب</p>
                 {fields.length ? fields.map((field) => (
                   <div key={field.key || field.id || field.label} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-bold dark:bg-[#0B1220]">
                     <span className="text-slate-700 dark:text-slate-200">{field.label || field.key}</span>
                     <span dir="ltr" className="text-slate-400">{field.key || field.id} / {field.type || "text"}</span>
                   </div>
                 )) : (
-                  <p className="text-[10px] font-bold text-slate-400">No customer fields are required for this catalog item.</p>
+                  <p className="text-[10px] font-bold text-slate-400">لا توجد حقول مطلوبة من العميل لهذا العنصر.</p>
                 )}
               </div>
 
               <div className="grid gap-2 rounded-2xl bg-slate-50 p-3 dark:bg-[#0B1220]">
                 <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
-                  Sync availability metadata
+                  مزامنة بيانات التوفر
                   <input type="checkbox" checked={form.syncAvailabilityFromProvider} onChange={(event) => update("syncAvailabilityFromProvider", event.target.checked)} />
                 </label>
                 <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
-                  Sync name metadata
+                  مزامنة بيانات الاسم
                   <input type="checkbox" checked={form.syncNameFromProvider} onChange={(event) => update("syncNameFromProvider", event.target.checked)} />
                 </label>
                 <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
-                  Sync price metadata
+                  مزامنة بيانات السعر
                   <input type="checkbox" checked={form.syncPriceFromProvider} onChange={(event) => update("syncPriceFromProvider", event.target.checked)} />
                 </label>
                 {product?.imported && (
                   <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
-                    Update existing import
+                    تحديث الاستيراد الموجود
                     <input type="checkbox" checked={form.updateExisting} onChange={(event) => update("updateExisting", event.target.checked)} />
                   </label>
                 )}
@@ -214,10 +214,10 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
 
               {savedProduct && (
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-                  <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Imported as inactive draft.</span>
+                  <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> تم الاستيراد كمسودة غير مفعّلة.</span>
                   <a href="/admin/tools/products" className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-[9px] font-black text-white">
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Products
+                    المنتجات
                   </a>
                 </div>
               )}
@@ -227,11 +227,11 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
 
         <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 p-3 dark:border-white/[0.07]">
           <button type="button" onClick={onClose} disabled={saving} className="h-10 rounded-xl border border-slate-200 px-4 text-[10px] font-black text-slate-600 disabled:opacity-60 dark:border-white/10 dark:text-slate-300">
-            Close
+            إغلاق
           </button>
           <button type="button" onClick={save} disabled={saving || loading} className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-[10px] font-black text-white disabled:opacity-60">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Save inactive draft
+            حفظ كمسودة غير مفعّلة
           </button>
         </footer>
       </section>

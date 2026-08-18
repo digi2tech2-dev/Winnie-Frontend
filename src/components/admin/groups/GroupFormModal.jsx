@@ -3,10 +3,10 @@ import { createPortal } from "react-dom";
 import { Loader2, Save, UsersRound, X } from "lucide-react";
 
 const FALLBACK_LABELS = {
-  active: "Active",
-  addGroup: "Add Group",
-  inactive: "Inactive",
-  markupPercentage: "Markup Percentage",
+  active: "مفعّلة",
+  addGroup: "إضافة مجموعة",
+  inactive: "غير مفعّلة",
+  markupPercentage: "نسبة الزيادة",
 };
 
 export default function GroupFormModal({ busy = false, labels = FALLBACK_LABELS, open, group, onClose, onSave }) {
@@ -49,12 +49,12 @@ function Content({ busy, group, labels, onClose, onSave }) {
     const percentage = Number(form.percentage);
 
     if (!name) {
-      setError(labels.nameRequired || "Group name is required.");
+      setError(labels.nameRequired || "اسم المجموعة مطلوب.");
       return;
     }
 
     if (!Number.isFinite(percentage) || percentage < 0) {
-      setError(labels.percentageRequired || "Markup percentage must be zero or greater.");
+      setError(labels.percentageRequired || "يجب أن تكون نسبة الزيادة صفرًا أو أكبر.");
       return;
     }
 
@@ -79,7 +79,7 @@ function Content({ busy, group, labels, onClose, onSave }) {
 
         <form onSubmit={submit} className="overflow-y-auto p-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={labels.groupName || "Group name"}>
+            <Field label={labels.groupName || "اسم المجموعة"}>
               <input
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -100,7 +100,7 @@ function Content({ busy, group, labels, onClose, onSave }) {
             </Field>
           </div>
 
-          <Field label={labels.status || "Status"} className="mt-3">
+          <Field label={labels.status || "الحالة"} className="mt-3">
             <select
               value={form.isActive ? "active" : "inactive"}
               onChange={(event) => setForm({ ...form, isActive: event.target.value === "active" })}
@@ -117,11 +117,11 @@ function Content({ busy, group, labels, onClose, onSave }) {
 
         <footer className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-slate-100 bg-white p-3 dark:border-white/10 dark:bg-[#111827]">
           <button type="button" onClick={onClose} disabled={busy} className="h-11 rounded-2xl border border-slate-200 text-xs font-black disabled:opacity-60 dark:border-white/10 dark:text-white">
-            {labels.cancel || "Cancel"}
+            {labels.cancel || "إلغاء"}
           </button>
           <button type="button" onClick={submit} disabled={busy} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-violet-600 to-blue-500 text-xs font-black text-white disabled:opacity-60">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {group ? labels.save || "Save" : labels.addGroup}
+            {group ? labels.save || "حفظ" : labels.addGroup}
           </button>
         </footer>
       </section>

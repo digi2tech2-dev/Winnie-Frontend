@@ -131,12 +131,19 @@ export default function AdminHeader({
               </div>
             )}
           </div>
+
+          <HeaderWalletBadge
+            balance={walletBalance}
+            className="admin-header-wallet-mobile hidden"
+            currency={walletCurrency}
+            to="/admin/user/wallet"
+          />
         </div>
 
         <div className="admin-header-right-cluster">
           <HeaderWalletBadge
             balance={walletBalance}
-            className="order-2"
+            className="admin-header-wallet-desktop order-2"
             currency={walletCurrency}
             to="/admin/user/wallet"
           />
