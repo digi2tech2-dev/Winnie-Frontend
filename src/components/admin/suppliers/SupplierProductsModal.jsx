@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Boxes, ChevronLeft, ChevronRight, Copy, Download, Eye, FlaskConical, Power, RefreshCw, Rocket, Search, ShieldCheck, X } from "lucide-react";
 import ConnectionStatusBadge from "./ConnectionStatusBadge";
@@ -49,10 +49,12 @@ export default function SupplierProductsModal({
   onSync,
   pagination,
   products = [],
+  search = "",
   supplier,
   fazerCardsCatalog = {},
 }) {
   const [query, setQuery] = useState("");
+  const previousDebouncedSearchRef = useRef("");
   const [copiedId, setCopiedId] = useState("");
   const [steamGiftAppId, setSteamGiftAppId] = useState("");
   const [steamGiftAppIdError, setSteamGiftAppIdError] = useState("");
@@ -66,6 +68,31 @@ export default function SupplierProductsModal({
     searched: false,
   });
   const [steamGiftIndexRefreshing, setSteamGiftIndexRefreshing] = useState(false);
+
+  useEffect(() => {
+    setQuery(search || "");
+    previousDebouncedSearchRef.current = search || "";
+  }, [search, supplier?.id]);
+
+  useEffect(() => {
+    if (!fazerCards || !supplier || !onSearch) return undefined;
+
+    const normalizedQuery = query.trim();
+    if (normalizedQuery === previousDebouncedSearchRef.current) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      previousDebouncedSearchRef.current = normalizedQuery;
+      onSearch(normalizedQuery, filters);
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fazerCards, filters, onSearch, query, supplier]);
+
+  const submitSearch = () => {
+    const normalizedQuery = query.trim();
+    previousDebouncedSearchRef.current = normalizedQuery;
+    onSearch?.(normalizedQuery, filters);
+  };
 
   if (!supplier) return null;
 
@@ -203,7 +230,7 @@ export default function SupplierProductsModal({
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            onSearch(query, filters);
+            submitSearch();
           }}
           className="grid gap-2 border-b border-slate-100 p-3 dark:border-white/[0.07]"
         >

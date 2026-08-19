@@ -1009,6 +1009,7 @@ export default function SuppliersManagementPage() {
           onSync={requestSync}
           pagination={productsState.pagination}
           products={productsState.products}
+          search={productsState.search}
           supplier={productsState.supplier}
         />
       )}
