@@ -7,11 +7,13 @@ const initialForm = {
   categoryId: "",
   currency: "USD",
   description: "",
+  markupType: "percentage",
+  markupValue: 0,
   name: "",
   sellPrice: "",
   syncAvailabilityFromProvider: true,
   syncNameFromProvider: false,
-  syncPriceFromProvider: false,
+  syncPriceFromProvider: true,
   updateExisting: false,
 };
 
@@ -49,7 +51,10 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
         setForm((current) => ({
           ...current,
           currency: nextPreview.currency || current.currency,
+          markupType: nextPreview.defaultMarkupType || current.markupType,
+          markupValue: nextPreview.defaultMarkupValue ?? current.markupValue,
           name: nextPreview.suggestedProductName || current.name,
+          syncPriceFromProvider: nextPreview.autoPriceSyncAvailable !== false,
         }));
       })
       .catch((requestError) => {
@@ -68,6 +73,9 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
   const fields = useMemo(() => preview?.suggestedOrderFields?.length
     ? preview.suggestedOrderFields
     : product?.requiredFields || [], [preview, product]);
+  const autoPriceAvailable = preview?.autoPriceSyncAvailable !== false && Boolean(preview?.calculatedLocalPrice || preview?.costPrice || product?.costPrice);
+  const manualPriceOverride = String(form.sellPrice || "").trim() !== "";
+  const displayedLocalPrice = manualPriceOverride ? form.sellPrice : preview?.calculatedLocalPrice;
 
   if (!open) return null;
 
@@ -80,7 +88,10 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
     setSaving(true);
     setError("");
     try {
-      const result = await importFazerCardsProviderProduct(token, product.id, form);
+      const result = await importFazerCardsProviderProduct(token, product.id, {
+        ...form,
+        syncPriceFromProvider: manualPriceOverride ? false : form.syncPriceFromProvider,
+      });
       setSavedProduct(result.product);
       onImported?.(result);
     } catch (requestError) {
@@ -132,6 +143,10 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
                   <strong dir="ltr">{preview?.costPrice || product.costPrice} {preview?.currency || product.currency}</strong>
                 </div>
                 <div className="flex justify-between gap-3">
+                  <span>Calculated sale price</span>
+                  <strong dir="ltr">{displayedLocalPrice || "manual required"} {preview?.currency || product.currency}</strong>
+                </div>
+                <div className="flex justify-between gap-3">
                   <span>المخزون</span>
                   <strong dir="ltr">{preview?.stock ?? product.stockLabel ?? "غير معروف"}</strong>
                 </div>
@@ -162,7 +177,10 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
                 </label>
                 <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
                   سعر البيع
-                  <input type="number" min="0.000001" step="0.000001" value={form.sellPrice} onChange={(event) => update("sellPrice", event.target.value)} required className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
+                  <input type="number" min="0.000001" step="0.000001" value={form.sellPrice} onChange={(event) => update("sellPrice", event.target.value)} placeholder={autoPriceAvailable ? "Optional manual override" : "Required when provider price is missing"} required={!autoPriceAvailable} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none dark:border-white/10 dark:bg-[#0B1220] dark:text-white" />
+                  <span className="text-[8px] font-bold text-slate-400">
+                    {manualPriceOverride ? "Manual override will be used." : autoPriceAvailable ? "Leave empty to auto-sync from FazerCards price." : "Enter a manual price to import this product."}
+                  </span>
                 </label>
                 <label className="grid gap-1 text-[10px] font-black text-slate-500 dark:text-slate-300">
                   العملة
@@ -202,7 +220,7 @@ export default function FazerCardsImportModal({ onClose, onImported, product, to
                 </label>
                 <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
                   مزامنة بيانات السعر
-                  <input type="checkbox" checked={form.syncPriceFromProvider} onChange={(event) => update("syncPriceFromProvider", event.target.checked)} />
+                  <input type="checkbox" checked={form.syncPriceFromProvider && !manualPriceOverride} disabled={manualPriceOverride || !autoPriceAvailable} onChange={(event) => update("syncPriceFromProvider", event.target.checked)} />
                 </label>
                 {product?.imported && (
                   <label className="flex items-center justify-between gap-3 text-[10px] font-black text-slate-600 dark:text-slate-300">
