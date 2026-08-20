@@ -18,14 +18,14 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import { addCustomerReview, hasReviewForOrder } from "../utils/customerReviews";
+import { submitCustomerReview } from "../api/reviews";
 import { useToast } from "./ToastProvider";
 import ReviewModal from "./ReviewModal";
 import "./PurchaseSuccessModal.css";
 
 export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) {
   const { i18n } = useTranslation("products");
-  const { user } = useAuth();
+  const { token, user } = useAuth();
   const { showToast } = useToast();
   const isArabic = i18n.language?.startsWith("ar");
   const [copied, setCopied] = useState(false);
@@ -39,10 +39,12 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
   const displayOrderNumber = orderNumber.startsWith("#") ? orderNumber : `#${orderNumber}`;
   const statusLabel = receipt.statusLabel || receipt.status || (isArabic ? "تم الشحن بنجاح" : "Top-up successful");
   const orderRecordId = getOrderRecordId(receipt);
-  const productId = getProductId(receipt);
   const canReviewOrder = Boolean(
     orderRecordId
+    && isMongoObjectId(orderRecordId)
+    && token
     && isOwnedOrder(receipt?.order, user)
+    && isCompletedOrder(receipt?.order || receipt)
     && !reviewSubmitted
   );
 
@@ -56,7 +58,7 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
   }, [onClose]);
 
   useEffect(() => {
-    setReviewSubmitted(isOrderAlreadyReviewed(receipt?.order) || hasReviewForOrder(orderRecordId));
+    setReviewSubmitted(isOrderAlreadyReviewed(receipt?.order));
   }, [orderRecordId, receipt?.order]);
 
   const copyOrderNumber = async () => {
@@ -74,38 +76,32 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
     setReviewError("");
 
     try {
-      const result = addCustomerReview({
+      await submitCustomerReview(token, {
         orderId: orderRecordId,
-        productId: productId || receipt.productName || "winnie-product",
-        userId: getUserId(user) || "local-customer",
         rating,
         message,
-        reviewer: {
-          name: user?.name || user?.username || "Winnie HUB Customer",
-          avatar: user?.avatar || user?.image || "",
-        },
       });
-
-      if (result.duplicate) {
-        setReviewModalOpen(false);
-        setReviewSubmitted(true);
-        showToast({
-          type: "info",
-          title: isArabic ? "تم إرسال التقييم مسبقًا" : "Review already submitted",
-          message: isArabic ? "تم إرسال تقييمك لهذا الطلب من قبل." : "Your review has already been submitted successfully.",
-        });
-        return;
-      }
 
       setReviewModalOpen(false);
       setReviewSubmitted(true);
       showToast({
         type: "success",
         title: isArabic ? "شكرًا لك!" : "Thank you!",
-        message: isArabic ? "تم نشر تقييمك بنجاح." : "Your review has been published.",
+        message: isArabic ? "تم إرسال تقييمك وهو بانتظار المراجعة." : "Your review was submitted and is pending moderation.",
       });
-    } catch {
-      const messageText = isArabic ? "تعذر إرسال تقييمك. حاول مرة أخرى." : "Unable to submit your review. Please try again.";
+    } catch (error) {
+      if (error?.code === "CONFLICT" || error?.status === 409) {
+        setReviewModalOpen(false);
+        setReviewSubmitted(true);
+        showToast({
+          type: "info",
+          title: isArabic ? "تم إرسال التقييم مسبقا" : "Review already submitted",
+          message: isArabic ? "تم إرسال تقييمك لهذا الطلب من قبل." : "Your review has already been submitted.",
+        });
+        return;
+      }
+
+      const messageText = error?.userMessage || (isArabic ? "تعذر إرسال تقييمك. حاول مرة أخرى." : "Unable to submit your review. Please try again.");
       setReviewError(messageText);
       showToast({
         type: "error",
@@ -322,13 +318,17 @@ function getOrderRecordId(receipt = {}) {
   return String(receipt.orderRecordId || receipt.order?.id || receipt.order?._id || receipt.orderId || "").replace(/^#/, "");
 }
 
-function getProductId(receipt = {}) {
-  const product = receipt.product || receipt.order?.product || receipt.order?.productId || {};
-  return String(product._id || product.id || product.productId || receipt.order?.productId || "").trim();
+function isMongoObjectId(value = "") {
+  return /^[a-f\d]{24}$/i.test(String(value || "").trim());
 }
 
 function isOrderAlreadyReviewed(order = {}) {
   return Boolean(order?.review || order?.reviewId || order?.reviewedAt || order?.hasReview || order?.hasReviewed || order?.reviewSubmitted);
+}
+
+function isCompletedOrder(order = {}) {
+  const status = String(order?.status || order?.orderStatus || "").toUpperCase();
+  return status === "COMPLETED" || status === "SUCCESS" || status === "SUCCEEDED";
 }
 
 function getUserId(user = {}) {

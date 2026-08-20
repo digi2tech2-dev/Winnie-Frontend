@@ -3,7 +3,7 @@ import { BadgeCheck, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandLockup } from "../Brand";
-import { getHomepageReviews, getReviewStats, subscribeToCustomerReviews } from "../../utils/customerReviews";
+import { fetchPublicReviews } from "../../api/reviews";
 import "./CustomerReviews.css";
 
 function getVisibleCount() {
@@ -70,29 +70,33 @@ export default function CustomerReviews({ forceRtl = false }) {
 
   useEffect(() => {
     let cancelled = false;
-    const syncReviews = (nextReviews = getHomepageReviews()) => {
-      if (cancelled) return;
-      setReviews(nextReviews.filter(isApprovedReview));
-      setStats(getReviewStats());
-      setActiveIndex(0);
+    const controller = new AbortController();
+
+    const loadReviews = async () => {
+      setLoading(true);
+      try {
+        const result = await fetchPublicReviews({ limit: 10, signal: controller.signal });
+        if (cancelled) return;
+        setReviews(result.reviews.filter(isApprovedReview));
+        setStats(result.stats);
+        setActiveIndex(0);
+      } catch {
+        if (!cancelled) {
+          setReviews([]);
+          setStats({ averageRating: 0, totalReviews: 0 });
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     };
 
-    const loadingTimer = window.setTimeout(() => {
-      syncReviews();
-      setLoading(false);
-    }, 420);
-
-    const unsubscribe = subscribeToCustomerReviews((nextReviews) => {
-      syncReviews(nextReviews);
-      if (!cancelled) {
-        setLoading(false);
-      }
-    });
+    loadReviews();
 
     return () => {
       cancelled = true;
-      window.clearTimeout(loadingTimer);
-      unsubscribe();
+      controller.abort();
     };
   }, []);
 
