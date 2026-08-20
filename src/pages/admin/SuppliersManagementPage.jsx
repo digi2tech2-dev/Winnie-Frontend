@@ -54,6 +54,7 @@ const defaultFazerCardsFilters = {
   blocked: "",
   category: "",
   familyKey: "TOPUPS",
+  familyKeyExplicit: false,
   fulfillmentMode: "",
   imported: "",
   supported: "",

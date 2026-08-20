@@ -68,6 +68,7 @@ export default function SupplierProductsModal({
     searched: false,
   });
   const [steamGiftIndexRefreshing, setSteamGiftIndexRefreshing] = useState(false);
+  const filterFamilyExplicit = filters.familyKeyExplicit === true || filters.familyKeyExplicit === "true";
 
   useEffect(() => {
     setQuery(search || "");
@@ -82,16 +83,16 @@ export default function SupplierProductsModal({
 
     const timeoutId = window.setTimeout(() => {
       previousDebouncedSearchRef.current = normalizedQuery;
-      onSearch(normalizedQuery, filters);
+      onSearch(normalizedQuery, normalizedQuery ? { ...filters, familyKeyExplicit: filterFamilyExplicit } : filters);
     }, 400);
 
     return () => window.clearTimeout(timeoutId);
-  }, [fazerCards, filters, onSearch, query, supplier]);
+  }, [fazerCards, filterFamilyExplicit, filters, onSearch, query, supplier]);
 
   const submitSearch = () => {
     const normalizedQuery = query.trim();
     previousDebouncedSearchRef.current = normalizedQuery;
-    onSearch?.(normalizedQuery, filters);
+    onSearch?.(normalizedQuery, normalizedQuery ? { ...filters, familyKeyExplicit: filterFamilyExplicit } : filters);
   };
 
   if (!supplier) return null;
@@ -99,6 +100,10 @@ export default function SupplierProductsModal({
   const syncBusy = actionKey === `${supplier?.id}:sync`;
   const syncAllBusy = actionKey === `${supplier?.id}:sync-all`;
   const activeFamily = String(filters.familyKey || "").toUpperCase();
+  const activeSearch = String(search || "").trim();
+  const isSearching = activeSearch.length > 0;
+  const familyFilterExplicit = filterFamilyExplicit;
+  const searchingAllFamilies = fazerCards && isSearching && !familyFilterExplicit;
   const steamGiftsSelected = activeFamily === "STEAM_GIFTS";
   const steamGiftAppIdValue = steamGiftAppId.trim();
   const familySummary = fazerCardsCatalog.summary?.byFamily || {};
@@ -108,15 +113,38 @@ export default function SupplierProductsModal({
   const syncFamilyHint = steamGiftsSelected
     ? "Steam Gifts تتم مزامنتها بلعبة واحدة فقط لتجنب سحب الكتالوج الكبير."
     : "اختر عائلة لمزامنة منتجاتها من المورد.";
-  const visibleProducts = fazerCards && activeFamily
+  const visibleProducts = fazerCards && activeFamily && !searchingAllFamilies
     ? products.filter((product) => String(product?.familyKey || "").toUpperCase() === activeFamily)
     : products;
+  const hasNonFamilyFilters = Boolean(filters.category || filters.supported || filters.blocked || filters.imported || filters.fulfillmentMode || filters.blockReason);
+  const filtersActive = Boolean(activeFamily || hasNonFamilyFilters);
+  const emptyMessage = fazerCards && isSearching
+    ? (filtersActive && !searchingAllFamilies
+      ? "No results found with the current filters. Try clearing filters or searching all families."
+      : "No results found for this search across all FazerCards families.")
+    : fazerCards && activeFamily === "STEAM_GIFTS"
+      ? "Enter an AppID and press Sync Family to add Steam Gifts products."
+      : "No supplier products found.";
 
   const updateFilter = (patch) => {
+    const nextPatch = { ...patch };
     if (Object.prototype.hasOwnProperty.call(patch, "familyKey")) {
       setSteamGiftAppIdError("");
+      nextPatch.familyKeyExplicit = Boolean(query.trim() && patch.familyKey);
     }
-    onFilterChange?.({ ...filters, ...patch });
+    onFilterChange?.({ ...filters, ...nextPatch });
+  };
+  const clearFilters = () => {
+    onFilterChange?.({
+      blockReason: "",
+      blocked: "",
+      category: "",
+      familyKey: isSearching ? "" : "TOPUPS",
+      familyKeyExplicit: false,
+      fulfillmentMode: "",
+      imported: "",
+      supported: "",
+    });
   };
   const handleSyncFamily = () => {
     if (steamGiftsSelected && !steamGiftAppIdValue) {
@@ -255,21 +283,39 @@ export default function SupplierProductsModal({
                 <button
                   type="button"
                   onClick={() => updateFilter({ familyKey: "" })}
-                  className={`rounded-full px-3 py-1.5 text-[8px] font-black ${!activeFamily ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
+                  className={`rounded-full px-3 py-1.5 text-[8px] font-black ${!activeFamily || searchingAllFamilies ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
                 >
-                  ALL
+                  {isSearching ? "ALL FAMILIES" : "ALL"}
                 </button>
                 {FAZERCARDS_FAMILY_TABS.map((family) => (
                   <button
                     key={family.key}
                     type="button"
                     onClick={() => updateFilter({ familyKey: family.key })}
-                    className={`rounded-full px-3 py-1.5 text-[8px] font-black ${activeFamily === family.key ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
+                    className={`rounded-full px-3 py-1.5 text-[8px] font-black ${activeFamily === family.key && !searchingAllFamilies ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"}`}
                   >
                     {family.label}
                   </button>
                 ))}
+                {filtersActive && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-full border border-slate-200 px-3 py-1.5 text-[8px] font-black text-slate-500 dark:border-white/10 dark:text-slate-300"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
+
+              {isSearching && (
+                <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[9px] font-bold text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200">
+                  {searchingAllFamilies
+                    ? `Searching "${activeSearch}" across all cached FazerCards families.`
+                    : `Searching "${activeSearch}" inside ${activeFamily || "selected"} family.`}
+                  {hasNonFamilyFilters ? " Other filters are active." : ""}
+                </div>
+              )}
 
               <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-7">
                 {FAZERCARDS_FAMILY_TABS.map((family) => {
@@ -280,7 +326,7 @@ export default function SupplierProductsModal({
                       key={family.key}
                       type="button"
                       onClick={() => updateFilter({ familyKey: family.key })}
-                      className={`rounded-xl border p-2 text-left ${activeFamily === family.key ? "border-violet-300 bg-violet-50 dark:border-violet-400/30 dark:bg-violet-500/10" : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#0B1220]"}`}
+                      className={`rounded-xl border p-2 text-left ${activeFamily === family.key && !searchingAllFamilies ? "border-violet-300 bg-violet-50 dark:border-violet-400/30 dark:bg-violet-500/10" : "border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#0B1220]"}`}
                     >
                       <span className="block truncate text-[8px] font-black text-slate-500 dark:text-slate-300">{family.key}</span>
                       <strong className="mt-1 block text-sm font-black text-slate-900 dark:text-white">{bucket.total ?? 0}</strong>
@@ -525,6 +571,7 @@ export default function SupplierProductsModal({
                   </p>
                   {fazerCards && (
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black">
+                      <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">Family: {product.familyKey || "UNKNOWN"}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{product.categoryName || product.category || "بلا تصنيف"}</span>
                       {(product.region || product.platform) && (
                         <span className="rounded-full bg-slate-200 px-2 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{[product.platform, product.region].filter(Boolean).join(" / ")}</span>
@@ -685,9 +732,7 @@ export default function SupplierProductsModal({
             })
           ) : (
             <p className="py-8 text-center text-xs font-black text-slate-400">
-              {fazerCards && activeFamily === "STEAM_GIFTS"
-                ? "اكتب AppID واضغط Sync Family لإضافة منتجات Steam Gifts."
-                : "لا توجد منتجات للمورد."}
+              {emptyMessage}
             </p>
           )}
         </div>

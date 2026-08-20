@@ -607,6 +607,7 @@ export async function getFazerCardsProviderProducts(token, query = {}) {
       imported: query.imported,
       fulfillmentMode: query.fulfillmentMode,
       familyKey: familyKey === "ALL" ? "" : familyKey,
+      familyKeyExplicit: query.familyKeyExplicit ? "true" : undefined,
       supportLevel: query.supportLevel,
       blockReason: query.blockReason,
     }),
