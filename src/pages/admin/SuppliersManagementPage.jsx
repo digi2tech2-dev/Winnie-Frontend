@@ -252,10 +252,26 @@ export default function SuppliersManagementPage() {
     }));
   }, [token]);
 
+  const loadFazerProviderHealth = useCallback(async ({ silent = false } = {}) => {
+    if (!token) return;
+    if (!silent) setFazerLaunchOps((current) => ({ ...current, error: "", loading: true }));
+
+    try {
+      const result = await getFazerCardsLaunchHealth(token);
+      setFazerLaunchOps((current) => ({ ...current, error: "", health: result.health, loading: false }));
+    } catch (error) {
+      setFazerLaunchOps((current) => ({
+        ...current,
+        error: error.userMessage || "تعذر التحقق من اتصال FazerCards.",
+        loading: false,
+      }));
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!specialProviderPage || !fazerCardsSupplier) return;
-    void loadFazerCatalogMeta();
-  }, [fazerCardsSupplier, loadFazerCatalogMeta, specialProviderPage]);
+    void loadFazerProviderHealth();
+  }, [fazerCardsSupplier, loadFazerProviderHealth, specialProviderPage]);
 
   const runConfirmedAction = async () => {
     const { kind, supplier } = confirm;
@@ -900,30 +916,16 @@ export default function SuppliersManagementPage() {
     <div dir="rtl" className="admin-suppliers-page supplier-control-room space-y-4">
       {specialProviderPage ? (
         <FazerCardsSpecialProviderPage
-          actionKey={actionKey}
-          catalog={fazerCatalog}
-          launchOps={fazerLaunchOps}
+          health={fazerLaunchOps.health}
           loadError={loadError}
           loading={initialLoading}
-          onBulkLaunch={handleFazerBulkLaunch}
-          onCompleteManual={handleCompleteManualOrder}
-          onFailManual={handleFailManualOrder}
-          onLoadOperations={loadFazerLaunchOps}
-          onManualFilterChange={handleFazerManualFilterChange}
-          onNoteManual={handleNoteManualOrder}
-          onOpenFamily={(familyKey) => loadProviderProducts(fazerCardsSupplier, {
-            filters: { ...defaultFazerCardsFilters, familyKey: familyKey || "ALL" },
-            page: 1,
-          })}
-          onPublishEligible={handlePublishEligibleFazerCards}
           onRefresh={() => {
-            void loadFazerCatalogMeta();
-            void loadFazerLaunchOps();
+            void loadFazerProviderHealth();
             void loadSuppliers({ silent: true });
           }}
-          onSyncAll={runFazerCardsSyncAll}
-          onSyncFamily={runFazerCardsSyncFamily}
+          refreshing={fazerLaunchOps.loading}
           supplier={fazerCardsSupplier}
+          token={token}
         />
       ) : (
         <>
@@ -1053,7 +1055,7 @@ function SpecialProviderPortal({ supplier }) {
       <span className="fazer-special-portal-copy">
         <small>مساحة تشغيل مستقلة</small>
         <strong>صفحة مورد خاص</strong>
-        <p>إدارة {supplier.name} وعائلات المنتجات والجاهزية من واجهة حديثة مخصصة.</p>
+        <p>ابحث في Catalogs، افتح Offers، واربط ما تحتاجه فقط بمنتجات المتجر.</p>
       </span>
       <span className="fazer-special-portal-action">فتح الصفحة <ArrowLeft /></span>
     </Link>

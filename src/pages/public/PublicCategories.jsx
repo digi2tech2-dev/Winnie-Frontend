@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { filterMainCategories, getCategories } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import HomeSlide from "../../components/home/HomeSlide";
 import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
+import Seo from "../../components/Seo";
+import { absoluteSiteUrl } from "../../config/site";
 
 export default function PublicCategories() {
   const navigate = useNavigate();
@@ -12,6 +14,18 @@ export default function PublicCategories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const categorySchema = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: t("public.categoriesTitle"),
+    numberOfItems: categories.length,
+    itemListElement: categories.map((category, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: category.title || category.name,
+      url: absoluteSiteUrl(`/categories/${category.slug || category.id}`),
+    })),
+  }), [categories, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,14 +52,16 @@ export default function PublicCategories() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const openCategory = (category) => {
     navigate(`/categories/${category.slug || category.id}`);
   };
 
   return (
-    <div className="mx-auto max-w-[1120px] space-y-5 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pb-16">
+    <>
+      <Seo schemas={categories.length ? [categorySchema] : []} />
+      <div className="mx-auto max-w-[1120px] space-y-5 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pb-16">
       <header className="px-1">
         <h1 className="relative pr-3 text-2xl font-black tracking-normal text-slate-950 dark:text-white sm:text-3xl">
           <span className="absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#38BDF8,#7C3AED)]" />
@@ -66,11 +82,17 @@ export default function PublicCategories() {
         ) : error ? (
           <EmptyState title={t("public.categoriesLoadError")} description={error} />
         ) : categories.length ? (
-          <CategoryShowcaseSection categories={categories} onSelect={openCategory} showHeading={false} />
+          <CategoryShowcaseSection
+            categories={categories}
+            categoryHref={(category) => `/categories/${category.slug || category.id}`}
+            onSelect={openCategory}
+            showHeading={false}
+          />
         ) : (
           <EmptyState title={t("public.categoriesEmptyTitle")} description={t("public.categoriesEmptyDescription")} />
         )}
       </section>
-    </div>
+      </div>
+    </>
   );
 }

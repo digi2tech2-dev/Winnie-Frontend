@@ -17,6 +17,7 @@ const asArray = (value) => (Array.isArray(value) ? value : []);
 
 export default function ProductPricing({
   onChange,
+  onCatalogChange,
   onLinkModeChange,
   onPatch,
   onProductSearch,
@@ -32,7 +33,8 @@ export default function ProductPricing({
     || getCurrentProductSummary(value);
   const selectedExternalId = safeTrim(selectedProduct?.externalProductId || value.providerProductExternalId);
   const selectedProviderCode = safeTrim(selectedProvider?.providerCode || selectedProvider?.code || value.providerCode).toUpperCase().replace(/-/g, "_");
-  const isFazerCards = selectedProviderCode === "FAZER_CARDS" || selectedProviderCode === "FAZERCARDS" || selectedExternalId.startsWith("FAZER_");
+  const isFazerCards = providerLink.fazerCards || selectedProviderCode === "FAZER_CARDS" || selectedProviderCode === "FAZERCARDS" || selectedExternalId.startsWith("FAZER_");
+  const selectedCatalog = providerLink.catalogs?.find((catalog) => catalog.key === value.providerCatalogKey);
   const priceSynced = Boolean(value.syncPriceFromProvider);
   const limitsSynced = Boolean(value.syncLimitsFromProvider);
   const searchValue = value.providerProductSearch || "";
@@ -80,7 +82,7 @@ export default function ProductPricing({
     onPatch({ providerProductSearch: nextValue });
     clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
-      if (value.providerId) onProductSearch(nextValue);
+      if (value.providerId && (!isFazerCards || value.providerCatalogKey)) onProductSearch(nextValue);
     }, 450);
   };
 
@@ -180,6 +182,20 @@ export default function ProductPricing({
             </div>
           )}
 
+          {providerLink.preparingFields && (
+            <div className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 p-2.5 text-[10px] font-bold text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200">
+              <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+              جارٍ تجهيز حقول العميل المطلوبة من FazerCards…
+            </div>
+          )}
+
+          {!providerLink.preparingFields && providerLink.fieldPreparationMessage && (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              {providerLink.fieldPreparationMessage}
+            </div>
+          )}
+
           <Field label="المورد">
             <select
               value={value.providerId || ""}
@@ -204,9 +220,29 @@ export default function ProductPricing({
             <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[10px] font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">تنبيه: هذا المورد لا يظهر كبيانات توثيق مكتملة.</p>
           )}
 
+          {isFazerCards && (
+            <Field label="الكتالوج">
+              <select
+                value={value.providerCatalogKey || ""}
+                onChange={(event) => onCatalogChange(event.target.value)}
+                disabled={!value.providerId || providerLink.loadingProducts}
+                className={inputClassName}
+              >
+                <option value="">اختر Catalog مستردًا</option>
+                {(providerLink.catalogs || []).map((catalog) => (
+                  <option key={catalog.key} value={catalog.key}>{catalog.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          {isFazerCards && value.providerId && !providerLink.catalogs?.length && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[10px] font-bold text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">استرد Catalog من صفحة FazerCards أولًا، ثم ارجع لاختيار Offer وربطه بهذا المنتج.</p>
+          )}
+
           <div className="rounded-2xl border border-cyan-400/25 bg-gradient-to-l from-cyan-500/[0.08] to-blue-500/[0.06] p-2.5 shadow-[0_0_20px_rgba(6,182,212,0.06)]">
             <div className="mb-2 flex items-center justify-between gap-3 px-1">
-              <span className="text-[10px] font-black text-cyan-200">البحث في منتجات المورد</span>
+              <span className="text-[10px] font-black text-cyan-200">{isFazerCards ? "البحث داخل Offers" : "البحث في منتجات المورد"}</span>
               <span className="text-[8px] font-bold text-slate-500">يبحث تلقائيًا أثناء الكتابة</span>
             </div>
             <label className="relative block min-w-0">
@@ -216,8 +252,8 @@ export default function ProductPricing({
               <input
                 value={searchValue}
                 onChange={(event) => updateProductSearch(event.target.value)}
-                disabled={!value.providerId}
-                placeholder="اكتب اسم المنتج أو المعرّف..."
+                disabled={!value.providerId || (isFazerCards && !value.providerCatalogKey)}
+                placeholder={isFazerCards ? "اكتب اسم العرض داخل الكتالوج..." : "اكتب اسم المنتج أو المعرّف..."}
                 className="h-11 w-full rounded-xl border border-cyan-400/20 bg-[#040c1e] py-0 pl-12 pr-3 text-[11px] font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-4 focus:ring-cyan-500/10"
               />
             </label>
@@ -225,14 +261,16 @@ export default function ProductPricing({
 
           {!providerLink.loadingProducts && value.providerId && (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#071126] px-3 py-2 text-[9px] font-bold text-slate-400">
-              <span>{searchValue ? "نتائج البحث في منتجات المورد" : "منتجات المورد المتاحة"}</span>
-              <strong className="text-sky-300">{providerProductCount.toLocaleString("ar-EG-u-nu-latn")} منتج</strong>
+              <span>{isFazerCards ? selectedCatalog?.name || "Offers" : searchValue ? "نتائج البحث في منتجات المورد" : "منتجات المورد المتاحة"}</span>
+              <strong className="text-sky-300">{providerProductCount.toLocaleString("ar-EG-u-nu-latn")} {isFazerCards ? "Offer" : "منتج"}</strong>
             </div>
           )}
 
           <div className="grid max-h-60 gap-2 overflow-y-auto rounded-2xl border border-white/70 bg-white/70 p-2 dark:border-white/10 dark:bg-[#0B1220]/60">
             {!value.providerId ? (
               <EmptyProviderMessage text="اختر موردًا لتحميل المنتجات." />
+            ) : isFazerCards && !value.providerCatalogKey ? (
+              <EmptyProviderMessage text="اختر Catalog أولًا لتحميل Offers الخاصة به فقط." />
             ) : providerLink.loadingProducts ? (
               <EmptyProviderMessage spinning text="جاري تحميل منتجات المورد..." />
             ) : providerLink.providerProducts.length ? (
@@ -253,12 +291,14 @@ export default function ProductPricing({
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] font-bold text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
               <p className="flex items-center gap-1.5 font-black">
                 <CheckCircle2 className="h-4 w-4" />
-                {selectedProduct.name}
+                {selectedProduct.offerName || selectedProduct.name}
               </p>
-              <div className="mt-2 grid gap-1 sm:grid-cols-3">
-                <SummaryItem label="المعرف الخارجي" value={selectedProduct.externalProductId || "-"} />
-                <SummaryItem label="الكمية" value={`${selectedProduct.minQty ?? "-"} - ${selectedProduct.maxQty ?? "-"}`} />
-                <SummaryItem label="السعر" value={selectedProduct.priceLabel || "-"} />
+              <div className="mt-2 grid gap-1 sm:grid-cols-5">
+                <SummaryItem label="Provider Price" value={selectedProduct.priceLabel || "-"} />
+                <SummaryItem label="Minimum Quantity" value={selectedProduct.minQty ?? "-"} />
+                <SummaryItem label="Maximum Quantity" value={selectedProduct.maxQty ?? "-"} />
+                <SummaryItem label="Provider Offer ID" value={selectedProduct.offerId || selectedProduct.externalProductId || selectedProduct.id || "-"} />
+                <SummaryItem label="Sync Status" value={selectedProduct.lastSyncedAt ? "متزامن" : "جاهز للربط"} />
               </div>
             </div>
           )}

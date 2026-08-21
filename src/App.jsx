@@ -6,15 +6,17 @@ import PageTransition from "./components/PageTransition";
 import GlobalOverlayScrollLock from "./components/GlobalOverlayScrollLock";
 import ScrollProgressIndicator from "./components/ScrollProgressIndicator";
 import { PageSkeleton } from "./components/Skeletons";
-import AdminLayout from "./layouts/AdminLayout";
-import CustomerLayout from "./layouts/CustomerLayout";
-import PublicLayout from "./layouts/PublicLayout";
+import RouteSeo from "./components/RouteSeo";
 import { importantLinks } from "./data/importantLinks";
 
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const CustomerLayout = lazy(() => import("./layouts/CustomerLayout"));
+const PublicLayout = lazy(() => import("./layouts/PublicLayout"));
 const PublicHome = lazy(() => import("./pages/public/PublicHome"));
 const About = lazy(() => import("./pages/public/About"));
 const PublicCategories = lazy(() => import("./pages/public/PublicCategories"));
 const PublicCategoryProducts = lazy(() => import("./pages/public/PublicCategoryProducts"));
+const PublicProductPage = lazy(() => import("./pages/public/PublicProductPage"));
 const Login = lazy(() => import("./pages/public/Login"));
 const Register = lazy(() => import("./pages/public/Register"));
 const GoogleCallback = lazy(() => import("./pages/auth/GoogleCallback"));
@@ -50,7 +52,6 @@ const ProductsManagementPage = lazy(() => import("./pages/admin/ProductsManageme
 const GroupsManagementPage = lazy(() => import("./pages/admin/GroupsManagementPage"));
 const SuppliersManagementPage = lazy(() => import("./pages/admin/SuppliersManagementPage"));
 const PaymentMethodsPage = lazy(() => import("./pages/admin/PaymentMethodsPage"));
-const AdminSupervisorsPage = lazy(() => import("./pages/admin/AdminSupervisorsPage"));
 const AdminBalanceRequestsPage = lazy(() => import("./pages/admin/AdminBalanceRequestsPage"));
 const AdminCurrenciesPage = lazy(() => import("./pages/admin/AdminCurrenciesPage"));
 const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage"));
@@ -72,7 +73,9 @@ export default function App() {
   }, [location.pathname]);
 
   return (
-    <Suspense fallback={<PageSkeleton />}>
+    <>
+      <RouteSeo />
+      <Suspense fallback={<PageSkeleton />}>
       <GlobalOverlayScrollLock />
       <ScrollProgressIndicator />
       <AnimatePresence mode="wait">
@@ -82,6 +85,7 @@ export default function App() {
             <Route path="about" element={<Animated><About /></Animated>} />
             <Route path="categories" element={<Animated><PublicCategories /></Animated>} />
             <Route path="categories/:categoryId" element={<Animated><PublicCategoryProducts /></Animated>} />
+            <Route path="products/:productId/:productSlug?" element={<Animated><PublicProductPage /></Animated>} />
             <Route path="best-selling" element={<Animated><CustomerBestSelling loginOnPurchase /></Animated>} />
             <Route path="recently-added" element={<Animated><CustomerRecentlyAdded loginOnPurchase /></Animated>} />
             <Route path="login" element={<Animated><Login /></Animated>} />
@@ -193,7 +197,6 @@ export default function App() {
               <Route path="suppliers" element={<Animated><SuppliersManagementPage /></Animated>} />
               <Route path="suppliers/special-provider" element={<Animated><SuppliersManagementPage /></Animated>} />
               <Route path="payment-methods" element={<Animated><PaymentMethodsPage /></Animated>} />
-              <Route path="supervisors" element={<Animated><AdminSupervisorsPage /></Animated>} />
               <Route path="balance-requests" element={<Animated><AdminBalanceRequestsPage /></Animated>} />
               <Route path="currencies" element={<Animated><AdminCurrenciesPage /></Animated>} />
               <Route path="settings" element={<Animated><AdminSettingsPage /></Animated>} />
@@ -227,7 +230,8 @@ export default function App() {
           <Route path="*" element={<Animated><RouteError code={404} /></Animated>} />
         </Routes>
       </AnimatePresence>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }
 

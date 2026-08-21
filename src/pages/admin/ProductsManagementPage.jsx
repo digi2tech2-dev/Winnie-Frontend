@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutGrid, PackagePlus, Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   createAdminCategory,
   deleteAdminCategory,
@@ -20,6 +21,7 @@ import {
   unlinkAdminProductProvider,
   updateAdminProduct,
 } from "../../api/adminProducts";
+import { getFazerCardsImportPreview, getFazerCardsProviderProducts } from "../../api/adminProviders";
 import CategoriesCatalog from "../../components/admin/products/CategoriesCatalog";
 import CategoryFormModal from "../../components/admin/products/CategoryFormModal";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
@@ -32,6 +34,13 @@ import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 import AdminPagination from "../../components/admin/AdminPagination";
+import {
+  getFazerCardsCatalogFromProduct,
+  isFazerCardsProvider,
+  mergeFazerCardsOrderFields,
+  normalizeFazerCardsOrderFields,
+  readRetrievedFazerCardsCatalogs,
+} from "../../utils/fazerCardsCatalogs";
 
 const initialFilters = { query: "", mainCategoryId: "all", subCategoryId: "all", status: "all", linkType: "all", sort: "newest" };
 const productPageSize = 15;
@@ -41,7 +50,10 @@ const optionalTrim = (value) => {
   return trimmed || undefined;
 };
 const emptyProviderLinkState = {
+  catalogKey: "",
+  catalogs: [],
   error: "",
+  fazerCards: false,
   loadingProducts: false,
   loadingProviders: false,
   open: false,
@@ -57,6 +69,7 @@ const emptyProviderLinkState = {
 export default function ProductsManagementPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
   const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -215,13 +228,17 @@ export default function ProductsManagementPage() {
     if (!token || saving) return;
 
     const editing = Boolean(productModal.product);
+    const wantsAutomaticExecution = values.linkType === "automatic" && values.providerExecutionEnabled === true;
+    const safeInitialValues = wantsAutomaticExecution
+      ? { ...values, providerExecutionEnabled: false, providerExecutionMode: "MANUAL_FULFILLMENT" }
+      : values;
     setSaving("product");
     let result;
 
     try {
       result = editing
-        ? await updateAdminProduct(token, productModal.product.id, values, categoryLookup, productModal.product)
-        : await createAdminProduct(token, values, categoryLookup);
+        ? await updateAdminProduct(token, productModal.product.id, safeInitialValues, categoryLookup, productModal.product)
+        : await createAdminProduct(token, safeInitialValues, categoryLookup);
     } catch (error) {
       showToast({
         type: "error",
@@ -236,6 +253,7 @@ export default function ProductsManagementPage() {
 
     try {
       let finalProduct = savedProduct;
+      let activationError = null;
       if (values.linkType === "automatic") {
         const linkResult = await linkAdminProductProvider(token, savedProduct.id, {
           fulfillmentMode: "AUTO",
@@ -248,6 +266,19 @@ export default function ProductsManagementPage() {
           syncPrice: values.syncPrice,
         }, categoryLookup);
         finalProduct = linkResult.product;
+
+        if (wantsAutomaticExecution) {
+          try {
+            const activationResult = await updateAdminProduct(token, savedProduct.id, {
+              ...values,
+              providerExecutionEnabled: true,
+              providerExecutionMode: values.providerExecutionMode || "AUTO_PROVIDER",
+            }, categoryLookup, finalProduct);
+            finalProduct = activationResult.product;
+          } catch (error) {
+            activationError = error;
+          }
+        }
       } else if (editing && values.clearProviderLink) {
         const unlinkResult = await unlinkAdminProductProvider(token, savedProduct.id, categoryLookup);
         finalProduct = unlinkResult.product;
@@ -257,9 +288,11 @@ export default function ProductsManagementPage() {
       await loadCatalog({ silent: true });
       closeProductForm();
       showToast({
-        type: "success",
-        title: values.linkType === "automatic" ? "تم ربط المنتج" : editing ? "تم تحديث المنتج" : "تم إنشاء المنتج",
-        message: result.message || finalProduct.name,
+        type: activationError ? "warning" : "success",
+        title: activationError ? "تم الربط والتنفيذ التلقائي ما زال معطلًا" : values.linkType === "automatic" ? "تم ربط المنتج" : editing ? "تم تحديث المنتج" : "تم إنشاء المنتج",
+        message: activationError
+          ? activationError.userMessage || "حُفظت الحقول وتم ربط العرض، لكن الخادم رفض تفعيل التنفيذ التلقائي. راجع الحقول ثم حاول التفعيل مجددًا."
+          : result.message || finalProduct.name,
       });
     } catch {
       closeProductForm();
@@ -353,7 +386,7 @@ export default function ProductsManagementPage() {
     }
   };
 
-  const loadProviderProductOptions = useCallback(async (providerId, search = "", selectedProductId = "") => {
+  const loadProviderProductOptions = useCallback(async (providerId, search = "", selectedProductId = "", catalog = null) => {
     if (!token || !providerId) return;
 
     setProviderLink((current) => ({
@@ -365,17 +398,25 @@ export default function ProductsManagementPage() {
     }));
 
     try {
-      const result = await getAdminProductProviderProductOptions(token, providerId, {
-        limit: 100,
-        page: 1,
-        search,
-      });
+      const result = catalog
+        ? await getFazerCardsProviderProducts(token, {
+            category: catalog.category,
+            familyKey: catalog.familyKey,
+            limit: 100,
+            page: 1,
+            search,
+          })
+        : await getAdminProductProviderProductOptions(token, providerId, {
+            limit: 100,
+            page: 1,
+            search,
+          });
       setProviderLink((current) => ({
         ...current,
         error: "",
         loadingProducts: false,
         pagination: result.pagination,
-        providerProductId: selectedProductId || current.providerProductId || result.products[0]?.id || "",
+        providerProductId: selectedProductId || current.providerProductId || (catalog ? "" : result.products[0]?.id) || "",
         providerProducts: result.products,
         search,
       }));
@@ -404,16 +445,52 @@ export default function ProductsManagementPage() {
 
     try {
       const result = await getAdminProductProviderOptions(token);
-      const providerId = product.providerId || result.providers[0]?.id || "";
+      const requestedProviderId = searchParams.get("providerId") || "";
+      const requestedOfferId = searchParams.get("offerId") || "";
+      const providerId = requestedProviderId || product.providerId || result.providers[0]?.id || "";
+      const provider = result.providers.find((item) => item.id === providerId);
+      const fazerCards = isFazerCardsProvider(provider);
+      const requestedCatalog = searchParams.get("catalog") || "";
+      const requestedCategory = searchParams.get("category") || requestedCatalog;
+      const catalogCandidates = fazerCards ? readRetrievedFazerCardsCatalogs() : [];
+
+      if (fazerCards && requestedCatalog && requestedCategory) {
+        catalogCandidates.unshift(getFazerCardsCatalogFromProduct({
+          category: requestedCategory,
+          categoryName: requestedCatalog,
+          familyKey: product.familyKey,
+        }));
+      }
+
+      if (fazerCards && product.providerCategoryName && product.providerCategory) {
+        catalogCandidates.unshift(getFazerCardsCatalogFromProduct({
+          category: product.providerCategory,
+          categoryName: product.providerCategoryName,
+          familyKey: product.familyKey,
+        }));
+      }
+
+      const catalogs = uniqueCatalogs(catalogCandidates);
+      const selectedCatalog = catalogs.find((catalog) => catalog.category === requestedCategory)
+        || catalogs.find((catalog) => catalog.category === product.providerCategory)
+        || null;
       setProviderLink((current) => ({
         ...current,
+        catalogKey: selectedCatalog?.key || "",
+        catalogs,
         error: "",
+        fazerCards,
         loadingProviders: false,
         providerId,
+        providerProductId: requestedOfferId || product.providerProductId || "",
         providers: result.providers,
       }));
       if (providerId) {
-        await loadProviderProductOptions(providerId, "", product.providerProductId || "");
+        if (fazerCards && selectedCatalog) {
+          await loadProviderProductOptions(providerId, "", requestedOfferId || product.providerProductId || "", selectedCatalog);
+        } else if (!fazerCards) {
+          await loadProviderProductOptions(providerId, "", product.providerProductId || "");
+        }
       }
     } catch (error) {
       setProviderLink((current) => ({
@@ -425,13 +502,30 @@ export default function ProductsManagementPage() {
   };
 
   const changeProviderLinkProvider = async (providerId) => {
+    const provider = providerLink.providers.find((item) => item.id === providerId);
+    const fazerCards = isFazerCardsProvider(provider);
+    const catalogs = fazerCards ? readRetrievedFazerCardsCatalogs() : [];
     setProviderLink((current) => ({
       ...current,
+      catalogKey: "",
+      catalogs,
+      fazerCards,
       providerId,
       providerProductId: "",
       providerProducts: [],
     }));
-    if (providerId) await loadProviderProductOptions(providerId);
+    if (providerId && !fazerCards) await loadProviderProductOptions(providerId);
+  };
+
+  const changeProviderLinkCatalog = async (catalogKey) => {
+    const catalog = providerLink.catalogs.find((item) => item.key === catalogKey);
+    setProviderLink((current) => ({
+      ...current,
+      catalogKey,
+      providerProductId: "",
+      providerProducts: [],
+    }));
+    if (catalog) await loadProviderProductOptions(providerLink.providerId, "", "", catalog);
   };
 
   const saveProviderLink = async () => {
@@ -439,17 +533,74 @@ export default function ProductsManagementPage() {
 
     setSaving("provider-link");
     try {
-      const result = await linkAdminProductProvider(token, providerLink.product.id, {
+      const selectedProviderProduct = providerLink.providerProducts.find((product) => product.id === providerLink.providerProductId);
+      const executionWasEnabled = providerLink.product.providerExecutionEnabled === true;
+      const previousExecutionMode = providerLink.product.providerExecutionMode || "AUTO_PROVIDER";
+      let preparedFields = providerLink.product.extraFields || [];
+      let preparedProduct = providerLink.product;
+
+      if (providerLink.fazerCards && selectedProviderProduct?.fulfillmentMode === "TOPUP_WITH_FIELDS") {
+        const previewResult = await getFazerCardsImportPreview(token, selectedProviderProduct.id);
+        const fieldSource = previewResult.preview?.suggestedOrderFields?.length
+          ? previewResult.preview.suggestedOrderFields
+          : previewResult.preview?.requiredFields?.length
+            ? previewResult.preview.requiredFields
+            : selectedProviderProduct.requiredFields || [];
+        const providerFields = normalizeFazerCardsOrderFields(fieldSource);
+
+        if (!providerFields.length) {
+          setProviderLink((current) => ({
+            ...current,
+            error: "هذا العرض يحتاج بيانات من العميل، لكن FazerCards لم يُرجع تعريف الحقول المطلوبة. استخدم تعديل المنتج لإضافتها يدويًا قبل الربط.",
+          }));
+          return;
+        }
+
+        preparedFields = mergeFazerCardsOrderFields(providerLink.product.extraFields, providerFields);
+        const preparationResult = await updateAdminProduct(token, providerLink.product.id, {
+          ...providerLink.product,
+          extraFields: preparedFields,
+          orderFields: preparedFields,
+          providerExecutionEnabled: false,
+          ...(executionWasEnabled ? { providerExecutionMode: "MANUAL_FULFILLMENT" } : {}),
+        }, categoryLookup, providerLink.product);
+        preparedProduct = preparationResult.product;
+      }
+
+      const result = await linkAdminProductProvider(token, preparedProduct.id, {
         providerId: optionalTrim(providerLink.providerId),
         providerProductId: optionalTrim(providerLink.providerProductId),
+        syncLimits: preparedProduct.syncLimitsFromProvider,
+        syncName: preparedProduct.syncNameFromProvider,
+        syncPrice: preparedProduct.syncPriceFromProvider,
       }, categoryLookup);
-      applyProductToState(result.product);
+      let finalProduct = result.product;
+      let activationError = null;
+
+      if (executionWasEnabled) {
+        try {
+          const activationResult = await updateAdminProduct(token, finalProduct.id, {
+            ...finalProduct,
+            extraFields: preparedFields,
+            orderFields: preparedFields,
+            providerExecutionEnabled: true,
+            providerExecutionMode: previousExecutionMode,
+          }, categoryLookup, finalProduct);
+          finalProduct = activationResult.product;
+        } catch (error) {
+          activationError = error;
+        }
+      }
+
+      applyProductToState(finalProduct);
       setProviderLink(emptyProviderLinkState);
       await loadCatalog({ silent: true });
       showToast({
-        type: "success",
-        title: "تم ربط المنتج",
-        message: result.message || "تم تحديث ربط المنتج بالمورد.",
+        type: activationError ? "warning" : "success",
+        title: activationError ? "تم الربط والتنفيذ التلقائي معطل" : "تم ربط المنتج",
+        message: activationError
+          ? activationError.userMessage || "تم ربط العرض وحفظ حقول العميل، لكن الخادم رفض إعادة تفعيل التنفيذ التلقائي."
+          : result.message || "تم تحديث ربط المنتج بالمورد.",
       });
     } catch (error) {
       setProviderLink((current) => ({
@@ -518,9 +669,15 @@ export default function ProductsManagementPage() {
         linkState={providerLink}
         loadingProducts={providerLink.loadingProducts}
         loadingProviders={providerLink.loadingProviders}
+        onCatalogChange={changeProviderLinkCatalog}
         onClose={() => !saving && setProviderLink(emptyProviderLinkState)}
         onProviderChange={changeProviderLinkProvider}
-        onSearchProducts={(search) => loadProviderProductOptions(providerLink.providerId, search, providerLink.providerProductId)}
+        onSearchProducts={(search) => loadProviderProductOptions(
+          providerLink.providerId,
+          search,
+          providerLink.providerProductId,
+          providerLink.fazerCards ? providerLink.catalogs.find((catalog) => catalog.key === providerLink.catalogKey) : null,
+        )}
         onSubmit={saveProviderLink}
         onUpdate={(values) => setProviderLink((current) => ({ ...current, ...values }))}
         saving={saving === "provider-link"}
@@ -541,6 +698,10 @@ export default function ProductsManagementPage() {
 
 function ProductTh({ children, className = "" }) {
   return <th className={`admin-products-table-heading bg-[#060e29] px-4 py-3 text-[10px] font-black text-slate-400 ${className}`}>{children}</th>;
+}
+
+function uniqueCatalogs(catalogs = []) {
+  return Array.from(new Map(catalogs.filter((catalog) => catalog?.key).map((catalog) => [catalog.key, catalog])).values());
 }
 
 function filterProducts(products, filters) {

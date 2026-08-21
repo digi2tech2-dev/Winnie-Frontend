@@ -44,6 +44,8 @@ export default function CustomerReviews({ forceRtl = false }) {
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(getVisibleCount);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const sectionRef = useRef(null);
   const touchStartX = useRef(null);
   const canSlide = reviews.length > visibleCount;
   const maxIndex = Math.max(0, reviews.length - visibleCount);
@@ -69,13 +71,29 @@ export default function CustomerReviews({ forceRtl = false }) {
   };
 
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      setShouldLoad(true);
+      observer.disconnect();
+    }, { rootMargin: "500px 0px" });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoad) return undefined;
     let cancelled = false;
-    const controller = new AbortController();
 
     const loadReviews = async () => {
       setLoading(true);
       try {
-        const result = await fetchPublicReviews({ limit: 10, signal: controller.signal });
+        const result = await fetchPublicReviews({ limit: 10 });
         if (cancelled) return;
         setReviews(result.reviews.filter(isApprovedReview));
         setStats(result.stats);
@@ -96,9 +114,8 @@ export default function CustomerReviews({ forceRtl = false }) {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
-  }, []);
+  }, [shouldLoad]);
 
   useEffect(() => {
     const handleResize = () => setVisibleCount(getVisibleCount());
@@ -147,7 +164,7 @@ export default function CustomerReviews({ forceRtl = false }) {
   };
 
   return (
-    <section className="wf-reviews-section" aria-labelledby="customer-reviews-title" dir={isRtl ? "rtl" : "ltr"}>
+    <section ref={sectionRef} className="wf-reviews-section" aria-labelledby="customer-reviews-title" dir={isRtl ? "rtl" : "ltr"}>
       <motion.div
         className="wf-reviews-shell"
         initial={{ opacity: 0, y: 22 }}

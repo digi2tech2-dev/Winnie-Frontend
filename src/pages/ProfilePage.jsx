@@ -108,7 +108,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [t, token]);
 
   const shareInvite = useCallback(async () => {
     if (basePath !== "/customer") {

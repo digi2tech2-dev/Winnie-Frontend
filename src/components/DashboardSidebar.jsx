@@ -15,7 +15,6 @@ const adminToolsUnlockedKey = "winnie-admin-tools-unlocked";
 const adminToolItems = [
   { label: "لوحة الأدمن", path: "/admin/tools/dashboard", icon: "LayoutDashboard", badge: "مركز" },
   { label: "إدارة المستخدمين", path: "/admin/tools/users", icon: "Users" },
-  { label: "إدارة المشرفين", path: "/admin/tools/supervisors", icon: "UserCog" },
   { label: "إدارة الطلبات", path: "/admin/tools/orders", icon: "ClipboardList" },
   { label: "إدارة التقييمات", path: "/admin/tools/reviews", icon: "Star" },
   { label: "المدفوعات", path: "/admin/tools/payments", icon: "ReceiptText" },

@@ -1,21 +1,31 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeDollarSign,
+  CalendarClock,
   CheckCircle2,
   ChevronLeft,
   ClipboardList,
   Edit3,
+  ExternalLink,
   HandCoins,
+  Image as ImageIcon,
+  ImageOff,
+  LoaderCircle,
+  Mail,
+  MessageSquareText,
   RefreshCw,
   Search,
+  ShieldCheck,
   UserRoundPlus,
   UsersRound,
   XCircle,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
 import { getAdminGroups } from "../../api/adminGroups";
+import { getApiBaseUrl } from "../../api/client";
 import {
   approveReferralPayoutWalletCredit,
   approveSubAgentRequest,
@@ -248,7 +258,7 @@ export default function AdminSubAgentsPage() {
   return (
     <div dir="rtl" className="admin-subagents-page space-y-4">
       <Header loading={loading} onRefresh={loadData} />
-      <form onSubmit={(event) => { event.preventDefault(); setPages((current) => ({ ...current, [tab]: 1 })); setAppliedSearch(search.trim()); }} className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
+      <form onSubmit={(event) => { event.preventDefault(); setPages((current) => ({ ...current, [tab]: 1 })); setAppliedSearch(search.trim()); }} className="admin-subagents-search flex gap-2 rounded-2xl border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-[#111827]">
         <label className="site-filter-search relative min-w-0 flex-1">
           <span className="site-filter-search-icon"><Search /></span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث في القسم الحالي" className="site-filter-search-input" />
@@ -289,7 +299,7 @@ export default function AdminSubAgentsPage() {
       ) : (
         <>
           {tab === "requests" ? (
-            <RequestTab requests={requests} onApprove={setApproveRequest} onReject={setRejectRequest} />
+            <RequestTab requests={requests} token={token} onApprove={setApproveRequest} onReject={setRejectRequest} />
           ) : null}
           {tab === "agents" ? (
             <AgentsTab agents={agents} onEdit={setEditAgent} />
@@ -382,7 +392,7 @@ function Header({ loading, onRefresh }) {
         <h1 className="text-xl font-black dark:text-white">نظام الوكلاء الفرعيين</h1>
         <p className="text-xs font-bold text-slate-500">قبول الطلبات وإدارة نسبة العمولة والمجموعات والحالة وسجل العمليات.</p>
       </div>
-      <button onClick={onRefresh} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-lg bg-violet-600 px-4 text-xs font-black text-white disabled:opacity-60">
+      <button type="button" onClick={onRefresh} disabled={loading} className="admin-subagents-refresh inline-flex h-10 items-center gap-2 rounded-lg bg-violet-600 px-4 text-xs font-black text-white disabled:opacity-60">
         <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         تحديث
       </button>
@@ -390,41 +400,234 @@ function Header({ loading, onRefresh }) {
   );
 }
 
-function RequestTab({ onApprove, onReject, requests }) {
+function RequestTab({ onApprove, onReject, requests, token }) {
+  const [proofPreview, setProofPreview] = useState(null);
+
   if (!requests.length) return <EmptyState icon={UsersRound} title="لا توجد طلبات معلقة" description="ستظهر طلبات الوكلاء الفرعيين الجديدة هنا." />;
+
+  const pendingCount = requests.filter((request) => request.status === GROUP_REQUEST_STATUS.PENDING).length;
+  const proofCount = requests.filter((request) => Boolean(request.proofImageUrl)).length;
+
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      {requests.map((request) => (
-        <Panel key={request.id}>
-          <RowTitle title={request.user?.name || "مستخدم"} subtitle={request.user?.email || request.createdAtLabel} />
-          <div className="mt-2 flex items-center gap-2">
-            <Status status={request.status} />
-            <span className="text-xs font-bold text-slate-400">{request.reviewedAtLabel || request.createdAtLabel}</span>
-          </div>
-          <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">{request.reason || "لا توجد رسالة."}</p>
-          {request.proofImageUrl ? (
-            <a
-              href={request.proofImageUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 flex items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 p-2 text-xs font-black text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200"
-            >
-              <img src={request.proofImageUrl} alt="" className="h-12 w-12 rounded-md object-cover" />
-              <span className="min-w-0 flex-1 truncate">{request.proofImageOriginalName || "عرض صورة الإثبات"}</span>
-            </a>
-          ) : (
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs font-black text-amber-700">لا توجد صورة إثبات مرفقة.</p>
-          )}
-          {request.status === GROUP_REQUEST_STATUS.PENDING ? (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => onReject(request)} className="h-10 rounded-lg bg-rose-500/10 text-xs font-black text-rose-700">رفض</button>
-              <button onClick={() => onApprove(request)} className="h-10 rounded-lg bg-emerald-600 text-xs font-black text-white">قبول</button>
-            </div>
-          ) : null}
-        </Panel>
-      ))}
-    </div>
+    <section className="subagent-requests-section" aria-labelledby="subagent-requests-title">
+      <header className="subagent-requests-heading">
+        <div>
+          <span className="subagent-requests-eyebrow">مراجعة طلبات الانضمام</span>
+          <h2 id="subagent-requests-title">المستخدمون المحالون</h2>
+          <p>راجع بيانات المستخدم والإثبات، ثم اتخذ الإجراء المناسب.</p>
+        </div>
+        <div className="subagent-requests-summary" aria-label="ملخص الطلبات">
+          <span><b>{requests.length}</b> الكل</span>
+          <span className="is-pending"><b>{pendingCount}</b> معلّقة</span>
+          <span><b>{proofCount}</b> بإثبات</span>
+        </div>
+      </header>
+
+      <div className="subagent-request-grid">
+        {requests.map((request) => {
+          const name = request.user?.name || "مستخدم";
+          const email = request.user?.email || "لا يوجد بريد إلكتروني";
+          const isPending = request.status === GROUP_REQUEST_STATUS.PENDING;
+          return (
+            <article key={request.id} className={`subagent-request-card${isPending ? " is-pending" : ""}`}>
+              <div className="subagent-request-card-top">
+                <span className="subagent-request-avatar" aria-hidden="true">{getInitials(name)}</span>
+                <div className="subagent-request-identity">
+                  <h3>{name}</h3>
+                  <span dir="ltr"><Mail aria-hidden="true" />{email}</span>
+                </div>
+                <Status status={request.status} />
+              </div>
+
+              <div className="subagent-request-date">
+                <CalendarClock aria-hidden="true" />
+                <span>{request.reviewedAtLabel ? "تاريخ المراجعة" : "تاريخ الطلب"}</span>
+                <time>{request.reviewedAtLabel || request.createdAtLabel || "-"}</time>
+              </div>
+
+              <div className="subagent-request-message">
+                <MessageSquareText aria-hidden="true" />
+                <div>
+                  <span>رسالة المستخدم</span>
+                  <p>{request.reason || "لا توجد رسالة مرفقة مع الطلب."}</p>
+                </div>
+              </div>
+
+              {request.proofImageUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setProofPreview(request)}
+                  className="subagent-request-proof"
+                  aria-label={`معاينة إثبات ${name}`}
+                >
+                  <ProofImage
+                    alt={`صورة إثبات ${name}`}
+                    src={request.proofImageUrl}
+                    token={token}
+                  />
+                  <span className="subagent-request-proof-caption">
+                    <span>
+                      <small>صورة الإثبات</small>
+                      <b>{request.proofImageOriginalName || "عرض الصورة المرفقة"}</b>
+                    </span>
+                    <span className="subagent-request-proof-open">تكبير الصورة <ExternalLink aria-hidden="true" /></span>
+                  </span>
+                </button>
+              ) : (
+                <div className="subagent-request-no-proof">
+                  <ImageIcon aria-hidden="true" />
+                  <span><b>لا يوجد إثبات</b>لم يرفق المستخدم صورة مع الطلب.</span>
+                </div>
+              )}
+
+              {isPending ? (
+                <div className="subagent-request-actions" aria-label={`إجراءات طلب ${name}`}>
+                  <button type="button" onClick={() => onReject(request)} className="is-reject">
+                    <XCircle aria-hidden="true" />
+                    رفض الطلب
+                  </button>
+                  <button type="button" onClick={() => onApprove(request)} className="is-approve">
+                    <CheckCircle2 aria-hidden="true" />
+                    قبول الطلب
+                  </button>
+                </div>
+              ) : (
+                <div className="subagent-request-processed">
+                  <ShieldCheck aria-hidden="true" />
+                  تمت مراجعة هذا الطلب ولا يحتاج إلى إجراء.
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      {proofPreview ? <ProofPreviewModal request={proofPreview} token={token} onClose={() => setProofPreview(null)} /> : null}
+    </section>
   );
+}
+
+function useProofImageSource(src, token) {
+  const [source, setSource] = useState(src);
+  const [loading, setLoading] = useState(Boolean(src));
+  const [failed, setFailed] = useState(false);
+  const [authAttempted, setAuthAttempted] = useState(false);
+  const blobUrlRef = useRef("");
+
+  useEffect(() => {
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    blobUrlRef.current = "";
+    setSource(src);
+    setLoading(Boolean(src));
+    setFailed(!src);
+    setAuthAttempted(false);
+
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = "";
+    };
+  }, [src]);
+
+  const handleError = async () => {
+    if (!src || !token || authAttempted) {
+      setLoading(false);
+      setFailed(true);
+      return;
+    }
+
+    setAuthAttempted(true);
+    setLoading(true);
+    try {
+      const imageUrl = new URL(src, window.location.origin);
+      const apiOrigin = new URL(getApiBaseUrl()).origin;
+      if (imageUrl.origin !== apiOrigin) throw new Error("External proof image");
+
+      const isSignedUpload = imageUrl.pathname === "/uploads/file"
+        && imageUrl.searchParams.has("payload")
+        && imageUrl.searchParams.has("signature");
+      const headers = { Accept: "image/*" };
+      if (!isSignedUpload) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(imageUrl.toString(), {
+        credentials: "omit",
+        headers,
+      });
+      if (!response.ok) throw new Error(`Image request failed: ${response.status}`);
+
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("Empty proof image");
+      const blobUrl = URL.createObjectURL(blob);
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = blobUrl;
+      setSource(blobUrl);
+      setFailed(false);
+    } catch {
+      setLoading(false);
+      setFailed(true);
+    }
+  };
+
+  return {
+    failed,
+    handleError,
+    handleLoad: () => {
+      setLoading(false);
+      setFailed(false);
+    },
+    loading,
+    source,
+  };
+}
+
+function ProofImage({ alt, src, token }) {
+  const image = useProofImageSource(src, token);
+  return (
+    <span className={`subagent-proof-image-state${image.failed ? " is-failed" : ""}${image.loading ? " is-loading" : ""}`}>
+      <img src={image.source} alt={alt} referrerPolicy="no-referrer" onLoad={image.handleLoad} onError={image.handleError} />
+      {image.loading ? <span className="subagent-proof-image-feedback"><LoaderCircle className="animate-spin" />جاري تحميل الصورة</span> : null}
+      {image.failed ? <span className="subagent-proof-image-feedback"><ImageOff />تعذر عرض الصورة</span> : null}
+    </span>
+  );
+}
+
+function ProofPreviewModal({ onClose, request, token }) {
+  const name = request.user?.name || "المستخدم";
+  const image = useProofImageSource(request.proofImageUrl, token);
+  return <BodyPortal>
+    <div className="subagent-proof-modal" role="presentation" onMouseDown={onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="معاينة صورة الإثبات"
+        className="subagent-proof-dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <small>صورة الإثبات</small>
+            <h3>{name}</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="إغلاق المعاينة"><XCircle /></button>
+        </header>
+        <div className="subagent-proof-image-wrap">
+          <span className={`subagent-proof-image-state${image.failed ? " is-failed" : ""}${image.loading ? " is-loading" : ""}`}>
+            <img src={image.source} alt={`صورة إثبات ${name}`} referrerPolicy="no-referrer" onLoad={image.handleLoad} onError={image.handleError} />
+            {image.loading ? <span className="subagent-proof-image-feedback"><LoaderCircle className="animate-spin" />جاري تحميل الصورة</span> : null}
+            {image.failed ? <span className="subagent-proof-image-feedback"><ImageOff />تعذر تحميل صورة الإثبات من الخادم</span> : null}
+          </span>
+        </div>
+        <footer>
+          <span>{request.proofImageOriginalName || "صورة الإثبات"}</span>
+          {!image.failed && image.source ? (
+            <a href={image.source} target="_blank" rel="noreferrer">
+              فتح بالحجم الكامل
+              <ExternalLink aria-hidden="true" />
+            </a>
+          ) : null}
+        </footer>
+      </section>
+    </div>
+  </BodyPortal>;
 }
 
 function AgentsTab({ agents, onEdit }) {
@@ -641,7 +844,7 @@ function ApproveModal({ busy, groups, onClose, onSubmit, request }) {
   };
 
   return (
-    <Modal title={`قبول ${request.user?.name || "المستخدم"}`} onClose={onClose}>
+    <Modal title={`قبول طلب ${request.user?.name || "المستخدم"}`} onClose={onClose}>
       <Field label="المجموعة المعيّنة">
         <select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="input">
           <option value="">اختر المجموعة</option>
@@ -740,24 +943,24 @@ function EditAgentModal({ agent, busy, groups, onClose, onSubmit }) {
 }
 
 function Modal({ children, onClose, title }) {
-  return (
-    <div className="fixed inset-0 z-[160] grid place-items-center bg-slate-950/70 p-4">
-      <section role="dialog" aria-modal="true" aria-label={title} className="max-h-[calc(100dvh-2rem)] w-full max-w-[460px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-white/10 dark:bg-[#111827]">
-        <header className="flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-          <h2 className="flex-1 text-sm font-black dark:text-white">{title}</h2>
-          <button type="button" aria-label="إغلاق" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:hover:bg-white/10"><XCircle className="h-5 w-5" /></button>
+  return <BodyPortal>
+    <div className="subagent-action-modal" role="presentation" onMouseDown={onClose}>
+      <section role="dialog" aria-modal="true" aria-label={title} className="subagent-action-dialog" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="subagent-action-dialog-header">
+          <span className="subagent-action-dialog-icon"><CheckCircle2 /></span>
+          <h2><bdi>{title}</bdi></h2>
+          <button type="button" aria-label="إغلاق" onClick={onClose}><XCircle /></button>
         </header>
-        <div className="mt-4 space-y-3">{children}</div>
+        <div className="subagent-action-dialog-body">{children}</div>
       </section>
     </div>
-  );
+  </BodyPortal>;
 }
 
 function ModalActions({ busy, disabled, onClose, onSubmit, submitLabel, tone = "success" }) {
   const submitClass = tone === "danger" ? "bg-rose-600" : "bg-emerald-600";
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="subagent-modal-actions grid grid-cols-2 gap-2">
       <button type="button" onClick={onClose} disabled={busy} className="h-10 rounded-lg border border-slate-200 text-xs font-black dark:border-white/10 dark:text-white">إلغاء</button>
       <button type="button" onClick={onSubmit} disabled={busy || disabled} className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg text-xs font-black text-white disabled:opacity-60 ${submitClass}`}>
         {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
@@ -776,6 +979,11 @@ function Field({ children, label }) {
   );
 }
 
+function BodyPortal({ children }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(children, document.body);
+}
+
 function Panel({ children }) {
   return <section className="admin-subagents-panel rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#111827]">{children}</section>;
 }
@@ -789,15 +997,23 @@ function RowTitle({ subtitle, title }) {
   );
 }
 
+function getInitials(name) {
+  const parts = String(name || "م").trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((part) => part.charAt(0)).join("").toUpperCase() || "م";
+}
+
 function Status({ status }) {
   const normalized = String(status || "").toLowerCase();
-  const good = normalized === "active" || normalized === "pending";
-  const bad = normalized === "inactive" || normalized === "cancelled" || normalized.includes("stopped");
+  const good = normalized === "active" || normalized === "approved" || normalized === "completed" || normalized === "paid";
+  const pending = normalized === "pending";
+  const bad = normalized === "inactive" || normalized === "canceled" || normalized === "cancelled" || normalized === "rejected" || normalized.includes("stopped");
   const classes = bad
     ? "bg-rose-500/10 text-rose-700"
-    : good
-      ? "bg-emerald-500/10 text-emerald-700"
-      : "bg-slate-500/10 text-slate-600";
+    : pending
+      ? "bg-amber-500/10 text-amber-700"
+      : good
+        ? "bg-emerald-500/10 text-emerald-700"
+        : "bg-slate-500/10 text-slate-600";
   return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${classes}`}>{translateStatus(normalized)}</span>;
 }
 
@@ -805,6 +1021,7 @@ function translateStatus(status) {
   const labels = {
     active: "نشط",
     approved: "مقبول",
+    canceled: "ملغي",
     cancelled: "ملغي",
     completed: "مكتمل",
     credited: "تمت الإضافة",
@@ -813,6 +1030,7 @@ function translateStatus(status) {
     inactive: "غير نشط",
     paid: "مدفوعة",
     pending: "معلقة",
+    rejected: "مرفوض",
     skipped: "تم التجاوز",
     stopped: "متوقف",
     unknown: "غير معروف",

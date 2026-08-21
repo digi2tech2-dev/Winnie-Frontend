@@ -8,7 +8,7 @@ import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
 export const recentHomepageLimit = 6;
 
-export default function RecentAdditionsSection({ forceRtl = false, items = [], onSelect, onViewAll }) {
+export default function RecentAdditionsSection({ forceRtl = false, items = [], onSelect, onViewAll, productHref }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
   const isRtl = forceRtl || isArabic;
@@ -46,7 +46,7 @@ export default function RecentAdditionsSection({ forceRtl = false, items = [], o
         <HorizontalProductCarousel label={t("recentlyAdded.title")}>
           {recentItems.map((product, index) => (
             <div key={product.id || product._id || product.slug || product.name} dir={isRtl ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
-              <HomeProductCard product={product} index={index} onSelect={onSelect} variant="featured" />
+              <HomeProductCard product={product} index={index} onSelect={onSelect} href={productHref?.(product)} variant="featured" />
             </div>
           ))}
         </HorizontalProductCarousel>

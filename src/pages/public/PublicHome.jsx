@@ -11,6 +11,8 @@ import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeSlide from "../../components/home/HomeSlide";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 import { canPurchaseProduct } from "../../utils/productAvailability";
+import { buildItemListSchema, getProductPath } from "../../utils/seo";
+import Seo from "../../components/Seo";
 
 export default function PublicHome() {
   const navigate = useNavigate();
@@ -54,7 +56,7 @@ export default function PublicHome() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const openCategory = (category) => navigate(`/categories/${category.slug || category.id}`);
   const openProducts = () => navigate("/best-selling");
@@ -67,9 +69,14 @@ export default function PublicHome() {
     setPurchaseItem(null);
     navigate("/login", { state: { from: "/customer/dashboard" } });
   };
+  const schemas = catalog.products.length
+    ? [buildItemListSchema(catalog.products.slice(0, 12), "Winnie HUB digital products")]
+    : [];
 
   return (
-    <motion.div
+    <>
+      <Seo schemas={schemas} />
+      <motion.div
       dir="rtl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -87,6 +94,7 @@ export default function PublicHome() {
         <>
           <CategoryShowcaseSection
             categories={filterMainCategories(catalog.categories)}
+            categoryHref={(category) => `/categories/${category.slug || category.id}`}
             forceRtl
             onSelect={openCategory}
           />
@@ -95,12 +103,14 @@ export default function PublicHome() {
             items={catalog.products}
             onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
             onViewAll={openRecentlyAdded}
+            productHref={getProductPath}
           />
           <BestSellingSection
             forceRtl
             items={catalog.bestSellingProducts}
             onSelect={(product) => openPurchase(product, product.categoryTitle || t("showcase.catalog"))}
             onViewAll={openProducts}
+            productHref={getProductPath}
           />
         </>
       )}
@@ -116,6 +126,7 @@ export default function PublicHome() {
           />
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }

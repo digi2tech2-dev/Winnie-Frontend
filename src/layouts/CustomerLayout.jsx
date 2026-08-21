@@ -10,7 +10,6 @@ import { getCustomerCatalog } from "../api/catalog";
 import {
   deleteNotification,
   getNotifications,
-  getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../api/notifications";
@@ -84,26 +83,17 @@ export default function CustomerLayout() {
 
     if (showLoading) setNotificationsLoading(true);
 
-    const [notificationsResult, unreadResult] = await Promise.allSettled([
+    const [notificationsResult] = await Promise.allSettled([
       getNotifications(token, { page: 1, limit: 20 }),
-      getUnreadNotificationCount(token),
     ]);
 
     if (notificationsResult.status === "fulfilled") {
       setNotificationItems(notificationsResult.value.notifications);
-      setUnreadNotificationCount(
-        unreadResult.status === "fulfilled"
-          ? unreadResult.value
-          : notificationsResult.value.unreadCount,
-      );
+      setUnreadNotificationCount(notificationsResult.value.unreadCount);
       setNotificationsError("");
     } else {
       setNotificationItems([]);
-      if (unreadResult.status === "fulfilled") {
-        setUnreadNotificationCount(unreadResult.value);
-      } else {
-        setUnreadNotificationCount(0);
-      }
+      setUnreadNotificationCount(0);
       setNotificationsError(notificationsResult.reason?.userMessage || t("notifications:loadErrorTitle", { defaultValue: "Unable to load notifications." }));
     }
 
@@ -126,11 +116,10 @@ export default function CustomerLayout() {
 
     const loadLayoutReads = async () => {
       setNotificationsLoading(true);
-      const [walletResult, notificationsResult, unreadResult, catalogResult] = await Promise.allSettled([
+      const [walletResult, notificationsResult, catalogResult] = await Promise.allSettled([
         getWalletSummary(token),
         getNotifications(token, { page: 1, limit: 20 }),
-        getUnreadNotificationCount(token),
-        getCustomerCatalog(token, { page: 1, limit: 24 }),
+        getCustomerCatalog(token, { page: 1, limit: 48 }),
       ]);
 
       if (cancelled) return;
@@ -141,15 +130,11 @@ export default function CustomerLayout() {
 
       if (notificationsResult.status === "fulfilled") {
         setNotificationItems(notificationsResult.value.notifications);
-        setUnreadNotificationCount(
-          unreadResult.status === "fulfilled"
-            ? unreadResult.value
-            : notificationsResult.value.unreadCount,
-        );
+        setUnreadNotificationCount(notificationsResult.value.unreadCount);
         setNotificationsError("");
       } else {
         setNotificationItems([]);
-        setUnreadNotificationCount(unreadResult.status === "fulfilled" ? unreadResult.value : 0);
+        setUnreadNotificationCount(0);
         setNotificationsError(notificationsResult.reason?.userMessage || t("notifications:loadErrorTitle", { defaultValue: "Unable to load notifications." }));
       }
 

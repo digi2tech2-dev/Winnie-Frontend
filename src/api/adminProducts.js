@@ -833,6 +833,7 @@ export function normalizeProductProviderProductOption(product = {}) {
     isActive: product.isActive !== false,
     isBlocked: product.isBlocked === true,
     isSupported: product.isSupported === true,
+    lastSyncedAt: product.lastSyncedAt || null,
     maxQty: product.maxQty ?? null,
     minQty: product.minQty ?? null,
     name: safeTrim(product.name) || "Provider product",

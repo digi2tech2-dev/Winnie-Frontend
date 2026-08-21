@@ -42,7 +42,7 @@ export default function CustomerCategories({ basePath = "/customer" }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [t, token]);
 
   const openCategory = (category) => {
     navigate(`${basePath}/categories/${category.slug || category.id}`);

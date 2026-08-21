@@ -1,395 +1,436 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity,
-  AlertTriangle,
+  AlertCircle,
   ArrowLeft,
-  Bot,
-  Boxes,
-  CheckCircle2,
-  CircleDollarSign,
-  CloudCog,
-  Gamepad2,
-  Gift,
-  KeyRound,
+  ArrowUpLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleDot,
+  FolderOpen,
   Layers3,
-  MessageCircleMore,
+  Link2,
+  Loader2,
+  PackageCheck,
+  Plus,
   RefreshCw,
-  Rocket,
   Search,
-  ShieldCheck,
-  Smartphone,
-  Sparkles,
-  UserRoundCheck,
-  Webhook,
-  Zap,
+  Server,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import FazerCardsLaunchOpsPanel from "./FazerCardsLaunchOpsPanel";
+import { linkAdminProductProvider } from "../../../api/adminProducts";
+import { getFazerCardsImportPreview, getFazerCardsProviderProducts, importFazerCardsProviderProduct } from "../../../api/adminProviders";
+import {
+  groupFazerCardsCatalogs,
+  readRetrievedFazerCardsCatalogs,
+  removeRetrievedFazerCardsCatalog,
+  saveRetrievedFazerCardsCatalog,
+} from "../../../utils/fazerCardsCatalogs";
 import "../../../styles/fazercards-special-provider.css";
 
-const familyGroups = [
-  {
-    key: "instant",
-    eyebrow: "كتالوج فوري",
-    title: "المنتجات الرقمية المباشرة",
-    description: "عائلات سريعة ذات كتالوج واضح وتسليم أو تنفيذ مباشر.",
-    families: ["TOPUPS", "GIFTCARDS", "GAME_KEYS"],
-  },
-  {
-    key: "account",
-    eyebrow: "بيانات العميل",
-    title: "خدمات مرتبطة بالحساب",
-    description: "تحتاج بيانات مستهدفة والتحقق منها قبل إنشاء الطلب.",
-    families: ["TELEGRAM", "STEAM_TOPUP"],
-  },
-  {
-    key: "special",
-    eyebrow: "تدفقات خاصة",
-    title: "الخدمات المرنة والكتالوجات الكبيرة",
-    description: "مسارات تشغيل مخصصة للمتابعة اليدوية أو الاستيراد عند الطلب.",
-    families: ["MANUAL_SERVICES", "STEAM_GIFTS"],
-  },
-];
-
-const familyMeta = {
-  TOPUPS: {
-    title: "الشحن المباشر",
-    description: "شحن الرصيد والخدمات الرقمية ذات التنفيذ السريع.",
-    icon: Smartphone,
-    tone: "violet",
-  },
-  GIFTCARDS: {
-    title: "بطاقات الهدايا",
-    description: "أكواد رقمية مع حفظ وتسليم آمن للعميل.",
-    icon: Gift,
-    tone: "rose",
-  },
-  GAME_KEYS: {
-    title: "مفاتيح الألعاب",
-    description: "مفاتيح تفعيل الألعاب والمنصات حسب المنطقة.",
-    icon: KeyRound,
-    tone: "amber",
-  },
-  TELEGRAM: {
-    title: "خدمات تيليجرام",
-    description: "تنفيذ موجه باستخدام اسم المستخدم المستهدف.",
-    icon: MessageCircleMore,
-    tone: "sky",
-  },
-  STEAM_TOPUP: {
-    title: "شحن Steam",
-    description: "تحقق من Steam Login قبل إرسال طلب الشحن.",
-    icon: UserRoundCheck,
-    tone: "emerald",
-  },
-  MANUAL_SERVICES: {
-    title: "الخدمات اليدوية",
-    description: "طلبات مرنة تحتاج متابعة ومحادثة أثناء التنفيذ.",
-    icon: Bot,
-    tone: "fuchsia",
-  },
-  STEAM_GIFTS: {
-    title: "هدايا Steam",
-    description: "بحث محلي واستيراد لعبة واحدة حسب AppID والمنطقة.",
-    icon: Gamepad2,
-    tone: "indigo",
-  },
-};
-
-function formatNumber(value) {
-  return Number(value || 0).toLocaleString("ar-EG-u-nu-latn");
-}
-
-function formatBalance(balance) {
-  if (balance === null || balance === undefined || balance === "") return "—";
-  if (typeof balance === "object") {
-    const amount = balance.amount ?? balance.balance ?? balance.available ?? balance.value;
-    const currency = balance.currency || "USD";
-    return amount === undefined || amount === null ? "—" : `${formatNumber(amount)} ${currency}`;
-  }
-  return `${formatNumber(balance)} USD`;
-}
+const SEARCH_DELAY = 350;
+const CATALOG_SEARCH_LIMIT = 100;
+const OFFERS_PAGE_SIZE = 50;
 
 export default function FazerCardsSpecialProviderPage({
-  actionKey,
-  catalog,
-  launchOps,
+  health,
   loadError,
   loading,
-  onBulkLaunch,
-  onCompleteManual,
-  onFailManual,
-  onLoadOperations,
-  onManualFilterChange,
-  onNoteManual,
-  onOpenFamily,
-  onPublishEligible,
   onRefresh,
-  onSyncAll,
-  onSyncFamily,
+  refreshing = false,
   supplier,
+  token,
 }) {
-  const health = launchOps.health;
-  const connected = Boolean(health?.api?.connectionOk);
-  const busy = Boolean(actionKey) || catalog.loading || launchOps.loading;
+  const [query, setQuery] = useState("");
+  const [searchState, setSearchState] = useState({ error: "", loading: false, results: [], searched: false });
+  const [retrievedCatalogs, setRetrievedCatalogs] = useState(() => readRetrievedFazerCardsCatalogs());
+  const [retrievingKey, setRetrievingKey] = useState("");
+  const [activeCatalog, setActiveCatalog] = useState(null);
+  const requestRef = useRef(0);
 
-  if (loading) {
-    return <SpecialProviderSkeleton />;
-  }
+  const retrievedKeys = useMemo(() => new Set(retrievedCatalogs.map((catalog) => catalog.key)), [retrievedCatalogs]);
+  const connected = health?.api?.connectionOk === true || (!health && supplier?.active === true);
+
+  useEffect(() => {
+    const searchQuery = query.trim();
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+
+    if (searchQuery.length < 2) {
+      setSearchState({ error: "", loading: false, results: [], searched: false });
+      return undefined;
+    }
+
+    setSearchState((current) => ({ ...current, error: "", loading: true, searched: true }));
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await getFazerCardsProviderProducts(token, {
+          limit: CATALOG_SEARCH_LIMIT,
+          page: 1,
+          search: searchQuery,
+        });
+        if (requestRef.current !== requestId) return;
+        setSearchState({ error: "", loading: false, results: groupFazerCardsCatalogs(result.products), searched: true });
+      } catch (error) {
+        if (requestRef.current !== requestId) return;
+        setSearchState({
+          error: error.userMessage || "تعذر البحث في كتالوج FazerCards.",
+          loading: false,
+          results: [],
+          searched: true,
+        });
+      }
+    }, SEARCH_DELAY);
+
+    return () => window.clearTimeout(timer);
+  }, [query, token]);
+
+  const retrieveCatalog = async (catalog) => {
+    if (!token || retrievingKey) return;
+    setRetrievingKey(catalog.key);
+    try {
+      const result = await getFazerCardsProviderProducts(token, {
+        category: catalog.category,
+        familyKey: catalog.familyKey,
+        limit: 1,
+        page: 1,
+      });
+      setRetrievedCatalogs(saveRetrievedFazerCardsCatalog({
+        ...catalog,
+        offerCount: result.pagination?.total || catalog.offerCount,
+      }));
+    } catch (error) {
+      setSearchState((current) => ({ ...current, error: error.userMessage || "تعذر استرداد الكتالوج." }));
+    } finally {
+      setRetrievingKey("");
+    }
+  };
+
+  const removeCatalog = (catalog) => {
+    setRetrievedCatalogs(removeRetrievedFazerCardsCatalog(catalog.key));
+    if (activeCatalog?.key === catalog.key) setActiveCatalog(null);
+  };
+
+  if (loading) return <ProviderPageSkeleton />;
 
   if (loadError || !supplier) {
     return (
-      <section className="fazer-special-empty">
-        <span><AlertTriangle /></span>
-        <h1>تعذر فتح صفحة المورد الخاص</h1>
-        <p>{loadError || "لم يتم العثور على مورد FazerCards ضمن الموردين المسجلين."}</p>
-        <Link to="/admin/tools/suppliers"><ArrowLeft /> الرجوع إلى الموردين</Link>
+      <section className="fc-state fc-state--error">
+        <AlertCircle />
+        <h1>تعذر فتح FazerCards</h1>
+        <p>{loadError || "لم يتم العثور على المورد ضمن الموردين المسجلين."}</p>
+        <Link to="/admin/tools/suppliers"><ArrowLeft /> العودة إلى الموردين</Link>
       </section>
     );
   }
 
-  const catalogTotal = catalog.summary?.totalProviderProducts || 0;
-  const supportedTotal = Object.values(catalog.summary?.byFamily || {}).reduce((total, item) => total + Number(item.supported || 0), 0);
-  const importedTotal = Object.values(catalog.summary?.byFamily || {}).reduce((total, item) => total + Number(item.imported || 0), 0);
-  const pendingOrders = launchOps.manualOrders.filter((order) => ["PENDING", "PROCESSING", "IN_PROGRESS"].includes(String(order.status || "").toUpperCase())).length;
-
   return (
-    <div dir="rtl" className="fazer-special-page">
-      <section className="fazer-special-hero">
-        <div className="fazer-special-hero-glow fazer-special-hero-glow--one" />
-        <div className="fazer-special-hero-glow fazer-special-hero-glow--two" />
-
-        <div className="fazer-special-hero-top">
-          <Link className="fazer-special-back" to="/admin/tools/suppliers">
-            <ArrowLeft />
-            <span>كل الموردين</span>
-          </Link>
-          <div className="fazer-special-statuses">
-            <span className={connected ? "is-online" : "is-offline"}>
-              <i /> {connected ? "متصل" : "غير متصل"}
-            </span>
-            <span><ShieldCheck /> تكامل محمي</span>
+    <main dir="rtl" className="fc-page">
+      <header className="fc-header">
+        <div className="fc-header__main">
+          <Link className="fc-icon-button" to="/admin/tools/suppliers" aria-label="العودة إلى الموردين"><ArrowLeft /></Link>
+          <span className="fc-brand" aria-hidden="true">F</span>
+          <div className="fc-header__copy">
+            <div className="fc-title-line">
+              <h1>FazerCards</h1>
+              <span className={`fc-connection ${connected ? "is-online" : "is-offline"}`}>
+                <i /> {connected ? "متصل" : health ? "غير متصل" : "نشط"}
+              </span>
+            </div>
+            <p>اختر الكتالوج، ثم أضف Offer واحدًا كمنتج متجر مع مزامنة الاسم والسعر والحدود.</p>
           </div>
         </div>
+        <button type="button" className="fc-refresh" onClick={onRefresh} disabled={refreshing}>
+          <RefreshCw className={refreshing ? "animate-spin" : ""} /> تحديث
+        </button>
+      </header>
 
-        <div className="fazer-special-hero-content">
-          <div className="fazer-special-brand-mark" aria-hidden="true">
-            <span>F</span>
-            <Sparkles />
-          </div>
-          <div className="fazer-special-hero-copy">
-            <p className="fazer-special-kicker">صفحة مورد خاص</p>
-            <h1>مركز FazerCards</h1>
-            <p>مساحة موحدة لإدارة عائلات المنتجات، سلامة التشغيل، الطلبات، والمزامنة بدون ازدحام صفحة الموردين الأساسية.</p>
-          </div>
-          <div className="fazer-special-hero-actions">
-            <button type="button" onClick={onRefresh} disabled={busy} className="fazer-special-button fazer-special-button--glass">
-              <RefreshCw className={busy ? "animate-spin" : ""} />
-              تحديث البيانات
-            </button>
-            <button type="button" onClick={() => onOpenFamily("")} disabled={busy} className="fazer-special-button fazer-special-button--light">
-              <Boxes />
-              فتح الكتالوج
-            </button>
-          </div>
+      <ol className="fc-flow" aria-label="خطوات ربط عرض FazerCards">
+        <FlowStep icon={Search} label="بحث" active />
+        <FlowStep icon={PackageCheck} label="استرداد Catalog" />
+        <FlowStep icon={FolderOpen} label="اختيار Offer" />
+        <FlowStep icon={Link2} label="إضافة ومزامنة" />
+      </ol>
+
+      <section className="fc-search-panel">
+        <div className="fc-section-heading">
+          <div><span>كتالوج المورد</span><h2>ابحث عن لعبة أو Catalog</h2></div>
+          <small>لن يتم تحميل كل منتجات المورد</small>
+        </div>
+
+        <label className="fc-search-box">
+          {searchState.loading ? <Loader2 className="animate-spin" /> : <Search />}
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="مثال: PUBG Mobile" autoComplete="off" />
+          {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X /></button>}
+        </label>
+
+        <div className="fc-search-results" aria-live="polite">
+          {searchState.error ? (
+            <InlineState icon={AlertCircle} tone="error" title="تعذر إكمال البحث" description={searchState.error} />
+          ) : searchState.loading ? (
+            <CatalogRowsSkeleton />
+          ) : searchState.searched && !searchState.results.length ? (
+            <InlineState icon={Search} title="لا توجد Catalogs مطابقة" description="جرّب اسم اللعبة أو المنصة بصيغة أخرى." />
+          ) : searchState.results.length ? (
+            searchState.results.map((catalog) => {
+              const retrieved = retrievedKeys.has(catalog.key);
+              return (
+                <CatalogRow key={catalog.key} catalog={catalog} retrieved={retrieved}>
+                  {retrieved ? (
+                    <button type="button" className="fc-button fc-button--soft" onClick={() => setActiveCatalog(retrievedCatalogs.find((item) => item.key === catalog.key) || catalog)}>
+                      <FolderOpen /> فتح الكتالوج
+                    </button>
+                  ) : (
+                    <button type="button" className="fc-button fc-button--primary" onClick={() => retrieveCatalog(catalog)} disabled={Boolean(retrievingKey)}>
+                      {retrievingKey === catalog.key ? <Loader2 className="animate-spin" /> : <PackageCheck />} استرداد
+                    </button>
+                  )}
+                </CatalogRow>
+              );
+            })
+          ) : (
+            <div className="fc-search-hint"><Search /><span>اكتب حرفين على الأقل لبدء البحث في Catalogs.</span></div>
+          )}
         </div>
       </section>
 
-      {(catalog.error || launchOps.error) && (
-        <div className="fazer-special-alert">
-          <AlertTriangle />
-          <p>{catalog.error || launchOps.error}</p>
+      <section className="fc-retrieved">
+        <div className="fc-section-heading">
+          <div><span>مساحة العمل</span><h2>Catalogs المستردة</h2></div>
+          <small>{retrievedCatalogs.length.toLocaleString("ar-EG-u-nu-latn")} Catalog</small>
+        </div>
+
+        <div className="fc-retrieved-list">
+          {retrievedCatalogs.length ? retrievedCatalogs.map((catalog) => (
+            <CatalogRow key={catalog.key} catalog={catalog} retrieved>
+              <button type="button" className="fc-button fc-button--soft" onClick={() => setActiveCatalog(catalog)}><FolderOpen /> فتح الكتالوج</button>
+              <button type="button" className="fc-remove" onClick={() => removeCatalog(catalog)} aria-label={`إزالة استرداد ${catalog.name}`}><Trash2 /> إزالة الاسترداد</button>
+            </CatalogRow>
+          )) : (
+            <InlineState icon={Layers3} title="لا توجد Catalogs مستردة" description="استخدم البحث أعلاه ثم استرد الكتالوج الذي تريد العمل عليه فقط." />
+          )}
+        </div>
+      </section>
+
+      {activeCatalog && <CatalogOffers catalog={activeCatalog} providerId={supplier.id} token={token} onClose={() => setActiveCatalog(null)} />}
+    </main>
+  );
+}
+
+function CatalogOffers({ catalog, onClose, providerId, token }) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [selectedOfferId, setSelectedOfferId] = useState("");
+  const [state, setState] = useState({ error: "", loading: true, offers: [], pagination: null });
+  const [importState, setImportState] = useState({ error: "", loading: false, product: null, warning: "" });
+  const requestRef = useRef(0);
+
+  useEffect(() => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+    const timer = window.setTimeout(async () => {
+      setState((current) => ({ ...current, error: "", loading: true }));
+      try {
+        const result = await getFazerCardsProviderProducts(token, {
+          category: catalog.category,
+          familyKey: catalog.familyKey,
+          limit: OFFERS_PAGE_SIZE,
+          page,
+          search: query.trim() || undefined,
+        });
+        if (requestRef.current !== requestId) return;
+        setState({ error: "", loading: false, offers: result.products, pagination: result.pagination });
+      } catch (error) {
+        if (requestRef.current !== requestId) return;
+        setState({ error: error.userMessage || "تعذر تحميل عروض الكتالوج.", loading: false, offers: [], pagination: null });
+      }
+    }, query ? SEARCH_DELAY : 0);
+    return () => window.clearTimeout(timer);
+  }, [catalog, page, query, token]);
+
+  const selectedOffer = state.offers.find((offer) => offer.id === selectedOfferId);
+
+  const selectOffer = (offerId) => {
+    setSelectedOfferId(offerId);
+    setImportState({ error: "", loading: false, product: null, warning: "" });
+  };
+
+  const importSelectedOffer = async () => {
+    if (!selectedOffer || importState.loading) return;
+    setImportState({ error: "", loading: true, product: null, warning: "" });
+
+    try {
+      const previewResult = await getFazerCardsImportPreview(token, selectedOffer.id);
+      const preview = previewResult.preview || {};
+      const imported = await importFazerCardsProviderProduct(token, selectedOffer.id, {
+        currency: preview.currency || selectedOffer.currency || "USD",
+        markupType: preview.defaultMarkupType || "percentage",
+        markupValue: preview.defaultMarkupValue ?? 0,
+        name: preview.suggestedProductName || selectedOffer.offerName || selectedOffer.name,
+        syncAvailabilityFromProvider: true,
+        syncNameFromProvider: true,
+        syncPriceFromProvider: true,
+        updateExisting: true,
+      });
+      if (!imported.product?.id) throw new Error("لم يُرجع الخادم معرّف المنتج بعد الإضافة.");
+      let finalProduct = imported.product;
+      let warning = "";
+
+      try {
+        const linked = await linkAdminProductProvider(token, imported.product.id, {
+          providerId,
+          providerProductId: selectedOffer.id,
+          syncLimits: true,
+          syncName: true,
+          syncPrice: true,
+        });
+        finalProduct = linked.product;
+      } catch (linkError) {
+        warning = linkError.userMessage || "أُضيف المنتج، لكن تعذر تأكيد مزامنة الحدود. يمكنك مراجعة الربط من إدارة المنتجات.";
+      }
+
+      setState((current) => ({
+        ...current,
+        offers: current.offers.map((offer) => offer.id === selectedOffer.id ? { ...offer, imported: true } : offer),
+      }));
+      setImportState({ error: "", loading: false, product: finalProduct, warning });
+    } catch (error) {
+      setImportState({
+        error: error.userMessage || error.message || "تعذر إضافة العرض إلى منتجات المتجر.",
+        loading: false,
+        product: null,
+        warning: "",
+      });
+    }
+  };
+
+  return (
+    <section className="fc-offers" aria-labelledby="fc-offers-title">
+      <header className="fc-offers__header">
+        <div><span>{catalog.familyKey || "FAZERCARDS"}</span><h2 id="fc-offers-title">{catalog.name}</h2><p>{state.pagination?.total ?? catalog.offerCount} Offers</p></div>
+        <button type="button" className="fc-icon-button" onClick={onClose} aria-label="إغلاق الكتالوج"><X /></button>
+      </header>
+
+      <label className="fc-search-box fc-search-box--compact">
+        {state.loading ? <Loader2 className="animate-spin" /> : <Search />}
+        <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="بحث داخل العروض" />
+      </label>
+
+      <div className="fc-offers-layout">
+        <div className="fc-offer-list">
+          {state.error ? (
+            <InlineState icon={AlertCircle} tone="error" title="تعذر تحميل Offers" description={state.error} />
+          ) : state.loading ? (
+            <CatalogRowsSkeleton rows={4} />
+          ) : state.offers.length ? state.offers.map((offer) => {
+            const selected = selectedOfferId === offer.id;
+            return (
+              <button type="button" key={offer.id} className={`fc-offer ${selected ? "is-selected" : ""}`} onClick={() => selectOffer(offer.id)}>
+                <span className="fc-radio">{selected ? <Check /> : <CircleDot />}</span>
+                <span className="fc-offer__copy">
+                  <strong>{offer.offerName || offer.name}</strong>
+                  <small>{[offer.region, offer.platform].filter(Boolean).join(" · ") || offer.externalProductId}</small>
+                </span>
+                <span className="fc-offer__aside">
+                  <b className="fc-offer__price">{offer.priceLabel}</b>
+                  {offer.imported && <small><Check /> مضاف</small>}
+                </span>
+              </button>
+            );
+          }) : (
+            <InlineState icon={Search} title="لا توجد عروض مطابقة" description="جرّب عبارة بحث أقصر داخل هذا الكتالوج." />
+          )}
+        </div>
+
+        <aside className="fc-import-panel">
+          {selectedOffer ? (
+            <>
+              <span className="fc-import-panel__eyebrow">العرض المختار</span>
+              <h3>{selectedOffer.offerName || selectedOffer.name}</h3>
+              <p dir="ltr">{selectedOffer.externalProductId || selectedOffer.offerId}</p>
+
+              <div className="fc-import-summary">
+                <SummaryDatum label="سعر المورد" value={selectedOffer.priceLabel || "—"} />
+                <SummaryDatum label="الحد الأدنى" value={selectedOffer.minQty ?? "—"} />
+                <SummaryDatum label="الحد الأقصى" value={selectedOffer.maxQty ?? "—"} />
+              </div>
+
+              <div className="fc-sync-options">
+                <span><Check /> مزامنة الاسم</span>
+                <span><Check /> مزامنة السعر</span>
+                <span><Check /> مزامنة الحدود</span>
+              </div>
+
+              {importState.error && <div className="fc-import-message is-error"><AlertCircle /> {importState.error}</div>}
+              {importState.product && (
+                <div className={`fc-import-message ${importState.warning ? "is-warning" : "is-success"}`}>
+                  {importState.warning ? <AlertCircle /> : <Check />}
+                  <div>
+                    <strong>{importState.warning ? "تمت الإضافة مع ملاحظة" : "تمت إضافة المنتج ومزامنته"}</strong>
+                    <p>{importState.warning || importState.product.name}</p>
+                  </div>
+                </div>
+              )}
+
+              <button type="button" className="fc-import-action" onClick={importSelectedOffer} disabled={importState.loading}>
+                {importState.loading ? <Loader2 className="animate-spin" /> : selectedOffer.imported || importState.product ? <RefreshCw /> : <Plus />}
+                {importState.loading ? "جارٍ الإضافة والمزامنة..." : selectedOffer.imported || importState.product ? "تحديث المنتج والمزامنة" : "إضافة المنتج ومزامنته"}
+              </button>
+
+              {importState.product && (
+                <Link className="fc-manage-product" to="/admin/tools/products">إدارة المنتجات <ArrowUpLeft /></Link>
+              )}
+              <small className="fc-import-note">لن تتم إضافة أي Offer آخر من هذا Catalog.</small>
+            </>
+          ) : (
+            <div className="fc-import-empty"><CircleDot /><strong>اختر Offer واحدًا</strong><p>ستظهر هنا بيانات السعر والحدود وخيارات المزامنة قبل الإضافة.</p></div>
+          )}
+        </aside>
+      </div>
+
+      {state.pagination?.pages > 1 && (
+        <div className="fc-pagination">
+          <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || state.loading}><ChevronRight /></button>
+          <span>{page} / {state.pagination.pages}</span>
+          <button type="button" onClick={() => setPage((value) => Math.min(state.pagination.pages, value + 1))} disabled={page >= state.pagination.pages || state.loading}><ChevronLeft /></button>
         </div>
       )}
 
-      <nav className="fazer-special-nav" aria-label="أقسام صفحة المورد الخاص">
-        <a href="#fazer-overview"><Activity /> نظرة عامة</a>
-        <a href="#fazer-families"><Layers3 /> عائلات المنتجات</a>
-        <a href="#fazer-operations"><Rocket /> مركز التشغيل</a>
-        <a href="#fazer-safety"><ShieldCheck /> الحماية والجاهزية</a>
-      </nav>
-
-      <section id="fazer-overview" className="fazer-special-metrics" aria-label="ملخص المورد">
-        <Metric icon={CloudCog} label="حالة الاتصال" value={connected ? "متصل" : "بحاجة لمراجعة"} tone={connected ? "emerald" : "amber"} />
-        <Metric icon={CircleDollarSign} label="رصيد المورد" value={formatBalance(health?.api?.balance)} tone="sky" />
-        <Metric icon={Boxes} label="منتجات الكتالوج" value={formatNumber(catalogTotal)} tone="violet" />
-        <Metric icon={CheckCircle2} label="مدعوم للاستيراد" value={formatNumber(supportedTotal)} tone="emerald" />
-        <Metric icon={Zap} label="تم استيراده" value={formatNumber(importedTotal)} tone="indigo" />
-        <Metric icon={Activity} label="طلبات تحت التنفيذ" value={formatNumber(pendingOrders)} tone={pendingOrders ? "amber" : "slate"} />
-      </section>
-
-      <section id="fazer-families" className="fazer-special-section fazer-special-catalog">
-        <SectionHeading
-          eyebrow="تصنيف واضح حسب طريقة التنفيذ"
-          title="عائلات منتجات FazerCards"
-          description="كل مجموعة لها مدخلات وتسليم ومخاطر تشغيل مختلفة؛ لذلك تم فصلها إلى مساحات سهلة الإدارة."
-          icon={Layers3}
-        >
-          <button type="button" onClick={onSyncAll} disabled={busy} className="fazer-special-section-action">
-            <RefreshCw className={actionKey === "fazercards:sync-all" ? "animate-spin" : ""} />
-            مزامنة العائلات
-          </button>
-        </SectionHeading>
-
-        <div className="fazer-special-family-groups">
-          {familyGroups.map((group) => (
-            <div key={group.key} className="fazer-special-family-group">
-              <header>
-                <div>
-                  <span>{group.eyebrow}</span>
-                  <h3>{group.title}</h3>
-                </div>
-                <p>{group.description}</p>
-              </header>
-              <div className="fazer-special-family-grid">
-                {group.families.map((familyKey) => (
-                  <FamilyCard
-                    key={familyKey}
-                    familyKey={familyKey}
-                    family={catalog.families.find((item) => item.familyKey === familyKey)}
-                    summary={catalog.summary?.byFamily?.[familyKey]}
-                    contract={catalog.contractsSummary?.families?.[familyKey]}
-                    busy={busy}
-                    onOpen={() => onOpenFamily(familyKey)}
-                    onSync={() => onSyncFamily(familyKey)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="fazer-operations" className="fazer-special-section fazer-special-operations">
-        <SectionHeading
-          eyebrow="تشغيل ومتابعة"
-          title="مركز التشغيل"
-          description="نشر المنتجات المؤهلة، متابعة الطلبات اليدوية، وفحص آخر إشعارات المورد."
-          icon={Rocket}
-        />
-        <FazerCardsLaunchOpsPanel
-          bulkResult={launchOps.bulkResult}
-          error={launchOps.error}
-          filters={launchOps.manualFilters}
-          health={launchOps.health}
-          loading={launchOps.loading}
-          manualOrders={launchOps.manualOrders}
-          webhookDeliveries={launchOps.webhookDeliveries}
-          onBulkLaunch={onBulkLaunch}
-          onCompleteManual={onCompleteManual}
-          onFailManual={onFailManual}
-          onLoad={onLoadOperations}
-          onManualFilterChange={onManualFilterChange}
-          onNoteManual={onNoteManual}
-          onPublishEligible={onPublishEligible}
-        />
-      </section>
-
-      <section id="fazer-safety" className="fazer-special-section fazer-special-safety">
-        <SectionHeading
-          eyebrow="تشغيل آمن"
-          title="الحماية والجاهزية"
-          description="حالة مفاتيح الأمان التي تمنع التنفيذ الحقيقي أو التسليم قبل اكتمال الإعدادات."
-          icon={ShieldCheck}
-        />
-        <div className="fazer-special-gates">
-          <Gate icon={CloudCog} label="واجهة المورد" enabled={health?.api?.enabled && health?.api?.connectionOk} />
-          <Gate icon={Webhook} label="Webhooks" enabled={health?.webhooks?.enabled && health?.webhooks?.secretConfigured} />
-          <Gate icon={UserRoundCheck} label="شراء العملاء" enabled={health?.gates?.customerPurchaseEnabled} />
-          <Gate icon={Rocket} label="الطلبات الحقيقية" enabled={health?.gates?.realOrdersEnabled} />
-          <Gate icon={KeyRound} label="تسليم الأكواد" enabled={health?.gates?.codeDeliveryEnabled} />
-        </div>
-        {!!health?.warnings?.length && (
-          <div className="fazer-special-warnings">
-            <AlertTriangle />
-            <div>
-              <h3>ملاحظات قبل التشغيل الحي</h3>
-              {health.warnings.slice(0, 5).map((warning) => <p key={warning}>{warning}</p>)}
-            </div>
-          </div>
-        )}
-      </section>
-    </div>
+    </section>
   );
 }
 
-function Metric({ icon: Icon, label, value, tone }) {
+function SummaryDatum({ label, value }) {
+  return <div><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function CatalogRow({ catalog, children, retrieved = false }) {
   return (
-    <article className="fazer-special-metric" data-tone={tone}>
-      <span><Icon /></span>
-      <div>
-        <p>{label}</p>
-        <strong dir={label === "رصيد المورد" ? "ltr" : undefined}>{value}</strong>
+    <article className="fc-catalog-row">
+      <span className="fc-catalog-icon">{retrieved ? <PackageCheck /> : <Server />}</span>
+      <div className="fc-catalog-copy">
+        <strong>{catalog.name}</strong>
+        <span>{retrieved && <b><Check /> مسترد</b>}{catalog.offerCount.toLocaleString("ar-EG-u-nu-latn")} Offers{catalog.familyKey && <em>{catalog.familyKey}</em>}</span>
       </div>
+      <div className="fc-catalog-actions">{children}</div>
     </article>
   );
 }
 
-function SectionHeading({ children, description, eyebrow, icon: Icon, title }) {
-  return (
-    <div className="fazer-special-section-heading">
-      <span className="fazer-special-section-icon"><Icon /></span>
-      <div>
-        <p>{eyebrow}</p>
-        <h2>{title}</h2>
-        <span>{description}</span>
-      </div>
-      {children && <div className="fazer-special-section-heading-actions">{children}</div>}
-    </div>
-  );
+function FlowStep({ active = false, icon: Icon, label }) {
+  return <li className={active ? "is-active" : ""}><span><Icon /></span><b>{label}</b></li>;
 }
 
-function FamilyCard({ busy, contract = {}, family = {}, familyKey, onOpen, onSync, summary = {} }) {
-  const meta = familyMeta[familyKey];
-  const Icon = meta.icon;
-  const available = family.catalogAvailable !== false;
-  const steamGifts = familyKey === "STEAM_GIFTS";
-
-  return (
-    <article className="fazer-special-family-card" data-tone={meta.tone} data-family={familyKey}>
-      <div className="fazer-special-family-card-top">
-        <span className="fazer-special-family-icon"><Icon /></span>
-        <span className={`fazer-special-family-status ${available ? "is-ready" : "is-blocked"}`}>
-          <i /> {available ? "الكتالوج متاح" : "غير متاح"}
-        </span>
-      </div>
-      <div className="fazer-special-family-copy">
-        <p dir="ltr">{familyKey}</p>
-        <h4>{meta.title}</h4>
-        <span>{meta.description}</span>
-      </div>
-      <div className="fazer-special-family-counts">
-        <span><small>الإجمالي</small><b>{formatNumber(summary.total)}</b></span>
-        <span><small>مدعوم</small><b>{formatNumber(summary.supported)}</b></span>
-        <span><small>مستورد</small><b>{formatNumber(summary.imported)}</b></span>
-      </div>
-      <div className="fazer-special-family-contract">
-        <span>{contract.supportStage || family.supportLevel || "CATALOG"}</span>
-        <span>{contract.executionStage || family.fulfillmentMode || "—"}</span>
-      </div>
-      <div className="fazer-special-family-actions">
-        <button type="button" onClick={onOpen} disabled={busy}><Search /> {steamGifts ? "بحث واستيراد" : "فتح المنتجات"}</button>
-        {!steamGifts && <button type="button" onClick={onSync} disabled={busy || !available}><RefreshCw /> مزامنة</button>}
-      </div>
-    </article>
-  );
+function InlineState({ description, icon: Icon, title, tone = "neutral" }) {
+  return <div className="fc-inline-state" data-tone={tone}><Icon /><div><strong>{title}</strong><p>{description}</p></div></div>;
 }
 
-function Gate({ enabled, icon: Icon, label }) {
-  return (
-    <article className={enabled ? "is-enabled" : "is-disabled"}>
-      <span><Icon /></span>
-      <div><strong>{label}</strong><p>{enabled ? "جاهز ومفعل" : "بحاجة إلى إعداد"}</p></div>
-      {enabled ? <CheckCircle2 /> : <AlertTriangle />}
-    </article>
-  );
+function CatalogRowsSkeleton({ rows = 3 }) {
+  return <div className="fc-rows-skeleton" aria-busy="true">{Array.from({ length: rows }).map((_, index) => <span key={index} />)}</div>;
 }
 
-function SpecialProviderSkeleton() {
-  return (
-    <div className="fazer-special-skeleton" aria-busy="true">
-      <div className="fazer-special-skeleton-hero" />
-      <div className="fazer-special-skeleton-metrics">{Array.from({ length: 6 }).map((_, index) => <span key={index} />)}</div>
-      <div className="fazer-special-skeleton-panel" />
-    </div>
-  );
+function ProviderPageSkeleton() {
+  return <div className="fc-page-skeleton" aria-busy="true"><span /><span /><span /></div>;
 }

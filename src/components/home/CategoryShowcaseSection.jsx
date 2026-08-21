@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
-export default function CategoryShowcaseSection({ categories = [], forceRtl = false, onSelect, showHeading = true }) {
+export default function CategoryShowcaseSection({ categories = [], forceRtl = false, onSelect, showHeading = true, categoryHref }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
   const isRtl = forceRtl || isArabic;
@@ -22,6 +23,7 @@ export default function CategoryShowcaseSection({ categories = [], forceRtl = fa
               key={category.id || category._id || category.slug || category.name}
               category={category}
               onSelect={() => onSelect?.(category)}
+              href={categoryHref?.(category)}
             />
           ))}
         </div>
@@ -34,13 +36,14 @@ export default function CategoryShowcaseSection({ categories = [], forceRtl = fa
   );
 }
 
-function CategoryItem({ category, onSelect }) {
+function CategoryItem({ category, onSelect, href }) {
   const [imageFailed, setImageFailed] = useState(false);
   const categoryName = category.title || category.name || "";
+  const Component = href ? Link : "button";
 
   return (
-    <button
-      type="button"
+    <Component
+      {...(href ? { to: href } : { type: "button" })}
       onClick={onSelect}
       aria-label={categoryName}
       className="premium-category group flex min-w-0 flex-col items-center text-center outline-none active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-4 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950"
@@ -59,6 +62,6 @@ function CategoryItem({ category, onSelect }) {
       <span className="mt-3 line-clamp-2 min-h-10 w-full text-center text-sm font-black leading-5 text-slate-950 transition-colors group-hover:text-violet-700 dark:text-white dark:group-hover:text-violet-300 sm:text-base sm:leading-6">
         {categoryName}
       </span>
-    </button>
+    </Component>
   );
 }

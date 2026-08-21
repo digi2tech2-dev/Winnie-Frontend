@@ -103,8 +103,12 @@ export default function HomeSlide({ categoriesPath = "/categories", compactDeskt
               <img
                 src={slides[activeSlide].image}
                 alt={t("slider.slideAlt", { number: activeSlide + 1 })}
+                width="1024"
+                height="364"
                 className="h-full w-full object-cover"
                 loading={activeSlide === 0 ? "eager" : "lazy"}
+                fetchPriority={activeSlide === 0 ? "high" : "auto"}
+                decoding="async"
               />
             </Link>
           </motion.div>

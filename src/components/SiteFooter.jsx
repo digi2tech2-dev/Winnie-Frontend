@@ -17,6 +17,7 @@ import {
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
 import { importantLinks } from "../data/importantLinks";
+import { useLanguage } from "../context/LanguageContext";
 
 const commercialRegistration = "4423622.01";
 const taxNumber = "105156169200001";
@@ -55,9 +56,8 @@ const reveal = {
 
 export default function SiteFooter({ className = "", innerClassName = "max-w-[1120px]", simple = false, legalOnly = false }) {
   const location = useLocation();
-  const { t } = useTranslation(["common", "policies"]);
-  const translatedArticles = t("articles", { ns: "policies", returnObjects: true });
-  const policyArticles = Array.isArray(translatedArticles) ? translatedArticles : [];
+  const { t } = useTranslation("common");
+  const { language } = useLanguage();
   const accountPrefix = location.pathname.startsWith("/customer")
     ? "/customer"
     : location.pathname.startsWith("/admin")
@@ -176,7 +176,6 @@ export default function SiteFooter({ className = "", innerClassName = "max-w-[11
               const link = importantLinks.find((l) => l.slug === item.slug);
               if (!link) return null;
 
-              const article = policyArticles.find((p) => p.slug === link.slug);
               const Icon = linkIcons[link.slug] || FileCheck2;
               const iconStyle = linkIconStyles[link.slug] || linkIconStyles["privacy-policy"];
 
@@ -199,7 +198,7 @@ export default function SiteFooter({ className = "", innerClassName = "max-w-[11
                       <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </span>
                     <span className="min-w-0 flex-1 text-[8px] font-black leading-tight text-slate-700 dark:text-slate-100 min-[380px]:text-[9px] min-[420px]:text-[10px] sm:text-xs">
-                      {article?.label || link.slug}
+                      {link.label?.[language] || link.label?.ar || link.slug}
                     </span>
                     <ArrowUpLeft className="h-2.5 w-2.5 shrink-0 text-slate-300 transition duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-violet-500 dark:text-slate-600 dark:group-hover:text-violet-300 sm:h-3 sm:w-3" />
                   </Link>

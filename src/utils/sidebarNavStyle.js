@@ -12,7 +12,6 @@ const navIdentityBySegment = {
   profile: { tone: "sky", shape: "circle" },
   settings: { tone: "slate", shape: "gear" },
   users: { tone: "blue", shape: "profile" },
-  supervisors: { tone: "fuchsia", shape: "shield" },
   payments: { tone: "emerald", shape: "card" },
   "financial-reports": { tone: "teal", shape: "chart" },
   "balance-requests": { tone: "amber", shape: "request" },

@@ -8,7 +8,7 @@ import HorizontalProductCarousel from "./HorizontalProductCarousel";
 
 const maxBestSellingItems = 6;
 
-export default function BestSellingSection({ forceRtl = false, items = [], onSelect, onViewAll }) {
+export default function BestSellingSection({ forceRtl = false, items = [], onSelect, onViewAll, productHref }) {
   const { t, i18n } = useTranslation("home");
   const isArabic = i18n.language?.startsWith("ar");
   const isRtl = forceRtl || isArabic;
@@ -41,7 +41,7 @@ export default function BestSellingSection({ forceRtl = false, items = [], onSel
       <HorizontalProductCarousel label={t("homePage.bestSellers")}>
         {bestSellingItems.map((item, index) => (
           <div key={item.id || item._id || item.slug || item.name} dir={isRtl ? "rtl" : "ltr"} className="homepage-product-carousel__item snap-start">
-            <HomeProductCard product={item} index={index} onSelect={onSelect} variant="featured" />
+            <HomeProductCard product={item} index={index} onSelect={onSelect} href={productHref?.(item)} variant="featured" />
           </div>
         ))}
       </HorizontalProductCarousel>

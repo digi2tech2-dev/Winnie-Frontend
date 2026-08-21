@@ -8,7 +8,6 @@ export function asArray(value) {
   if (Array.isArray(value?.results)) return value.results;
   if (Array.isArray(value?.products)) return value.products;
   if (Array.isArray(value?.users)) return value.users;
-  if (Array.isArray(value?.supervisors)) return value.supervisors;
   if (Array.isArray(value?.payments)) return value.payments;
   if (Array.isArray(value?.deposits)) return value.deposits;
   if (Array.isArray(value?.subAgents)) return value.subAgents;

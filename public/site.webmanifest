@@ -1,0 +1,20 @@
+{
+  "name": "Winnie HUB",
+  "short_name": "Winnie HUB",
+  "description": "منصة شحن الألعاب والبطاقات والاشتراكات الرقمية",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050816",
+  "theme_color": "#050816",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

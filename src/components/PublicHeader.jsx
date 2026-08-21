@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
@@ -8,12 +8,13 @@ import { getPublicCatalog } from "../api/catalog";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import GoogleMark from "./GoogleMark";
-import HeaderSearchOverlay from "./HeaderSearchOverlay";
-import ProductPurchaseModal from "./ProductPurchaseModal";
 import ThemeToggle from "./ThemeToggle";
 import { BrandName } from "./Brand";
 import { canPurchaseProduct } from "../utils/productAvailability";
 import { getSidebarNavIdentity } from "../utils/sidebarNavStyle";
+
+const HeaderSearchOverlay = lazy(() => import("./HeaderSearchOverlay"));
+const ProductPurchaseModal = lazy(() => import("./ProductPurchaseModal"));
 
 const purchaseLinks = [
   {
@@ -63,6 +64,7 @@ export default function PublicHeader() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchProducts, setSearchProducts] = useState([]);
+  const [searchCatalogLoaded, setSearchCatalogLoaded] = useState(false);
   const [purchaseItem, setPurchaseItem] = useState(null);
   const { language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
@@ -77,14 +79,21 @@ export default function PublicHeader() {
   const switchTheme = () => setTheme(isDarkTheme ? "light" : "dark");
 
   useEffect(() => {
+    if (!searchOpen || searchCatalogLoaded) return undefined;
     let cancelled = false;
 
     const loadSearchProducts = async () => {
       try {
         const result = await getPublicCatalog({ page: 1, limit: 24 });
-        if (!cancelled) setSearchProducts(result.products);
+        if (!cancelled) {
+          setSearchProducts(result.products);
+          setSearchCatalogLoaded(true);
+        }
       } catch {
-        if (!cancelled) setSearchProducts([]);
+        if (!cancelled) {
+          setSearchProducts([]);
+          setSearchCatalogLoaded(true);
+        }
       }
     };
 
@@ -93,7 +102,7 @@ export default function PublicHeader() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [searchCatalogLoaded, searchOpen]);
 
   useEffect(() => {
     const openSearchFromPage = () => setSearchOpen(true);
@@ -185,26 +194,32 @@ export default function PublicHeader() {
         </div>
       </header>
 
-      <HeaderSearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onNavigate={navigate}
-        onProductSelect={(product) => {
-          if (!canPurchaseProduct(product)) return;
-          setPurchaseItem({ product, category: product.groupTitle });
-        }}
-        mode="public"
-        products={searchProducts}
-      />
+      {(searchOpen || searchCatalogLoaded) ? (
+        <Suspense fallback={null}>
+          <HeaderSearchOverlay
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onNavigate={navigate}
+            onProductSelect={(product) => {
+              if (!canPurchaseProduct(product)) return;
+              setPurchaseItem({ product, category: product.groupTitle });
+            }}
+            mode="public"
+            products={searchProducts}
+          />
+        </Suspense>
+      ) : null}
       <AnimatePresence>
         {purchaseItem && (
-          <ProductPurchaseModal
-            product={purchaseItem.product}
-            category={purchaseItem.category}
-            onClose={() => setPurchaseItem(null)}
-            onConfirm={confirmPurchase}
-            requireAccountId={false}
-          />
+          <Suspense fallback={null}>
+            <ProductPurchaseModal
+              product={purchaseItem.product}
+              category={purchaseItem.category}
+              onClose={() => setPurchaseItem(null)}
+              onConfirm={confirmPurchase}
+              requireAccountId={false}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
       <PublicPurchaseSidebar open={sidebarOpen} onClose={closeSidebar} />

@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, getApiBaseUrl } from "./client";
 import {
   asArray,
   formatDateTime,
@@ -77,6 +77,24 @@ export function normalizeGroupChangeOption(group = null) {
   };
 }
 
+function resolveProofImageUrl(request = {}) {
+  const rawValue = request.proofImageUrl
+    || request.proofImagePath
+    || request.proofImage
+    || request.proof?.url
+    || request.proof?.path
+    || "";
+  const resolved = resolveBackendAssetUrl(rawValue);
+  if (!resolved || /^(?:https?:|data:|blob:)/i.test(resolved)) return resolved;
+
+  try {
+    const apiOrigin = new URL(getApiBaseUrl()).origin;
+    return new URL(resolved.replace(/^\/+/, ""), `${apiOrigin}/`).toString();
+  } catch {
+    return resolved;
+  }
+}
+
 export function normalizeGroupChangeOptions(payload = {}) {
   const currentGroup = normalizeGroupChangeOption(payload.currentGroup);
 
@@ -109,7 +127,7 @@ export function normalizeGroupRequest(request = {}) {
     proofImageOriginalName: request.proofImageOriginalName || "",
     proofImagePath: request.proofImagePath || "",
     proofImageSize: request.proofImageSize ?? null,
-    proofImageUrl: resolveBackendAssetUrl(request.proofImageUrl) || "",
+    proofImageUrl: resolveProofImageUrl(request),
     reason: request.reason || "",
     requestedGroup: normalizeGroupForRequest(request.requestedGroup),
     requestType,

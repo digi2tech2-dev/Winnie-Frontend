@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getImportantArticle } from "../../data/importantLinks";
+import Seo from "../../components/Seo";
+import { absoluteSiteUrl } from "../../config/site";
+import { buildBreadcrumbSchema, cleanSeoText } from "../../utils/seo";
+import arPolicies from "../../i18n/ar/policies.json";
+import enPolicies from "../../i18n/en/policies.json";
 
 const contactIcons = {
   email: Mail,
@@ -23,9 +28,9 @@ const contactIcons = {
 export default function ImportantArticlePage({ articleSlug }) {
   const { slug } = useParams();
   const location = useLocation();
-  const { t, i18n } = useTranslation(["about", "policies"]);
+  const { t, i18n } = useTranslation("about");
   const isArabic = i18n.dir() === "rtl";
-  const articles = t("articles", { ns: "policies", returnObjects: true });
+  const articles = (isArabic ? arPolicies : enPolicies).articles;
   const article = getImportantArticle(articleSlug || slug, articles);
   const homePath = location.pathname.startsWith("/customer")
     ? "/customer/dashboard"
@@ -37,8 +42,39 @@ export default function ImportantArticlePage({ articleSlug }) {
     return <Navigate to={homePath} replace />;
   }
 
+  const isPrivateRoute = location.pathname.startsWith("/customer") || location.pathname.startsWith("/admin");
+  const publicPath = `/${article.slug || articleSlug || slug}`;
+
   return (
-    <article dir={isArabic ? "rtl" : "ltr"} lang={i18n.resolvedLanguage || i18n.language} className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+    <>
+      <Seo
+        title={`${article.title} | Winnie HUB`}
+        description={cleanSeoText(article.intro)}
+        path={publicPath}
+        type="article"
+        noindex={isPrivateRoute}
+        schemas={isPrivateRoute ? [] : [
+          {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: article.title,
+            description: cleanSeoText(article.intro),
+            mainEntityOfPage: absoluteSiteUrl(publicPath),
+            inLanguage: isArabic ? "ar" : "en",
+            publisher: {
+              "@type": "Organization",
+              name: "Winnie HUB",
+              url: absoluteSiteUrl("/"),
+              logo: { "@type": "ImageObject", url: absoluteSiteUrl("/logo.png") },
+            },
+          },
+          buildBreadcrumbSchema([
+            { name: isArabic ? "الرئيسية" : "Home", path: "/" },
+            { name: article.title, path: publicPath },
+          ]),
+        ]}
+      />
+      <article dir={isArabic ? "rtl" : "ltr"} lang={i18n.resolvedLanguage || i18n.language} className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
       <Link
         to={homePath}
         className="inline-flex items-center gap-2 text-sm font-black text-[#7C3AED] transition hover:text-[#0369A1] dark:text-[#A78BFA] dark:hover:text-[#38BDF8]"
@@ -173,6 +209,7 @@ export default function ImportantArticlePage({ articleSlug }) {
           {t("contactEmail")}
         </a>
       </section>
-    </article>
+      </article>
+    </>
   );
 }

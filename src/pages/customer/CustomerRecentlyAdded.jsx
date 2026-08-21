@@ -8,6 +8,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
 import { sortProductsByNewest } from "../../utils/recentProducts";
 import { isProductVisibleInStore } from "../../utils/productAvailability";
+import { buildItemListSchema, getProductPath } from "../../utils/seo";
+import Seo from "../../components/Seo";
 
 const pageSize = 100;
 
@@ -64,7 +66,11 @@ export default function CustomerRecentlyAdded({ loginOnPurchase = false, basePat
   };
 
   return (
-    <div dir={i18n.language?.startsWith("ar") ? "rtl" : "ltr"} className="compact-catalog-page space-y-4">
+    <>
+      {loginOnPurchase ? (
+        <Seo schemas={recentProducts.length ? [buildItemListSchema(recentProducts, "Winnie HUB recently added products")] : []} />
+      ) : null}
+      <div dir={i18n.language?.startsWith("ar") ? "rtl" : "ltr"} className="compact-catalog-page space-y-4">
       <header>
         <h1 className="relative text-xl font-black text-slate-950 dark:text-white sm:text-2xl ltr:pl-3 rtl:pr-3">
           <span className="absolute top-1/2 h-7 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#ec4899,#7c3aed,#22d3ee)] ltr:left-0 rtl:right-0" />
@@ -80,13 +86,14 @@ export default function CustomerRecentlyAdded({ loginOnPurchase = false, basePat
       ) : recentProducts.length ? (
         <section className="recent-products-grid">
           {recentProducts.map((product, index) => (
-            <HomeProductCard key={product.id || product._id || product.slug || product.name} product={product} index={index} onSelect={selectProduct} />
+            <HomeProductCard key={product.id || product._id || product.slug || product.name} product={product} index={index} onSelect={selectProduct} href={loginOnPurchase ? getProductPath(product) : ""} />
           ))}
         </section>
       ) : (
         <EmptyState title={t("recentlyAdded.empty")} />
       )}
       {purchaseModals}
-    </div>
+      </div>
+    </>
   );
 }

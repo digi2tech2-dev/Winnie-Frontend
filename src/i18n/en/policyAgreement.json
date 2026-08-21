@@ -1,0 +1,32 @@
+{
+  "agreement": {
+    "accept": "I agree to",
+    "terms": "the terms and conditions",
+    "title": "Terms and Conditions",
+    "subtitle": "Site policy and digital transactions center",
+    "close": "Close",
+    "closeWindow": "Close window",
+    "tabs": {
+      "privacy": "Privacy",
+      "refund": "Refund",
+      "orders": "Orders"
+    },
+    "notice": "Please read the following terms before continuing. Continuing means you accept Winnie HUB policies for digital services.",
+    "more": "More",
+    "understood": "Understood",
+    "sections": [
+      {
+        "title": "Privacy Policy",
+        "text": "We use account, contact, and order data to provide the service, secure payments, track orders, and improve the user experience. Personal data is not sold and is shared only when needed to provide the service or comply with requirements."
+      },
+      {
+        "title": "Refund and Cancellation Policy",
+        "text": "Cancellation or refund may be requested before an order is fulfilled or a digital service is delivered. After top-up or product activation, refunds may only be available when there is a clear fulfillment error or provider failure."
+      },
+      {
+        "title": "Top-up and Orders Policy",
+        "text": "Digital orders are processed after payment and required data are confirmed. Delivery time depends on the service type and provider, and users are responsible for verifying account details before sending an order."
+      }
+    ]
+  }
+}

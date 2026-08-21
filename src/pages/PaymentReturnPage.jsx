@@ -45,7 +45,7 @@ export default function PaymentReturnPage({ variant = "success" }) {
       setSyncState("error");
       setErrorMessage(requestError.userMessage || t("refreshError"));
     }
-  }, [paymentId, token]);
+  }, [paymentId, t, token]);
 
   useEffect(() => {
     void runSync();

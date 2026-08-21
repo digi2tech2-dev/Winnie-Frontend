@@ -56,7 +56,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [t, token]);
 
   const category = useMemo(
     () =>

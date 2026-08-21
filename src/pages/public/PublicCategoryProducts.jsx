@@ -8,11 +8,13 @@ import EmptyState from "../../components/EmptyState";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 import { canPurchaseProduct } from "../../utils/productAvailability";
+import Seo from "../../components/Seo";
+import { buildBreadcrumbSchema, buildItemListSchema, cleanSeoText, getProductPath } from "../../utils/seo";
 
 export default function PublicCategoryProducts() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation("home");
+  const { t, i18n } = useTranslation("home");
   const searchInputRef = useRef(null);
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -50,7 +52,7 @@ export default function PublicCategoryProducts() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const category = useMemo(
     () =>
@@ -78,6 +80,36 @@ export default function PublicCategoryProducts() {
     () => filterChildCategories(catalog.categories, category),
     [catalog.categories, category],
   );
+  const isArabic = i18n.language?.startsWith("ar");
+  const categoryPath = `/categories/${category?.slug || category?.id || categoryId || ""}`;
+  const seoTitle = category
+    ? `${categoryTitle} | ${isArabic ? "شحن وبطاقات رقمية" : "Digital Top-Ups"} | Winnie HUB`
+    : `${t("public.categoriesTitle")} | Winnie HUB`;
+  const seoDescription = category
+    ? cleanSeoText(category.subtitle || category.description || (
+      isArabic
+        ? `تصفح منتجات ${categoryTitle} المتاحة للشحن والشراء بسرعة وأمان عبر Winnie HUB.`
+        : `Browse ${categoryTitle} products available for fast and secure purchase through Winnie HUB.`
+    ))
+    : undefined;
+  const seoSchemas = useMemo(() => category ? [
+    buildBreadcrumbSchema([
+      { name: isArabic ? "الرئيسية" : "Home", path: "/" },
+      { name: t("public.categoriesTitle"), path: "/categories" },
+      { name: categoryTitle, path: categoryPath },
+    ]),
+    ...(products.length ? [buildItemListSchema(products, categoryTitle)] : []),
+  ] : [], [category, categoryPath, categoryTitle, isArabic, products, t]);
+  const seoNode = (
+    <Seo
+      title={seoTitle}
+      description={seoDescription}
+      path={categoryPath}
+      image={category?.image}
+      noindex={!loading && !category}
+      schemas={seoSchemas}
+    />
+  );
 
   const loginForPurchase = () => {
     setSelectedProduct(null);
@@ -90,37 +122,48 @@ export default function PublicCategoryProducts() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
-          {t("common:states.loadingProducts")}
+      <>
+        {seoNode}
+        <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+          <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
+            {t("common:states.loadingProducts")}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
-        <EmptyState title={t("products:listing.loadError")} description={error} />
-      </div>
+      <>
+        {seoNode}
+        <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+          <EmptyState title={t("products:listing.loadError")} description={error} />
+        </div>
+      </>
     );
   }
 
   if (!category) {
     return (
-      <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
-        <EmptyState
-          title={t("public.categoryNotFoundTitle")}
-          description={t("public.categoryNotFoundDescription")}
-          actionLabel={t("public.backToCategories")}
-          onAction={() => navigate("/categories")}
-        />
-      </div>
+      <>
+        {seoNode}
+        <div className="mx-auto max-w-[1120px] px-4 py-8 sm:px-6 lg:px-8">
+          <EmptyState
+            title={t("public.categoryNotFoundTitle")}
+            description={t("public.categoryNotFoundDescription")}
+            actionLabel={t("public.backToCategories")}
+            onAction={() => navigate("/categories")}
+          />
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1120px] space-y-5 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:space-y-7 lg:px-8 lg:pb-16">
+    <>
+      {seoNode}
+      <div className="mx-auto max-w-[1120px] space-y-5 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:space-y-7 lg:px-8 lg:pb-16">
       <header className="flex items-center justify-between gap-3 px-1">
         <div className="min-w-0">
           <button
@@ -181,6 +224,7 @@ export default function PublicCategoryProducts() {
               product={child}
               index={index}
               onSelect={(selectedChild) => navigate(`/categories/${selectedChild.slug || selectedChild.id}`)}
+              href={`/categories/${child.slug || child.id}`}
               reservePriceSpace
               favoriteEnabled={false}
             />
@@ -196,6 +240,7 @@ export default function PublicCategoryProducts() {
               product={product}
               index={index}
               onSelect={selectProduct}
+              href={getProductPath(product)}
             />
           ))}
         </section>
@@ -219,7 +264,8 @@ export default function PublicCategoryProducts() {
           />
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </>
   );
 }
 

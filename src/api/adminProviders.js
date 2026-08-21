@@ -369,17 +369,33 @@ function normalizeImportedProduct(product = {}) {
 }
 
 export function normalizeXenaStatus(data = {}) {
+  const value = data?.connection && typeof data.connection === "object"
+    ? data.connection
+    : data?.status && typeof data.status === "object"
+      ? data.status
+      : data;
+  const connectionStatus = String(value.status || value.connectionStatus || data.connectionStatus || "unknown").trim().toLowerCase();
+  const reconnectStatuses = new Set(["disconnected", "expired", "reauthentication_required"]);
+
   return {
-    displayName: data.displayName || "",
-    lastCheckedAt: data.lastCheckedAt || null,
-    lastCheckedAtLabel: data.lastCheckedAt ? formatDateTime(data.lastCheckedAt, "ar-EG-u-nu-latn") : "-",
-    lastErrorCode: data.lastErrorCode || "",
-    lastErrorMessage: data.lastErrorMessage || "",
-    maskedUsername: data.maskedUsername || "",
-    needsReconnect: Boolean(data.needsReconnect),
-    status: data.status || "unknown",
-    tokenExpiresAt: data.tokenExpiresAt || null,
-    tokenExpiresAtLabel: data.tokenExpiresAt ? formatDateTime(data.tokenExpiresAt, "ar-EG-u-nu-latn") : "-",
+    disabledByEnv: value.disabledByEnv === true || data.disabledByEnv === true,
+    displayName: value.displayName || data.displayName || "",
+    enabled: value.enabled !== false && data.enabled !== false,
+    gate: value.gate || data.gate || "",
+    lastCheckedAt: value.lastCheckedAt || data.lastCheckedAt || null,
+    lastCheckedAtLabel: value.lastCheckedAt || data.lastCheckedAt
+      ? formatDateTime(value.lastCheckedAt || data.lastCheckedAt, "ar-EG-u-nu-latn")
+      : "-",
+    lastErrorCode: value.lastErrorCode || data.lastErrorCode || "",
+    lastErrorMessage: value.lastErrorMessage || data.lastErrorMessage || "",
+    maskedUsername: value.maskedUsername || value.usernameMasked || data.maskedUsername || "",
+    needsReconnect: value.needsReconnect === true || data.needsReconnect === true || reconnectStatuses.has(connectionStatus),
+    readinessBlockers: Array.isArray(value.readinessBlockers) ? value.readinessBlockers : Array.isArray(data.readinessBlockers) ? data.readinessBlockers : [],
+    status: connectionStatus,
+    tokenExpiresAt: value.tokenExpiresAt || data.tokenExpiresAt || null,
+    tokenExpiresAtLabel: value.tokenExpiresAt || data.tokenExpiresAt
+      ? formatDateTime(value.tokenExpiresAt || data.tokenExpiresAt, "ar-EG-u-nu-latn")
+      : "-",
   };
 }
 
@@ -1029,7 +1045,7 @@ export async function syncAdminProviderProducts(token, id) {
 }
 
 export async function getXenaStatus(token, providerId) {
-  const response = await apiRequest(`/admin/providers/${providerId}/xena/status`, { token });
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/status`, { token, quiet: true });
   return {
     message: response.message,
     status: normalizeXenaStatus(response.data || {}),
@@ -1044,6 +1060,7 @@ export async function challengeXena(token, providerId, payload = {}) {
       username: payload.username,
     },
     method: "POST",
+    quiet: true,
     token,
   });
   return {
@@ -1060,6 +1077,7 @@ export async function reconnectXena(token, providerId, payload = {}) {
       username: payload.username,
     },
     method: "POST",
+    quiet: true,
     token,
   });
   return {
@@ -1072,6 +1090,7 @@ export async function verifyXenaOtp(token, providerId, code) {
   const response = await apiRequest(`/admin/providers/${providerId}/xena/verify`, {
     body: { code },
     method: "POST",
+    quiet: true,
     token,
   });
   return {
@@ -1092,7 +1111,7 @@ export async function refreshXenaBalance(token, providerId) {
 }
 
 export async function getXenaProductConfig(token, providerId) {
-  const response = await apiRequest(`/admin/providers/${providerId}/xena/product-config`, { token });
+  const response = await apiRequest(`/admin/providers/${providerId}/xena/product-config`, { token, quiet: true });
   return {
     config: normalizeXenaProductConfig(response.data || {}),
     message: response.message,

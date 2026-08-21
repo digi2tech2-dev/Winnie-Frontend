@@ -113,7 +113,7 @@ export default function Register() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const updateAccount = (key, value) => {
     setAccount((current) => ({ ...current, [key]: value }));

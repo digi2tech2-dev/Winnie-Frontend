@@ -2,6 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Braces, CircleDollarSign, Info, Save, Settings2, X } from "lucide-react";
 import { getAdminProductProviderOptions, getAdminProductProviderProductOptions } from "../../../api/adminProducts";
+import { getFazerCardsImportPreview, getFazerCardsProviderProducts } from "../../../api/adminProviders";
+import {
+  getFazerCardsCatalogFromProduct,
+  isFazerCardsProvider,
+  mergeFazerCardsOrderFields,
+  normalizeFazerCardsOrderFields,
+  readRetrievedFazerCardsCatalogs,
+} from "../../../utils/fazerCardsCatalogs";
 import BasicProductInfo from "./BasicProductInfo";
 import ExtraFieldsBuilder from "./ExtraFieldsBuilder";
 import ProductPricing from "./ProductPricing";
@@ -18,6 +26,7 @@ const emptyProduct = {
   image: "",
   imageFile: null,
   linkType: "manual",
+  providerCatalogKey: "",
   providerId: "",
   providerProductId: "",
   providerProductSearch: "",
@@ -48,10 +57,14 @@ const tabs = [
 ];
 
 const emptyProviderLinkState = {
+  catalogs: [],
   error: "",
+  fazerCards: false,
+  fieldPreparationMessage: "",
   loadingProducts: false,
   loadingProviders: false,
   pagination: null,
+  preparingFields: false,
   providerProducts: [],
   providers: [],
 };
@@ -85,6 +98,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
   const [activeTab, setActiveTab] = useState("basic");
   const [error, setError] = useState("");
   const [providerLink, setProviderLink] = useState(emptyProviderLinkState);
+  const providerFieldsRequestRef = useRef(0);
   const providerOptionsLoaded = useRef(false);
 
   useEffect(() => {
@@ -98,7 +112,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     };
   }, [onClose]);
 
-  const loadProviderProducts = useCallback(async (providerId, search = "", selectedProductId = "") => {
+  const loadProviderProducts = useCallback(async (providerId, search = "", selectedProductId = "", catalog = null) => {
     if (!token || !providerId) {
       setProviderLink((current) => ({
         ...current,
@@ -116,11 +130,19 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     }));
 
     try {
-      const result = await getAdminProductProviderProductOptions(token, providerId, {
-        limit: 100,
-        page: 1,
-        search,
-      });
+      const result = catalog
+        ? await getFazerCardsProviderProducts(token, {
+            category: catalog.category,
+            familyKey: catalog.familyKey,
+            limit: 100,
+            page: 1,
+            search,
+          })
+        : await getAdminProductProviderProductOptions(token, providerId, {
+            limit: 100,
+            page: 1,
+            search,
+          });
       setProviderLink((current) => ({
         ...current,
         error: "",
@@ -162,7 +184,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
         providers,
       }));
 
-      return selectedProviderId;
+      return { providerId: selectedProviderId, providers };
     } catch (loadError) {
       setProviderLink((current) => ({
         ...current,
@@ -170,22 +192,41 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
         loadingProviders: false,
         providers: [],
       }));
-      return "";
+      return { providerId: "", providers: [] };
     }
   }, [token]);
 
   const initializeAutomaticOptions = useCallback(async (preferredProviderId = "", selectedProductId = "") => {
-    const providerId = await loadProviders(preferredProviderId);
+    const result = await loadProviders(preferredProviderId);
+    const providerId = result.providerId;
     if (!providerId) return;
     const selectedProviderProductId = providerId === preferredProviderId ? selectedProductId : "";
+    const provider = result.providers.find((item) => item.id === providerId);
+    const fazerCards = isFazerCardsProvider(provider);
+    const catalogCandidates = fazerCards ? readRetrievedFazerCardsCatalogs() : [];
+    if (fazerCards && product?.providerCategory) {
+      catalogCandidates.unshift(getFazerCardsCatalogFromProduct({
+        category: product.providerCategory,
+        categoryName: product.providerCategoryName || product.providerCategory,
+        familyKey: product.familyKey,
+      }));
+    }
+    const catalogs = uniqueCatalogs(catalogCandidates);
+    const catalog = catalogs.find((item) => item.category === product?.providerCategory) || null;
 
     setForm((current) => ({
       ...current,
+      providerCatalogKey: catalog?.key || "",
       providerId,
       providerProductId: selectedProviderProductId,
     }));
-    await loadProviderProducts(providerId, "", selectedProviderProductId);
-  }, [loadProviderProducts, loadProviders]);
+    setProviderLink((current) => ({ ...current, catalogs, fazerCards }));
+    if (fazerCards && catalog) {
+      await loadProviderProducts(providerId, "", selectedProviderProductId, catalog);
+    } else if (!fazerCards) {
+      await loadProviderProducts(providerId, "", selectedProviderProductId);
+    }
+  }, [loadProviderProducts, loadProviders, product]);
 
   useEffect(() => {
     if (form.linkType !== "automatic" || providerOptionsLoaded.current) return;
@@ -214,6 +255,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
         ...current,
         clearProviderLink: existingProviderLink,
         linkType: "manual",
+        providerCatalogKey: "",
         providerId: "",
         providerProductId: "",
         providerProductSearch: "",
@@ -238,37 +280,144 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
   };
 
   const changeProvider = (providerId) => {
+    providerFieldsRequestRef.current += 1;
+    const provider = providerLink.providers.find((item) => item.id === providerId);
+    const fazerCards = isFazerCardsProvider(provider);
+    const catalogs = fazerCards ? readRetrievedFazerCardsCatalogs() : [];
     setForm((current) => ({
       ...current,
+      providerCatalogKey: "",
       providerId,
       providerProductId: "",
       providerProductSearch: "",
     }));
     setProviderLink((current) => ({
       ...current,
+      catalogs,
       error: "",
+      fazerCards,
+      fieldPreparationMessage: "",
       pagination: null,
+      preparingFields: false,
       providerProducts: [],
     }));
-    if (providerId) void loadProviderProducts(providerId);
+    if (providerId && !fazerCards) void loadProviderProducts(providerId);
+  };
+
+  const changeProviderCatalog = (catalogKey) => {
+    providerFieldsRequestRef.current += 1;
+    const catalog = providerLink.catalogs.find((item) => item.key === catalogKey);
+    setForm((current) => ({
+      ...current,
+      providerCatalogKey: catalogKey,
+      providerProductId: "",
+      providerProductSearch: "",
+    }));
+    setProviderLink((current) => ({
+      ...current,
+      error: "",
+      fieldPreparationMessage: "",
+      pagination: null,
+      preparingFields: false,
+      providerProducts: [],
+    }));
+    if (catalog && form.providerId) void loadProviderProducts(form.providerId, "", "", catalog);
   };
 
   const searchProviderProducts = (search) => {
     setForm((current) => ({ ...current, providerProductSearch: search }));
-    if (form.providerId) void loadProviderProducts(form.providerId, search, form.providerProductId);
+    const catalog = providerLink.fazerCards
+      ? providerLink.catalogs.find((item) => item.key === form.providerCatalogKey)
+      : null;
+    if (form.providerId && (!providerLink.fazerCards || catalog)) {
+      void loadProviderProducts(form.providerId, search, form.providerProductId, catalog);
+    }
   };
 
-  const selectProviderProduct = (providerProduct) => {
+  const selectProviderProduct = async (providerProduct) => {
+    const requestId = providerFieldsRequestRef.current + 1;
+    providerFieldsRequestRef.current = requestId;
     setError("");
     setForm((current) => ({
       ...current,
       ...buildProviderProductSelectionPatch(providerProduct, current),
     }));
+
+    if (!providerLink.fazerCards || !providerProduct?.id || !token) return;
+
+    setProviderLink((current) => ({
+      ...current,
+      error: "",
+      fieldPreparationMessage: "",
+      preparingFields: true,
+    }));
+
+    try {
+      const result = await getFazerCardsImportPreview(token, providerProduct.id);
+      if (providerFieldsRequestRef.current !== requestId) return;
+      const preview = result.preview || {};
+      const fieldSource = preview.suggestedOrderFields?.length
+        ? preview.suggestedOrderFields
+        : preview.requiredFields?.length
+          ? preview.requiredFields
+          : providerProduct.requiredFields || [];
+      const preparedFields = normalizeFazerCardsOrderFields(fieldSource);
+      const needsCustomerFields = (preview.fulfillmentMode || providerProduct.fulfillmentMode) === "TOPUP_WITH_FIELDS";
+
+      if (needsCustomerFields && !preparedFields.length) {
+        setForm((current) => ({ ...current, providerExecutionEnabled: false }));
+        setProviderLink((current) => ({
+          ...current,
+          error: "هذا العرض يحتاج بيانات من العميل، لكن المورد لم يُرجع تعريف الحقول المطلوبة. أضفها يدويًا من تبويب الحقول الإضافية.",
+          preparingFields: false,
+        }));
+        return;
+      }
+
+      setForm((current) => ({
+        ...current,
+        extraFields: mergeFazerCardsOrderFields(current.extraFields, preparedFields),
+        providerProductRequiredFields: fieldSource,
+      }));
+      setProviderLink((current) => ({
+        ...current,
+        fieldPreparationMessage: preparedFields.length
+          ? `تم تجهيز ${preparedFields.length.toLocaleString("ar-EG-u-nu-latn")} من حقول العميل تلقائيًا.`
+          : "هذا العرض لا يحتاج حقولًا إضافية من العميل.",
+        preparingFields: false,
+      }));
+    } catch (previewError) {
+      if (providerFieldsRequestRef.current !== requestId) return;
+      const preparedFields = normalizeFazerCardsOrderFields(providerProduct.requiredFields || []);
+      if (preparedFields.length) {
+        setForm((current) => ({
+          ...current,
+          extraFields: mergeFazerCardsOrderFields(current.extraFields, preparedFields),
+        }));
+        setProviderLink((current) => ({
+          ...current,
+          fieldPreparationMessage: `تم تجهيز ${preparedFields.length.toLocaleString("ar-EG-u-nu-latn")} من حقول العرض المتاحة.`,
+          preparingFields: false,
+        }));
+      } else {
+        setForm((current) => ({ ...current, providerExecutionEnabled: false }));
+        setProviderLink((current) => ({
+          ...current,
+          error: previewError.userMessage || "تعذر تجهيز حقول العميل لهذا العرض؛ تم إبقاء التنفيذ التلقائي معطلًا.",
+          preparingFields: false,
+        }));
+      }
+    }
   };
 
   const submit = (event) => {
     event.preventDefault();
     if (saving) return;
+    if (providerLink.preparingFields) {
+      setActiveTab("pricing");
+      setError("انتظر حتى يكتمل تجهيز حقول العميل من FazerCards.");
+      return;
+    }
     const selectedProviderProduct = findSelectedProviderProduct(providerLink.providerProducts, form.providerProductId);
     const effectiveForm = form.syncPriceFromProvider
       ? applySupplierPriceSync(form, selectedProviderProduct)
@@ -311,6 +460,13 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     if (effectiveForm.linkType === "automatic" && !effectiveForm.providerProductId) {
       setActiveTab("pricing");
       setError("اختر منتج المورد قبل حفظ الربط الآلي.");
+      return;
+    }
+
+    const needsCustomerFields = effectiveForm.fulfillmentMode === "TOPUP_WITH_FIELDS";
+    if (effectiveForm.linkType === "automatic" && needsCustomerFields && !extraFields.some((field) => field.active !== false && safeTrim(field.key || field.label))) {
+      setActiveTab("fields");
+      setError("عرض الشحن المختار يحتاج حقلًا واحدًا على الأقل لبيانات العميل قبل تفعيل التنفيذ التلقائي.");
       return;
     }
 
@@ -420,6 +576,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
             <ProductPricing
               value={form}
               onChange={update}
+              onCatalogChange={changeProviderCatalog}
               onLinkModeChange={changeLinkMode}
               onPatch={patch}
               onProductSearch={searchProviderProducts}
@@ -436,7 +593,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
         <footer className="sticky bottom-0 z-10 grid shrink-0 grid-cols-2 gap-2.5 border-t border-white/[0.08] bg-[#0a1226]/95 p-3.5 backdrop-blur-xl sm:flex sm:justify-end sm:px-6">
           <button type="button" onClick={onClose} disabled={saving} className="h-11 rounded-xl border border-white/10 px-6 text-xs font-black text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60">إلغاء</button>
-          <button type="submit" form="product-management-form" disabled={saving} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-gradient-to-l from-violet-600 to-blue-600 px-7 text-xs font-black text-white shadow-[0_0_24px_rgba(124,58,237,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(124,58,237,0.34)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"><Save className="h-4 w-4" />{saving ? "جارٍ الحفظ..." : "حفظ المنتج"}</button>
+          <button type="submit" form="product-management-form" disabled={saving || providerLink.preparingFields} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-gradient-to-l from-violet-600 to-blue-600 px-7 text-xs font-black text-white shadow-[0_0_24px_rgba(124,58,237,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(124,58,237,0.34)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"><Save className="h-4 w-4" />{providerLink.preparingFields ? "تجهيز الحقول..." : saving ? "جارٍ الحفظ..." : "حفظ المنتج"}</button>
         </footer>
       </section>
     </div>
@@ -460,6 +617,7 @@ function buildInitialProductForm(product) {
     nameEn: safeTrim(product?.nameEn || product?.name),
     extraFields: (Array.isArray(product?.extraFields) ? product.extraFields : []).map(cloneExtraField),
     linkType: providerLinked ? "automatic" : product?.linkType || "manual",
+    providerCatalogKey: "",
     providerId: safeTrim(product?.providerId),
     providerProductId: safeTrim(product?.providerProductId),
     providerProductExternalId: optionalTrim(product?.providerProductExternalId),
@@ -524,6 +682,10 @@ function getSupplierPrice(providerProduct) {
     ?? providerProduct?.price
     ?? "",
   );
+}
+
+function uniqueCatalogs(catalogs = []) {
+  return Array.from(new Map(catalogs.filter((catalog) => catalog?.key).map((catalog) => [catalog.key, catalog])).values());
 }
 
 function applySupplierPriceSync(draft, providerProduct) {

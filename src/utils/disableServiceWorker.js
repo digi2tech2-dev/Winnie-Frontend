@@ -1,7 +1,13 @@
 const PWA_STATUS_KEYS = ["vite-pwa:offline-ready", "vite-pwa:need-refresh"];
+const CLEANUP_VERSION_KEY = "winnie-sw-cleanup-version";
+const CLEANUP_VERSION = "2";
 
 export async function cleanupServiceWorkersAndCaches() {
   try {
+    if (typeof window !== "undefined" && window.localStorage?.getItem(CLEANUP_VERSION_KEY) === CLEANUP_VERSION) {
+      return;
+    }
+
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.map((registration) => registration.unregister()));
@@ -14,6 +20,7 @@ export async function cleanupServiceWorkersAndCaches() {
 
     if (typeof window !== "undefined" && window.localStorage) {
       PWA_STATUS_KEYS.forEach((key) => window.localStorage.removeItem(key));
+      window.localStorage.setItem(CLEANUP_VERSION_KEY, CLEANUP_VERSION);
     }
   } catch (error) {
     console.warn("[service-worker-cleanup] failed", error);

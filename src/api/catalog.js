@@ -288,6 +288,28 @@ export async function getPublicCatalog(query = {}) {
   };
 }
 
+export async function getPublicProduct(productId) {
+  const target = decodeURIComponent(String(productId || "")).trim();
+  if (!target) return null;
+
+  const catalog = await getPublicCatalog({ page: 1, limit: 1000 });
+  const product = catalog.products.find((item) => [
+    item.id,
+    item._id,
+    item.slug,
+  ].some((value) => String(value || "") === target));
+
+  if (!product) return null;
+  const category = catalog.categories.find((item) => [
+    item.id,
+    item._id,
+    item.slug,
+    item.name,
+  ].some((value) => String(value || "") === String(product.categoryId || product.category || product.categorySlug || "")));
+
+  return { category: category || null, product };
+}
+
 export function filterProductsByCategory(products, category) {
   if (!category) return [];
   const accepted = new Set([
