@@ -56,6 +56,7 @@ const AdminCurrenciesPage = lazy(() => import("./pages/admin/AdminCurrenciesPage
 const AdminSubAgentsPage = lazy(() => import("./pages/admin/AdminSubAgentsPage"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminUserWalletPage = lazy(() => import("./pages/admin/AdminUserWalletPage"));
+const AdminReviewsPage = lazy(() => import("./pages/admin/AdminReviewsPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const AdminWhatsAppNotificationsPage = lazy(() => import("./pages/admin/AdminWhatsAppNotificationsPage"));
 
@@ -183,6 +184,7 @@ export default function App() {
               <Route path="users" element={<Animated><AdminUsersPage /></Animated>} />
               <Route path="users/:id/wallet" element={<Animated><AdminUserWalletPage /></Animated>} />
               <Route path="orders" element={<Animated><AdminOrdersPage /></Animated>} />
+              <Route path="reviews" element={<Animated><AdminReviewsPage /></Animated>} />
               <Route path="payments" element={<Animated><AdminPaymentsPage /></Animated>} />
               <Route path="financial-reports" element={<Animated><AdminFinancialReportsPage /></Animated>} />
               <Route path="admin-wallet-adjustments" element={<Animated><AdminWalletAdjustmentsPage /></Animated>} />
