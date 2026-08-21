@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { Copy, Eye, PackageCheck } from "lucide-react";
+import { Copy, Eye, PackageCheck, Star } from "lucide-react";
 import { getCustomerOrder, revealCustomerOrderDeliveredCodes } from "../../api/orders";
+import { submitCustomerReview } from "../../api/reviews";
 import EmptyState from "../../components/EmptyState";
+import ReviewModal from "../../components/ReviewModal";
+import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
 
 const timelineSteps = [
@@ -29,11 +32,16 @@ function getStepState(orderStatus, stepStatus) {
 export default function CustomerOrderDetails({ basePath = "/customer" }) {
   const { id } = useParams();
   const { token } = useAuth();
+  const { showToast } = useToast();
   const { t, i18n } = useTranslation("orders");
   const isArabic = i18n.language?.startsWith("ar");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewNotice, setReviewNotice] = useState("");
   const [revealState, setRevealState] = useState({
     busy: false,
     error: "",
@@ -52,7 +60,12 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
 
       try {
         const result = await getCustomerOrder(token, id);
-        if (!cancelled) setOrder(result);
+        if (!cancelled) {
+          setOrder(result);
+          setReviewError("");
+          setReviewNotice("");
+          setReviewModalOpen(false);
+        }
       } catch (requestError) {
         if (!cancelled) {
           setError(requestError.userMessage || t("details.loadError"));
@@ -91,6 +104,11 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
 
   const customerValues = order.customerInput?.values || {};
   const canRevealCodes = order.status === "COMPLETED" && order.hasDeliveredCodes === true;
+  const reviewOrderId = getReviewOrderId(order, id);
+  const orderCompleted = isOrderCompleted(order);
+  const orderReviewed = isOrderAlreadyReviewed(order);
+  const canReviewOrder = Boolean(orderCompleted && !orderReviewed && reviewOrderId && token);
+  const reviewLabels = getReviewLabels(isArabic);
   const customerStatusMessage = getCustomerStatusMessage(order, isArabic);
   const fulfillmentNotice = order.fulfillmentNotice
     ? getManualFulfillmentMessage(isArabic)
@@ -119,6 +137,62 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
       setRevealState((current) => ({ ...current, copied: label }));
     } catch {
       setRevealState((current) => ({ ...current, copied: "" }));
+    }
+  };
+
+  const submitReview = async ({ rating, message }) => {
+    if (!canReviewOrder || reviewSubmitting) return;
+
+    setReviewSubmitting(true);
+    setReviewError("");
+    setReviewNotice("");
+
+    try {
+      await submitCustomerReview(token, {
+        orderId: reviewOrderId,
+        rating,
+        message,
+      });
+
+      setOrder((current) => current ? ({
+        ...current,
+        hasReview: true,
+        reviewSubmitted: true,
+        reviewStatus: "PENDING",
+      }) : current);
+      setReviewModalOpen(false);
+      setReviewNotice(reviewLabels.submittedPending);
+      showToast({
+        type: "success",
+        title: reviewLabels.thanksTitle,
+        message: reviewLabels.submittedPending,
+      });
+    } catch (requestError) {
+      if (requestError?.code === "CONFLICT" || requestError?.status === 409) {
+        setOrder((current) => current ? ({
+          ...current,
+          hasReview: true,
+          reviewSubmitted: true,
+        }) : current);
+        setReviewModalOpen(false);
+        setReviewNotice(reviewLabels.alreadySubmitted);
+        showToast({
+          type: "info",
+          title: reviewLabels.alreadyTitle,
+          message: reviewLabels.alreadySubmitted,
+        });
+        return;
+      }
+
+      const messageText = requestError?.userMessage || reviewLabels.submitError;
+      setReviewError(messageText);
+      showToast({
+        type: "error",
+        title: reviewLabels.errorTitle,
+        message: messageText,
+      });
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -197,10 +271,61 @@ export default function CustomerOrderDetails({ basePath = "/customer" }) {
             )}
           </div>
         )}
+        <section className="mt-8 rounded-lg border border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-[#111827]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-black">
+                <Star className="h-5 w-5 text-amber-400" />
+                {reviewLabels.title}
+              </h2>
+              <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
+                {orderReviewed
+                  ? reviewLabels.alreadySubmitted
+                  : orderCompleted
+                    ? reviewLabels.completedPrompt
+                    : reviewLabels.availableAfterCompletion}
+              </p>
+            </div>
+            {canReviewOrder && (
+              <button
+                type="button"
+                onClick={() => {
+                  setReviewError("");
+                  setReviewModalOpen(true);
+                }}
+                className="interactive-ring inline-flex h-10 items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-4 text-xs font-black text-white shadow-glow"
+              >
+                <Star className="h-4 w-4" />
+                {reviewLabels.button}
+              </button>
+            )}
+          </div>
+          {(reviewNotice || reviewError) && (
+            <p className={`mt-3 rounded-lg border px-3 py-2 text-sm font-bold ${
+              reviewError
+                ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200"
+                : "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+            }`}>
+              {reviewError || reviewNotice}
+            </p>
+          )}
+        </section>
         <Link to={`${basePath}/orders`} className="interactive-ring mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-royal to-pulse px-5 text-sm font-black text-white shadow-glow">
           <PackageCheck className="h-5 w-5" />
           {t("details.backToOrders")}
         </Link>
+        <ReviewModal
+          errorMessage={reviewError}
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            if (!reviewSubmitting) {
+              setReviewModalOpen(false);
+              setReviewError("");
+            }
+          }}
+          onSubmit={submitReview}
+          submitting={reviewSubmitting}
+        />
       </section>
       <aside className="glass-panel rounded-lg p-6">
         <h2 className="text-xl font-black">{t("details.timeline")}</h2>
@@ -244,6 +369,54 @@ function SecretLine({ copied, copiedLabel, copyLabel, label, onCopy, value }) {
 
 function getManualFulfillmentMessage(isArabic) {
   return isArabic ? "طلبك قيد التنفيذ" : "Your order is being processed.";
+}
+
+function isMongoObjectId(value = "") {
+  return /^[a-f\d]{24}$/i.test(String(value || "").trim());
+}
+
+function getReviewOrderId(order = {}, routeId = "") {
+  const candidates = [order?._id, order?.id, routeId];
+  return candidates.map((value) => String(value || "").trim()).find(isMongoObjectId) || "";
+}
+
+function isOrderCompleted(order = {}) {
+  const status = String(order?.status || "").toUpperCase();
+  return status === "COMPLETED" || status === "SUCCESS" || status === "SUCCEEDED";
+}
+
+function isOrderAlreadyReviewed(order = {}) {
+  return Boolean(order?.hasReview || order?.reviewSubmitted || order?.hasReviewed || order?.reviewId || order?.reviewedAt);
+}
+
+function getReviewLabels(isArabic) {
+  if (isArabic) {
+    return {
+      alreadySubmitted: "تم إرسال تقييم لهذا الطلب",
+      alreadyTitle: "تم إرسال التقييم مسبقا",
+      availableAfterCompletion: "يمكنك تقييم الطلب بعد اكتمال تنفيذه.",
+      button: "قيّم الطلب",
+      completedPrompt: "شاركنا رأيك في هذا الطلب بعد اكتماله.",
+      errorTitle: "لم يتم إرسال التقييم",
+      submitError: "تعذر إرسال تقييمك. حاول مرة أخرى.",
+      submittedPending: "تم إرسال تقييمك وسيظهر بعد المراجعة",
+      thanksTitle: "شكرا لك",
+      title: "تقييم الطلب",
+    };
+  }
+
+  return {
+    alreadySubmitted: "A review has already been submitted for this order.",
+    alreadyTitle: "Review already submitted",
+    availableAfterCompletion: "You can review this order after it is completed.",
+    button: "Review order",
+    completedPrompt: "Share your experience with this completed order.",
+    errorTitle: "Review not submitted",
+    submitError: "Unable to submit your review. Please try again.",
+    submittedPending: "Your review was submitted and will appear after moderation.",
+    thanksTitle: "Thank you",
+    title: "Order review",
+  };
 }
 
 function getCustomerStatusMessage(order = {}, isArabic) {
