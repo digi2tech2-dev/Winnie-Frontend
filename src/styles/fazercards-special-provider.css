@@ -351,6 +351,74 @@
 .fc-import-action:disabled { cursor: wait; opacity: 0.65; transform: none; }
 .fc-import-action svg { width: 15px; }
 
+.fc-launch-block {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #e4e7ec;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.fc-launch-block__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fc-launch-block__heading div { min-width: 0; }
+.fc-launch-block__heading span { display: block; color: #94a3b8; font-size: 7px; font-weight: 900; }
+.fc-launch-block__heading strong { display: block; margin-top: 1px; color: #334155; font-size: 9px; font-weight: 950; }
+.fc-launch-block__heading > small { flex: 0 0 auto; padding: 4px 6px; border-radius: 7px; background: #f1f5f9; color: #64748b; font-size: 7px; font-weight: 900; }
+
+.fc-launch-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.fc-launch-action {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: right;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.fc-launch-action:hover:not(:disabled) { transform: translateY(-1px); }
+.fc-launch-action:disabled { cursor: not-allowed; opacity: 0.42; }
+.fc-launch-action > svg { width: 17px; height: 17px; flex: 0 0 auto; }
+.fc-launch-action > span { display: flex; min-width: 0; flex-direction: column; }
+.fc-launch-action strong { font-size: 8px; font-weight: 950; line-height: 1.5; }
+.fc-launch-action small { overflow: hidden; margin-top: 1px; font-size: 6.5px; font-weight: 750; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+
+.fc-launch-action.is-manual {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.fc-launch-action.is-manual:hover:not(:disabled) { box-shadow: 0 8px 18px rgba(5, 150, 105, 0.13); }
+
+.fc-launch-action.is-auto {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.fc-launch-action.is-auto:hover:not(:disabled) { box-shadow: 0 8px 18px rgba(2, 132, 199, 0.13); }
+
+.fc-launch-hint { display: block; margin-top: 7px; color: #94a3b8; font-size: 7px; font-weight: 800; line-height: 1.6; }
+.fc-launch-hint.is-warning { color: #b45309; }
+
 .fc-import-message { display: flex; align-items: flex-start; gap: 7px; margin-top: 10px; padding: 9px; border-radius: 10px; font-size: 8px; font-weight: 850; }
 .fc-import-message > svg { width: 14px; flex: 0 0 auto; }
 .fc-import-message strong { display: block; font-size: 8px; font-weight: 950; }
@@ -428,6 +496,11 @@
 .dark .fc-import-summary div { border-color: rgba(255, 255, 255, 0.08); background: #111b2d; }
 .dark .fc-import-summary strong { color: #e2e8f0; }
 .dark .fc-sync-options span { background: rgba(16, 185, 129, 0.1); color: #6ee7b7; }
+.dark .fc-launch-block { border-color: rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, 0.025); }
+.dark .fc-launch-block__heading strong { color: #e2e8f0; }
+.dark .fc-launch-block__heading > small { background: rgba(255, 255, 255, 0.06); color: #94a3b8; }
+.dark .fc-launch-action.is-manual { border-color: rgba(52, 211, 153, 0.2); background: rgba(16, 185, 129, 0.09); color: #6ee7b7; }
+.dark .fc-launch-action.is-auto { border-color: rgba(56, 189, 248, 0.2); background: rgba(14, 165, 233, 0.09); color: #7dd3fc; }
 .dark .fc-import-empty strong { color: #cbd5e1; }
 .dark .fc-offers::before { border-color: var(--fc-line); background: #0d1422; }
 .dark .fc-rows-skeleton span,
@@ -461,4 +534,11 @@
   .fc-offers-layout .fc-offer-list { max-height: 360px; }
   .fc-import-panel { position: static; }
   .fc-offer__aside { grid-column: 2; grid-row: 2; justify-items: start; }
+}
+
+@media (max-width: 420px) {
+  .fc-launch-actions { grid-template-columns: 1fr; }
+  .fc-launch-action { min-height: 48px; }
+  .fc-launch-action strong { font-size: 9px; }
+  .fc-launch-action small { font-size: 7px; }
 }

@@ -14,25 +14,40 @@ import {
   PackageCheck,
   Plus,
   RefreshCw,
+  Rocket,
   Search,
   Server,
   Trash2,
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { linkAdminProductProvider } from "../../../api/adminProducts";
-import { getFazerCardsImportPreview, getFazerCardsProviderProducts, importFazerCardsProviderProduct } from "../../../api/adminProviders";
+import {
+  getFazerCardsProviderProducts,
+  launchFazerCardsProduct,
+} from "../../../api/adminProviders";
 import {
   groupFazerCardsCatalogs,
   readRetrievedFazerCardsCatalogs,
   removeRetrievedFazerCardsCatalog,
   saveRetrievedFazerCardsCatalog,
 } from "../../../utils/fazerCardsCatalogs";
+import FazerCardsImportModal from "./FazerCardsImportModal";
 import "../../../styles/fazercards-special-provider.css";
 
 const SEARCH_DELAY = 350;
 const CATALOG_SEARCH_LIMIT = 100;
 const OFFERS_PAGE_SIZE = 50;
+const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "STEAM_GIFTS", "MANUAL_SERVICES"]);
+const EMPTY_IMPORT_STATE = {
+  action: "",
+  error: "",
+  launchMessage: "",
+  launchTone: "",
+  loading: false,
+  manualFieldWarning: "",
+  product: null,
+  warning: "",
+};
 
 export default function FazerCardsSpecialProviderPage({
   health,
@@ -214,17 +229,18 @@ export default function FazerCardsSpecialProviderPage({
         </div>
       </section>
 
-      {activeCatalog && <CatalogOffers catalog={activeCatalog} providerId={supplier.id} token={token} onClose={() => setActiveCatalog(null)} />}
+      {activeCatalog && <CatalogOffers catalog={activeCatalog} token={token} onClose={() => setActiveCatalog(null)} />}
     </main>
   );
 }
 
-function CatalogOffers({ catalog, onClose, providerId, token }) {
+function CatalogOffers({ catalog, onClose, token }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [selectedOfferId, setSelectedOfferId] = useState("");
   const [state, setState] = useState({ error: "", loading: true, offers: [], pagination: null });
-  const [importState, setImportState] = useState({ error: "", loading: false, product: null, warning: "" });
+  const [importState, setImportState] = useState(EMPTY_IMPORT_STATE);
+  const [importOffer, setImportOffer] = useState(null);
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -251,58 +267,112 @@ function CatalogOffers({ catalog, onClose, providerId, token }) {
   }, [catalog, page, query, token]);
 
   const selectedOffer = state.offers.find((offer) => offer.id === selectedOfferId);
+  const selectedFamilyKey = String(selectedOffer?.familyKey || catalog.familyKey || "").toUpperCase();
+  const autoProviderCapable = AUTO_PROVIDER_FAMILIES.has(selectedFamilyKey);
+  const launchDisabled = !importState.product?.id || Boolean(importState.action) || importState.loading;
 
   const selectOffer = (offerId) => {
+    const offer = state.offers.find((item) => item.id === offerId);
     setSelectedOfferId(offerId);
-    setImportState({ error: "", loading: false, product: null, warning: "" });
+    setImportState(offer?.importedProduct ? {
+      ...EMPTY_IMPORT_STATE,
+      manualFieldWarning: offer.importedProduct.manualFieldWarning || "",
+      product: offer.importedProduct,
+    } : EMPTY_IMPORT_STATE);
   };
 
-  const importSelectedOffer = async () => {
-    if (!selectedOffer || importState.loading) return;
-    setImportState({ error: "", loading: true, product: null, warning: "" });
+  const handleOfferImported = async (result) => {
+    if (!result.product?.id || !selectedOffer) return;
+    const importedOfferId = selectedOffer.id;
+    setImportState({ ...EMPTY_IMPORT_STATE, product: result.product });
+    setState((current) => ({
+      ...current,
+      offers: current.offers.map((offer) => offer.id === importedOfferId
+        ? { ...offer, imported: true, importedProduct: result.product }
+        : offer),
+    }));
 
     try {
-      const previewResult = await getFazerCardsImportPreview(token, selectedOffer.id);
-      const preview = previewResult.preview || {};
-      const imported = await importFazerCardsProviderProduct(token, selectedOffer.id, {
-        currency: preview.currency || selectedOffer.currency || "USD",
-        markupType: preview.defaultMarkupType || "percentage",
-        markupValue: preview.defaultMarkupValue ?? 0,
-        name: preview.suggestedProductName || selectedOffer.offerName || selectedOffer.name,
-        syncAvailabilityFromProvider: true,
-        syncNameFromProvider: true,
-        syncPriceFromProvider: true,
-        updateExisting: true,
+      const refreshed = await getFazerCardsProviderProducts(token, {
+        category: catalog.category,
+        familyKey: catalog.familyKey,
+        limit: OFFERS_PAGE_SIZE,
+        page,
+        search: query.trim() || undefined,
       });
-      if (!imported.product?.id) throw new Error("لم يُرجع الخادم معرّف المنتج بعد الإضافة.");
-      let finalProduct = imported.product;
-      let warning = "";
-
-      try {
-        const linked = await linkAdminProductProvider(token, imported.product.id, {
-          providerId,
-          providerProductId: selectedOffer.id,
-          syncLimits: true,
-          syncName: true,
-          syncPrice: true,
-        });
-        finalProduct = linked.product;
-      } catch (linkError) {
-        warning = linkError.userMessage || "أُضيف المنتج، لكن تعذر تأكيد مزامنة الحدود. يمكنك مراجعة الربط من إدارة المنتجات.";
-      }
-
-      setState((current) => ({
+      const refreshedOffer = refreshed.products.find((offer) => offer.id === importedOfferId);
+      if (!refreshedOffer) return;
+      setState({ error: "", loading: false, offers: refreshed.products, pagination: refreshed.pagination });
+      setImportState((current) => ({
         ...current,
-        offers: current.offers.map((offer) => offer.id === selectedOffer.id ? { ...offer, imported: true } : offer),
+        manualFieldWarning: refreshedOffer.importedProduct?.manualFieldWarning || "",
+        product: refreshedOffer.importedProduct || current.product,
       }));
-      setImportState({ error: "", loading: false, product: finalProduct, warning });
-    } catch (error) {
-      setImportState({
-        error: error.userMessage || error.message || "تعذر إضافة العرض إلى منتجات المتجر.",
-        loading: false,
-        product: null,
-        warning: "",
+    } catch {
+      // The import already succeeded. Keep the confirmed result shown by the legacy flow.
+    }
+  };
+
+  const launchImportedProduct = async (providerExecutionMode) => {
+    const productId = importState.product?.id;
+    const isAuto = providerExecutionMode === "AUTO_PROVIDER";
+    const familyKey = String(selectedOffer?.familyKey || catalog.familyKey || "").toUpperCase();
+    if (!productId || importState.action) return;
+
+    if (isAuto && !AUTO_PROVIDER_FAMILIES.has(familyKey)) {
+      setImportState((current) => ({
+        ...current,
+        launchMessage: "هذه العائلة لا تدعم التنفيذ التلقائي حاليًا.",
+        launchTone: "warning",
+      }));
+      return;
+    }
+
+    const confirmation = isAuto
+      ? "نشر المنتج وتفعيل التنفيذ التلقائي من FazerCards؟ سيظل التنفيذ الحقيقي مرتبطًا بمفاتيح أمان المورد."
+      : "نشر المنتج للعملاء مع تنفيذ الطلب يدويًا؟";
+    if (!window.confirm(confirmation)) return;
+
+    setImportState((current) => ({ ...current, action: isAuto ? "auto" : "manual", error: "", launchMessage: "", launchTone: "" }));
+    try {
+      const result = await launchFazerCardsProduct(token, productId, {
+        customerPurchaseEnabled: true,
+        isActive: true,
+        providerExecutionEnabled: isAuto,
+        providerExecutionMode,
+        status: "available",
+        visibleInStore: true,
       });
+      const launchStatus = result.result?.launchStatus
+        || result.result?.result?.customerVisibilityStatus
+        || result.result?.customerVisibilityStatus
+        || {};
+      const visibleToCustomer = launchStatus.visibleToCustomer === true;
+      const reasons = Array.isArray(launchStatus.reasons) ? launchStatus.reasons : [];
+
+      setImportState((current) => ({
+        ...current,
+        action: "",
+        launchMessage: visibleToCustomer
+          ? isAuto ? "تم نشر المنتج وتفعيل التنفيذ التلقائي بنجاح." : "تم نشر المنتج للعملاء بنجاح."
+          : `تم حفظ إعدادات التشغيل، لكن المنتج غير ظاهر للعملاء: ${reasons.join("، ") || "راجع جاهزية المنتج."}`,
+        launchTone: visibleToCustomer ? "success" : "warning",
+        product: {
+          ...current.product,
+          isActive: true,
+          providerExecutionEnabled: isAuto,
+          providerExecutionMode,
+          status: "available",
+          visibleInStore: visibleToCustomer,
+        },
+      }));
+    } catch (error) {
+      setImportState((current) => ({
+        ...current,
+        action: "",
+        launchMessage: error.userMessage || (isAuto ? "تعذر تفعيل التنفيذ التلقائي." : "تعذر نشر المنتج."),
+        launchTone: "error",
+      }));
     }
   };
 
@@ -374,10 +444,46 @@ function CatalogOffers({ catalog, onClose, providerId, token }) {
                 </div>
               )}
 
-              <button type="button" className="fc-import-action" onClick={importSelectedOffer} disabled={importState.loading}>
-                {importState.loading ? <Loader2 className="animate-spin" /> : selectedOffer.imported || importState.product ? <RefreshCw /> : <Plus />}
-                {importState.loading ? "جارٍ الإضافة والمزامنة..." : selectedOffer.imported || importState.product ? "تحديث المنتج والمزامنة" : "إضافة المنتج ومزامنته"}
+              <button type="button" className="fc-import-action" onClick={() => setImportOffer(selectedOffer)}>
+                {selectedOffer.imported || importState.product ? <RefreshCw /> : <Plus />}
+                {selectedOffer.imported || importState.product ? "تحديث بيانات الاستيراد" : "إضافة المنتج ومزامنته"}
               </button>
+
+              <div className="fc-launch-block">
+                <div className="fc-launch-block__heading">
+                  <div><span>بعد الإضافة</span><strong>تشغيل ونشر المنتج</strong></div>
+                  <small>{importState.product?.id ? "تم الاستيراد" : "أضف المنتج أولًا"}</small>
+                </div>
+                <div className="fc-launch-actions">
+                  <button
+                    type="button"
+                    className="fc-launch-action is-manual"
+                    onClick={() => launchImportedProduct("MANUAL_FULFILLMENT")}
+                    disabled={launchDisabled || Boolean(importState.manualFieldWarning)}
+                  >
+                    {importState.action === "manual" ? <Loader2 className="animate-spin" /> : <Rocket />}
+                    <span><strong>نشر المنتج</strong><small>إظهار للعملاء · تنفيذ يدوي</small></span>
+                  </button>
+                  <button
+                    type="button"
+                    className="fc-launch-action is-auto"
+                    onClick={() => launchImportedProduct("AUTO_PROVIDER")}
+                    disabled={launchDisabled || !autoProviderCapable}
+                  >
+                    {importState.action === "auto" ? <Loader2 className="animate-spin" /> : <Server />}
+                    <span><strong>تفعيل التنفيذ التلقائي</strong><small>نشر وتشغيل عبر FazerCards</small></span>
+                  </button>
+                </div>
+                {!autoProviderCapable && <small className="fc-launch-hint">التنفيذ التلقائي غير مدعوم لهذه العائلة.</small>}
+                {importState.manualFieldWarning && <small className="fc-launch-hint is-warning">{importState.manualFieldWarning}</small>}
+              </div>
+
+              {importState.launchMessage && (
+                <div className={`fc-import-message is-${importState.launchTone || "warning"}`}>
+                  {importState.launchTone === "success" ? <Check /> : <AlertCircle />}
+                  <div><strong>{importState.launchTone === "success" ? "اكتمل التشغيل" : "حالة التشغيل"}</strong><p>{importState.launchMessage}</p></div>
+                </div>
+              )}
 
               {importState.product && (
                 <Link className="fc-manage-product" to="/admin/tools/products">إدارة المنتجات <ArrowUpLeft /></Link>
@@ -397,6 +503,13 @@ function CatalogOffers({ catalog, onClose, providerId, token }) {
           <button type="button" onClick={() => setPage((value) => Math.min(state.pagination.pages, value + 1))} disabled={page >= state.pagination.pages || state.loading}><ChevronLeft /></button>
         </div>
       )}
+
+      <FazerCardsImportModal
+        onClose={() => setImportOffer(null)}
+        onImported={handleOfferImported}
+        product={importOffer}
+        token={token}
+      />
 
     </section>
   );
