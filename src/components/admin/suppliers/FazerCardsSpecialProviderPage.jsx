@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDot,
+  Clock3,
+  Database,
   FolderOpen,
   Layers3,
   Link2,
@@ -22,8 +24,12 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
+  getFazerCardsCatalogFamilies,
+  getFazerCardsCatalogSyncStatus,
   getFazerCardsProviderProducts,
   launchFazerCardsProduct,
+  syncFazerCardsCatalogAll,
+  syncFazerCardsCatalogFamily,
 } from "../../../api/adminProviders";
 import {
   groupFazerCardsCatalogs,
@@ -37,7 +43,19 @@ import "../../../styles/fazercards-special-provider.css";
 const SEARCH_DELAY = 350;
 const CATALOG_SEARCH_LIMIT = 100;
 const OFFERS_PAGE_SIZE = 50;
-const AUTO_PROVIDER_FAMILIES = new Set(["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "STEAM_GIFTS", "MANUAL_SERVICES"]);
+const SYNC_SUCCESS_COOLDOWN_SECONDS = 30;
+const SYNC_RATE_LIMIT_COOLDOWN_SECONDS = 60;
+const DEFAULT_SEARCH_FAMILIES = ["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "STEAM_GIFTS", "MANUAL_SERVICES"];
+const INDEX_SYNC_FAMILIES = DEFAULT_SEARCH_FAMILIES.filter((familyKey) => familyKey !== "STEAM_GIFTS");
+const FAMILY_LABELS = {
+  GAME_KEYS: "مفاتيح الألعاب",
+  GIFTCARDS: "بطاقات الهدايا",
+  MANUAL_SERVICES: "الخدمات اليدوية",
+  STEAM_TOPUP: "شحن Steam",
+  TELEGRAM: "Telegram",
+  TOPUPS: "الشحن المباشر",
+};
+const AUTO_PROVIDER_FAMILIES = new Set(DEFAULT_SEARCH_FAMILIES);
 const EMPTY_IMPORT_STATE = {
   action: "",
   error: "",
@@ -59,48 +77,220 @@ export default function FazerCardsSpecialProviderPage({
   token,
 }) {
   const [query, setQuery] = useState("");
-  const [searchState, setSearchState] = useState({ error: "", loading: false, results: [], searched: false });
+  const [searchState, setSearchState] = useState({ error: "", loading: false, results: [], searched: false, warning: "" });
+  const [syncState, setSyncState] = useState({ action: "", error: "", lastSyncedAt: "", message: "" });
+  const [syncCooldownUntil, setSyncCooldownUntil] = useState(0);
+  const [syncCooldownSeconds, setSyncCooldownSeconds] = useState(0);
+  const [retryFamily, setRetryFamily] = useState("GIFTCARDS");
   const [retrievedCatalogs, setRetrievedCatalogs] = useState(() => readRetrievedFazerCardsCatalogs());
   const [retrievingKey, setRetrievingKey] = useState("");
   const [activeCatalog, setActiveCatalog] = useState(null);
   const requestRef = useRef(0);
+  const syncLockRef = useRef(false);
 
   const retrievedKeys = useMemo(() => new Set(retrievedCatalogs.map((catalog) => catalog.key)), [retrievedCatalogs]);
   const connected = health?.api?.connectionOk === true || (!health && supplier?.active === true);
 
   useEffect(() => {
-    const searchQuery = query.trim();
+    let active = true;
+    if (!token) return undefined;
+
+    getFazerCardsCatalogSyncStatus(token)
+      .then(({ status }) => {
+        if (!active) return;
+        setSyncState((current) => ({ ...current, lastSyncedAt: getLatestSyncTimestamp(status) }));
+      })
+      .catch(() => {});
+
+    return () => { active = false; };
+  }, [token]);
+
+  useEffect(() => {
+    if (!syncCooldownUntil) {
+      setSyncCooldownSeconds(0);
+      return undefined;
+    }
+
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((syncCooldownUntil - Date.now()) / 1000));
+      setSyncCooldownSeconds(remaining);
+      if (!remaining) setSyncCooldownUntil(0);
+    };
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 1000);
+    return () => window.clearInterval(timer);
+  }, [syncCooldownUntil]);
+
+  const resetCatalogSearch = (nextQuery) => {
+    requestRef.current += 1;
+    setQuery(nextQuery);
+    setSearchState({ error: "", loading: false, results: [], searched: false, warning: "" });
+  };
+
+  const searchCatalogs = async (event, requestedQuery = query) => {
+    event?.preventDefault?.();
+    const searchQuery = requestedQuery.trim();
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;
 
     if (searchQuery.length < 2) {
-      setSearchState({ error: "", loading: false, results: [], searched: false });
-      return undefined;
+      setSearchState({
+        error: "اكتب حرفين على الأقل، ثم اضغط على زر البحث.",
+        loading: false,
+        results: [],
+        searched: false,
+        warning: "",
+      });
+      return;
     }
 
-    setSearchState((current) => ({ ...current, error: "", loading: true, searched: true }));
-    const timer = window.setTimeout(async () => {
+    setSearchState({ error: "", loading: true, results: [], searched: true, warning: "" });
+
+    try {
+      let familyKeys = DEFAULT_SEARCH_FAMILIES;
       try {
-        const result = await getFazerCardsProviderProducts(token, {
+        const familyResult = await getFazerCardsCatalogFamilies(token);
+        familyKeys = Array.from(new Set([
+          ...DEFAULT_SEARCH_FAMILIES,
+          ...familyResult.families.map((family) => String(family.familyKey || "").trim().toUpperCase()).filter(Boolean),
+        ]));
+      } catch {
+        // The known families remain a safe fallback if catalog metadata is unavailable.
+      }
+
+      if (requestRef.current !== requestId) return;
+      const familyResults = await Promise.allSettled(familyKeys.map((familyKey) => (
+        getFazerCardsProviderProducts(token, {
+          familyKey,
+          familyKeyExplicit: true,
           limit: CATALOG_SEARCH_LIMIT,
           page: 1,
           search: searchQuery,
-        });
-        if (requestRef.current !== requestId) return;
-        setSearchState({ error: "", loading: false, results: groupFazerCardsCatalogs(result.products), searched: true });
-      } catch (error) {
-        if (requestRef.current !== requestId) return;
-        setSearchState({
-          error: error.userMessage || "تعذر البحث في كتالوج FazerCards.",
-          loading: false,
-          results: [],
-          searched: true,
-        });
-      }
-    }, SEARCH_DELAY);
+        })
+      )));
 
-    return () => window.clearTimeout(timer);
-  }, [query, token]);
+      if (requestRef.current !== requestId) return;
+      const successfulResults = familyResults.filter((result) => result.status === "fulfilled");
+      const failedResults = familyResults.filter((result) => result.status === "rejected");
+      if (!successfulResults.length) throw failedResults[0]?.reason || new Error("Catalog search failed");
+
+      const uniqueProducts = new Map();
+      successfulResults.forEach(({ value }) => {
+        value.products.forEach((product) => uniqueProducts.set(product.id || product.offerId, product));
+      });
+
+      setSearchState({
+        error: "",
+        loading: false,
+        results: groupFazerCardsCatalogs(Array.from(uniqueProducts.values())),
+        searched: true,
+        warning: failedResults.length
+          ? `تم البحث في ${successfulResults.length} عائلة، وتعذر الوصول إلى ${failedResults.length}. أعد المحاولة لإكمال البحث.`
+          : "",
+      });
+    } catch (error) {
+      if (requestRef.current !== requestId) return;
+      setSearchState({
+        error: error.userMessage || "تعذر البحث في كتالوج FazerCards.",
+        loading: false,
+        results: [],
+        searched: true,
+        warning: "",
+      });
+    }
+  };
+
+  const refreshSyncTimestamp = async () => {
+    try {
+      const { status } = await getFazerCardsCatalogSyncStatus(token);
+      return getLatestSyncTimestamp(status) || new Date().toISOString();
+    } catch {
+      return new Date().toISOString();
+    }
+  };
+
+  const syncCatalogIndex = async () => {
+    if (!token || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
+    syncLockRef.current = true;
+    requestRef.current += 1;
+    setSyncState((current) => ({ ...current, action: "all", error: "", message: "" }));
+
+    try {
+      const { result } = await syncFazerCardsCatalogAll(token, {
+        families: INDEX_SYNC_FAMILIES,
+        includeSteamGifts: false,
+        limit: CATALOG_SEARCH_LIMIT,
+      });
+      const errors = Array.isArray(result.errors) ? result.errors.length : 0;
+      const created = Number(result.totals?.providerProductsCreated || 0);
+      const updated = Number(result.totals?.providerProductsUpdated || 0);
+      const lastSyncedAt = await refreshSyncTimestamp();
+      setSyncState({
+        action: "",
+        error: "",
+        lastSyncedAt,
+        message: errors
+          ? `اكتملت المزامنة مع ${errors} ملاحظة. تمت إضافة ${created} وتحديث ${updated}.`
+          : `الفهرس محدث: تمت إضافة ${created} وتحديث ${updated} منتج مورد.`,
+      });
+      startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, SYNC_SUCCESS_COOLDOWN_SECONDS);
+      if (query.trim().length >= 2) await searchCatalogs(null, query);
+    } catch (error) {
+      const rateLimited = Number(error.status) === 429;
+      const waitSeconds = rateLimited ? getSyncRetrySeconds(error) : 0;
+      if (rateLimited) startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, waitSeconds);
+      setSyncState((current) => ({
+        ...current,
+        action: "",
+        error: rateLimited
+          ? `تم الوصول إلى حد طلبات FazerCards. انتظر ${waitSeconds} ثانية ثم حاول مرة أخرى.`
+          : error.userMessage || error.message || "تعذر تحديث فهرس FazerCards.",
+        message: "",
+      }));
+    } finally {
+      syncLockRef.current = false;
+    }
+  };
+
+  const syncFamilyAndRetry = async () => {
+    if (!token || syncLockRef.current || syncState.action || syncCooldownSeconds > 0 || !retryFamily) return;
+    syncLockRef.current = true;
+    requestRef.current += 1;
+    setSyncState((current) => ({ ...current, action: `family:${retryFamily}`, error: "", message: "" }));
+
+    try {
+      const { result } = await syncFazerCardsCatalogFamily(token, {
+        family: retryFamily,
+        limit: CATALOG_SEARCH_LIMIT,
+      });
+      const created = Number(result.providerProductsCreated || 0);
+      const updated = Number(result.providerProductsUpdated || 0);
+      const lastSyncedAt = await refreshSyncTimestamp();
+      setSyncState({
+        action: "",
+        error: "",
+        lastSyncedAt,
+        message: `تم تحديث ${FAMILY_LABELS[retryFamily] || retryFamily}: جديد ${created}، تحديث ${updated}.`,
+      });
+      startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, SYNC_SUCCESS_COOLDOWN_SECONDS);
+      if (query.trim().length >= 2) await searchCatalogs(null, query);
+    } catch (error) {
+      const rateLimited = Number(error.status) === 429;
+      const waitSeconds = rateLimited ? getSyncRetrySeconds(error) : 0;
+      if (rateLimited) startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, waitSeconds);
+      setSyncState((current) => ({
+        ...current,
+        action: "",
+        error: rateLimited
+          ? `تم الوصول إلى حد طلبات FazerCards. انتظر ${waitSeconds} ثانية ثم حاول مرة أخرى.`
+          : error.userMessage || error.message || `تعذر تحديث ${FAMILY_LABELS[retryFamily] || retryFamily}.`,
+        message: "",
+      }));
+    } finally {
+      syncLockRef.current = false;
+    }
+  };
+
 
   const retrieveCatalog = async (catalog) => {
     if (!token || retrievingKey) return;
@@ -175,19 +365,81 @@ export default function FazerCardsSpecialProviderPage({
           <small>لن يتم تحميل كل منتجات المورد</small>
         </div>
 
-        <label className="fc-search-box">
-          {searchState.loading ? <Loader2 className="animate-spin" /> : <Search />}
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="مثال: PUBG Mobile" autoComplete="off" />
-          {query && <button type="button" onClick={() => setQuery("")} aria-label="مسح البحث"><X /></button>}
-        </label>
+        <div className="fc-index-bar">
+          <span className="fc-index-bar__icon"><Database /></span>
+          <div className="fc-index-bar__copy">
+            <strong>فهرس Catalogs</strong>
+            <small><Clock3 /> {syncState.lastSyncedAt ? `آخر مزامنة ${formatSyncDate(syncState.lastSyncedAt)}` : "لم يصل وقت آخر مزامنة"}</small>
+          </div>
+          <button type="button" onClick={syncCatalogIndex} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+            {syncState.action === "all" ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+            <span>{syncState.action === "all" ? "جارٍ تحديث الفهرس" : syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ث` : "تحديث فهرس الكتالوج"}</span>
+          </button>
+        </div>
+        <div className="fc-family-sync">
+          <div className="fc-family-sync__heading">
+            <div><span>مزامنة موجهة</span><strong>اختر عائلة لتحديثها</strong></div>
+            <small>كل العائلات ظاهرة دائمًا دون تحميل Offers</small>
+          </div>
+          <div className="fc-family-sync__controls">
+            <div className="fc-family-sync__options" role="list" aria-label="عائلات FazerCards المتاحة للمزامنة">
+              {INDEX_SYNC_FAMILIES.map((familyKey) => (
+                <button
+                  key={familyKey}
+                  type="button"
+                  className={retryFamily === familyKey ? "is-selected" : ""}
+                  onClick={() => setRetryFamily(familyKey)}
+                  disabled={Boolean(syncState.action)}
+                  aria-pressed={retryFamily === familyKey}
+                >
+                  <span>{FAMILY_LABELS[familyKey] || familyKey}</span>
+                  <small>{familyKey}</small>
+                  {retryFamily === familyKey ? <Check /> : null}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="fc-family-sync__submit" onClick={syncFamilyAndRetry} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+              {syncState.action.startsWith("family:") ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              <span>
+                <strong>{syncState.action.startsWith("family:") ? "جارٍ مزامنة العائلة" : syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : `مزامنة ${FAMILY_LABELS[retryFamily] || retryFamily}`}</strong>
+                <small>{syncCooldownSeconds > 0 ? "حماية من تكرار طلبات المزامنة" : query.trim().length >= 2 ? "ثم إعادة البحث تلقائيًا" : "تحديث فهرس العائلة فقط"}</small>
+              </span>
+            </button>
+          </div>
+        </div>
+        {syncCooldownSeconds > 0 ? <p className="fc-sync-cooldown"><Clock3 /> يمكنك البحث الآن، وستتاح المزامنة مجددًا بعد {syncCooldownSeconds} ثانية.</p> : null}
+        {syncState.message ? <p className="fc-sync-message is-success"><Check />{syncState.message}</p> : null}
+        {syncState.error ? <p className="fc-sync-message is-error"><AlertCircle />{syncState.error}</p> : null}
+
+        <form className="fc-catalog-search" onSubmit={searchCatalogs}>
+          <label className="fc-search-box">
+            <Search />
+            <input
+              value={query}
+              onChange={(event) => resetCatalogSearch(event.target.value)}
+              placeholder="مثال: PUBG Mobile أو Netflix"
+              autoComplete="off"
+            />
+            {query && <button type="button" onClick={() => resetCatalogSearch("")} aria-label="مسح البحث"><X /></button>}
+          </label>
+          <button
+            type="submit"
+            className="fc-catalog-search__submit"
+            disabled={searchState.loading || query.trim().length < 2}
+          >
+            {searchState.loading ? <Loader2 className="animate-spin" /> : <Search />}
+            <span><strong>{searchState.loading ? "جارٍ البحث" : "بحث"}</strong><small>كل العائلات</small></span>
+          </button>
+        </form>
 
         <div className="fc-search-results" aria-live="polite">
+          {searchState.warning ? <p className="fc-search-warning"><AlertCircle />{searchState.warning}</p> : null}
           {searchState.error ? (
             <InlineState icon={AlertCircle} tone="error" title="تعذر إكمال البحث" description={searchState.error} />
           ) : searchState.loading ? (
             <CatalogRowsSkeleton />
           ) : searchState.searched && !searchState.results.length ? (
-            <InlineState icon={Search} title="لا توجد Catalogs مطابقة" description="جرّب اسم اللعبة أو المنصة بصيغة أخرى." />
+            <InlineState icon={Search} title="لا توجد Catalogs مطابقة" description="اختر العائلة المناسبة من قسم المزامنة أعلاه، ثم حدّثها وأعد البحث." />
           ) : searchState.results.length ? (
             searchState.results.map((catalog) => {
               const retrieved = retrievedKeys.has(catalog.key);
@@ -206,7 +458,7 @@ export default function FazerCardsSpecialProviderPage({
               );
             })
           ) : (
-            <div className="fc-search-hint"><Search /><span>اكتب حرفين على الأقل لبدء البحث في Catalogs.</span></div>
+            <div className="fc-search-hint"><Search /><span>اكتب حرفين على الأقل، ثم اضغط «بحث» للبحث في كل العائلات والـCatalogs.</span></div>
           )}
         </div>
       </section>
@@ -546,4 +798,49 @@ function CatalogRowsSkeleton({ rows = 3 }) {
 
 function ProviderPageSkeleton() {
   return <div className="fc-page-skeleton" aria-busy="true"><span /><span /><span /></div>;
+}
+
+function getLatestSyncTimestamp(status = {}) {
+  const candidates = [status.lastSyncedAt, status.syncedAt, status.updatedAt, status.lastSyncAt];
+  Object.values(status.families || status.byFamily || {}).forEach((family) => {
+    if (!family || typeof family !== "object") return;
+    candidates.push(family.lastSyncedAt, family.syncedAt, family.updatedAt, family.lastSyncAt);
+  });
+
+  return candidates
+    .filter(Boolean)
+    .map((value) => ({ timestamp: String(value), time: new Date(value).getTime() }))
+    .filter((item) => Number.isFinite(item.time))
+    .sort((a, b) => b.time - a.time)[0]?.timestamp || "";
+}
+
+function formatSyncDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "غير معروف";
+  return new Intl.DateTimeFormat("ar-EG-u-nu-latn", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function startSyncCooldown(setUntil, setSeconds, seconds) {
+  const safeSeconds = Math.max(1, Math.ceil(Number(seconds) || SYNC_RATE_LIMIT_COOLDOWN_SECONDS));
+  setSeconds(safeSeconds);
+  setUntil(Date.now() + (safeSeconds * 1000));
+}
+
+function getSyncRetrySeconds(error = {}) {
+  const candidates = [
+    error.retryAfter,
+    error.payload?.retryAfter,
+    error.payload?.retryAfterSeconds,
+    error.payload?.data?.retryAfter,
+    error.payload?.data?.retryAfterSeconds,
+    error.details?.retryAfter,
+    error.details?.retryAfterSeconds,
+  ];
+  const returnedValue = candidates
+    .map((value) => Number.parseInt(String(value ?? ""), 10))
+    .find((value) => Number.isFinite(value) && value > 0);
+  return returnedValue || SYNC_RATE_LIMIT_COOLDOWN_SECONDS;
 }
