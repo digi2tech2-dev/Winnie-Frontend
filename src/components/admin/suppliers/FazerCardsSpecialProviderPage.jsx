@@ -25,12 +25,13 @@ import {
 import { Link } from "react-router-dom";
 import {
   getFazerCardsCatalogFamilies,
+  getFazerCardsCatalogSyncJobs,
   getFazerCardsCatalogSyncStatus,
   getFazerCardsProviderProducts,
   launchFazerCardsProduct,
   refreshFazerCardsSteamGiftIndex,
   searchFazerCardsSteamGiftIndex,
-  syncFazerCardsCatalogAll,
+  startFazerCardsCatalogSyncJobs,
   syncFazerCardsCatalogFamily,
 } from "../../../api/adminProviders";
 import {
@@ -82,6 +83,7 @@ export default function FazerCardsSpecialProviderPage({
   const [query, setQuery] = useState("");
   const [searchState, setSearchState] = useState({ error: "", loading: false, results: [], searched: false, warning: "" });
   const [syncState, setSyncState] = useState({ action: "", error: "", lastSyncedAt: "", message: "" });
+  const [catalogJobs, setCatalogJobs] = useState([]);
   const [syncCooldownUntil, setSyncCooldownUntil] = useState(0);
   const [syncCooldownSeconds, setSyncCooldownSeconds] = useState(0);
   const [retryFamily, setRetryFamily] = useState("GIFTCARDS");
@@ -109,15 +111,40 @@ export default function FazerCardsSpecialProviderPage({
     let active = true;
     if (!token) return undefined;
 
-    getFazerCardsCatalogSyncStatus(token)
-      .then(({ status }) => {
+    Promise.all([getFazerCardsCatalogSyncStatus(token), getFazerCardsCatalogSyncJobs(token)])
+      .then(([{ status }, { jobs }]) => {
         if (!active) return;
         setSyncState((current) => ({ ...current, lastSyncedAt: getLatestSyncTimestamp(status) }));
+        setCatalogJobs(jobs);
       })
       .catch(() => {});
 
     return () => { active = false; };
   }, [token]);
+
+  const hasActiveCatalogJob = catalogJobs.some((job) => ["idle", "running", "rate_limited"].includes(job.status));
+
+  useEffect(() => {
+    if (!token || !hasActiveCatalogJob) return undefined;
+    let active = true;
+    const poll = async () => {
+      try {
+        const { jobs } = await getFazerCardsCatalogSyncJobs(token);
+        if (!active) return;
+        setCatalogJobs(jobs);
+        const rateLimited = jobs.find((job) => job.status === "rate_limited" && job.nextRunAt);
+        if (rateLimited) {
+          const seconds = Math.max(1, Math.ceil((new Date(rateLimited.nextRunAt).getTime() - Date.now()) / 1000));
+          if (Number.isFinite(seconds)) startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, seconds);
+        }
+      } catch {
+        // The existing progress is retained until the next poll succeeds.
+      }
+    };
+    void poll();
+    const timer = window.setInterval(poll, 3000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [hasActiveCatalogJob, token]);
 
   useEffect(() => {
     if (!syncCooldownUntil) {
@@ -232,31 +259,23 @@ export default function FazerCardsSpecialProviderPage({
   };
 
   const syncCatalogIndex = async () => {
-    if (!token || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
+    if (!token || hasActiveCatalogJob || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
     syncLockRef.current = true;
     requestRef.current += 1;
     setSyncState((current) => ({ ...current, action: "all", error: "", message: "" }));
 
     try {
-      const { result } = await syncFazerCardsCatalogAll(token, {
+      const { jobs } = await startFazerCardsCatalogSyncJobs(token, {
         families: INDEX_SYNC_FAMILIES,
-        includeSteamGifts: false,
         limit: CATALOG_SEARCH_PAGE_SIZE,
       });
-      const errors = Array.isArray(result.errors) ? result.errors.length : 0;
-      const created = Number(result.totals?.providerProductsCreated || 0);
-      const updated = Number(result.totals?.providerProductsUpdated || 0);
-      const lastSyncedAt = await refreshSyncTimestamp();
+      setCatalogJobs(jobs);
       setSyncState({
         action: "",
         error: "",
-        lastSyncedAt,
-        message: errors
-          ? `اكتملت المزامنة مع ${errors} ملاحظة. تمت إضافة ${created} وتحديث ${updated}.`
-          : `الفهرس محدث: تمت إضافة ${created} وتحديث ${updated} منتج مورد.`,
+        lastSyncedAt: syncState.lastSyncedAt,
+        message: "بدأت مزامنة الكتالوج في الخلفية. سيستمر الخادم صفحةً بصفحة.",
       });
-      startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, SYNC_SUCCESS_COOLDOWN_SECONDS);
-      if (query.trim().length >= 2) await searchCatalogs(null, query);
     } catch (error) {
       const rateLimited = Number(error.status) === 429;
       if (rateLimited) {
@@ -275,27 +294,23 @@ export default function FazerCardsSpecialProviderPage({
   };
 
   const syncFamilyAndRetry = async () => {
-    if (!token || syncLockRef.current || syncState.action || syncCooldownSeconds > 0 || !retryFamily) return;
+    if (!token || hasActiveCatalogJob || syncLockRef.current || syncState.action || syncCooldownSeconds > 0 || !retryFamily) return;
     syncLockRef.current = true;
     requestRef.current += 1;
     setSyncState((current) => ({ ...current, action: `family:${retryFamily}`, error: "", message: "" }));
 
     try {
-      const { result } = await syncFazerCardsCatalogFamily(token, {
+      const { jobs } = await startFazerCardsCatalogSyncJobs(token, {
         family: retryFamily,
         limit: CATALOG_SEARCH_PAGE_SIZE,
       });
-      const created = Number(result.providerProductsCreated || 0);
-      const updated = Number(result.providerProductsUpdated || 0);
-      const lastSyncedAt = await refreshSyncTimestamp();
+      setCatalogJobs(jobs);
       setSyncState({
         action: "",
         error: "",
-        lastSyncedAt,
-        message: `تم تحديث ${FAMILY_LABELS[retryFamily] || retryFamily}: جديد ${created}، تحديث ${updated}.`,
+        lastSyncedAt: syncState.lastSyncedAt,
+        message: `بدأت مزامنة ${FAMILY_LABELS[retryFamily] || retryFamily} في الخلفية.`,
       });
-      startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, SYNC_SUCCESS_COOLDOWN_SECONDS);
-      if (query.trim().length >= 2) await searchCatalogs(null, query);
     } catch (error) {
       const rateLimited = Number(error.status) === 429;
       if (rateLimited) {
@@ -341,7 +356,7 @@ export default function FazerCardsSpecialProviderPage({
   };
 
   const refreshSteamGiftIndex = async () => {
-    if (!token || steamGiftState.indexRefreshing || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
+    if (!token || hasActiveCatalogJob || steamGiftState.indexRefreshing || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
     if (!window.confirm("تحديث فهرس Steam Gifts فقط؟ لن يتم إنشاء منتجات أو تنفيذ طلبات.")) return;
 
     syncLockRef.current = true;
@@ -380,7 +395,7 @@ export default function FazerCardsSpecialProviderPage({
       setSteamGiftState((current) => ({ ...current, error: "اكتب AppID صالحًا أولاً.", message: "" }));
       return;
     }
-    if (!token || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
+    if (!token || hasActiveCatalogJob || syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
 
     syncLockRef.current = true;
     requestRef.current += 1;
@@ -479,7 +494,7 @@ export default function FazerCardsSpecialProviderPage({
             <p>اختر الكتالوج، ثم أضف Offer واحدًا كمنتج متجر مع مزامنة الاسم والسعر والحدود.</p>
           </div>
         </div>
-        <button type="button" className="fc-refresh" onClick={onRefresh} disabled={refreshing || Boolean(syncState.action) || syncCooldownSeconds > 0}>
+        <button type="button" className="fc-refresh" onClick={onRefresh} disabled={refreshing || hasActiveCatalogJob || Boolean(syncState.action) || syncCooldownSeconds > 0}>
           <RefreshCw className={refreshing ? "animate-spin" : ""} /> {syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ثانية` : "تحديث"}
         </button>
       </header>
@@ -520,11 +535,11 @@ export default function FazerCardsSpecialProviderPage({
               ))}
             </div>
             {!steamGiftsSelected && (
-              <button type="button" className="fc-family-sync__submit" onClick={syncFamilyAndRetry} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+              <button type="button" className="fc-family-sync__submit" onClick={syncFamilyAndRetry} disabled={hasActiveCatalogJob || Boolean(syncState.action) || syncCooldownSeconds > 0}>
                 {syncState.action.startsWith("family:") ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                 <span>
-                  <strong>{syncState.action.startsWith("family:") ? "جارٍ مزامنة العائلة" : syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : `مزامنة ${FAMILY_LABELS[retryFamily] || retryFamily}`}</strong>
-                  <small>{syncCooldownSeconds > 0 ? "حماية من تكرار طلبات المزامنة" : query.trim().length >= 2 ? "ثم إعادة البحث تلقائيًا" : "تحديث فهرس العائلة فقط"}</small>
+                  <strong>{syncState.action.startsWith("family:") ? "جارٍ تجهيز المزامنة" : hasActiveCatalogJob ? "المزامنة تعمل بالخلفية" : syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : `مزامنة ${FAMILY_LABELS[retryFamily] || retryFamily}`}</strong>
+                  <small>{hasActiveCatalogJob ? "يتم الحفظ صفحةً بصفحة" : syncCooldownSeconds > 0 ? "حماية من تكرار طلبات المزامنة" : "تحديث فهرس العائلة فقط"}</small>
                 </span>
               </button>
             )}
@@ -537,12 +552,13 @@ export default function FazerCardsSpecialProviderPage({
               <strong>فهرس Catalogs</strong>
               <small><Clock3 /> {syncState.lastSyncedAt ? `آخر مزامنة ${formatSyncDate(syncState.lastSyncedAt)}` : "لم يصل وقت آخر مزامنة"}</small>
             </div>
-            <button type="button" onClick={syncCatalogIndex} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+            <button type="button" onClick={syncCatalogIndex} disabled={hasActiveCatalogJob || Boolean(syncState.action) || syncCooldownSeconds > 0}>
               {syncState.action === "all" ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              <span>{syncState.action === "all" ? "جارٍ تحديث الفهرس" : syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ث` : "تحديث فهرس الكتالوج"}</span>
+              <span>{syncState.action === "all" ? "جارٍ تجهيز المزامنة" : hasActiveCatalogJob ? "المزامنة تعمل بالخلفية" : syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ث` : "تحديث فهرس الكتالوج"}</span>
             </button>
           </div>
         )}
+        {catalogJobs.length ? <p className="fc-sync-message">{catalogJobs.map((job) => `${FAMILY_LABELS[job.family] || job.family}: ${formatCatalogJobStatus(job)}`).join(" · ")}</p> : null}
         {steamGiftsSelected && <section className="fc-steam-gifts" aria-labelledby="fc-steam-gifts-title">
           <div className="fc-family-sync__heading">
             <div>
@@ -571,7 +587,7 @@ export default function FazerCardsSpecialProviderPage({
               type="button"
               className="fc-button fc-button--soft"
               onClick={refreshSteamGiftIndex}
-              disabled={steamGiftState.indexRefreshing || Boolean(syncState.action) || syncCooldownSeconds > 0}
+              disabled={hasActiveCatalogJob || steamGiftState.indexRefreshing || Boolean(syncState.action) || syncCooldownSeconds > 0}
             >
               {steamGiftState.indexRefreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
               {steamGiftState.indexRefreshing ? "جارٍ تحديث الفهرس" : syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ثانية` : "تحديث فهرس Steam Gifts"}
@@ -580,7 +596,7 @@ export default function FazerCardsSpecialProviderPage({
               type="button"
               className="fc-button fc-button--primary"
               onClick={() => syncSteamGift()}
-              disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}
+              disabled={hasActiveCatalogJob || Boolean(syncState.action) || syncCooldownSeconds > 0}
             >
               {syncState.action === "steam-gifts" ? <Loader2 className="animate-spin" /> : <PackageCheck />}
               {syncState.action === "steam-gifts" ? "جارٍ مزامنة AppID" : syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : "مزامنة AppID"}
@@ -597,7 +613,7 @@ export default function FazerCardsSpecialProviderPage({
                 <div key={item.appid}>
                   <span>{item.name}</span>
                   <small dir="ltr">AppID {item.appid}</small>
-                  <button type="button" onClick={() => syncSteamGift(item)} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+                  <button type="button" onClick={() => syncSteamGift(item)} disabled={hasActiveCatalogJob || Boolean(syncState.action) || syncCooldownSeconds > 0}>
                     {syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : "مزامنة هذه اللعبة"}
                   </button>
                 </div>
@@ -1048,6 +1064,15 @@ function formatSyncDate(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatCatalogJobStatus(job = {}) {
+  const counts = `كتالوج ${Number(job.processedCatalogCount || 0)} · عروض ${Number(job.processedOfferCount || 0)} · محفوظ ${Number(job.importedCount || 0)}`;
+  if (job.status === "completed") return `اكتملت (${counts})`;
+  if (job.status === "rate_limited") return `متوقفة مؤقتًا حتى ${formatSyncDate(job.nextRunAt)} (${counts})`;
+  if (job.status === "failed") return `فشلت: ${job.safeLastError || "خطأ غير معروف"}`;
+  if (job.status === "running") return `جارٍ التنفيذ (${counts})`;
+  return `بانتظار البدء (${counts})`;
 }
 
 function startSyncCooldown(setUntil, setSeconds, seconds) {

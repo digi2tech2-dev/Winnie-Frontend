@@ -759,6 +759,24 @@ export async function syncFazerCardsCatalogAll(token, payload = {}) {
   };
 }
 
+export async function startFazerCardsCatalogSyncJobs(token, payload = {}) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/sync-jobs", {
+    body: compactObject({
+      family: payload.family,
+      families: payload.families,
+      limit: payload.limit,
+    }),
+    method: "POST",
+    token,
+  });
+  return { jobs: asArray(response.data?.jobs), message: response.message };
+}
+
+export async function getFazerCardsCatalogSyncJobs(token) {
+  const response = await apiRequest("/admin/providers/fazercards/catalog/sync-jobs", { token });
+  return { jobs: asArray(response.data?.jobs), message: response.message };
+}
+
 export async function getFazerCardsCatalogSyncStatus(token) {
   const response = await apiRequest("/admin/providers/fazercards/catalog/sync-status", { token });
   return {
