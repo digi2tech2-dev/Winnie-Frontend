@@ -12,6 +12,7 @@ export class ApiError extends Error {
     this.support = options.support || null;
     this.userMessage = options.userMessage || message || DEFAULT_ERROR_MESSAGE;
     this.payload = options.payload || null;
+    this.retryAfter = options.retryAfter || null;
   }
 }
 
@@ -41,6 +42,25 @@ function sanitizeBackendMessage(message) {
   if (!value || value.length > 240) return "";
   if (textIncludes(value, ["stack", "trace", "mongodb", "mongoose", "jwt secret"])) return "";
   return value;
+}
+
+function getRetryAfterSeconds(response, payload) {
+  const candidates = [
+    response?.headers?.get?.("retry-after"),
+    payload?.retryAfterSeconds,
+    payload?.retryAfter,
+    payload?.data?.retryAfterSeconds,
+    payload?.data?.retryAfter,
+  ];
+  for (const value of candidates) {
+    const seconds = Number.parseInt(String(value ?? ""), 10);
+    if (Number.isFinite(seconds) && seconds > 0) return seconds;
+    const retryAt = Date.parse(String(value ?? ""));
+    if (Number.isFinite(retryAt) && retryAt > Date.now()) {
+      return Math.max(1, Math.ceil((retryAt - Date.now()) / 1000));
+    }
+  }
+  return null;
 }
 
 export function getFriendlyAuthMessage({ status, code, message, errors } = {}) {
@@ -119,6 +139,7 @@ export function createApiError({ response, payload }) {
   const message = payload?.message || response?.statusText || DEFAULT_ERROR_MESSAGE;
   const fieldErrors = normalizeFieldErrors(errors);
   const userMessage = getFriendlyAuthMessage({ status, code, message, errors });
+  const retryAfter = getRetryAfterSeconds(response, payload);
 
   return new ApiError(userMessage, {
     status,
@@ -127,6 +148,7 @@ export function createApiError({ response, payload }) {
     fieldErrors,
     support,
     payload,
+    retryAfter,
     userMessage,
   });
 }

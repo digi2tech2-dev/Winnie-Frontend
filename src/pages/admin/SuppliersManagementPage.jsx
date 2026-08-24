@@ -101,6 +101,22 @@ function isFazerCardsSupplier(supplier) {
   return providerCode === "FAZER_CARDS" || slug === "fazer-cards" || name === "fazercards" || name === "fazer cards";
 }
 
+function isFazerCardsRateLimitError(error) {
+  return Number(error?.status) === 429 && String(error?.code || "").toUpperCase().startsWith("FAZERCARDS_");
+}
+
+function getFazerCardsRetrySeconds(error) {
+  const candidates = [
+    error?.retryAfter,
+    error?.payload?.retryAfterSeconds,
+    error?.payload?.retryAfter,
+    error?.payload?.data?.retryAfterSeconds,
+  ];
+  return candidates
+    .map((value) => Number.parseInt(String(value ?? ""), 10))
+    .find((value) => Number.isFinite(value) && value > 0) || 60;
+}
+
 export default function SuppliersManagementPage() {
   const { token } = useAuth();
   const { showToast } = useToast();
@@ -130,6 +146,16 @@ export default function SuppliersManagementPage() {
     products: [],
     searched: false,
   });
+
+  const recordFazerCardsRateLimit = (error) => {
+    if (!isFazerCardsRateLimitError(error)) return false;
+    const retryAfterSeconds = getFazerCardsRetrySeconds(error);
+    setFazerCatalog((current) => ({
+      ...current,
+      error: `تم الوصول إلى حد طلبات FazerCards. انتظر ${retryAfterSeconds} ثانية ثم حاول مرة أخرى.`,
+    }));
+    return true;
+  };
 
   const loadSuppliers = useCallback(async ({ silent = false } = {}) => {
     if (!token) {
@@ -217,6 +243,7 @@ export default function SuppliersManagementPage() {
         message: result.result.message,
       });
     } catch (error) {
+      if (isFazerCardsSupplier(supplier) && recordFazerCardsRateLimit(error)) return;
       showToast({ type: "error", title: "فشل اختبار الاتصال", message: error.userMessage || "فشل اختبار المورد من الخادم." });
     } finally {
       setActionKey("");
@@ -304,6 +331,10 @@ export default function SuppliersManagementPage() {
       setConfirm({ kind: "", supplier: null });
       await loadSuppliers({ silent: true });
     } catch (error) {
+      if (isFazerCardsSupplier(supplier) && recordFazerCardsRateLimit(error)) {
+        setConfirm({ kind: "", supplier: null });
+        return;
+      }
       showToast({
         type: "error",
         title: "فشل إجراء المورد",
@@ -472,6 +503,7 @@ export default function SuppliersManagementPage() {
         search: productsState.search,
       });
     } catch (error) {
+      if (recordFazerCardsRateLimit(error)) return;
       showToast({
         type: "error",
         title: "فشلت مزامنة فئة FazerCards",
@@ -504,11 +536,13 @@ export default function SuppliersManagementPage() {
       });
       return data;
     } catch (error) {
-      showToast({
-        type: "error",
-        title: "تعذر تحديث الفهرس",
-        message: error.userMessage || error.message || "تعذر تحديث فهرس Steam Gifts.",
-      });
+      if (!recordFazerCardsRateLimit(error)) {
+        showToast({
+          type: "error",
+          title: "تعذر تحديث الفهرس",
+          message: error.userMessage || error.message || "تعذر تحديث فهرس Steam Gifts.",
+        });
+      }
       throw error;
     } finally {
       setActionKey("");
@@ -539,6 +573,7 @@ export default function SuppliersManagementPage() {
         search: productsState.search,
       });
     } catch (error) {
+      if (recordFazerCardsRateLimit(error)) return;
       showToast({
         type: "error",
         title: "فشلت مزامنة FazerCards الشاملة",

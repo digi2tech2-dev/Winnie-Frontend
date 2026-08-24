@@ -128,7 +128,12 @@ export default function FazerCardsSpecialProviderPage({
     const updateRemaining = () => {
       const remaining = Math.max(0, Math.ceil((syncCooldownUntil - Date.now()) / 1000));
       setSyncCooldownSeconds(remaining);
-      if (!remaining) setSyncCooldownUntil(0);
+      if (!remaining) {
+        setSyncCooldownUntil(0);
+        setSyncState((current) => (
+          current.error.includes("حد طلبات FazerCards") ? { ...current, error: "" } : current
+        ));
+      }
     };
     updateRemaining();
     const timer = window.setInterval(updateRemaining, 1000);
@@ -316,6 +321,18 @@ export default function FazerCardsSpecialProviderPage({
         searched: true,
       }));
     } catch (error) {
+      const rateLimited = Number(error.status) === 429;
+      const waitSeconds = rateLimited ? getSyncRetrySeconds(error) : 0;
+      if (rateLimited) {
+        startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, waitSeconds);
+        setSteamGiftState((current) => ({ ...current, loading: false }));
+        setSyncState((current) => ({
+          ...current,
+          error: `تم الوصول إلى حد طلبات FazerCards. انتظر ${waitSeconds} ثانية ثم حاول مرة أخرى.`,
+          message: "",
+        }));
+        return;
+      }
       setSteamGiftState((current) => ({
         ...current,
         error: error.userMessage || error.message || "تعذر البحث في فهرس Steam Gifts.",
@@ -329,7 +346,7 @@ export default function FazerCardsSpecialProviderPage({
   };
 
   const refreshSteamGiftIndex = async () => {
-    if (steamGiftState.indexRefreshing || syncState.action) return;
+    if (steamGiftState.indexRefreshing || syncState.action || syncCooldownSeconds > 0) return;
     if (!window.confirm("تحديث فهرس Steam Gifts فقط؟ لن يتم إنشاء منتجات أو تنفيذ طلبات.")) return;
 
     setSteamGiftState((current) => ({ ...current, error: "", indexRefreshing: true, message: "" }));
@@ -342,6 +359,18 @@ export default function FazerCardsSpecialProviderPage({
         message: data.warning || `تم تحديث الفهرس: ${data.returned || 0} لعبة.`,
       }));
     } catch (error) {
+      const rateLimited = Number(error.status) === 429;
+      const waitSeconds = rateLimited ? getSyncRetrySeconds(error) : 0;
+      if (rateLimited) {
+        startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, waitSeconds);
+        setSteamGiftState((current) => ({ ...current, indexRefreshing: false }));
+        setSyncState((current) => ({
+          ...current,
+          error: `تم الوصول إلى حد طلبات FazerCards. انتظر ${waitSeconds} ثانية ثم حاول مرة أخرى.`,
+          message: "",
+        }));
+        return;
+      }
       setSteamGiftState((current) => ({
         ...current,
         error: error.userMessage || error.message || "تعذر تحديث فهرس Steam Gifts.",
@@ -361,6 +390,7 @@ export default function FazerCardsSpecialProviderPage({
     syncLockRef.current = true;
     requestRef.current += 1;
     setSteamGiftAppId(normalizedAppId);
+    setSteamGiftState((current) => ({ ...current, error: "", message: "" }));
     setSyncState((current) => ({ ...current, action: "steam-gifts", error: "", message: "" }));
     try {
       const { result } = await syncFazerCardsCatalogFamily(token, {
@@ -538,7 +568,7 @@ export default function FazerCardsSpecialProviderPage({
                   placeholder="Game name or Steam AppID, e.g. 730"
                 />
               </label>
-              <button type="submit" className="fc-button fc-button--soft" disabled={steamGiftState.loading || Boolean(syncState.action)}>
+              <button type="submit" className="fc-button fc-button--soft" disabled={steamGiftState.loading || Boolean(syncState.action) || syncCooldownSeconds > 0}>
                 <Search /> بحث في الفهرس
               </button>
             </form>
@@ -546,7 +576,7 @@ export default function FazerCardsSpecialProviderPage({
               type="button"
               className="fc-button fc-button--soft"
               onClick={refreshSteamGiftIndex}
-              disabled={steamGiftState.indexRefreshing || Boolean(syncState.action)}
+              disabled={steamGiftState.indexRefreshing || Boolean(syncState.action) || syncCooldownSeconds > 0}
             >
               {steamGiftState.indexRefreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
               تحديث فهرس Steam Gifts
@@ -601,7 +631,7 @@ export default function FazerCardsSpecialProviderPage({
           <button
             type="submit"
             className="fc-catalog-search__submit"
-            disabled={searchState.loading || query.trim().length < 2}
+            disabled={searchState.loading || syncCooldownSeconds > 0 || query.trim().length < 2}
           >
             {searchState.loading ? <Loader2 className="animate-spin" /> : <Search />}
             <span><strong>{searchState.loading ? "جارٍ البحث" : "بحث"}</strong><small>كل العائلات</small></span>
