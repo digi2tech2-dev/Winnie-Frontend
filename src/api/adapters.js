@@ -154,9 +154,9 @@ export function resolveBackendAssetUrl(path) {
 
   const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
   const apiUrl = new URL(apiBaseUrl);
-  const uploadsIndex = value.toLowerCase().indexOf("uploads/");
-  if (uploadsIndex === -1) return value;
-  const normalizedPath = `/${value.slice(uploadsIndex)}`;
+  const uploadsMatch = value.match(/(?:^|\/)(uploads\/.*)$/i);
+  if (!uploadsMatch) return value;
+  const normalizedPath = `/${uploadsMatch[1]}`;
   return `${apiUrl.origin}${normalizedPath}`;
 }
 

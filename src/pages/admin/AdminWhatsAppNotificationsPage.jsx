@@ -43,6 +43,7 @@ const defaultPreferences = {
   financialDayClosed: true,
   largeWalletAdjustment: true,
   providerBalanceWarning: true,
+  subAgentRequestSubmitted: true,
 };
 
 const preferenceLabels = {
@@ -53,6 +54,7 @@ const preferenceLabels = {
   financialDayClosed: "تقفيل اليوم",
   largeWalletAdjustment: "تعديل محفظة كبير",
   providerBalanceWarning: "تحذير رصيد مورد",
+  subAgentRequestSubmitted: "طلب وكيل فرعي جديد",
 };
 
 const deliveryStatusLabels = {
@@ -62,6 +64,8 @@ const deliveryStatusLabels = {
   sent: "تم الإرسال",
   delivered: "تم التسليم",
   failed: "فشل الإرسال",
+  retry_pending: "بانتظار إعادة المحاولة",
+  sent_unconfirmed: "تم الإرسال دون تأكيد",
   skipped: "تم التجاوز",
   enabled: "مفعّلة",
   disabled: "معطّلة",
@@ -89,6 +93,8 @@ const statusFilterOptions = [
   { value: "pending", label: "قيد الانتظار" },
   { value: "sent", label: "تم الإرسال" },
   { value: "failed", label: "فشل الإرسال" },
+  { value: "retry_pending", label: "بانتظار إعادة المحاولة" },
+  { value: "sent_unconfirmed", label: "تم الإرسال دون تأكيد" },
   { value: "skipped", label: "تم التجاوز" },
 ];
 

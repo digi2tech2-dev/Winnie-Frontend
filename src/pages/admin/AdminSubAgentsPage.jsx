@@ -542,7 +542,7 @@ function useProofImageSource(src, token) {
       const apiOrigin = new URL(getApiBaseUrl()).origin;
       if (imageUrl.origin !== apiOrigin) throw new Error("External proof image");
 
-      const isSignedUpload = imageUrl.pathname === "/uploads/file"
+      const isSignedUpload = imageUrl.pathname === "/api/secure-uploads/file"
         && imageUrl.searchParams.has("payload")
         && imageUrl.searchParams.has("signature");
       const headers = { Accept: "image/*" };
