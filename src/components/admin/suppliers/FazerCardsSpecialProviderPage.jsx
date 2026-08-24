@@ -28,6 +28,8 @@ import {
   getFazerCardsCatalogSyncStatus,
   getFazerCardsProviderProducts,
   launchFazerCardsProduct,
+  refreshFazerCardsSteamGiftIndex,
+  searchFazerCardsSteamGiftIndex,
   syncFazerCardsCatalogAll,
   syncFazerCardsCatalogFamily,
 } from "../../../api/adminProviders";
@@ -41,7 +43,7 @@ import FazerCardsImportModal from "./FazerCardsImportModal";
 import "../../../styles/fazercards-special-provider.css";
 
 const SEARCH_DELAY = 350;
-const CATALOG_SEARCH_LIMIT = 100;
+const CATALOG_SEARCH_PAGE_SIZE = 100;
 const OFFERS_PAGE_SIZE = 50;
 const SYNC_SUCCESS_COOLDOWN_SECONDS = 30;
 const SYNC_RATE_LIMIT_COOLDOWN_SECONDS = 60;
@@ -51,6 +53,7 @@ const FAMILY_LABELS = {
   GAME_KEYS: "مفاتيح الألعاب",
   GIFTCARDS: "بطاقات الهدايا",
   MANUAL_SERVICES: "الخدمات اليدوية",
+  STEAM_GIFTS: "Steam Gifts",
   STEAM_TOPUP: "شحن Steam",
   TELEGRAM: "Telegram",
   TOPUPS: "الشحن المباشر",
@@ -82,6 +85,16 @@ export default function FazerCardsSpecialProviderPage({
   const [syncCooldownUntil, setSyncCooldownUntil] = useState(0);
   const [syncCooldownSeconds, setSyncCooldownSeconds] = useState(0);
   const [retryFamily, setRetryFamily] = useState("GIFTCARDS");
+  const [steamGiftAppId, setSteamGiftAppId] = useState("");
+  const [steamGiftState, setSteamGiftState] = useState({
+    error: "",
+    indexEmpty: false,
+    indexRefreshing: false,
+    items: [],
+    loading: false,
+    message: "",
+    searched: false,
+  });
   const [retrievedCatalogs, setRetrievedCatalogs] = useState(() => readRetrievedFazerCardsCatalogs());
   const [retrievingKey, setRetrievingKey] = useState("");
   const [activeCatalog, setActiveCatalog] = useState(null);
@@ -152,7 +165,9 @@ export default function FazerCardsSpecialProviderPage({
         const familyResult = await getFazerCardsCatalogFamilies(token);
         familyKeys = Array.from(new Set([
           ...DEFAULT_SEARCH_FAMILIES,
-          ...familyResult.families.map((family) => String(family.familyKey || "").trim().toUpperCase()).filter(Boolean),
+          ...familyResult.families
+            .map((family) => String(family.familyKey || "").trim().toUpperCase())
+            .filter((familyKey) => DEFAULT_SEARCH_FAMILIES.includes(familyKey)),
         ]));
       } catch {
         // The known families remain a safe fallback if catalog metadata is unavailable.
@@ -160,13 +175,7 @@ export default function FazerCardsSpecialProviderPage({
 
       if (requestRef.current !== requestId) return;
       const familyResults = await Promise.allSettled(familyKeys.map((familyKey) => (
-        getFazerCardsProviderProducts(token, {
-          familyKey,
-          familyKeyExplicit: true,
-          limit: CATALOG_SEARCH_LIMIT,
-          page: 1,
-          search: searchQuery,
-        })
+        getAllCachedFamilySearchResults(token, familyKey, searchQuery)
       )));
 
       if (requestRef.current !== requestId) return;
@@ -219,7 +228,7 @@ export default function FazerCardsSpecialProviderPage({
       const { result } = await syncFazerCardsCatalogAll(token, {
         families: INDEX_SYNC_FAMILIES,
         includeSteamGifts: false,
-        limit: CATALOG_SEARCH_LIMIT,
+        limit: CATALOG_SEARCH_PAGE_SIZE,
       });
       const errors = Array.isArray(result.errors) ? result.errors.length : 0;
       const created = Number(result.totals?.providerProductsCreated || 0);
@@ -261,7 +270,7 @@ export default function FazerCardsSpecialProviderPage({
     try {
       const { result } = await syncFazerCardsCatalogFamily(token, {
         family: retryFamily,
-        limit: CATALOG_SEARCH_LIMIT,
+        limit: CATALOG_SEARCH_PAGE_SIZE,
       });
       const created = Number(result.providerProductsCreated || 0);
       const updated = Number(result.providerProductsUpdated || 0);
@@ -284,6 +293,103 @@ export default function FazerCardsSpecialProviderPage({
         error: rateLimited
           ? `تم الوصول إلى حد طلبات FazerCards. انتظر ${waitSeconds} ثانية ثم حاول مرة أخرى.`
           : error.userMessage || error.message || `تعذر تحديث ${FAMILY_LABELS[retryFamily] || retryFamily}.`,
+        message: "",
+      }));
+    } finally {
+      syncLockRef.current = false;
+    }
+  };
+
+  const searchSteamGiftIndex = async (event) => {
+    event?.preventDefault?.();
+    setSteamGiftState((current) => ({ ...current, error: "", loading: true, searched: true }));
+    try {
+      const result = await searchFazerCardsSteamGiftIndex(token, { q: steamGiftAppId, limit: 20 });
+      setSteamGiftState((current) => ({
+        ...current,
+        error: "",
+        indexEmpty: result.result?.indexEmpty === true,
+        items: Array.isArray(result.result?.items) ? result.result.items : [],
+        loading: false,
+        message: result.result?.message || "",
+        searched: true,
+      }));
+    } catch (error) {
+      setSteamGiftState((current) => ({
+        ...current,
+        error: error.userMessage || error.message || "تعذر البحث في فهرس Steam Gifts.",
+        indexEmpty: false,
+        items: [],
+        loading: false,
+        message: "",
+        searched: true,
+      }));
+    }
+  };
+
+  const refreshSteamGiftIndex = async () => {
+    if (steamGiftState.indexRefreshing || syncState.action) return;
+    if (!window.confirm("تحديث فهرس Steam Gifts فقط؟ لن يتم إنشاء منتجات أو تنفيذ طلبات.")) return;
+
+    setSteamGiftState((current) => ({ ...current, error: "", indexRefreshing: true, message: "" }));
+    try {
+      const result = await refreshFazerCardsSteamGiftIndex(token);
+      const data = result.result || {};
+      setSteamGiftState((current) => ({
+        ...current,
+        indexRefreshing: false,
+        message: data.warning || `تم تحديث الفهرس: ${data.returned || 0} لعبة.`,
+      }));
+    } catch (error) {
+      setSteamGiftState((current) => ({
+        ...current,
+        error: error.userMessage || error.message || "تعذر تحديث فهرس Steam Gifts.",
+        indexRefreshing: false,
+      }));
+    }
+  };
+
+  const syncSteamGift = async ({ appid, name } = {}) => {
+    const normalizedAppId = String(appid ?? steamGiftAppId).trim();
+    if (!/^\d+$/.test(normalizedAppId) || Number(normalizedAppId) <= 0) {
+      setSteamGiftState((current) => ({ ...current, error: "اكتب AppID صالحًا أولاً.", message: "" }));
+      return;
+    }
+    if (syncLockRef.current || syncState.action || syncCooldownSeconds > 0) return;
+
+    syncLockRef.current = true;
+    requestRef.current += 1;
+    setSteamGiftAppId(normalizedAppId);
+    setSyncState((current) => ({ ...current, action: "steam-gifts", error: "", message: "" }));
+    try {
+      const { result } = await syncFazerCardsCatalogFamily(token, {
+        appid: Number(normalizedAppId),
+        family: "STEAM_GIFTS",
+        gameName: name,
+      });
+      const created = Number(result.providerProductsCreated || 0);
+      const updated = Number(result.providerProductsUpdated || 0);
+      const searchTerm = String(name || normalizedAppId);
+      setQuery(searchTerm);
+      await searchCatalogs(null, searchTerm);
+      const lastSyncedAt = await refreshSyncTimestamp();
+      setSyncState({
+        action: "",
+        error: "",
+        lastSyncedAt,
+        message: `تمت مزامنة Steam Gifts للعبة ${normalizedAppId}: جديد ${created}، تحديث ${updated}.`,
+      });
+      startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, SYNC_SUCCESS_COOLDOWN_SECONDS);
+    } catch (error) {
+      const rateLimited = Number(error.status) === 429;
+      const waitSeconds = rateLimited ? getSyncRetrySeconds(error) : 0;
+      if (rateLimited) startSyncCooldown(setSyncCooldownUntil, setSyncCooldownSeconds, waitSeconds);
+      setSyncState((current) => ({
+        ...current,
+        action: "",
+        error: rateLimited
+          ? `تم الوصول إلى حد طلبات FazerCards. انتظر ${waitSeconds} ثانية ثم حاول مرة أخرى.`
+          : error.userMessage || error.message || "تعذر مزامنة Steam Gifts.",
         message: "",
       }));
     } finally {
@@ -407,6 +513,70 @@ export default function FazerCardsSpecialProviderPage({
             </button>
           </div>
         </div>
+        <section className="fc-steam-gifts" aria-labelledby="fc-steam-gifts-title">
+          <div className="fc-family-sync__heading">
+            <div>
+              <span>STEAM_GIFTS · ON-DEMAND</span>
+              <strong id="fc-steam-gifts-title">Steam Gifts</strong>
+            </div>
+            <small>فهرس الألعاب محلي؛ تفاصيل العروض تُجلب للـ AppID المختار فقط.</small>
+          </div>
+          <div className="fc-steam-gifts__controls">
+            <form className="fc-steam-gifts__search" onSubmit={searchSteamGiftIndex}>
+              <label className="fc-search-box fc-search-box--compact">
+                {steamGiftState.loading ? <Loader2 className="animate-spin" /> : <Search />}
+                <input
+                  dir="ltr"
+                  inputMode="search"
+                  value={steamGiftAppId}
+                  onChange={(event) => setSteamGiftAppId(event.target.value)}
+                  placeholder="Game name or Steam AppID, e.g. 730"
+                />
+              </label>
+              <button type="submit" className="fc-button fc-button--soft" disabled={steamGiftState.loading || Boolean(syncState.action)}>
+                <Search /> بحث في الفهرس
+              </button>
+            </form>
+            <button
+              type="button"
+              className="fc-button fc-button--soft"
+              onClick={refreshSteamGiftIndex}
+              disabled={steamGiftState.indexRefreshing || Boolean(syncState.action)}
+            >
+              {steamGiftState.indexRefreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              تحديث فهرس Steam Gifts
+            </button>
+            <button
+              type="button"
+              className="fc-button fc-button--primary"
+              onClick={() => syncSteamGift()}
+              disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}
+            >
+              {syncState.action === "steam-gifts" ? <Loader2 className="animate-spin" /> : <PackageCheck />}
+              مزامنة AppID
+            </button>
+          </div>
+          <p className="fc-steam-gifts__hint">لن تحاول المزامنة الشاملة جلب كتالوج Steam Gifts الضخم. استخدم AppID يدويًا أو ابحث في الفهرس ثم مزامنة اللعبة المطلوبة.</p>
+          {steamGiftState.error ? <p className="fc-sync-message is-error"><AlertCircle />{steamGiftState.error}</p> : null}
+          {steamGiftState.message ? <p className="fc-sync-message is-success"><Check />{steamGiftState.message}</p> : null}
+          {steamGiftState.searched && !steamGiftState.loading && !steamGiftState.error ? (
+            <div className="fc-steam-gifts__results">
+              {steamGiftState.indexEmpty ? (
+                <p>{steamGiftState.message || "فهرس Steam Gifts فارغ. حدّث الفهرس أو اكتب AppID يدويًا."}</p>
+              ) : steamGiftState.items.length ? steamGiftState.items.map((item) => (
+                <div key={item.appid}>
+                  <span>{item.name}</span>
+                  <small dir="ltr">AppID {item.appid}</small>
+                  <button type="button" onClick={() => syncSteamGift(item)} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+                    مزامنة هذه اللعبة
+                  </button>
+                </div>
+              )) : (
+                <p>لا توجد نتائج في الفهرس. جرّب اسمًا آخر أو اكتب AppID مباشرةً.</p>
+              )}
+            </div>
+          ) : null}
+        </section>
         {syncCooldownSeconds > 0 ? <p className="fc-sync-cooldown"><Clock3 /> يمكنك البحث الآن، وستتاح المزامنة مجددًا بعد {syncCooldownSeconds} ثانية.</p> : null}
         {syncState.message ? <p className="fc-sync-message is-success"><Check />{syncState.message}</p> : null}
         {syncState.error ? <p className="fc-sync-message is-error"><AlertCircle />{syncState.error}</p> : null}
@@ -484,6 +654,31 @@ export default function FazerCardsSpecialProviderPage({
       {activeCatalog && <CatalogOffers catalog={activeCatalog} token={token} onClose={() => setActiveCatalog(null)} />}
     </main>
   );
+}
+
+async function getAllCachedFamilySearchResults(token, familyKey, search) {
+  const firstPage = await getFazerCardsProviderProducts(token, {
+    familyKey,
+    familyKeyExplicit: true,
+    limit: CATALOG_SEARCH_PAGE_SIZE,
+    page: 1,
+    search,
+  });
+  const products = [...firstPage.products];
+  const pages = Math.max(1, Number(firstPage.pagination?.pages) || 1);
+
+  for (let page = 2; page <= pages; page += 1) {
+    const result = await getFazerCardsProviderProducts(token, {
+      familyKey,
+      familyKeyExplicit: true,
+      limit: CATALOG_SEARCH_PAGE_SIZE,
+      page,
+      search,
+    });
+    products.push(...result.products);
+  }
+
+  return { ...firstPage, products };
 }
 
 function CatalogOffers({ catalog, onClose, token }) {
