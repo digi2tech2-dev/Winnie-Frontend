@@ -297,6 +297,7 @@
 .fc-family-sync__heading strong { color: #334155; font-size: 10px; font-weight: 950; }
 .fc-family-sync__heading > small { color: #94a3b8; font-size: 7px; font-weight: 800; }
 .fc-family-sync__controls { display: grid; grid-template-columns: minmax(0, 1fr) 190px; align-items: stretch; gap: 8px; }
+.fc-family-sync__controls.is-steam-gifts { grid-template-columns: minmax(0, 1fr); }
 .fc-family-sync__options { display: flex; min-width: 0; gap: 6px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-color: #c4b5fd transparent; scrollbar-width: thin; }
 .fc-family-sync__options > button { position: relative; display: grid; min-width: 112px; min-height: 47px; align-content: center; gap: 2px; padding: 7px 10px; border: 1px solid #e4e4ec; border-radius: 11px; background: #fff; color: #475569; text-align: start; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease; }
 .fc-family-sync__options > button:hover:not(:disabled) { border-color: #c4b5fd; transform: translateY(-1px); }

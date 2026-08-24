@@ -47,7 +47,7 @@ const CATALOG_SEARCH_PAGE_SIZE = 100;
 const OFFERS_PAGE_SIZE = 50;
 const SYNC_SUCCESS_COOLDOWN_SECONDS = 30;
 const SYNC_RATE_LIMIT_COOLDOWN_SECONDS = 60;
-const DEFAULT_SEARCH_FAMILIES = ["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "STEAM_GIFTS", "MANUAL_SERVICES"];
+const DEFAULT_SEARCH_FAMILIES = ["TOPUPS", "GIFTCARDS", "GAME_KEYS", "TELEGRAM", "STEAM_TOPUP", "MANUAL_SERVICES", "STEAM_GIFTS"];
 const INDEX_SYNC_FAMILIES = DEFAULT_SEARCH_FAMILIES.filter((familyKey) => familyKey !== "STEAM_GIFTS");
 const FAMILY_LABELS = {
   GAME_KEYS: "مفاتيح الألعاب",
@@ -103,6 +103,7 @@ export default function FazerCardsSpecialProviderPage({
 
   const retrievedKeys = useMemo(() => new Set(retrievedCatalogs.map((catalog) => catalog.key)), [retrievedCatalogs]);
   const connected = health?.api?.connectionOk === true || (!health && supplier?.active === true);
+  const steamGiftsSelected = retryFamily === "STEAM_GIFTS";
 
   useEffect(() => {
     let active = true;
@@ -471,25 +472,14 @@ export default function FazerCardsSpecialProviderPage({
           <small>لن يتم تحميل كل منتجات المورد</small>
         </div>
 
-        <div className="fc-index-bar">
-          <span className="fc-index-bar__icon"><Database /></span>
-          <div className="fc-index-bar__copy">
-            <strong>فهرس Catalogs</strong>
-            <small><Clock3 /> {syncState.lastSyncedAt ? `آخر مزامنة ${formatSyncDate(syncState.lastSyncedAt)}` : "لم يصل وقت آخر مزامنة"}</small>
-          </div>
-          <button type="button" onClick={syncCatalogIndex} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
-            {syncState.action === "all" ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-            <span>{syncState.action === "all" ? "جارٍ تحديث الفهرس" : syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ث` : "تحديث فهرس الكتالوج"}</span>
-          </button>
-        </div>
         <div className="fc-family-sync">
           <div className="fc-family-sync__heading">
-            <div><span>مزامنة موجهة</span><strong>اختر عائلة لتحديثها</strong></div>
-            <small>كل العائلات ظاهرة دائمًا دون تحميل Offers</small>
+            <div><span>عائلات FazerCards</span><strong>اختر عائلة الكتالوج</strong></div>
+            <small>Steam Gifts تستخدم بحث AppID خاصًا بها.</small>
           </div>
-          <div className="fc-family-sync__controls">
+          <div className={`fc-family-sync__controls${steamGiftsSelected ? " is-steam-gifts" : ""}`}>
             <div className="fc-family-sync__options" role="list" aria-label="عائلات FazerCards المتاحة للمزامنة">
-              {INDEX_SYNC_FAMILIES.map((familyKey) => (
+              {DEFAULT_SEARCH_FAMILIES.map((familyKey) => (
                 <button
                   key={familyKey}
                   type="button"
@@ -504,16 +494,31 @@ export default function FazerCardsSpecialProviderPage({
                 </button>
               ))}
             </div>
-            <button type="button" className="fc-family-sync__submit" onClick={syncFamilyAndRetry} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
-              {syncState.action.startsWith("family:") ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              <span>
-                <strong>{syncState.action.startsWith("family:") ? "جارٍ مزامنة العائلة" : syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : `مزامنة ${FAMILY_LABELS[retryFamily] || retryFamily}`}</strong>
-                <small>{syncCooldownSeconds > 0 ? "حماية من تكرار طلبات المزامنة" : query.trim().length >= 2 ? "ثم إعادة البحث تلقائيًا" : "تحديث فهرس العائلة فقط"}</small>
-              </span>
-            </button>
+            {!steamGiftsSelected && (
+              <button type="button" className="fc-family-sync__submit" onClick={syncFamilyAndRetry} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+                {syncState.action.startsWith("family:") ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                <span>
+                  <strong>{syncState.action.startsWith("family:") ? "جارٍ مزامنة العائلة" : syncCooldownSeconds > 0 ? `انتظر ${syncCooldownSeconds} ثانية` : `مزامنة ${FAMILY_LABELS[retryFamily] || retryFamily}`}</strong>
+                  <small>{syncCooldownSeconds > 0 ? "حماية من تكرار طلبات المزامنة" : query.trim().length >= 2 ? "ثم إعادة البحث تلقائيًا" : "تحديث فهرس العائلة فقط"}</small>
+                </span>
+              </button>
+            )}
           </div>
         </div>
-        <section className="fc-steam-gifts" aria-labelledby="fc-steam-gifts-title">
+        {!steamGiftsSelected && (
+          <div className="fc-index-bar">
+            <span className="fc-index-bar__icon"><Database /></span>
+            <div className="fc-index-bar__copy">
+              <strong>فهرس Catalogs</strong>
+              <small><Clock3 /> {syncState.lastSyncedAt ? `آخر مزامنة ${formatSyncDate(syncState.lastSyncedAt)}` : "لم يصل وقت آخر مزامنة"}</small>
+            </div>
+            <button type="button" onClick={syncCatalogIndex} disabled={Boolean(syncState.action) || syncCooldownSeconds > 0}>
+              {syncState.action === "all" ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              <span>{syncState.action === "all" ? "جارٍ تحديث الفهرس" : syncCooldownSeconds > 0 ? `متاح بعد ${syncCooldownSeconds} ث` : "تحديث فهرس الكتالوج"}</span>
+            </button>
+          </div>
+        )}
+        {steamGiftsSelected && <section className="fc-steam-gifts" aria-labelledby="fc-steam-gifts-title">
           <div className="fc-family-sync__heading">
             <div>
               <span>STEAM_GIFTS · ON-DEMAND</span>
@@ -576,11 +581,12 @@ export default function FazerCardsSpecialProviderPage({
               )}
             </div>
           ) : null}
-        </section>
+        </section>}
         {syncCooldownSeconds > 0 ? <p className="fc-sync-cooldown"><Clock3 /> يمكنك البحث الآن، وستتاح المزامنة مجددًا بعد {syncCooldownSeconds} ثانية.</p> : null}
         {syncState.message ? <p className="fc-sync-message is-success"><Check />{syncState.message}</p> : null}
         {syncState.error ? <p className="fc-sync-message is-error"><AlertCircle />{syncState.error}</p> : null}
 
+        {!steamGiftsSelected && <>
         <form className="fc-catalog-search" onSubmit={searchCatalogs}>
           <label className="fc-search-box">
             <Search />
@@ -631,6 +637,7 @@ export default function FazerCardsSpecialProviderPage({
             <div className="fc-search-hint"><Search /><span>اكتب حرفين على الأقل، ثم اضغط «بحث» للبحث في كل العائلات والـCatalogs.</span></div>
           )}
         </div>
+        </>}
       </section>
 
       <section className="fc-retrieved">
