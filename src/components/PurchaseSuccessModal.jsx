@@ -21,6 +21,7 @@ import { useAuth } from "../context/AuthContext";
 import { submitCustomerReview } from "../api/reviews";
 import { useToast } from "./ToastProvider";
 import ReviewModal from "./ReviewModal";
+import { getPurchaseStatusCopy } from "../utils/purchaseStatus";
 import "./PurchaseSuccessModal.css";
 
 export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) {
@@ -37,7 +38,9 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
   const screenScale = useViewportFitScale(screenRef, 8, 0.45);
   const orderNumber = String(receipt.orderId || "");
   const displayOrderNumber = orderNumber.startsWith("#") ? orderNumber : `#${orderNumber}`;
-  const statusLabel = receipt.statusLabel || receipt.status || (isArabic ? "تم الشحن بنجاح" : "Top-up successful");
+  const statusCopy = getPurchaseStatusCopy(receipt.status || receipt.order?.status, isArabic);
+  const isCompleted = statusCopy.isCompleted;
+  const statusLabel = receipt.statusLabel || receipt.status || statusCopy.fallbackStatus;
   const orderRecordId = getOrderRecordId(receipt);
   const canReviewOrder = Boolean(
     orderRecordId
@@ -139,7 +142,7 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
           <button type="button" onClick={onClose} aria-label={isArabic ? "رجوع" : "Back"}>
             <ArrowLeft />
           </button>
-          <h1 id="charge-success-title">{isArabic ? "تم الشحن" : "Top-up complete"}</h1>
+          <h1 id="charge-success-title">{statusCopy.title}</h1>
           <button type="button" onClick={onClose} aria-label={isArabic ? "الرئيسية" : "Home"}>
             <Home />
           </button>
@@ -157,8 +160,8 @@ export default function PurchaseSuccessModal({ receipt, onClose, onViewOrder }) 
               <i className="spark spark--five" />
               <i className="spark spark--six" />
             </div>
-            <h2>{isArabic ? "تم الشحن بنجاح!" : "Top-up successful!"}</h2>
-            <p>{isArabic ? "تم إضافة الطلب بنجاح" : "Your order was added successfully"}</p>
+            <h2>{statusCopy.heading}</h2>
+            <p>{statusCopy.message}</p>
           </div>
 
           <div className="charge-success-details">

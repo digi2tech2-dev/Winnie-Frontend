@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { buildCustomerOrderPayload, createCustomerOrder } from "../api/orders";
 import ProductPurchaseModal from "../components/ProductPurchaseModal";
 import { canPurchaseProduct } from "../utils/productAvailability";
+import { isCompletedOrderStatus } from "../utils/purchaseStatus";
 import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
 import { useToast } from "../components/ToastProvider";
 
@@ -83,6 +84,10 @@ function buildReceipt({ category, order, purchase, t }) {
 function isInsufficientFundsError(error = {}) {
   const code = String(error.code || error.payload?.code || "").toUpperCase();
   const message = String(error.userMessage || error.message || error.payload?.message || "").toLowerCase();
+
+  if (code === "XENA_INSUFFICIENT_PROVIDER_BALANCE") {
+    return false;
+  }
 
   const hasEnglishAmounts = /required\s*:/.test(message) && /available\s*:/.test(message);
   const hasArabicAmounts = /المطلوب\s*:/.test(message) && /المتاح\s*:/.test(message);
@@ -275,9 +280,10 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
       setPurchaseReceipt(receipt);
       await onSuccess?.(result.order);
 
+      const completed = isCompletedOrderStatus(result.order.status);
       showToast({
-        type: "success",
-        title: t("purchase.orderCreated"),
+        type: completed ? "success" : "info",
+        title: completed ? t("purchase.orderCreated") : "طلبك قيد التنفيذ",
         message: `${receipt.orderId} - ${receipt.statusLabel}`,
       });
     } catch (error) {
