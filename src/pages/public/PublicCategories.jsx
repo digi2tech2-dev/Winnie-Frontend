@@ -67,9 +67,6 @@ export default function PublicCategories() {
           <span className="absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full bg-[linear-gradient(180deg,#38BDF8,#7C3AED)]" />
           {t("public.categoriesTitle")}
         </h1>
-        <p className="mt-2 text-sm font-bold leading-6 text-slate-500 dark:text-[#8A94A7]">
-          {t("public.categoriesDescription")}
-        </p>
       </header>
 
       <HomeSlide categoriesPath="/categories" compactDesktop />

@@ -3,7 +3,6 @@
     "catalogLoadError": "Unable to load the public catalog.",
     "catalogEmptyTitle": "Unable to load catalog",
     "categoriesTitle": "Categories",
-    "categoriesDescription": "Active backend categories appear here.",
     "categoriesLoadError": "Unable to load categories.",
     "categoriesEmptyTitle": "No categories yet",
     "categoriesEmptyDescription": "Active backend categories will appear here when they are available.",

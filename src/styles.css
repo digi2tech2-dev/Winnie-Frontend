@@ -13160,6 +13160,213 @@ html.dark .winnie-app-shell::after {
   position: relative;
 }
 
+/* Keep below-the-fold homepage sections out of the initial rendering work.
+   This is especially helpful on low-power phones where blur and large cards
+   otherwise compete with the hero for the first frame. */
+.homepage-compact-products,
+#home-categories,
+.wf-reviews-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
+}
+
+@media (max-width: 768px) {
+  .site-header-warm,
+  .glass-panel,
+  .wf-reviews-shell {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* The brand wordmark is intentionally static: animated gradient/filter layers
+   make the header repaint continuously and can feel like text is scrolling on
+   slower phones. */
+.winnie-brand-name,
+.winnie-brand-name::after,
+.primary-header-brand .winnie-brand-name {
+  animation: none !important;
+}
+
+.winnie-brand-name::after {
+  display: none;
+}
+
+/* Category pages use a slightly roomier search control than the compact
+   admin/list filters. The old mobile rule made the placeholder and button
+   look cramped beside the product grid. */
+.category-page-hero {
+  box-shadow: 0 18px 50px rgba(76, 29, 149, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.category-page-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0 12% auto;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.7), rgba(168, 85, 247, 0.7), transparent);
+}
+
+.category-page-search .site-filter-search-input {
+  font-size: 0.82rem !important;
+}
+
+/* Lightweight Barba-style route reveal. Both layers animate transforms only,
+   so the transition stays smooth even on low-power phones. */
+.barba-transition-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.92), transparent 24%),
+    linear-gradient(125deg, #eef2ff 0%, #f5f3ff 42%, #e0f2fe 100%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  animation: barba-curtain-exit 850ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.barba-transition-curtain::after {
+  display: none;
+  content: "";
+  position: absolute;
+  inset: -25% -10%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.3) 50%, transparent 58%);
+  transform: translateX(-120%) rotate(12deg);
+  will-change: transform;
+  animation: none;
+}
+
+.barba-transition-curtain--dark {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(124, 58, 237, 0.28), transparent 26%),
+    linear-gradient(125deg, #050816 0%, #11102a 46%, #0b2637 100%);
+}
+
+.barba-transition-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  direction: ltr;
+  color: #251743;
+  opacity: 0;
+  transform: translate3d(0, 8px, 0) scale(0.94);
+  animation: barba-brand-in 500ms cubic-bezier(0.22, 1, 0.36, 1) 55ms both;
+}
+
+.barba-transition-curtain--dark .barba-transition-brand {
+  color: #f8f7ff;
+}
+
+.barba-transition-brand::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 18% 8%;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.2);
+  filter: blur(26px);
+}
+
+.barba-transition-brand img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.barba-transition-brand span {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: clamp(1.15rem, 4vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.barba-transition-brand strong {
+  background: linear-gradient(100deg, #7c3aed, #ec4899 45%, #38bdf8);
+  background-clip: text;
+  color: transparent;
+  -webkit-background-clip: text;
+}
+
+.barba-transition-brand b {
+  color: #7c3aed;
+  font-size: 0.58em;
+  letter-spacing: 0.2em;
+}
+
+@keyframes barba-curtain-exit {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -100%, 0); }
+}
+
+@keyframes barba-brand-in {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.94); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes barba-curtain-shine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%) rotate(12deg); }
+}
+
+.page-transition-enter {
+  animation: page-transition-enter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes page-transition-enter {
+  from { opacity: 0; transform: translate3d(0, 7px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-enter,
+  .barba-transition-curtain,
+  .barba-transition-curtain::after,
+  .barba-transition-brand { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .category-page-search {
+    padding: 6px;
+    border-radius: 20px;
+  }
+
+  .category-page-search .site-filter-search-input {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding-right: 42px !important;
+    font-size: 0.78rem !important;
+    border-radius: 14px !important;
+  }
+
+  .category-page-search .site-filter-search-input::placeholder {
+    font-size: 0.72rem !important;
+  }
+
+  .category-page-search .site-filter-search-icon {
+    right: 7px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 10px !important;
+  }
+
+  .category-page-search > button {
+    height: 44px;
+    border-radius: 14px;
+    padding-inline: 14px;
+  }
+}
+
 /* Winnie logo portal — route transition shared by public, customer and admin pages. */
 .winnie-logo-transition {
   --portal-bg-start: #fbfaff;

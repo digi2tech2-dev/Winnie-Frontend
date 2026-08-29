@@ -1,5 +1,4 @@
 import { lazy, Suspense, useLayoutEffect } from "react";
-import { AnimatePresence } from "framer-motion";
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageTransition from "./components/PageTransition";
@@ -78,8 +77,7 @@ export default function App() {
       <Suspense fallback={<PageSkeleton />}>
       <GlobalOverlayScrollLock />
       <ScrollProgressIndicator />
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
+      <Routes location={location} key={location.pathname}>
           <Route element={<PublicLayout />}>
             <Route index element={<Animated><PublicHome /></Animated>} />
             <Route path="about" element={<Animated><About /></Animated>} />
@@ -228,8 +226,7 @@ export default function App() {
           </Route>
 
           <Route path="*" element={<Animated><RouteError code={404} /></Animated>} />
-        </Routes>
-      </AnimatePresence>
+      </Routes>
       </Suspense>
     </>
   );

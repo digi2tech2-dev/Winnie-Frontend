@@ -3,7 +3,6 @@
     "catalogLoadError": "تعذر تحميل الكتالوج العام.",
     "catalogEmptyTitle": "تعذر تحميل الكتالوج",
     "categoriesTitle": "الأقسام",
-    "categoriesDescription": "الأقسام النشطة من الخادم تظهر هنا.",
     "categoriesLoadError": "تعذر تحميل الأقسام.",
     "categoriesEmptyTitle": "لا توجد أقسام بعد",
     "categoriesEmptyDescription": "الأقسام النشطة من الخادم ستظهر هنا عند توفرها.",

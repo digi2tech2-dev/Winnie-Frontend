@@ -24,30 +24,49 @@ export default function PublicHome() {
 
   useEffect(() => {
     let cancelled = false;
+    let bestSellingTimer;
 
     const loadCatalog = async () => {
       setLoading(true);
       setError("");
 
       try {
-        const [result, bestSelling] = await Promise.all([
-          getPublicCatalog({ page: 1, limit: 12 }),
-          getPublicBestSellingProducts({ page: 1, limit: 6 }),
-        ]);
-        if (!cancelled) {
-          setCatalog({
-            categories: result.categories,
-            products: result.products,
-            bestSellingProducts: bestSelling.products,
-          });
+        // The primary catalog is needed for the first paint. Load the heavier
+        // ranking request during idle time so a slow endpoint cannot block the
+        // rest of the homepage from becoming interactive.
+        const result = await getPublicCatalog({ page: 1, limit: 12 });
+        if (cancelled) return;
+
+        setCatalog((current) => ({
+          ...current,
+          categories: result.categories,
+          products: result.products,
+        }));
+        setLoading(false);
+
+        const loadBestSelling = async () => {
+          try {
+            const bestSelling = await getPublicBestSellingProducts({ page: 1, limit: 6 });
+            if (!cancelled) {
+              setCatalog((current) => ({ ...current, bestSellingProducts: bestSelling.products }));
+            }
+          } catch {
+            // Best sellers are supplementary; keep the primary catalog usable.
+            if (!cancelled) setCatalog((current) => ({ ...current, bestSellingProducts: [] }));
+          }
+        };
+
+        if (typeof window.requestIdleCallback === "function") {
+          bestSellingTimer = window.requestIdleCallback(loadBestSelling, { timeout: 1200 });
+        } else {
+          bestSellingTimer = window.setTimeout(loadBestSelling, 250);
         }
       } catch (requestError) {
         if (!cancelled) {
           setCatalog({ categories: [], products: [], bestSellingProducts: [] });
           setError(requestError.userMessage || t("public.catalogLoadError"));
+          setLoading(false);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
 
@@ -55,6 +74,11 @@ export default function PublicHome() {
 
     return () => {
       cancelled = true;
+      if (typeof window.cancelIdleCallback === "function" && typeof bestSellingTimer === "number") {
+        window.cancelIdleCallback(bestSellingTimer);
+      } else if (bestSellingTimer) {
+        window.clearTimeout(bestSellingTimer);
+      }
     };
   }, [t]);
 

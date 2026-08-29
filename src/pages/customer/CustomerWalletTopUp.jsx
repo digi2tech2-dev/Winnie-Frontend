@@ -9,6 +9,7 @@ import { getWalletSummary, getWalletTransactions } from "../../api/wallet";
 import AntiScamSafetyConfirmationModal from "../../components/AntiScamSafetyConfirmationModal";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import { getAntiScamConfirmation, rememberAntiScamConfirmation } from "../../utils/antiScamConfirmation";
 
 const methodAccent = {
   visa: "from-blue-500 to-indigo-700",
@@ -37,9 +38,11 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
   const { refreshCurrentUser, token, user } = useAuth();
   const { showToast } = useToast();
   const { t } = useTranslation("wallet");
-  const [antiScamConfirmed, setAntiScamConfirmed] = useState(location.state?.antiScamConfirmed === true);
-  const [antiScamConfirmedAt, setAntiScamConfirmedAt] = useState(location.state?.antiScamConfirmedAt || null);
-  const [antiScamModalOpen, setAntiScamModalOpen] = useState(location.state?.antiScamConfirmed !== true);
+  const storedAntiScamConfirmation = getAntiScamConfirmation();
+  const initialAntiScamConfirmed = location.state?.antiScamConfirmed === true || Boolean(storedAntiScamConfirmation);
+  const [antiScamConfirmed, setAntiScamConfirmed] = useState(initialAntiScamConfirmed);
+  const [antiScamConfirmedAt, setAntiScamConfirmedAt] = useState(location.state?.antiScamConfirmedAt || storedAntiScamConfirmation || null);
+  const [antiScamModalOpen, setAntiScamModalOpen] = useState(!initialAntiScamConfirmed);
   const [method, setMethod] = useState(null);
   const [methodLoading, setMethodLoading] = useState(true);
   const [methodError, setMethodError] = useState("");
@@ -591,6 +594,7 @@ export default function CustomerWalletTopUp({ basePath = "/customer" }) {
           }}
           onConfirm={() => {
             const confirmedAt = new Date().toISOString();
+            rememberAntiScamConfirmation(confirmedAt);
             setAntiScamConfirmed(true);
             setAntiScamConfirmedAt(confirmedAt);
             setAntiScamModalOpen(false);

@@ -17,6 +17,7 @@ import { getCustomerPaymentMethods } from "../api/paymentMethods";
 import { getWalletSummary } from "../api/wallet";
 import AntiScamSafetyConfirmationModal from "../components/AntiScamSafetyConfirmationModal";
 import { useAuth } from "../context/AuthContext";
+import { getAntiScamConfirmation, rememberAntiScamConfirmation } from "../utils/antiScamConfirmation";
 import "./WalletPage.css";
 
 export default function WalletPage({ basePath = "/customer" }) {
@@ -32,23 +33,39 @@ export default function WalletPage({ basePath = "/customer" }) {
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
   const [paymentMethodsError, setPaymentMethodsError] = useState("");
   const [pendingTopUpMethod, setPendingTopUpMethod] = useState(null);
+  const [antiScamConfirmed, setAntiScamConfirmed] = useState(() => Boolean(getAntiScamConfirmation()));
   const insufficientFunds = location.state?.insufficientFunds || null;
   const showTransactions = () => {
     navigate(`${basePath}/wallet/transactions`);
   };
 
   const addPaymentMethod = (method) => {
-    setPendingTopUpMethod(method);
+    if (!antiScamConfirmed) {
+      setPendingTopUpMethod(method);
+      return;
+    }
+
+    const methodId = method.id;
+    navigate(`${basePath}/wallet/top-up/${methodId}`, {
+      state: {
+        antiScamConfirmed: true,
+        antiScamConfirmedAt: getAntiScamConfirmation(),
+        insufficientFunds,
+      },
+    });
   };
 
   const continueTopUp = () => {
     if (!pendingTopUpMethod) return;
     const methodId = pendingTopUpMethod.id;
+    const confirmedAt = new Date().toISOString();
+    rememberAntiScamConfirmation(confirmedAt);
+    setAntiScamConfirmed(true);
     setPendingTopUpMethod(null);
     navigate(`${basePath}/wallet/top-up/${methodId}`, {
       state: {
         antiScamConfirmed: true,
-        antiScamConfirmedAt: new Date().toISOString(),
+        antiScamConfirmedAt: confirmedAt,
         insufficientFunds,
       },
     });
