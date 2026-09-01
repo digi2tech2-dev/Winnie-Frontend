@@ -1,6 +1,8 @@
 export const SITE_NAME = "Winnie HUB";
 export const SITE_NAME_AR = "ويني هب";
-export const SITE_URL = String(import.meta.env.VITE_SITE_URL || "https://winniefun.com").replace(/\/+$/, "");
+// Keep the production domain aligned with the domain verified in Search Console.
+// It can still be overridden for previews with VITE_SITE_URL.
+export const SITE_URL = String(import.meta.env.VITE_SITE_URL || "https://winniehub.ae").replace(/\/+$/, "");
 export const SITE_DEFAULT_IMAGE = "/hero-winnie-fun.png";
 
 export const DEFAULT_SEO = {
@@ -19,4 +21,3 @@ export function absoluteSiteUrl(path = "/") {
   if (/^https?:\/\//i.test(value)) return value;
   return `${SITE_URL}${value.startsWith("/") ? value : `/${value}`}`;
 }
-

@@ -107,6 +107,9 @@ export default function PublicHome() {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="mx-auto max-w-[1440px] space-y-6 px-4 pb-32 pt-5 sm:px-6 sm:pt-7 lg:space-y-8 lg:px-8 lg:pb-16"
     >
+      <h1 className="px-2 text-center text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+        {t("homePage.heroTitle")}
+      </h1>
       <HomeSlide categoriesPath="/categories" compactDesktop />
       {loading ? (
         <div className="glass-panel rounded-lg p-8 text-center text-sm font-black text-slate-500 dark:text-slate-400">
