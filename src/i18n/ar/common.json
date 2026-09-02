@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "ويني فن",
-    "logoAlt": "شعار ويني فن",
+    "name": "ويني هاب",
+    "logoAlt": "شعار ويني هاب",
     "tagline": "شحن عالمي",
     "defaultUser": "مستخدم ويني",
     "member": "عضو مميز"
@@ -43,7 +43,7 @@
     "notificationsMeta": "التنبيهات والتحديثات",
     "profileMeta": "بيانات الحساب",
     "settingsMeta": "التفضيلات",
-    "aboutMeta": "تعرف على ويني فن"
+    "aboutMeta": "تعرف على ويني هاب"
   },
   "actions": {
     "back": "رجوع",
@@ -100,7 +100,7 @@
     "importantLinksAria": "روابط مهمة",
     "followUs": "تابعنا وتواصل معنا",
     "socialAria": "روابط التواصل الاجتماعي",
-    "companyAria": "عن ويني فن",
+    "companyAria": "عن ويني هاب",
     "companyBadge": "تجربة ويني الرقمية",
     "instagram": "إنستجرام",
     "whatsapp": "واتساب",
@@ -108,7 +108,7 @@
     "contactNow": "تواصل الآن",
     "followNow": "تابعنا",
     "sendEmail": "راسلنا",
-    "whyUs": "لماذا ويني فن؟",
+    "whyUs": "لماذا ويني هاب؟",
     "trust": {
       "secureTitle": "موثوق وآمن",
       "secureDescription": "حماية لبياناتك ومعاملاتك.",
@@ -177,7 +177,7 @@
     "serverTitle": "هناك شيء يحتاج إلى مراجعة",
     "serverDescription": "هذه الصفحة جاهزة لعرض أعطال الخادم أو حالات التشغيل الفعلية.",
     "notFoundTitle": "الصفحة غير موجودة",
-    "notFoundDescription": "الصفحة المطلوبة غير موجودة ضمن خريطة تنقل ويني فن الحالية.",
+    "notFoundDescription": "الصفحة المطلوبة غير موجودة ضمن خريطة تنقل ويني هاب الحالية.",
     "home": "العودة إلى الرئيسية"
   }
 }
