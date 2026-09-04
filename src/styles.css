@@ -13179,9 +13179,9 @@ html.dark .winnie-app-shell::after {
   }
 }
 
-/* The brand wordmark is intentionally static: animated gradient/filter layers
-   make the header repaint continuously and can feel like text is scrolling on
-   slower phones. */
+/* Keep brand wordmarks static everywhere except the header. The header uses a
+   single, slow background-position animation with no extra glow layer, so the
+   only repainted area is the small wordmark itself. */
 .winnie-brand-name,
 .winnie-brand-name::after,
 .primary-header-brand .winnie-brand-name {
@@ -13190,6 +13190,28 @@ html.dark .winnie-app-shell::after {
 
 .winnie-brand-name::after {
   display: none;
+}
+
+.primary-header-brand .winnie-brand-name {
+  animation: winnie-header-brand-colors 12s ease-in-out infinite !important;
+  will-change: background-position;
+}
+
+@keyframes winnie-header-brand-colors {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-header-brand .winnie-brand-name {
+    animation: none !important;
+  }
 }
 
 /* Category pages use a slightly roomier search control than the compact
