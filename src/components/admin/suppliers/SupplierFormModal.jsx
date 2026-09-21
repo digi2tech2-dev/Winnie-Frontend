@@ -13,6 +13,11 @@ const integrationTypeOptions = [
   { value: "API", label: "واجهة برمجة التطبيقات" },
 ];
 
+const adapterTypeOptions = [
+  { value: "", label: "التكامل الافتراضي" },
+  { value: "canonical-b2b", label: "Canonical B2B" },
+];
+
 export default function SupplierFormModal({ error = "", open, supplier, onClose, onSave, saving = false }) {
   if (!open) return null;
 
@@ -34,6 +39,7 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
   const [form, setForm] = useState({
     apiKey: "",
     apiToken: "",
+    adapterType: supplier?.adapterType || "",
     authType: supplier?.authType || "NONE",
     baseUrl: supplier?.baseUrl || "",
     bearerToken: "",
@@ -106,6 +112,13 @@ function SupplierFormContent({ supplier, backendError, onClose, onSave, saving }
             <select value={form.integrationType} onChange={(event) => update("integrationType", event.target.value)} className={inputClassName}>
               {integrationTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="محول التكامل">
+            <select value={form.adapterType} onChange={(event) => update("adapterType", event.target.value)} className={inputClassName}>
+              {adapterTypeOptions.map((option) => (
+                <option key={option.value || "default"} value={option.value}>{option.label}</option>
               ))}
             </select>
           </Field>

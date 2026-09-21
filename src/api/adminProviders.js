@@ -116,6 +116,7 @@ export function normalizeAdminProvider(provider = {}) {
     id,
     _id: provider._id ?? id,
     active: status === "active",
+    adapterType: String(provider.adapterType || "").trim().toLowerCase(),
     apiUrl: provider.baseUrl || "",
     authType: String(provider.authType || "NONE").toUpperCase(),
     baseUrl: provider.baseUrl || "",
@@ -468,6 +469,7 @@ function buildProviderPayload(values = {}, { includeBlankToken = false } = {}) {
 
   return compactObject({
     authType,
+    adapterType: values.adapterType === undefined ? undefined : String(values.adapterType || "").trim().toLowerCase() || null,
     name: values.name,
     slug: values.slug || values.code,
     baseUrl: values.baseUrl || values.apiUrl,
