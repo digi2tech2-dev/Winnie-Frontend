@@ -7,7 +7,9 @@ import GlobalOverlayScrollLock from "./components/GlobalOverlayScrollLock";
 import ScrollProgressIndicator from "./components/ScrollProgressIndicator";
 import { PageSkeleton } from "./components/Skeletons";
 import RouteSeo from "./components/RouteSeo";
+import { useAuth } from "./context/AuthContext";
 import { importantLinks } from "./data/importantLinks";
+import { canAccessRole, getDefaultRouteForRole } from "./utils/authRoles";
 
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 const CustomerLayout = lazy(() => import("./layouts/CustomerLayout"));
@@ -25,6 +27,7 @@ const ForgotPassword = lazy(() => import("./pages/public/ForgotPassword"));
 const EmailVerified = lazy(() => import("./pages/public/EmailVerified"));
 const ImportantArticlePage = lazy(() => import("./pages/public/ImportantArticlePage"));
 const PaymentReturnPage = lazy(() => import("./pages/PaymentReturnPage"));
+const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
 
 const CustomerDashboard = lazy(() => import("./pages/customer/CustomerDashboard"));
 const CustomerBestSelling = lazy(() => import("./pages/customer/CustomerBestSelling"));
@@ -80,6 +83,8 @@ export default function App() {
       <ScrollProgressIndicator />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
+          <Route path="api-docs" element={<Animated><ApiDocsPage /></Animated>} />
+
           <Route element={<PublicLayout />}>
             <Route index element={<Animated><PublicHome /></Animated>} />
             <Route path="about" element={<Animated><About /></Animated>} />
@@ -108,6 +113,15 @@ export default function App() {
             ))}
             <Route path="500" element={<Animated><RouteError code={500} /></Animated>} />
           </Route>
+
+          <Route
+            path="developers/api"
+            element={
+              <ProtectedRoute>
+                <DeveloperApiAccessRoute />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="customer"
@@ -261,4 +275,12 @@ function LegacyAdminRedirect({ from, to }) {
   const nextPath = location.pathname.replace(from, to);
 
   return <Navigate to={`${nextPath}${location.search}${location.hash}`} replace />;
+}
+
+function DeveloperApiAccessRoute() {
+  const { user } = useAuth();
+  const allowed = canAccessRole(user?.role, "customer") || canAccessRole(user?.role, "admin");
+
+  if (!allowed) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />;
+  return <Animated><DeveloperApiPage /></Animated>;
 }

@@ -25,6 +25,10 @@ const PUBLIC_PAGES = {
     ar: ["عن Winnie HUB | منصة المنتجات الرقمية", "تعرف على ويني هب وخدمات شحن الألعاب والبطاقات الرقمية وطرق الدفع والدعم المتاحة."],
     en: ["About Winnie HUB | Digital Products Platform", "Learn about Winnie HUB, its game top-up and digital card services, payment methods and customer support."],
   },
+  "/api-docs": {
+    ar: ["توثيق Canonical B2B API | Winnie HUB", "دليل تكامل واجهة Canonical B2B API من ويني هب للمنتجات والطلبات."],
+    en: ["Canonical B2B API Documentation | Winnie HUB", "Integrate with Winnie HUB's Canonical B2B API for products, orders, and order checks."],
+  },
 };
 
 const NOINDEX_PREFIXES = ["/admin", "/customer", "/auth", "/payment"];

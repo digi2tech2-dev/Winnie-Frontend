@@ -9,53 +9,15 @@ import {
   Fingerprint,
   KeyRound,
   Link2,
-  PackageSearch,
   RefreshCw,
   ShieldCheck,
-  ShoppingCart,
-  Terminal,
   TriangleAlert,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getMyDeveloperAccess, rotateMyDeveloperToken } from "../../api/developerAccess";
 import { useToast } from "../../components/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
-
-const endpointGroups = [
-  {
-    icon: PackageSearch,
-    eyebrow: "Catalog",
-    title: "الحساب والمنتجات",
-    endpoints: [
-      ["GET", "/profile", "الرصيد والعملة وبيانات حساب API"],
-      ["GET", "/products", "قائمة المنتجات والأسعار والحقول المطلوبة"],
-    ],
-  },
-  {
-    icon: ShoppingCart,
-    eyebrow: "Orders",
-    title: "الطلبات",
-    endpoints: [
-      ["POST", "/orders", "إنشاء طلب باستخدام productId وqty وorder_uuid"],
-      ["GET", "/check?orders=ORDER_ID", "فحص حالة طلب أو عدة طلبات مفصولة بفاصلة"],
-    ],
-  },
-];
-
-const guideSteps = [
-  {
-    title: "انسخ بيانات الاتصال",
-    text: "احتفظ بالتوكن والرابط في متغيرات البيئة داخل الخادم.",
-  },
-  {
-    title: "أرسل التوكن",
-    text: "أضف X-API-Key إلى Header في كل طلب ترسله.",
-  },
-  {
-    title: "ميّز كل طلب",
-    text: "أنشئ order_uuid جديدًا مع كل عملية لمنع التكرار.",
-  },
-];
 
 function formatDate(value) {
   if (!value) return "غير متاح";
@@ -168,37 +130,6 @@ export default function DeveloperApiPage() {
 
   const baseUrl = access?.apiBaseUrl || "";
   const apiToken = access?.apiToken || "";
-  const exampleBaseUrl = baseUrl || "https://api.example.com/api/client";
-  const curlExample = useMemo(() => [
-    "curl --request GET \\",
-    "  --url '" + exampleBaseUrl + "/products' \\",
-    "  --header 'X-API-Key: YOUR_API_KEY' \\",
-    "  --header 'Accept: application/json'",
-  ].join("\n"), [exampleBaseUrl]);
-  const javascriptExample = useMemo(() => [
-    "const response = await fetch(",
-    "  '" + exampleBaseUrl + "/orders',",
-    "  {",
-    "    method: 'POST',",
-    "    headers: {",
-    "      'X-API-Key': 'YOUR_API_KEY',",
-    "      'Content-Type': 'application/json',",
-    "    },",
-    "    body: JSON.stringify({",
-    "      productId: 'PRODUCT_ID',",
-    "      qty: 1,",
-    "      order_uuid: crypto.randomUUID(),",
-    "      dynamicData: {",
-    "        player_id: '123456789',",
-    "        server: 'EU',",
-    "      },",
-    "    }),",
-    "  },",
-    ");",
-    "",
-    "const result = await response.json();",
-  ].join("\n"), [exampleBaseUrl]);
-
   if (loading) {
     return (
       <section dir="rtl" className="mx-auto grid min-h-[420px] max-w-6xl place-items-center px-4">
@@ -238,13 +169,24 @@ export default function DeveloperApiPage() {
             <div className="min-w-0">
               <p dir="ltr" className="w-fit text-[10px] font-black tracking-[0.2em] text-violet-600 dark:text-violet-300 sm:text-xs">WINNIE DEVELOPERS</p>
               <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">واجهة API</h1>
-              <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400 sm:text-sm">بيانات الاتصال ودليل التكامل البرمجي</p>
+              <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400 sm:text-sm">تكامل نظامك مع Canonical B2B API من ويني</p>
             </div>
           </div>
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-black text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4" />
             API مفعّل
           </span>
+        </div>
+        <div className="mt-5 grid gap-4 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-400/20 dark:bg-violet-400/[0.08] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">Primary Base URL</p>
+            <code dir="ltr" className="mt-1 block overflow-x-auto text-left text-xs font-bold text-slate-900 dark:text-white">{baseUrl}</code>
+            <p className="mt-2 flex items-start gap-2 text-xs font-medium leading-5 text-slate-600 dark:text-slate-300"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-violet-700 dark:text-violet-200" />احتفظ بالتوكن في متغيرات بيئة الخادم فقط واستخدم header باسم <code dir="ltr" className="font-bold">api-token</code>.</p>
+          </div>
+          <Link to="/api-docs" className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-violet-700">
+            <BookOpenText className="h-4 w-4" />
+            فتح توثيق API
+          </Link>
         </div>
       </section>
 
@@ -272,7 +214,7 @@ export default function DeveloperApiPage() {
             featured
             icon={KeyRound}
             label="API TOKEN"
-            hint="X-API-Key"
+            hint="api-token (recommended)"
             value={apiToken}
             placeholder="اضغط تغيير API Token لإنشاء توكن جديد وعرضه"
             secret
@@ -335,70 +277,6 @@ export default function DeveloperApiPage() {
         </div>
       </section>
 
-      <section className="developer-api-surface overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_22px_65px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0a1020]">
-        <SectionHeader
-          number="02"
-          eyebrow="Developer guide"
-          title="دليل الربط للمبرمج"
-          description="كل ما تحتاجه لإرسال أول طلب بنجاح، من التوثيق وحتى متابعة حالة الطلب."
-          icon={BookOpenText}
-        />
-
-        <div className="space-y-6 p-4 sm:p-6">
-          <div className="grid gap-3 lg:grid-cols-3">
-            {guideSteps.map((step, index) => (
-              <GuideStep
-                key={step.title}
-                number={String(index + 1).padStart(2, "0")}
-                title={step.title}
-                text={step.text}
-              />
-            ))}
-          </div>
-
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-            <div className="min-w-0 space-y-4">
-              <Subheading
-                eyebrow="Ready to use"
-                title="أمثلة جاهزة"
-                description="استبدل القيم التجريبية ببيانات حسابك ثم شغّل الطلب من الخادم."
-              />
-              <CodeBlock
-                language="cURL"
-                title="قراءة قائمة المنتجات"
-                code={curlExample}
-                onCopy={() => copyValue(curlExample, "مثال cURL")}
-              />
-              <CodeBlock
-                language="JavaScript"
-                title="إنشاء طلب جديد"
-                code={javascriptExample}
-                onCopy={() => copyValue(javascriptExample, "مثال JavaScript")}
-              />
-            </div>
-
-            <div className="min-w-0 space-y-4">
-              <Subheading
-                eyebrow="Endpoints"
-                title="المسارات المتاحة"
-                description="تُضاف هذه المسارات بعد API URL الظاهر أعلى الصفحة."
-              />
-              <div className="space-y-3">
-                {endpointGroups.map((group) => (
-                  <EndpointGroup key={group.title} group={group} />
-                ))}
-              </div>
-              <div className="developer-api-security flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-400/20 dark:bg-amber-400/[0.08]">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
-                <div className="text-xs font-medium leading-6 text-slate-600 dark:text-slate-300">
-                  <p className="font-black text-slate-950 dark:text-white">حماية بيانات الربط</p>
-                  <p className="mt-1">لا تضع التوكن في الواجهة الأمامية أو مستودع Git. خزّنه في متغيرات البيئة على الخادم، وأرسله في header باسم X-API-Key، واستخدم HTTPS فقط.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
@@ -515,95 +393,11 @@ function CredentialCard({
   );
 }
 
-function GuideStep({ number, text, title }) {
-  return (
-    <article className="developer-api-subcard relative rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.025] sm:p-5">
-      <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-600 text-[10px] font-black text-white shadow-sm">{number}</span>
-      <h3 className="mt-4 text-sm font-black text-slate-950 dark:text-white">{title}</h3>
-      <p className="mt-1.5 text-xs font-medium leading-6 text-slate-500 dark:text-slate-400">{text}</p>
-    </article>
-  );
-}
-
 function MetaItem({ label, value }) {
   return (
     <div>
       <p className="text-[10px] font-black uppercase text-slate-400">{label}</p>
       <strong dir="ltr" className="mt-1 block break-all text-sm font-black text-slate-900 dark:text-white">{value}</strong>
     </div>
-  );
-}
-
-function Subheading({ description, eyebrow, title }) {
-  return (
-    <div>
-      <p className="text-[10px] font-black tracking-[0.16em] text-violet-600 uppercase dark:text-violet-300">{eyebrow}</p>
-      <h3 className="mt-1 text-base font-black text-slate-950 dark:text-white">{title}</h3>
-      <p className="mt-1 text-xs font-medium leading-5 text-slate-500 dark:text-slate-400">{description}</p>
-    </div>
-  );
-}
-
-function CodeBlock({ code, language, onCopy, title }) {
-  return (
-    <article className="developer-api-code min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-[#080e1b] shadow-[0_16px_38px_rgba(2,6,23,0.18)]">
-      <header className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-3 sm:px-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex gap-1.5" aria-hidden="true">
-            <i className="h-2 w-2 rounded-full bg-rose-400" />
-            <i className="h-2 w-2 rounded-full bg-amber-400" />
-            <i className="h-2 w-2 rounded-full bg-emerald-400" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-black text-slate-200">{title}</p>
-            <p dir="ltr" className="mt-0.5 w-fit text-[9px] font-bold text-slate-500">{language}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onCopy}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] font-black text-slate-200 transition hover:bg-white/10"
-        >
-          <Copy className="h-3.5 w-3.5" />
-          نسخ
-        </button>
-      </header>
-      <pre dir="ltr" className="max-h-[420px] overflow-auto p-4 text-left font-mono text-[11px] font-medium leading-6 text-slate-300 sm:text-xs"><code>{code}</code></pre>
-    </article>
-  );
-}
-
-function EndpointGroup({ group }) {
-  const Icon = group.icon;
-
-  return (
-    <article className="developer-api-endpoint overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10">
-      <header className="developer-api-endpoint-header flex items-center gap-3 bg-slate-50 px-4 py-3.5 dark:bg-white/[0.035]">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-violet-700 shadow-sm dark:bg-white/5 dark:text-violet-300">
-          <Icon className="h-4.5 w-4.5" />
-        </span>
-        <div>
-          <p dir="ltr" className="w-fit text-[9px] font-black tracking-[0.14em] text-slate-400 uppercase">{group.eyebrow}</p>
-          <h4 className="mt-0.5 text-sm font-black text-slate-950 dark:text-white">{group.title}</h4>
-        </div>
-      </header>
-      <div className="divide-y divide-slate-200 dark:divide-white/10">
-        {group.endpoints.map(([method, path, description]) => (
-          <div key={method + "-" + path} className="p-4">
-            <div dir="ltr" className="flex min-w-0 items-center gap-2 text-left">
-              <span className={"shrink-0 rounded-md px-2 py-1 text-[9px] font-black " + (
-                method === "POST"
-                  ? "bg-violet-100 text-violet-700 dark:bg-violet-400/10 dark:text-violet-300"
-                  : "bg-cyan-100 text-cyan-800 dark:bg-cyan-400/10 dark:text-cyan-300"
-              )}>
-                {method}
-              </span>
-              <code className="min-w-0 break-all font-mono text-[11px] font-bold text-slate-800 dark:text-slate-200">{path}</code>
-            </div>
-            <p className="mt-2 text-xs font-medium leading-5 text-slate-500 dark:text-slate-400">{description}</p>
-          </div>
-        ))}
-      </div>
-    </article>
   );
 }

@@ -1,5 +1,33 @@
 import { apiRequest, getApiBaseUrl } from "./client";
 
+export function toCanonicalApiBaseUrl(value, relativeOrigin) {
+  const apiBaseUrl = String(value || "").trim().replace(/\/+$/, "");
+  const url = new URL(apiBaseUrl, relativeOrigin);
+  const path = url.pathname.replace(/\/+$/, "");
+  const originPath = path
+    .replace(/\/api\/client(?:\/api)?$/i, "")
+    .replace(/\/api$/i, "");
+
+  url.pathname = `${originPath}/client/api`.replace(/\/+/g, "/");
+  url.search = "";
+  url.hash = "";
+  return url.toString().replace(/\/+$/, "");
+}
+
+export function getCanonicalApiBaseUrl() {
+  const apiBaseUrl = getApiBaseUrl().replace(/\/+$/, "");
+  const relativeOrigin = typeof window !== "undefined" ? window.location.origin : undefined;
+
+  try {
+    return toCanonicalApiBaseUrl(apiBaseUrl, relativeOrigin);
+  } catch {
+    return apiBaseUrl
+      .replace(/\/api\/client(?:\/api)?$/i, "")
+      .replace(/\/api$/i, "")
+      .replace(/\/+$/, "") + "/client/api";
+  }
+}
+
 function getAccessSource(value = {}) {
   return {
     ...value,
@@ -18,7 +46,7 @@ export function normalizeDeveloperAccess(value = {}) {
 
   return {
     enabled,
-    apiBaseUrl: String(source.apiBaseUrl || source.baseUrl || `${getApiBaseUrl().replace(/\/+$/, "")}/client`).replace(/\/+$/, ""),
+    apiBaseUrl: getCanonicalApiBaseUrl(),
     apiKey: String(source.apiKey || source.apiToken || source.token || source.key || ""),
     apiToken: String(source.apiKey || source.apiToken || source.token || source.key || ""),
     hasApiKey: source.hasApiKey === true,
