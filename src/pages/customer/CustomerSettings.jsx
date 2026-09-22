@@ -4,7 +4,6 @@ import SettingsPage from "../SettingsPage";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
-import CustomerWhatsAppSettingsCard from "../../components/CustomerWhatsAppSettingsCard";
 
 export default function CustomerSettings() {
   const location = useLocation();
@@ -26,7 +25,6 @@ export default function CustomerSettings() {
         onLanguageChange={setLanguage}
         onThemeChange={setTheme}
       />
-      <CustomerWhatsAppSettingsCard />
     </div>
   );
 }
