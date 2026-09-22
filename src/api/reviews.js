@@ -68,6 +68,7 @@ function normalizeAdminReview(review = {}) {
 
 export async function fetchPublicReviews({ limit = 10, page = 1, featured, signal } = {}) {
   const response = await apiRequest("/public/reviews", {
+    cacheTtl: 60_000,
     query: { limit, page, featured },
     signal,
   });

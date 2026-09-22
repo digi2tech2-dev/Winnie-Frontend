@@ -69,7 +69,7 @@ async function loadCatalog(apiBaseUrl) {
 }
 
 const env = await loadEnvironment();
-const siteUrl = String(env.VITE_SITE_URL || "https://winniefun.com").replace(/\/+$/, "");
+const siteUrl = String(env.VITE_SITE_URL || "https://winniehub.ae").replace(/\/+$/, "");
 const indexPath = resolve(distDir, "index.html");
 const catalog = await loadCatalog(env.VITE_API_BASE_URL);
 const staticPaths = [

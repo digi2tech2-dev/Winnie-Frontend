@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { getPublicCatalog } from "../api/catalog";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import GoogleMark from "./GoogleMark";
 import ThemeToggle from "./ThemeToggle";
 import { BrandName } from "./Brand";
@@ -231,6 +232,12 @@ function PublicPurchaseSidebar({ open, onClose }) {
   const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation("common");
+  const { loginWithGoogle } = useAuth();
+
+  const continueWithGoogle = () => {
+    onClose();
+    loginWithGoogle();
+  };
 
   useEffect(() => {
     if (!open) return undefined;
@@ -312,9 +319,9 @@ function PublicPurchaseSidebar({ open, onClose }) {
             ))}
           </div>
 
-          <Link
-            to="/login"
-            onClick={onClose}
+          <button
+            type="button"
+            onClick={continueWithGoogle}
             className="public-sidebar-google group block rounded-2xl bg-[linear-gradient(135deg,#4285F4,#34A853,#FBBC05,#EA4335)] p-[1px] shadow-[0_14px_34px_rgba(66,133,244,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(66,133,244,0.28)]"
           >
             <span className="flex min-h-10 items-center justify-center gap-2 rounded-[15px] bg-white px-3 text-center text-xs font-black text-slate-800 transition group-hover:bg-[#F8FCFF] dark:bg-[#111827] dark:text-white dark:group-hover:bg-[#0D1324]">
@@ -323,7 +330,7 @@ function PublicPurchaseSidebar({ open, onClose }) {
               </span>
               <span>{t("sidebar.googleLogin")}</span>
             </span>
-          </Link>
+          </button>
         </div>
 
         <div className="public-sidebar-settings mb-2.5 space-y-2 rounded-2xl border border-[#D7EAFE] bg-white/88 p-2.5 shadow-[0_10px_24px_rgba(14,165,233,0.10)] dark:border-white/10 dark:bg-[#0D1324] dark:shadow-none">

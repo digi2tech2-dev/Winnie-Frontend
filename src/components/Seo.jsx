@@ -68,11 +68,21 @@ export default function Seo({
     upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt" }, pageTitle);
     upsertMeta('meta[property="og:site_name"]', { property: "og:site_name" }, SITE_NAME);
     upsertMeta('meta[property="og:locale"]', { property: "og:locale" }, locale === "ar" ? "ar_AE" : "en_US");
+    upsertMeta(
+      'meta[property="og:locale:alternate"]',
+      { property: "og:locale:alternate" },
+      locale === "ar" ? "en_US" : "ar_AE",
+    );
     upsertMeta('meta[name="twitter:card"]', { name: "twitter:card" }, "summary_large_image");
     upsertMeta('meta[name="twitter:title"]', { name: "twitter:title" }, pageTitle);
     upsertMeta('meta[name="twitter:description"]', { name: "twitter:description" }, pageDescription);
     upsertMeta('meta[name="twitter:image"]', { name: "twitter:image" }, imageUrl);
+    upsertMeta('meta[name="author"]', { name: "author" }, SITE_NAME);
     upsertLink("canonical", canonicalUrl);
+    // Publish both language variants so crawlers understand the bilingual site.
+    upsertLink("alternate", canonicalUrl, "ar");
+    upsertLink("alternate", canonicalUrl, "en");
+    upsertLink("alternate", canonicalUrl, "x-default");
     const schemaSelector = `script[data-winnie-seo-json-ld="${safeSchemaId}"]`;
     if (safeSchemaId === "route") document.getElementById("winnie-static-schema")?.remove();
     document.head.querySelectorAll(schemaSelector).forEach((element) => element.remove());
