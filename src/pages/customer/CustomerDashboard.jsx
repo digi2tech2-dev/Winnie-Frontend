@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { Camera, X } from "lucide-react";
 import { resolveBackendAssetUrl } from "../../api/adapters";
+import { isProductVisibleInStore } from "../../utils/productAvailability";
 import {
   filterMainCategories,
   getCustomerBestSellingProducts,
@@ -125,11 +126,11 @@ export default function CustomerDashboard({ basePath = "/customer" }) {
     [dashboardData.categories],
   );
   const visibleProducts = useMemo(
-    () => dashboardData.products.filter((product) => product?.visibleInStore !== false && product?.visible !== false),
+    () => dashboardData.products.filter(isProductVisibleInStore),
     [dashboardData.products],
   );
   const visibleBestSellingProducts = useMemo(
-    () => dashboardData.bestSellingProducts.filter((product) => product?.visibleInStore !== false && product?.visible !== false),
+    () => dashboardData.bestSellingProducts.filter(isProductVisibleInStore),
     [dashboardData.bestSellingProducts],
   );
   const openProductPurchase = (product) => openPurchase(product, product.categoryTitle || t("dashboard.customerCatalog"));
