@@ -80,7 +80,7 @@ export default function App() {
       <Suspense fallback={<PageSkeleton />}>
       <GlobalOverlayScrollLock />
       <ScrollProgressIndicator />
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location}>
           <Route path="api-docs" element={<Animated><ApiDocsPage /></Animated>} />
 
           <Route element={<PublicLayout />}>

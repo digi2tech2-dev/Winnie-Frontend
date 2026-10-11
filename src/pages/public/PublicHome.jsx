@@ -1,18 +1,45 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { filterMainCategories, getPublicBestSellingProducts, getPublicCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
-import ProductPurchaseModal from "../../components/ProductPurchaseModal";
 import BestSellingSection from "../../components/home/BestSellingSection";
 import CategoryShowcaseSection from "../../components/home/CategoryShowcaseSection";
-import CustomerReviews from "../../components/home/CustomerReviews";
 import HomeSlide from "../../components/home/HomeSlide";
 import RecentAdditionsSection from "../../components/home/RecentAdditionsSection";
 import { canPurchaseProduct } from "../../utils/productAvailability";
 import { buildItemListSchema, getProductPath } from "../../utils/seo";
 import Seo from "../../components/Seo";
+
+const ProductPurchaseModal = lazy(() => import("../../components/ProductPurchaseModal"));
+const CustomerReviews = lazy(() => import("../../components/home/CustomerReviews"));
+
+function DeferredReviews() {
+  const [visible, setVisible] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "600px 0px" });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={sectionRef} style={{ minHeight: visible ? undefined : 320 }}>
+    {visible && <Suspense fallback={null}><CustomerReviews forceRtl /></Suspense>}
+  </div>;
+}
 
 export default function PublicHome() {
   const navigate = useNavigate();
@@ -141,16 +168,16 @@ export default function PublicHome() {
           />
         </>
       )}
-      <CustomerReviews forceRtl />
+      <DeferredReviews />
       <AnimatePresence>
         {purchaseItem && (
-          <ProductPurchaseModal
+          <Suspense fallback={null}><ProductPurchaseModal
             product={purchaseItem.product}
             category={purchaseItem.category}
             onClose={() => setPurchaseItem(null)}
             onConfirm={confirmPurchase}
             requireAccountId={false}
-          />
+          /></Suspense>
         )}
       </AnimatePresence>
       </motion.div>

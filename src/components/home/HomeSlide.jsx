@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import slideOneImage from "../../../photo/اسلايد1.jpg";
@@ -38,9 +38,11 @@ function openHeaderSearch(query = "") {
 
 export default function HomeSlide({ categoriesPath = "/categories", compactDesktop = false, subAgentPath }) {
   const { t } = useTranslation("home");
+  const sliderRef = useRef(null);
   const [{ activeSlide, direction }, setSlider] = useState({ activeSlide: 0, direction: 1 });
   const [paused, setPaused] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [onScreen, setOnScreen] = useState(true);
   const slides = [
     { image: slideImages[0], path: categoriesPath },
     { image: slideImages[1], path: categoriesPath },
@@ -48,9 +50,19 @@ export default function HomeSlide({ categoriesPath = "/categories", compactDeskt
   ];
 
   useEffect(() => {
-    if (paused) return undefined;
+    const slider = sliderRef.current;
+    if (!slider || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(([entry]) => setOnScreen(Boolean(entry?.isIntersecting)));
+    observer.observe(slider);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (paused || !onScreen || document.visibilityState !== "visible"
+      || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
 
     const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       setSlider(({ activeSlide: current }) => {
         const nextSlide = (current + 1) % slideImages.length;
         return {
@@ -61,7 +73,7 @@ export default function HomeSlide({ categoriesPath = "/categories", compactDeskt
     }, AUTO_PLAY_DELAY);
 
     return () => window.clearInterval(timer);
-  }, [paused]);
+  }, [paused, onScreen]);
 
   const handleSearchOpen = () => {
     openHeaderSearch("");
@@ -76,6 +88,7 @@ export default function HomeSlide({ categoriesPath = "/categories", compactDeskt
   return (
     <div className="space-y-3">
       <section
+        ref={sliderRef}
         aria-label={t("slider.label")}
         aria-roledescription="carousel"
         className={`group relative isolate aspect-[1024/364] w-full overflow-hidden rounded-lg bg-slate-950 shadow-xl shadow-royal/10 ${compactDesktop ? "lg:mx-auto lg:h-auto lg:w-[98%] lg:max-w-[850px]" : ""}`}

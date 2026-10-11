@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 import {
   getFazerCardsCatalogFamilies,
   getFazerCardsCatalogSyncJobs,
@@ -736,6 +737,7 @@ function CatalogOffers({ catalog, onClose, token }) {
   const [state, setState] = useState({ error: "", loading: true, offers: [], pagination: null });
   const [importState, setImportState] = useState(EMPTY_IMPORT_STATE);
   const [importOffer, setImportOffer] = useState(null);
+  const [pendingLaunchMode, setPendingLaunchMode] = useState("");
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -765,10 +767,25 @@ function CatalogOffers({ catalog, onClose, token }) {
   const selectedFamilyKey = String(selectedOffer?.familyKey || catalog.familyKey || "").toUpperCase();
   const autoProviderCapable = AUTO_PROVIDER_FAMILIES.has(selectedFamilyKey);
   const launchDisabled = !importState.product?.id || Boolean(importState.action) || importState.loading;
+  const published = importState.product?.visibleToCustomer === true;
+  // Publishing remains complete when the product later switches from manual to automatic fulfillment.
+  const manualCompleted = published;
+  const autoCompleted = published && importState.product?.providerExecutionEnabled === true
+    && importState.product?.providerExecutionMode === "AUTO_PROVIDER";
+
+  useEffect(() => {
+    if (!pendingLaunchMode) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setPendingLaunchMode("");
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [pendingLaunchMode]);
 
   const selectOffer = (offerId) => {
     const offer = state.offers.find((item) => item.id === offerId);
     setSelectedOfferId(offerId);
+    setPendingLaunchMode("");
     setImportState(offer?.importedProduct ? {
       ...EMPTY_IMPORT_STATE,
       manualFieldWarning: offer.importedProduct.manualFieldWarning || "",
@@ -814,6 +831,16 @@ function CatalogOffers({ catalog, onClose, token }) {
     const familyKey = String(selectedOffer?.familyKey || catalog.familyKey || "").toUpperCase();
     if (!productId || importState.action) return;
 
+    if (isAuto && !published) {
+      setImportState((current) => ({
+        ...current,
+        launchMessage: "انشر المنتج للعملاء أولًا، ثم فعّل التنفيذ التلقائي.",
+        launchTone: "warning",
+      }));
+      setPendingLaunchMode("");
+      return;
+    }
+
     if (isAuto && !AUTO_PROVIDER_FAMILIES.has(familyKey)) {
       setImportState((current) => ({
         ...current,
@@ -823,11 +850,7 @@ function CatalogOffers({ catalog, onClose, token }) {
       return;
     }
 
-    const confirmation = isAuto
-      ? "نشر المنتج وتفعيل التنفيذ التلقائي من FazerCards؟ سيظل التنفيذ الحقيقي مرتبطًا بمفاتيح أمان المورد."
-      : "نشر المنتج للعملاء مع تنفيذ الطلب يدويًا؟";
-    if (!window.confirm(confirmation)) return;
-
+    setPendingLaunchMode("");
     setImportState((current) => ({ ...current, action: isAuto ? "auto" : "manual", error: "", launchMessage: "", launchTone: "" }));
     try {
       const result = await launchFazerCardsProduct(token, productId, {
@@ -845,6 +868,24 @@ function CatalogOffers({ catalog, onClose, token }) {
       const visibleToCustomer = launchStatus.visibleToCustomer === true;
       const reasons = Array.isArray(launchStatus.reasons) ? launchStatus.reasons : [];
 
+      const updatedProduct = {
+        ...importState.product,
+        customerPurchaseEnabled: true,
+        customerVisibilityStatus: { visibleToCustomer, reasons },
+        isActive: true,
+        providerExecutionEnabled: isAuto,
+        providerExecutionMode,
+        status: "available",
+        visibleInStore: visibleToCustomer,
+        visibleToCustomer,
+      };
+      setState((current) => ({
+        ...current,
+        offers: current.offers.map((offer) => offer.id === selectedOffer.id
+          ? { ...offer, importedProduct: updatedProduct }
+          : offer),
+      }));
+
       setImportState((current) => ({
         ...current,
         action: "",
@@ -852,14 +893,7 @@ function CatalogOffers({ catalog, onClose, token }) {
           ? isAuto ? "تم نشر المنتج وتفعيل التنفيذ التلقائي بنجاح." : "تم نشر المنتج للعملاء بنجاح."
           : `تم حفظ إعدادات التشغيل، لكن المنتج غير ظاهر للعملاء: ${reasons.join("، ") || "راجع جاهزية المنتج."}`,
         launchTone: visibleToCustomer ? "success" : "warning",
-        product: {
-          ...current.product,
-          isActive: true,
-          providerExecutionEnabled: isAuto,
-          providerExecutionMode,
-          status: "available",
-          visibleInStore: visibleToCustomer,
-        },
+        product: updatedProduct,
       }));
     } catch (error) {
       setImportState((current) => ({
@@ -947,29 +981,32 @@ function CatalogOffers({ catalog, onClose, token }) {
               <div className="fc-launch-block">
                 <div className="fc-launch-block__heading">
                   <div><span>بعد الإضافة</span><strong>تشغيل ونشر المنتج</strong></div>
-                  <small>{importState.product?.id ? "تم الاستيراد" : "أضف المنتج أولًا"}</small>
+                  <small>{autoCompleted ? "اكتمل التشغيل" : manualCompleted ? "بانتظار التنفيذ التلقائي" : importState.product?.id ? "تم الاستيراد" : "أضف المنتج أولًا"}</small>
                 </div>
                 <div className="fc-launch-actions">
                   <button
                     type="button"
-                    className="fc-launch-action is-manual"
-                    onClick={() => launchImportedProduct("MANUAL_FULFILLMENT")}
-                    disabled={launchDisabled || Boolean(importState.manualFieldWarning)}
+                    className={`fc-launch-action is-manual ${manualCompleted ? "is-complete" : "is-pending"}`}
+                    onClick={() => setPendingLaunchMode("MANUAL_FULFILLMENT")}
+                    disabled={launchDisabled || Boolean(importState.manualFieldWarning) || manualCompleted}
                   >
-                    {importState.action === "manual" ? <Loader2 className="animate-spin" /> : <Rocket />}
-                    <span><strong>نشر المنتج</strong><small>إظهار للعملاء · تنفيذ يدوي</small></span>
+                    {importState.action === "manual" ? <Loader2 className="animate-spin" /> : manualCompleted ? <Check /> : <Rocket />}
+                    <span><strong>نشر المنتج</strong><small>{manualCompleted ? "المنتج ظاهر للعملاء" : "إظهار للعملاء · تنفيذ يدوي"}</small></span>
+                    {manualCompleted && <em className="fc-launch-action__done">تمت سابقًا</em>}
                   </button>
                   <button
                     type="button"
-                    className="fc-launch-action is-auto"
-                    onClick={() => launchImportedProduct("AUTO_PROVIDER")}
-                    disabled={launchDisabled || !autoProviderCapable}
+                    className={`fc-launch-action is-auto ${autoCompleted ? "is-complete" : "is-pending"}`}
+                    onClick={() => setPendingLaunchMode("AUTO_PROVIDER")}
+                    disabled={launchDisabled || !manualCompleted || !autoProviderCapable || autoCompleted}
                   >
-                    {importState.action === "auto" ? <Loader2 className="animate-spin" /> : <Server />}
-                    <span><strong>تفعيل التنفيذ التلقائي</strong><small>نشر وتشغيل عبر FazerCards</small></span>
+                    {importState.action === "auto" ? <Loader2 className="animate-spin" /> : autoCompleted ? <Check /> : <Server />}
+                    <span><strong>تفعيل التنفيذ التلقائي</strong><small>{autoCompleted ? "التنفيذ عبر FazerCards مفعّل" : "نشر وتشغيل عبر FazerCards"}</small></span>
+                    {autoCompleted && <em className="fc-launch-action__done">تمت سابقًا</em>}
                   </button>
                 </div>
                 {!autoProviderCapable && <small className="fc-launch-hint">التنفيذ التلقائي غير مدعوم لهذه العائلة.</small>}
+                {autoProviderCapable && importState.product?.id && !manualCompleted && <small className="fc-launch-hint">انشر المنتج أولًا لتفعيل التنفيذ التلقائي.</small>}
                 {importState.manualFieldWarning && <small className="fc-launch-hint is-warning">{importState.manualFieldWarning}</small>}
               </div>
 
@@ -1005,6 +1042,31 @@ function CatalogOffers({ catalog, onClose, token }) {
         product={importOffer}
         token={token}
       />
+      {pendingLaunchMode && createPortal(
+        <div className="fc-launch-confirm-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setPendingLaunchMode("");
+        }}>
+          <section role="alertdialog" aria-modal="true" aria-labelledby="fc-launch-confirm-title" aria-describedby="fc-launch-confirm-description" className="fc-launch-confirm" dir="rtl">
+            <div className={`fc-launch-confirm__icon ${pendingLaunchMode === "AUTO_PROVIDER" ? "is-auto" : "is-manual"}`}>
+              {pendingLaunchMode === "AUTO_PROVIDER" ? <Server /> : <Rocket />}
+            </div>
+            <button type="button" className="fc-launch-confirm__close" onClick={() => setPendingLaunchMode("")} aria-label="إغلاق"><X /></button>
+            <h2 id="fc-launch-confirm-title">{pendingLaunchMode === "AUTO_PROVIDER" ? "تفعيل التنفيذ التلقائي" : "نشر المنتج"}</h2>
+            <p id="fc-launch-confirm-description">
+              {pendingLaunchMode === "AUTO_PROVIDER"
+                ? "سيظهر المنتج للعملاء ويُفعّل تنفيذه عبر FazerCards. التنفيذ الفعلي يظل مرتبطًا بإعدادات أمان المورد."
+                : "سيظهر المنتج للعملاء، وستُنفّذ طلباته يدويًا."}
+            </p>
+            <div className="fc-launch-confirm__actions">
+              <button type="button" className="fc-launch-confirm__cancel" onClick={() => setPendingLaunchMode("")} autoFocus>إلغاء</button>
+              <button type="button" className="fc-launch-confirm__submit" onClick={() => launchImportedProduct(pendingLaunchMode)}>
+                {pendingLaunchMode === "AUTO_PROVIDER" ? "تأكيد التفعيل" : "تأكيد النشر"}
+              </button>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
 
     </section>
   );

@@ -1,7 +1,34 @@
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import PublicHeader from "../components/PublicHeader";
 import PublicBottomNav from "../components/PublicBottomNav";
-import SiteFooter from "../components/SiteFooter";
+
+const SiteFooter = lazy(() => import("../components/SiteFooter"));
+
+function DeferredFooter({ simple }) {
+  const [visible, setVisible] = useState(false);
+  const footerRef = useRef(null);
+
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "700px 0px" });
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={footerRef} style={{ minHeight: visible ? undefined : 240 }}>
+    {visible && <Suspense fallback={null}><SiteFooter simple={simple} className="pb-28 lg:pb-8" /></Suspense>}
+  </div>;
+}
 
 export default function PublicLayout() {
   const location = useLocation();
@@ -19,7 +46,7 @@ export default function PublicLayout() {
           <Outlet />
         </div>
       </main>
-      <SiteFooter simple={!usesFullFooter} className="pb-28 lg:pb-8" />
+      <DeferredFooter simple={!usesFullFooter} />
       <PublicBottomNav />
     </div>
   );

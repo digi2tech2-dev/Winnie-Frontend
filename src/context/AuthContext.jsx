@@ -189,7 +189,9 @@ export function AuthProvider({ children }) {
       if (document.visibilityState === "visible") void syncAccount();
     };
 
-    const intervalId = window.setInterval(syncAccount, 30000);
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") void syncAccount();
+    }, 300000);
     window.addEventListener("focus", syncAccount);
     document.addEventListener("visibilitychange", syncVisibleAccount);
 

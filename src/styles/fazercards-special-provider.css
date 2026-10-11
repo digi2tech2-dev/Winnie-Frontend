@@ -485,31 +485,35 @@
 
 .fc-launch-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
 }
 
 .fc-launch-action {
   display: flex;
   min-width: 0;
-  min-height: 52px;
+  min-height: 64px;
   align-items: center;
-  gap: 7px;
-  padding: 7px 8px;
+  gap: 10px;
+  padding: 10px 12px;
   border: 1px solid transparent;
   border-radius: 11px;
   cursor: pointer;
   font-family: inherit;
   text-align: right;
-  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, background 160ms ease;
 }
 
 .fc-launch-action:hover:not(:disabled) { transform: translateY(-1px); }
-.fc-launch-action:disabled { cursor: not-allowed; opacity: 0.42; }
-.fc-launch-action > svg { width: 17px; height: 17px; flex: 0 0 auto; }
-.fc-launch-action > span { display: flex; min-width: 0; flex-direction: column; }
-.fc-launch-action strong { font-size: 8px; font-weight: 950; line-height: 1.5; }
-.fc-launch-action small { overflow: hidden; margin-top: 1px; font-size: 6.5px; font-weight: 750; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.fc-launch-action:disabled { cursor: not-allowed; opacity: 0.48; }
+.fc-launch-action.is-pending:not(:disabled) { opacity: 0.7; }
+.fc-launch-action.is-pending:hover:not(:disabled) { opacity: 1; }
+.fc-launch-action.is-complete:disabled { opacity: 1; }
+.fc-launch-action > svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.fc-launch-action > span { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+.fc-launch-action strong { font-size: 11px; font-weight: 950; line-height: 1.5; }
+.fc-launch-action small { margin-top: 2px; font-size: 9px; font-weight: 750; line-height: 1.5; }
+.fc-launch-action__done { flex: 0 0 auto; border-radius: 999px; background: rgba(255, 255, 255, 0.8); padding: 4px 8px; font-size: 9px; font-style: normal; font-weight: 950; white-space: nowrap; }
 
 .fc-launch-action.is-manual {
   border-color: #a7f3d0;
@@ -526,6 +530,21 @@
 }
 
 .fc-launch-action.is-auto:hover:not(:disabled) { box-shadow: 0 8px 18px rgba(2, 132, 199, 0.13); }
+
+.fc-launch-confirm-backdrop { position: fixed; inset: 0; z-index: 220; display: grid; place-items: center; padding: 20px; background: rgba(8, 15, 32, 0.58); backdrop-filter: blur(5px); }
+.fc-launch-confirm { position: relative; width: min(100%, 430px); padding: 26px; border: 1px solid #e7e5f4; border-radius: 22px; background: #fff; box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24); text-align: right; }
+.fc-launch-confirm__icon { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 15px; background: #dcfce7; color: #047857; }
+.fc-launch-confirm__icon.is-auto { background: #e0f2fe; color: #0369a1; }
+.fc-launch-confirm__icon svg { width: 23px; height: 23px; }
+.fc-launch-confirm__close { position: absolute; top: 18px; left: 18px; display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 9px; background: #f1f5f9; color: #64748b; cursor: pointer; }
+.fc-launch-confirm__close svg { width: 16px; height: 16px; }
+.fc-launch-confirm h2 { margin: 15px 0 0; color: #0f172a; font-size: 18px; font-weight: 950; }
+.fc-launch-confirm p { margin: 8px 0 0; color: #475569; font-size: 12px; font-weight: 700; line-height: 1.9; }
+.fc-launch-confirm__actions { display: flex; gap: 9px; margin-top: 24px; }
+.fc-launch-confirm__actions button { min-height: 42px; flex: 1; border-radius: 12px; font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; }
+.fc-launch-confirm__cancel { border: 1px solid #e2e8f0; background: #fff; color: #475569; }
+.fc-launch-confirm__submit { border: 1px solid #6d4aff; background: #6d4aff; color: #fff; }
+.fc-launch-confirm__submit:hover { background: #5b3fd4; }
 
 .fc-launch-hint { display: block; margin-top: 7px; color: #94a3b8; font-size: 7px; font-weight: 800; line-height: 1.6; }
 .fc-launch-hint.is-warning { color: #b45309; }
@@ -632,6 +651,12 @@
 .dark .fc-launch-block__heading > small { background: rgba(255, 255, 255, 0.06); color: #94a3b8; }
 .dark .fc-launch-action.is-manual { border-color: rgba(52, 211, 153, 0.2); background: rgba(16, 185, 129, 0.09); color: #6ee7b7; }
 .dark .fc-launch-action.is-auto { border-color: rgba(56, 189, 248, 0.2); background: rgba(14, 165, 233, 0.09); color: #7dd3fc; }
+.dark .fc-launch-action__done { background: rgba(255, 255, 255, 0.1); }
+.dark .fc-launch-confirm { border-color: rgba(255, 255, 255, 0.12); background: #111827; }
+.dark .fc-launch-confirm h2 { color: #f8fafc; }
+.dark .fc-launch-confirm p { color: #aab6c9; }
+.dark .fc-launch-confirm__close { background: rgba(255, 255, 255, 0.08); color: #cbd5e1; }
+.dark .fc-launch-confirm__cancel { border-color: rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.04); color: #cbd5e1; }
 .dark .fc-import-empty strong { color: #cbd5e1; }
 .dark .fc-offers::before { border-color: var(--fc-line); background: #0d1422; }
 .dark .fc-rows-skeleton span,
@@ -681,7 +706,5 @@
   .fc-steam-gifts__results > div { grid-template-columns: minmax(0, 1fr) auto; }
   .fc-steam-gifts__results button { grid-column: 1 / -1; width: 100%; }
   .fc-launch-actions { grid-template-columns: 1fr; }
-  .fc-launch-action { min-height: 48px; }
-  .fc-launch-action strong { font-size: 9px; }
-  .fc-launch-action small { font-size: 7px; }
+  .fc-launch-action { min-height: 60px; }
 }

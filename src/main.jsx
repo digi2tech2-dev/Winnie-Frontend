@@ -12,7 +12,12 @@ import { cleanupServiceWorkersAndCaches } from "./utils/disableServiceWorker.js"
 import "./i18n";
 import "./styles.css";
 
-void cleanupServiceWorkersAndCaches();
+// This is a one-time legacy cleanup and does not need to compete with first paint.
+if (typeof window.requestIdleCallback === "function") {
+  window.requestIdleCallback(() => void cleanupServiceWorkersAndCaches(), { timeout: 3000 });
+} else {
+  window.setTimeout(() => void cleanupServiceWorkersAndCaches(), 1500);
+}
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
