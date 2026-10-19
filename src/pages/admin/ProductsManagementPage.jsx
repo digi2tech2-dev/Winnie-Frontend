@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGrid, PackagePlus, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -23,12 +23,9 @@ import {
 } from "../../api/adminProducts";
 import { getFazerCardsImportPreview, getFazerCardsProviderProducts } from "../../api/adminProviders";
 import CategoriesCatalog from "../../components/admin/products/CategoriesCatalog";
-import CategoryFormModal from "../../components/admin/products/CategoryFormModal";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import ProductCard, { ProductMobileCard } from "../../components/admin/products/ProductCard";
 import ProductFilters from "../../components/admin/products/ProductFilters";
-import ProductFormModal from "../../components/admin/products/ProductFormModal";
-import ProductProviderLinkModal from "../../components/admin/products/ProductProviderLinkModal";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonBlock } from "../../components/Skeletons";
 import { useToast } from "../../components/ToastProvider";
@@ -41,6 +38,10 @@ import {
   normalizeFazerCardsOrderFields,
   readRetrievedFazerCardsCatalogs,
 } from "../../utils/fazerCardsCatalogs";
+
+const CategoryFormModal = lazy(() => import("../../components/admin/products/CategoryFormModal"));
+const ProductFormModal = lazy(() => import("../../components/admin/products/ProductFormModal"));
+const ProductProviderLinkModal = lazy(() => import("../../components/admin/products/ProductProviderLinkModal"));
 
 const initialFilters = { query: "", mainCategoryId: "all", subCategoryId: "all", status: "all", linkType: "all", sort: "newest" };
 const productPageSize = 15;
@@ -86,6 +87,8 @@ export default function ProductsManagementPage() {
   const [productModal, setProductModal] = useState({ open: false, product: null });
   const [providerLink, setProviderLink] = useState(emptyProviderLinkState);
   const [confirm, setConfirm] = useState({ open: false, kind: "", item: null });
+  const categoryCacheRef = useRef(null);
+  const loadSequenceRef = useRef(0);
 
   const categoryLookup = useMemo(
     () => buildAdminCategoryLookup([...mainCategories, ...subCategories]),
@@ -95,18 +98,22 @@ export default function ProductsManagementPage() {
   const filteredProducts = useMemo(() => filterProducts(products, appliedFilters), [appliedFilters, products]);
   const activeFiltersCount = countActiveFilters(appliedFilters);
 
-  const loadCatalog = useCallback(async ({ silent = false } = {}) => {
+  const loadCatalog = useCallback(async ({ silent = false, refreshCategories = false } = {}) => {
     if (!token) {
       setInitialLoading(false);
       return;
     }
 
-    if (!silent) setInitialLoading(true);
+    const sequence = ++loadSequenceRef.current;
+    if (!silent && !categoryCacheRef.current) setInitialLoading(true);
     setProductsLoading(true);
     setLoadError("");
 
     try {
-      const categoryResult = await getAdminCategories(token);
+      const categoryResult = refreshCategories || !categoryCacheRef.current
+        ? await getAdminCategories(token)
+        : categoryCacheRef.current;
+      categoryCacheRef.current = categoryResult;
       const nextMainCategories = categoryResult.tree.mainCategories;
       const nextSubCategories = categoryResult.tree.subCategories;
       const nextLookup = buildAdminCategoryLookup([...nextMainCategories, ...nextSubCategories]);
@@ -122,19 +129,19 @@ export default function ProductsManagementPage() {
         sort: appliedFilters.sort,
       }, nextLookup);
 
+      if (sequence !== loadSequenceRef.current) return;
       setMainCategories(nextMainCategories);
       setSubCategories(nextSubCategories);
       setProducts(productResult.products);
       setPagination(productResult.pagination);
     } catch (error) {
+      if (sequence !== loadSequenceRef.current) return;
       setLoadError(error.userMessage || "تعذر تحميل كتالوج الإدارة.");
-      setMainCategories([]);
-      setSubCategories([]);
-      setProducts([]);
-      setPagination(null);
     } finally {
-      setInitialLoading(false);
-      setProductsLoading(false);
+      if (sequence === loadSequenceRef.current) {
+        setInitialLoading(false);
+        setProductsLoading(false);
+      }
     }
   }, [appliedFilters, page, token]);
 
@@ -145,6 +152,16 @@ export default function ProductsManagementPage() {
   const updateFilter = (key, value) => {
     setDraftFilters((current) => ({ ...current, [key]: value, ...(key === "mainCategoryId" ? { subCategoryId: "all" } : {}) }));
   };
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setPage(1);
+      setAppliedFilters((current) => current.query === draftFilters.query
+        ? current
+        : { ...current, query: draftFilters.query });
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [draftFilters.query]);
 
   const applyFilters = (event) => {
     event.preventDefault();
@@ -206,7 +223,7 @@ export default function ProductsManagementPage() {
         ? await updateAdminCategory(token, categoryModal.category.id, payload)
         : await createAdminCategory(token, payload);
 
-      await loadCatalog({ silent: true });
+      await loadCatalog({ silent: true, refreshCategories: true });
       closeCategoryForm();
       showToast({
         type: "success",
@@ -341,7 +358,7 @@ export default function ProductsManagementPage() {
         await deleteAdminCategory(token, item.id);
       }
 
-      await loadCatalog({ silent: true });
+      await loadCatalog({ silent: true, refreshCategories: kind !== "product" });
       setConfirm({ open: false, kind: "", item: null });
       if (kind !== "provider-sync") {
         showToast({
@@ -662,9 +679,9 @@ export default function ProductsManagementPage() {
         </>
       )}
 
-      <CategoryFormModal open={categoryModal.open} type={categoryModal.type} category={categoryModal.category} mainCategories={mainCategories} onClose={closeCategoryForm} onSave={saveCategory} saving={saving === "category"} />
-      <ProductFormModal open={productModal.open} product={productModal.product} mainCategories={mainCategories} subCategories={subCategories} onClose={closeProductForm} onSave={saveProduct} saving={saving === "product"} />
-      <ProductProviderLinkModal
+      {categoryModal.open && <Suspense fallback={null}><CategoryFormModal open={categoryModal.open} type={categoryModal.type} category={categoryModal.category} mainCategories={mainCategories} onClose={closeCategoryForm} onSave={saveCategory} saving={saving === "category"} /></Suspense>}
+      {productModal.open && <Suspense fallback={null}><ProductFormModal open={productModal.open} product={productModal.product} mainCategories={mainCategories} subCategories={subCategories} onClose={closeProductForm} onSave={saveProduct} saving={saving === "product"} /></Suspense>}
+      {providerLink.open && <Suspense fallback={null}><ProductProviderLinkModal
         error={providerLink.error}
         linkState={providerLink}
         loadingProducts={providerLink.loadingProducts}
@@ -681,7 +698,7 @@ export default function ProductsManagementPage() {
         onSubmit={saveProviderLink}
         onUpdate={(values) => setProviderLink((current) => ({ ...current, ...values }))}
         saving={saving === "provider-link"}
-      />
+      /></Suspense>}
       <ConfirmDialog
         open={confirm.open}
         title={confirm.kind === "provider-sync" ? "هل تريد مزامنة سعر المورد؟" : getConfirmTitle(confirm.kind)}

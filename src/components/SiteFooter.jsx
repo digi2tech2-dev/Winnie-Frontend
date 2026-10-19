@@ -68,9 +68,8 @@ export default function SiteFooter({ className = "", innerClassName = "max-w-[11
     return (
       <footer
         dir="rtl"
-        className={`relative overflow-hidden border-t border-violet-200/60 bg-[linear-gradient(180deg,#F8FAFF_0%,#F2F0FF_100%)] px-4 py-4 text-slate-700 dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-40%,#17153A_0%,#070B1A_58%,#030611_100%)] dark:text-white/75 sm:px-6 ${className}`}
+        className={`relative overflow-hidden bg-transparent px-4 py-4 text-slate-700 dark:text-white/75 sm:px-6 ${className}`}
       >
-        <FooterGlow />
         <div className={`relative mx-auto rounded-[20px] border border-violet-200/70 bg-white/55 px-4 pb-4 text-center shadow-[0_16px_44px_rgba(76,29,149,0.08)] backdrop-blur-2xl dark:border-violet-400/20 dark:bg-[#070B19]/70 ${innerClassName}`}>
           <CopyrightBlock compact t={t} />
         </div>
@@ -82,9 +81,8 @@ export default function SiteFooter({ className = "", innerClassName = "max-w-[11
     return (
       <footer
         dir="rtl"
-        className={`relative overflow-hidden border-t border-violet-200/60 bg-slate-50 px-4 py-7 text-slate-700 dark:border-violet-400/15 dark:bg-[#050817] dark:text-white/75 sm:px-6 lg:px-8 ${className}`}
+        className={`relative overflow-hidden bg-transparent px-4 py-7 text-slate-700 dark:text-white/75 sm:px-6 lg:px-8 ${className}`}
       >
-        <FooterGlow />
         <div className={`relative mx-auto overflow-hidden rounded-[28px] border border-white/80 bg-white/65 p-5 text-center shadow-[0_20px_60px_rgba(76,29,149,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.035] dark:shadow-[0_20px_70px_rgba(0,0,0,0.28)] ${innerClassName}`}>
           <div className="flex flex-col items-center gap-3">
             <Brand compact tagline={false} />
@@ -104,9 +102,8 @@ export default function SiteFooter({ className = "", innerClassName = "max-w-[11
   return (
     <footer
       dir="rtl"
-      className={`relative overflow-hidden border-t border-violet-200/60 bg-[linear-gradient(180deg,#F8FAFF_0%,#F2F0FF_48%,#EEF6FF_100%)] px-3 py-6 text-slate-800 dark:border-violet-400/15 dark:bg-[radial-gradient(circle_at_50%_-20%,#17153A_0%,#070B1A_45%,#030611_100%)] dark:text-white sm:px-6 sm:py-9 lg:px-8 ${className}`}
+      className={`relative overflow-hidden bg-transparent px-3 py-6 text-slate-800 dark:text-white sm:px-6 sm:py-9 lg:px-8 ${className}`}
     >
-      <FooterGlow />
       <div className={`relative mx-auto ${innerClassName}`}>
         <div className="relative overflow-hidden rounded-[30px] border border-violet-200/70 bg-white/55 p-3 shadow-[0_30px_90px_rgba(76,29,149,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-2xl dark:border-violet-400/25 dark:bg-[#070B19]/70 dark:shadow-[0_30px_100px_rgba(0,0,0,0.42),0_0_45px_rgba(124,58,237,0.08),inset_0_1px_0_rgba(255,255,255,0.07)] sm:p-5 lg:p-7">
           <span className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/80 to-transparent" />
@@ -213,16 +210,6 @@ export default function SiteFooter({ className = "", innerClassName = "max-w-[11
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterGlow() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <span className="absolute -right-20 top-10 h-64 w-64 rounded-full bg-violet-400/15 blur-[90px] dark:bg-violet-600/15" />
-      <span className="absolute -left-24 bottom-10 h-72 w-72 rounded-full bg-blue-400/15 blur-[100px] dark:bg-blue-600/10" />
-      <span className="absolute left-1/2 top-1/3 h-40 w-40 -translate-x-1/2 rounded-full bg-fuchsia-400/10 blur-[80px] dark:bg-fuchsia-500/10" />
-    </div>
   );
 }
 

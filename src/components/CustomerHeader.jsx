@@ -1,14 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Bell, ChevronLeft, Menu, Moon, SunMedium } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
-import HeaderSearchOverlay from "./HeaderSearchOverlay";
 import { iconMap } from "./icons";
 import { getNotificationIconName } from "../utils/notificationNavigation";
 import { BrandName } from "./Brand";
 import HeaderWalletBadge from "./HeaderWalletBadge";
+
+const HeaderSearchOverlay = lazy(() => import("./HeaderSearchOverlay"));
 
 export default function CustomerHeader({
   notificationItems = [],
@@ -16,7 +17,9 @@ export default function CustomerHeader({
   onNotificationsOpened,
   onOpenNotification,
   onOpenSidebar,
+  onSearchOpen,
   searchProducts = [],
+  searchCategories = [],
   unreadNotificationCount = 0,
   walletBalance = 0,
   walletCurrency = "USD",
@@ -26,6 +29,7 @@ export default function CustomerHeader({
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchActivated, setSearchActivated] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsRef = useRef(null);
   const latestNotifications = useMemo(() => (
@@ -60,6 +64,13 @@ export default function CustomerHeader({
     window.addEventListener("winnie-open-search", openSearchFromPage);
     return () => window.removeEventListener("winnie-open-search", openSearchFromPage);
   }, []);
+
+  useEffect(() => {
+    if (searchOpen) {
+      setSearchActivated(true);
+      onSearchOpen?.();
+    }
+  }, [onSearchOpen, searchOpen]);
 
   useEffect(() => {
     if (!notificationsOpen) return undefined;
@@ -221,13 +232,16 @@ export default function CustomerHeader({
         </div>
       </header>
 
-      <HeaderSearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onNavigate={navigate}
-        mode="customer"
-        products={searchProducts}
-      />
+      {searchActivated && <Suspense fallback={null}>
+        <HeaderSearchOverlay
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={navigate}
+          mode="customer"
+          products={searchProducts}
+          categories={searchCategories}
+        />
+      </Suspense>}
     </>
   );
 }

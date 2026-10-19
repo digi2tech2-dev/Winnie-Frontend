@@ -6,8 +6,9 @@ import { useTranslation } from "react-i18next";
 import FavoriteButton from "./FavoriteButton";
 import { iconMap } from "./icons";
 import { isProductUnavailable, isProductVisibleInStore } from "../utils/productAvailability";
+import { getCatalogSearchResults } from "../utils/catalogSearch";
 
-export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", products: providedProducts = [] }) {
+export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", categories = [], products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
   const { t } = useTranslation("common");
@@ -30,20 +31,12 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
         groupId: product.categorySlug || product.categoryId || product.category || product.groupId || "",
         groupTitle,
         price,
-        searchText: `${name} ${price} ${groupTitle} ${product.description || ""}`.toLowerCase(),
       };
       });
   }, [providedProducts, t]);
 
-  const shownProducts = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-
-    if (!normalized) {
-      return products.slice(0, 12);
-    }
-
-    return products.filter((product) => product.searchText.includes(normalized)).slice(0, 16);
-  }, [products, query]);
+  const results = useMemo(() => getCatalogSearchResults(categories, products, query), [categories, products, query]);
+  const resultCount = results.categories.length + results.products.length;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -91,6 +84,12 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
           ? `/categories/${categoryTarget}`
           : "/categories";
     onNavigate(target);
+    onClose();
+  };
+
+  const handleCategoryClick = (category) => {
+    const basePath = mode === "admin-user" ? "/admin/user" : mode === "customer" ? "/customer" : "";
+    onNavigate(`${basePath}/categories/${category.slug || category.id}`);
     onClose();
   };
 
@@ -144,16 +143,20 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
             <div className="max-h-[min(64vh,620px)] overflow-y-auto p-3 sm:p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h2 className="text-base font-black sm:text-lg">
-                  {query.trim() ? t("search.results") : t("search.suggestedProducts")}
+                  {t("search.results")}
                 </h2>
-                <span className="text-xs font-black text-[#8B5CF6] dark:text-[#C084FC]">
-                  {t("search.productCount", { count: shownProducts.length })}
-                </span>
+                {query.trim() && <span className="text-xs font-black text-[#8B5CF6] dark:text-[#C084FC]">{t("search.resultCount", { count: resultCount })}</span>}
               </div>
 
-              {shownProducts.length ? (
+              {resultCount ? (
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {shownProducts.map((product) => (
+                  {results.categories.map((category) => (
+                    <button key={category.id} type="button" onClick={() => handleCategoryClick(category)} className="flex min-w-0 items-center gap-2 rounded-xl border border-sky-100 bg-white p-2 text-right transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-[#111827] dark:hover:bg-[#1A2335]">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">{category.image ? <img src={category.image} alt="" loading="lazy" className="h-full w-full object-cover" /> : <ShoppingBag className="h-5 w-5" />}</span>
+                      <span className="min-w-0"><strong className="block truncate text-xs text-slate-950 dark:text-white">{category.title || category.name}</strong><small className="text-slate-500 dark:text-slate-400">{t("search.subcategory")}</small></span>
+                    </button>
+                  ))}
+                  {results.products.map((product) => (
                     <SearchProductCard
                       key={product.id || `${product.groupId}-${product.name}`}
                       product={product}
@@ -166,7 +169,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                 <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-sky-200 bg-sky-50/70 p-6 text-center dark:border-white/10 dark:bg-[#0D1324]">
                   <div>
                     <ShoppingBag className="mx-auto h-10 w-10 text-[#8B5CF6]" />
-                    <p className="mt-3 text-sm font-black">{t("search.noMatches")}</p>
+                    <p className="mt-3 text-sm font-black">{query.trim() ? t("search.noMatches") : t("search.startTyping")}</p>
                   </div>
                 </div>
               )}

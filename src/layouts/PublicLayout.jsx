@@ -39,7 +39,7 @@ export default function PublicLayout() {
     location.pathname.startsWith("/categories");
 
   return (
-    <div className="winnie-app-shell min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(224,242,254,0.9),transparent_34%),linear-gradient(135deg,#FFFFFF_0%,#F8FCFF_46%,#FDF2F8_100%)] text-slate-900 selection:bg-[#C4B5FD]/45 selection:text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4] dark:selection:bg-[#8B5CF6]/35 dark:selection:text-white">
+    <div className="winnie-app-shell min-h-screen overflow-x-hidden text-slate-900 selection:bg-[#C4B5FD]/45 selection:text-slate-950 dark:text-[#C4C9D4] dark:selection:bg-[#8B5CF6]/35 dark:selection:text-white">
       <PublicHeader />
       <main className="public-app-main winnie-app-content winnie-page-canvas pt-[96px]">
         <div className="winnie-page-stage">

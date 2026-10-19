@@ -3,7 +3,6 @@ import { normalizeApiError } from "./errors";
 import { getAdminDeposits } from "./adminDeposits";
 import { getAdminGroupRequests } from "./adminGroupRequests";
 import { getAdminOrders } from "./adminOrders";
-import { getAdminProducts } from "./adminProducts";
 import { getAdminProviderBalance, getAdminProviders } from "./adminProviders";
 import { getAdminUsers } from "./adminUsers";
 import { DEFAULT_CURRENCY, formatCurrency, toNumber } from "./adapters";
@@ -48,32 +47,6 @@ function getStatsWalletCurrency(stats) {
       || stats?.currency
       || DEFAULT_CURRENCY,
   ).toUpperCase();
-}
-
-function summarizeWalletBalances(users = []) {
-  if (!users.length) {
-    return {
-      amount: null,
-      currency: DEFAULT_CURRENCY,
-      label: "غير متاح",
-    };
-  }
-
-  const totalsByCurrency = users.reduce((totals, user) => {
-    const currency = String(user.currency || DEFAULT_CURRENCY).toUpperCase();
-    totals[currency] = (totals[currency] || 0) + toNumber(user.walletBalance, 0);
-    return totals;
-  }, {});
-  const entries = Object.entries(totalsByCurrency).sort((left, right) => right[1] - left[1]);
-  const [currency, amount] = entries[0] || [DEFAULT_CURRENCY, 0];
-
-  return {
-    amount,
-    currency,
-    label: entries.length === 1
-      ? formatCurrency(amount, currency, "ar-EG-u-nu-latn")
-      : entries.map(([entryCurrency, entryAmount]) => formatCurrency(entryAmount, entryCurrency, "ar-EG-u-nu-latn")).join(" + "),
-  };
 }
 
 async function getAdminDashboardStats(token) {
@@ -134,7 +107,7 @@ function buildProfitBuckets(range = {}) {
   const normalizedStart = start <= end ? start : end;
   const normalizedEnd = start <= end ? end : start;
   const totalDays = Math.max(1, Math.round((normalizedEnd - normalizedStart) / 86400000) + 1);
-  const bucketDays = totalDays <= 14 ? 1 : Math.ceil(totalDays / 12);
+  const bucketDays = totalDays <= 7 ? 1 : Math.ceil(totalDays / 7);
   const buckets = [];
 
   for (let offset = 0; offset < totalDays; offset += bucketDays) {
@@ -234,30 +207,13 @@ async function getProvidersWithBalances(token, providers = []) {
   );
 }
 
-async function getWalletBalancesSummary(token) {
-  const walletUsersLimit = 100;
-  const firstPage = await getAdminUsers(token, { page: 1, limit: walletUsersLimit });
-  const totalPages = firstPage.pagination?.pages || 1;
-  const remainingPages = Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => index + 2);
-  const remainingResults = remainingPages.length
-    ? await Promise.all(remainingPages.map((page) => getAdminUsers(token, { page, limit: walletUsersLimit })))
-    : [];
-  const users = [firstPage, ...remainingResults].flatMap((result) => result.users || []);
-
-  return summarizeWalletBalances(users);
-}
-
 export async function getAdminDashboardData(token, range = {}) {
   const results = await Promise.all([
     settle("summary", "Dashboard period summary", getAdminDashboardSummary(token, range)),
-    settle("profitSeries", "بيانات رسم الأرباح", getAdminDashboardProfitSeries(token, range)),
     settle("stats", "Dashboard statistics", getAdminDashboardStats(token)),
     settle("recentOrders", "أحدث طلبات الشراء", getAdminOrders(token, { page: 1, limit: 8 })),
     settle("recentDeposits", "طلبات إضافة الرصيد اليدوي", getAdminDeposits(token, { page: 1, limit: 8 })),
-    settle("users", "User total", getAdminUsers(token, { page: 1, limit: 1 })),
     settle("pendingUsers", "Pending users", getAdminUsers(token, { page: 1, limit: 1, status: "PENDING" })),
-    settle("products", "Product total", getAdminProducts(token, { page: 1, limit: 1 })),
-    settle("walletBalances", "أرصدة المحافظ", getWalletBalancesSummary(token)),
     settle("pendingDeposits", "طلبات إضافة الرصيد", getAdminDeposits(token, { page: 1, limit: 1, status: "PENDING" })),
     settle(
       "pendingGroupRequests",
@@ -270,19 +226,13 @@ export async function getAdminDashboardData(token, range = {}) {
   const stats = getSettledValue(results, "stats");
   const recentOrders = getSettledValue(results, "recentOrders");
   const recentDeposits = getSettledValue(results, "recentDeposits");
-  const users = getSettledValue(results, "users");
   const pendingUsers = getSettledValue(results, "pendingUsers");
-  const products = getSettledValue(results, "products");
-  const walletBalances = getSettledValue(results, "walletBalances");
   const pendingDeposits = getSettledValue(results, "pendingDeposits");
   const pendingGroupRequests = getSettledValue(results, "pendingGroupRequests");
   const providers = getSettledValue(results, "providers");
-  const profitSeries = getSettledValue(results, "profitSeries");
   const summary = getSettledValue(results, "summary");
 
   const providerItems = Array.isArray(providers?.providers) ? providers.providers : [];
-  const providersWithBalances = providerItems.length ? await getProvidersWithBalances(token, providerItems) : [];
-
   return {
     failures: results
       .filter((result) => !result.ok)
@@ -296,19 +246,19 @@ export async function getAdminDashboardData(token, range = {}) {
       pendingUsers: paginationTotal(pendingUsers),
       providersCount: providers ? providerItems.length : null,
       totalOrders: firstNumber(stats?.orders?.total, paginationTotal(recentOrders)),
-      totalProducts: firstNumber(stats?.products?.total, paginationTotal(products)),
-      totalUsers: firstNumber(stats?.users?.total, paginationTotal(users)),
-      totalWalletBalances: firstNumber(getStatsWalletTotal(stats), walletBalances?.amount),
-      totalWalletBalancesCurrency: getStatsWalletTotal(stats) !== null ? getStatsWalletCurrency(stats) : walletBalances?.currency,
+      totalProducts: firstNumber(stats?.products?.total),
+      totalUsers: firstNumber(stats?.users?.total),
+      totalWalletBalances: getStatsWalletTotal(stats),
+      totalWalletBalancesCurrency: getStatsWalletCurrency(stats),
       totalWalletBalancesLabel: getStatsWalletTotal(stats) !== null
         ? formatCurrency(getStatsWalletTotal(stats), getStatsWalletCurrency(stats), "ar-EG-u-nu-latn")
-        : walletBalances?.label,
+        : undefined,
     },
     periodSummary: summary,
-    profitSeries: Array.isArray(profitSeries) ? profitSeries : [],
+    profitSeries: [],
     recentOrders: Array.isArray(recentOrders?.orders) ? recentOrders.orders : [],
     recentDeposits: Array.isArray(recentDeposits?.deposits) ? recentDeposits.deposits : [],
-    providers: providersWithBalances,
+    providers: providerItems.map((provider) => ({ ...provider, balanceLabel: "جارٍ التحميل...", balanceStatus: "loading" })),
     refreshedAt: summary?.updatedAt || new Date().toISOString(),
     sources: {
       dashboardStats: Boolean(stats),
@@ -316,5 +266,20 @@ export async function getAdminDashboardData(token, range = {}) {
       recentOrdersCount: toNumber(recentOrders?.orders?.length, 0),
       recentDepositsCount: toNumber(recentDeposits?.deposits?.length, 0),
     },
+  };
+}
+
+export async function getAdminDashboardDetails(token, range = {}, providers = []) {
+  const [seriesResult, balancesResult] = await Promise.allSettled([
+    getAdminDashboardProfitSeries(token, range),
+    getProvidersWithBalances(token, providers),
+  ]);
+  return {
+    profitSeries: seriesResult.status === "fulfilled" ? seriesResult.value : [],
+    providers: balancesResult.status === "fulfilled" ? balancesResult.value : providers,
+    failures: [
+      ...(seriesResult.status === "rejected" ? [{ label: "بيانات رسم الأرباح", message: seriesResult.reason?.message || "تعذر تحميل الرسم." }] : []),
+      ...(balancesResult.status === "rejected" ? [{ label: "أرصدة الموردين", message: balancesResult.reason?.message || "تعذر تحميل الأرصدة." }] : []),
+    ],
   };
 }

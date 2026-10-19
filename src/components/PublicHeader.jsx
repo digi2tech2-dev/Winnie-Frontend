@@ -65,6 +65,7 @@ export default function PublicHeader() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchProducts, setSearchProducts] = useState([]);
+  const [searchCategories, setSearchCategories] = useState([]);
   const [searchCatalogLoaded, setSearchCatalogLoaded] = useState(false);
   const [purchaseItem, setPurchaseItem] = useState(null);
   const { language, setLanguage } = useLanguage();
@@ -85,9 +86,10 @@ export default function PublicHeader() {
 
     const loadSearchProducts = async () => {
       try {
-        const result = await getPublicCatalog({ page: 1, limit: 24 });
+        const result = await getPublicCatalog({ page: 1, limit: 100 });
         if (!cancelled) {
           setSearchProducts(result.products);
+          setSearchCategories(result.categories);
           setSearchCatalogLoaded(true);
         }
       } catch {
@@ -207,6 +209,7 @@ export default function PublicHeader() {
             }}
             mode="public"
             products={searchProducts}
+            categories={searchCategories}
           />
         </Suspense>
       ) : null}

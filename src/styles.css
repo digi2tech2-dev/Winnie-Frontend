@@ -1646,7 +1646,7 @@ html,
 }
 
 html.dark {
-  --wf-dark-bg: linear-gradient(180deg, #050816 0%, #0A1120 35%, #0D1324 100%);
+  --wf-dark-bg: #080d1b;
   --wf-dark-card: #111827;
   --wf-dark-hover: #1A2335;
   --wf-dark-shell: rgba(10, 15, 29, 0.95);
@@ -1661,10 +1661,8 @@ html.dark {
   --wf-dark-glow: 0 0 20px rgba(139, 92, 246, 0.20);
 }
 
-html.dark body,
-html.dark .min-h-screen {
-  background-color: #050816 !important;
-  background-image: var(--wf-dark-bg) !important;
+html.dark body {
+  background-color: var(--wf-dark-bg);
   color: var(--wf-dark-text);
 }
 
@@ -2030,18 +2028,6 @@ html.dark .about-lux-page {
 
 .about-lux-hero {
   background: var(--about-hero);
-}
-
-.about-lux-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background-image:
-    linear-gradient(90deg, rgba(184, 137, 45, 0.11) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(15, 118, 110, 0.08) 1px, transparent 1px);
-  background-size: 88px 88px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.18), transparent);
 }
 
 .about-lux-hero::after {
@@ -4397,31 +4383,12 @@ html.dark .admin-tools-mode [class*="text-[9px]"] {
   position: relative;
 }
 
-.admin-app-shell::before {
-  background-image:
-    linear-gradient(rgba(99, 102, 241, 0.032) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.032) 1px, transparent 1px);
-  background-size: 32px 32px;
-  content: "";
-  inset: 0;
-  mask-image: linear-gradient(to bottom, black, transparent 82%);
-  pointer-events: none;
-  position: fixed;
-  z-index: -1;
-}
-
 html.dark .admin-app-shell {
   background:
     radial-gradient(circle at 8% 4%, rgba(124, 58, 237, 0.22), transparent 31rem),
     radial-gradient(circle at 90% 15%, rgba(14, 165, 233, 0.14), transparent 32rem),
     radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.08), transparent 28rem),
     linear-gradient(145deg, #050816 0%, #080d1c 48%, #0a1020 100%);
-}
-
-html.dark .admin-app-shell::before {
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.038) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.038) 1px, transparent 1px);
 }
 
 .admin-app-main {
@@ -11782,19 +11749,6 @@ html:not(.dark) .admin-command-signals > span {
     0 0 34px rgba(139, 92, 246, 0.08) !important;
 }
 
-.admin-dashboard-main .admin-platform-hero::before {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 28px 28px;
-  content: "";
-  inset: 0;
-  mask-image: linear-gradient(to left, rgba(0, 0, 0, 0.72), transparent 72%);
-  pointer-events: none;
-  position: absolute;
-  z-index: -1;
-}
-
 .admin-dashboard-main .admin-platform-hero::after {
   background: linear-gradient(90deg, transparent, #38bdf8, #a78bfa, #f472b6, transparent) !important;
   bottom: 0;
@@ -13067,6 +13021,7 @@ html.dark .admin-users-page .admin-users-stat {
 /* Winnie unified premium UI — shared by every customer and admin workspace.  */
 /* -------------------------------------------------------------------------- */
 :root {
+  --winnie-page-bg: #f8faff;
   --winnie-violet: 124 58 237;
   --winnie-fuchsia: 217 70 239;
   --winnie-cyan: 34 211 238;
@@ -13078,76 +13033,19 @@ html.dark .admin-users-page .admin-users-stat {
   --winnie-shadow-float: 0 28px 70px rgba(76, 29, 149, 0.15), 0 8px 24px rgba(37, 99, 235, 0.07);
 }
 
+html.dark {
+  --winnie-page-bg: #080d1b;
+}
+
 .winnie-app-shell {
   isolation: isolate;
   position: relative;
-  background:
-    radial-gradient(circle at 8% 12%, rgba(34, 211, 238, 0.10), transparent 28rem),
-    radial-gradient(circle at 92% 18%, rgba(217, 70, 239, 0.09), transparent 30rem),
-    linear-gradient(180deg, #fbfdff 0%, #f7f8ff 48%, #f4f7ff 100%) !important;
-}
-
-.winnie-app-shell::before,
-.winnie-app-shell::after {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  border-radius: 999px;
-  filter: blur(2px);
-  pointer-events: none;
-  opacity: 0.7;
-  animation: winnie-ambient-drift 16s ease-in-out infinite alternate;
-}
-
-.winnie-app-shell::before {
-  top: 18%;
-  inset-inline-start: -9rem;
-  width: 25rem;
-  height: 25rem;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.12), transparent 68%);
-}
-
-.winnie-app-shell::after {
-  right: -10rem;
-  bottom: 5%;
-  width: 30rem;
-  height: 30rem;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.11), transparent 68%);
-  animation-delay: -7s;
-}
-
-html.dark .winnie-app-shell {
-  background:
-    radial-gradient(circle at 12% 8%, rgba(124, 58, 237, 0.17), transparent 32rem),
-    radial-gradient(circle at 88% 20%, rgba(34, 211, 238, 0.10), transparent 34rem),
-    linear-gradient(180deg, #050817 0%, #070b1c 42%, #090b22 100%) !important;
-}
-
-html.dark .winnie-app-shell::before {
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.18), transparent 68%);
-}
-
-html.dark .winnie-app-shell::after {
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.13), transparent 68%);
+  background: var(--winnie-page-bg) !important;
 }
 
 .winnie-app-content {
   min-height: 100vh;
   position: relative;
-}
-
-.winnie-app-content::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.28;
-  background-image:
-    linear-gradient(rgba(124, 58, 237, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: linear-gradient(to bottom, black, transparent 78%);
 }
 
 .winnie-page-canvas {
@@ -13342,11 +13240,11 @@ html.dark .winnie-app-shell::after {
 }
 
 .page-transition-enter {
-  animation: page-transition-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: page-transition-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes page-transition-enter {
-  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.997); }
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
@@ -13967,11 +13865,6 @@ html.dark .winnie-skeleton::after {
   background-clip: padding-box;
 }
 
-@keyframes winnie-ambient-drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(2.5rem, -1.5rem, 0) scale(1.08); }
-}
-
 @keyframes winnie-button-sheen {
   0%, 58% { left: -45%; opacity: 0; }
   65% { opacity: 0.85; }
@@ -13991,21 +13884,6 @@ html.dark .winnie-skeleton::after {
   :root {
     --winnie-radius-lg: 22px;
     --winnie-radius-md: 16px;
-  }
-
-  .winnie-app-content::before {
-    background-size: 42px 42px;
-    opacity: 0.18;
-  }
-
-  .winnie-app-shell::before {
-    width: 16rem;
-    height: 16rem;
-  }
-
-  .winnie-app-shell::after {
-    width: 19rem;
-    height: 19rem;
   }
 
   .winnie-page-stage {
@@ -14038,8 +13916,6 @@ html.dark .winnie-skeleton::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .winnie-app-shell::before,
-  .winnie-app-shell::after,
   .winnie-page-stage :where(button, a)::after,
   .winnie-empty-state-icon,
   .winnie-skeleton::after {
@@ -17902,11 +17778,6 @@ html.dark .admin-orders-search-field:focus-within .admin-orders-search-control .
 
   .customer-app-shell .customer-dashboard-home .wf-reviews-carousel {
     padding-bottom: 22px;
-  }
-
-  /* Reduce only the gap between customer reviews and the company footer. */
-  .customer-app-shell .customer-home-footer {
-    margin-top: -56px;
   }
 
 }
@@ -22419,4 +22290,45 @@ html.dark .xena-otp-grid input { color: #ddd6fe; border-color: rgba(167, 139, 25
   .xena-dialog-backdrop { align-items: end; padding: 0; }
   .xena-dialog, .xena-dialog-wide { width: 100%; border-radius: 25px 25px 0 0; }
   .xena-otp-grid input { width: 48px; height: 54px; }
+}
+
+/* One continuous canvas across the page, dashboard, and footer. */
+html,
+body,
+#root {
+  background-color: var(--winnie-page-bg);
+}
+
+html .winnie-app-shell,
+html .winnie-app-shell.admin-tools-mode,
+html.dark .winnie-app-shell.admin-tools-mode {
+  background: var(--winnie-page-bg) !important;
+}
+
+html .winnie-app-shell :is(.winnie-page-canvas, .about-lux-page, .customer-profile-page) {
+  background: transparent !important;
+}
+
+.supplier-control-room::before {
+  content: none;
+}
+
+.profile-password-dialog {
+  color-scheme: light;
+}
+
+html.dark .profile-password-dialog {
+  color-scheme: dark;
+}
+
+html.dark .profile-password-dialog input:is([type="password"], [type="text"]) {
+  border-color: #475569 !important;
+}
+
+html.dark .profile-password-dialog input:is([type="password"], [type="text"]):focus {
+  border-color: #a78bfa !important;
+}
+
+html.dark .profile-password-dialog button.profile-password-primary:hover:not(:disabled) {
+  background-color: #6d28d9 !important;
 }

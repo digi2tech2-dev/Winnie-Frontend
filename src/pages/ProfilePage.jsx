@@ -308,7 +308,7 @@ export default function ProfilePage({ basePath = "/customer" }) {
   return (
     <div
       dir="rtl"
-      className="customer-profile-page -mx-4 -mt-2 min-h-[calc(100vh-120px)] bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FCFF_100%)] text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_45%,#0D1324_100%)] dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
+      className="customer-profile-page -mx-4 -mt-2 min-h-[calc(100vh-120px)] text-slate-950 dark:text-[#C4C9D4] sm:-mx-6 lg:-mx-8"
     >
       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={changeAvatar} />
       <section className="customer-profile-hero relative min-h-[390px] overflow-hidden bg-[linear-gradient(135deg,#BAF1FF_0%,#E8E0FF_48%,#FFC2DC_100%)] px-4 pb-7 pt-5 dark:bg-[linear-gradient(135deg,#070A1E_0%,#111827_48%,#24133D_100%)] sm:min-h-[460px] sm:px-8 sm:pb-8 sm:pt-7">
@@ -706,18 +706,18 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-password-title"
-        className="relative max-h-[calc(100dvh-24px)] w-full max-w-[560px] overflow-x-hidden overflow-y-auto rounded-[28px] border border-[#C4B5FD]/45 bg-white p-5 text-right text-slate-950 shadow-[0_28px_90px_rgba(14,165,233,0.22)] dark:border-[#8B5CF6]/24 dark:bg-[#111827] dark:text-[#F8F9FA] dark:shadow-[0_0_34px_rgba(139,92,246,0.24)] sm:max-h-[calc(100dvh-32px)]"
+        className="profile-password-dialog relative max-h-[calc(100dvh-24px)] w-full max-w-[560px] overflow-x-hidden overflow-y-auto rounded-[28px] border border-violet-200 bg-white p-5 text-right text-slate-950 shadow-[0_28px_90px_rgba(30,41,59,0.18)] dark:border-violet-400/30 dark:bg-[#111827] dark:text-slate-50 dark:shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:max-h-[calc(100dvh-32px)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,#BAF1FF,#FFC2DC)]" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,#EDE9FE,#E0F2FE)] dark:bg-[linear-gradient(135deg,#242344,#182A40)]" />
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-[#7C3AED] shadow-[0_12px_28px_rgba(139,92,246,0.16)] dark:bg-[#0D1324] dark:text-[#E9D5FF] dark:shadow-[0_0_20px_rgba(139,92,246,0.20)]">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-violet-700 shadow-[0_8px_24px_rgba(76,29,149,0.14)] dark:bg-[#30345A] dark:text-violet-100 dark:shadow-none">
               <KeyRound className="h-5 w-5" />
             </span>
             <div>
-              <h2 id="profile-password-title" className="text-xl font-black">{t("password.title")}</h2>
-              <p className="text-sm font-semibold text-slate-600 dark:text-[#8A94A7]">
+              <h2 id="profile-password-title" className="text-xl font-black text-slate-950 dark:text-white">{t("password.title")}</h2>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                 {confirming ? t("password.confirmSubtitle") : t("password.subtitle")}
               </p>
             </div>
@@ -725,7 +725,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
           <button
             type="button"
             onClick={onClose}
-            className="interactive-ring grid h-10 w-10 place-items-center rounded-full border border-white bg-white text-slate-700 shadow-[0_10px_22px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-[#111827] dark:text-[#E9D5FF]"
+            className="interactive-ring grid h-10 w-10 place-items-center rounded-full border border-violet-200 bg-white text-slate-700 shadow-sm hover:bg-violet-50 dark:border-violet-300/25 dark:bg-[#20283B] dark:text-violet-100 dark:hover:bg-[#2A3550]"
             aria-label={t("password.close")}
             title={t("password.close")}
           >
@@ -734,7 +734,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
         </div>
 
         {confirming ? (
-          <section className="relative mt-7 rounded-[24px] border border-[#C4B5FD]/45 bg-white p-5 text-center shadow-[0_22px_58px_rgba(14,165,233,0.18)] dark:border-[#8B5CF6]/28 dark:bg-[#0D1324] dark:shadow-[0_0_26px_rgba(139,92,246,0.22)]">
+          <section className="relative mt-7 rounded-[24px] border border-violet-200 bg-violet-50/60 p-5 text-center shadow-[0_18px_40px_rgba(76,29,149,0.10)] dark:border-violet-400/25 dark:bg-[#172136] dark:shadow-none">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#1A2335] dark:text-[#E9D5FF]">
                 <ShieldCheck className="h-7 w-7" />
               </span>
@@ -745,7 +745,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
                   onClick={confirmSave}
                   disabled={saving}
                   aria-busy={saving}
-                  className="interactive-ring h-11 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_12px_28px_rgba(139,92,246,0.28)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="profile-password-primary interactive-ring h-11 rounded-xl bg-violet-700 text-sm font-black text-white shadow-[0_10px_24px_rgba(109,40,217,0.22)] hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
                 >
                   {t("password.approve")}
                 </button>
@@ -753,7 +753,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
                   type="button"
                   onClick={() => setConfirming(false)}
                   disabled={saving}
-                  className="interactive-ring h-11 rounded-xl border border-sky-100 bg-white text-sm font-black text-slate-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#0D1324] dark:text-[#C4C9D4]"
+                  className="interactive-ring h-11 rounded-xl border border-slate-200 bg-white text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-[#20283B] dark:text-slate-100 dark:hover:bg-[#2A3550]"
                 >
                   {t("password.cancel")}
                 </button>
@@ -766,7 +766,7 @@ function PasswordModal({ onClose, onSubmit, showToast }) {
             <PasswordInput label={t("password.repeat")} value={form.repeat} onChange={(value) => updateField("repeat", value)} />
             <button
               type="submit"
-              className="interactive-ring mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-sm font-black text-white shadow-[0_14px_34px_rgba(139,92,246,0.30)] dark:from-[#8B5CF6] dark:to-[#A855F7] dark:shadow-[0_0_22px_rgba(139,92,246,0.28)]"
+              className="profile-password-primary interactive-ring mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-700 text-sm font-black text-white shadow-[0_10px_24px_rgba(109,40,217,0.22)] hover:bg-violet-800 dark:bg-violet-600 dark:text-white dark:hover:bg-violet-700"
             >
               <Save className="h-5 w-5" />
               {t("password.save")}
@@ -787,13 +787,13 @@ function PasswordInput({ label, value, onChange }) {
 
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-black text-violet-800 dark:text-violet-200">{label}</span>
+      <span className="mb-2 block text-sm font-black text-slate-800 dark:text-slate-100">{label}</span>
       <span className="relative block">
         <input
           type={visible ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-sky-100 bg-white px-4 pl-12 text-right font-semibold text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] outline-none transition placeholder:text-slate-400 focus:border-[#8B5CF6]/70 focus:ring-4 focus:ring-[#8B5CF6]/15 dark:border-white/10 dark:bg-[#050816] dark:text-white dark:shadow-none dark:placeholder:text-[#8A94A7]"
+          className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 pl-12 text-right font-semibold text-slate-950 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/15 dark:border-slate-600 dark:bg-[#0D1324] dark:text-white dark:focus:border-violet-400 dark:focus:ring-violet-400/20"
         />
         <button
           type="button"
@@ -801,7 +801,7 @@ function PasswordInput({ label, value, onChange }) {
             event.preventDefault();
             setVisible((current) => !current);
           }}
-          className="interactive-ring absolute left-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl border border-sky-100 bg-[#F8FCFF] text-slate-600 dark:border-white/10 dark:bg-[#111827] dark:text-[#E9D5FF]"
+          className="interactive-ring absolute left-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-violet-50 hover:text-violet-700 dark:border-slate-600 dark:bg-[#20283B] dark:text-slate-200 dark:hover:bg-[#2A3550] dark:hover:text-white"
           aria-label={visibilityLabel}
           title={visibilityLabel}
         >

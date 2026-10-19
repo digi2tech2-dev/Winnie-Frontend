@@ -18,10 +18,10 @@ import {
   WalletCards,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { getAdminDashboardData } from "../../api/adminDashboard";
+import { getAdminDashboardData, getAdminDashboardDetails } from "../../api/adminDashboard";
 import { approveDeposit, rejectDeposit } from "../../api/adminDeposits";
 import { markAdminOrderManualSuccess, refundAdminOrder } from "../../api/adminOrders";
 import { normalizeApiError } from "../../api/errors";
@@ -347,19 +347,24 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const loadSequenceRef = useRef(0);
   const [depositActionKey, setDepositActionKey] = useState("");
   const [selectedRange, setSelectedRange] = useState(() => getPresetRange("thisMonth"));
 
   const loadDashboard = useCallback(async ({ notify = false } = {}) => {
+    const sequence = ++loadSequenceRef.current;
     if (!token) {
       setDashboard(null);
       setError("جلسة المدير غير متاحة.");
       setLoading(false);
+      setDetailsLoading(false);
       return;
     }
 
     setError("");
     setRefreshing(true);
+    setDetailsLoading(true);
     setDashboard((current) => (current ? {
       ...current,
       periodSummary: null,
@@ -372,7 +377,25 @@ export default function AdminDashboardPage() {
         from: toDateInputValue(selectedRange.start),
         to: toDateInputValue(selectedRange.end),
       });
+      if (sequence !== loadSequenceRef.current) return;
       setDashboard(result);
+      void getAdminDashboardDetails(token, {
+        from: toDateInputValue(selectedRange.start),
+        to: toDateInputValue(selectedRange.end),
+      }, result.providers).then((details) => {
+        if (sequence !== loadSequenceRef.current) return;
+        setDashboard((current) => current ? {
+          ...current,
+          failures: [...current.failures, ...details.failures],
+          profitSeries: details.profitSeries,
+          providers: details.providers,
+        } : current);
+        if (details.failures.length) setError("تعذر تحميل بعض بيانات لوحة التحكم، وتظهر المؤشرات المتاحة حاليًا.");
+      }).catch(() => {
+        if (sequence === loadSequenceRef.current) setError("تعذر تحميل تفاصيل لوحة التحكم.");
+      }).finally(() => {
+        if (sequence === loadSequenceRef.current) setDetailsLoading(false);
+      });
 
       if (result.failures.length) {
         setError("تعذر تحميل بعض بيانات لوحة التحكم، وتظهر المؤشرات المتاحة حاليًا.");
@@ -386,6 +409,8 @@ export default function AdminDashboardPage() {
         });
       }
     } catch (loadError) {
+      if (sequence !== loadSequenceRef.current) return;
+      setDetailsLoading(false);
       const normalized = normalizeApiError(loadError, "تعذر تحميل بيانات لوحة التحكم.");
       setError(normalized.userMessage || normalized.message);
       if (notify) {
@@ -396,8 +421,10 @@ export default function AdminDashboardPage() {
         });
       }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (sequence === loadSequenceRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [selectedRange, showToast, token]);
 
@@ -587,7 +614,7 @@ export default function AdminDashboardPage() {
           />
 
           <ProfitPeriodChart
-            loading={refreshing}
+            loading={detailsLoading}
             range={selectedRange}
             series={dashboard?.profitSeries || []}
             total={getSummaryValue(dashboard?.periodSummary?.cards, "netProfitUsd")}

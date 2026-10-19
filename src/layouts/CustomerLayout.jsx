@@ -43,6 +43,8 @@ export default function CustomerLayout() {
   const [walletSummary, setWalletSummary] = useState(null);
   const [notificationItems, setNotificationItems] = useState([]);
   const [searchProducts, setSearchProducts] = useState([]);
+  const [searchCategories, setSearchCategories] = useState([]);
+  const [searchCatalogLoaded, setSearchCatalogLoaded] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [notificationsError, setNotificationsError] = useState("");
@@ -71,6 +73,20 @@ export default function CustomerLayout() {
       return null;
     }
   }, [token]);
+
+  const loadSearchCatalog = useCallback(async () => {
+    if (!token || searchCatalogLoaded) return;
+    try {
+      const catalog = await getCustomerCatalog(token, { page: 1, limit: 100 });
+      setSearchProducts(catalog.products);
+      setSearchCategories(catalog.categories);
+    } catch {
+      setSearchProducts([]);
+      setSearchCategories([]);
+    } finally {
+      setSearchCatalogLoaded(true);
+    }
+  }, [searchCatalogLoaded, token]);
 
   const refreshNotifications = useCallback(async ({ showLoading = true } = {}) => {
     if (!token) {
@@ -106,6 +122,8 @@ export default function CustomerLayout() {
       setWalletSummary(null);
       setNotificationItems([]);
       setSearchProducts([]);
+      setSearchCategories([]);
+      setSearchCatalogLoaded(false);
       setUnreadNotificationCount(0);
       setNotificationsLoading(false);
       setNotificationsError("");
@@ -113,13 +131,15 @@ export default function CustomerLayout() {
     }
 
     let cancelled = false;
+    setSearchProducts([]);
+    setSearchCategories([]);
+    setSearchCatalogLoaded(false);
 
     const loadLayoutReads = async () => {
       setNotificationsLoading(true);
-      const [walletResult, notificationsResult, catalogResult] = await Promise.allSettled([
+      const [walletResult, notificationsResult] = await Promise.allSettled([
         getWalletSummary(token),
         getNotifications(token, { page: 1, limit: 20 }),
-        getCustomerCatalog(token, { page: 1, limit: 48 }),
       ]);
 
       if (cancelled) return;
@@ -138,7 +158,6 @@ export default function CustomerLayout() {
         setNotificationsError(notificationsResult.reason?.userMessage || t("notifications:loadErrorTitle", { defaultValue: "Unable to load notifications." }));
       }
 
-      setSearchProducts(catalogResult.status === "fulfilled" ? catalogResult.value.products : []);
       setNotificationsLoading(false);
     };
 
@@ -252,7 +271,7 @@ export default function CustomerLayout() {
   }, [t, user?.apiAccessEnabled]);
 
   return (
-    <div className="winnie-app-shell customer-app-shell min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4]">
+    <div className="winnie-app-shell customer-app-shell min-h-screen overflow-x-hidden text-slate-950 dark:text-[#C4C9D4]">
       <div dir="ltr" className="flex min-h-screen flex-row-reverse">
         <DashboardSidebar
           items={customerNavItems}
@@ -270,6 +289,8 @@ export default function CustomerLayout() {
             onOpenSidebar={() => setSidebarOpen(true)}
             searchResults={searchResults}
             searchProducts={searchProducts}
+            searchCategories={searchCategories}
+            onSearchOpen={loadSearchCatalog}
             unreadNotificationCount={unreadNotificationCount}
             walletBalance={walletSummary?.balance ?? 0}
             walletCurrency={walletSummary?.currency || "USD"}

@@ -31,7 +31,7 @@ export default function ProductCard({ actionBusy = false, mainCategory, onDelete
     <tr className="admin-products-row border-t border-[#142654] transition hover:bg-blue-500/[0.035]">
       <td className="px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <img src={product.image || "/logo.png"} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-blue-500/30 object-cover shadow-[0_0_10px_rgba(59,130,246,0.16)]" />
+          <img src={product.image || "/logo.png"} alt="" loading="lazy" decoding="async" className="h-10 w-10 shrink-0 rounded-lg border border-blue-500/30 object-cover shadow-[0_0_10px_rgba(59,130,246,0.16)]" />
           <div className="min-w-0">
             <p className="truncate text-xs font-black text-slate-100">{product.nameAr}</p>
             <p className="mt-1 truncate text-[9px] font-bold text-slate-500">{product.nameEn || "منتج يدوي"}</p>
@@ -57,7 +57,7 @@ export function ProductMobileCard({ actionBusy = false, mainCategory, onDelete, 
   return (
     <article className="admin-products-mobile-card admin-product-item-mobile-card min-w-0 space-y-1.5">
       <div className="flex min-w-0 items-center gap-2">
-        <img src={product.image || "/logo.png"} alt="" className="h-8 w-8 shrink-0 rounded-md border border-blue-500/30 object-cover" />
+        <img src={product.image || "/logo.png"} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded-md border border-blue-500/30 object-cover" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[10px] font-black leading-4 text-slate-100">{product.nameAr}</p>
           <p className="truncate text-[7px] font-bold leading-3 text-slate-500">{product.nameEn || "منتج يدوي"}</p>

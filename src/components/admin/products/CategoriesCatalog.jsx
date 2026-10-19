@@ -112,7 +112,7 @@ function CategoryPanel({ activeOnly, addLabel, children, icon: Icon, onAdd, onQu
 }
 
 function CategoryIdentity({ category }) {
-  return <div className="flex min-w-0 flex-1 items-center gap-3"><img src={category.image || "/logo.png"} alt="" className="h-9 w-9 shrink-0 rounded-lg border border-blue-500/30 object-cover shadow-[0_0_10px_rgba(59,130,246,0.16)]" /><span className="min-w-0 truncate font-bold text-slate-100">{category.name}</span></div>;
+  return <div className="flex min-w-0 flex-1 items-center gap-3"><img src={category.image || "/logo.png"} alt="" loading="lazy" decoding="async" className="h-9 w-9 shrink-0 rounded-lg border border-blue-500/30 object-cover shadow-[0_0_10px_rgba(59,130,246,0.16)]" /><span className="min-w-0 truncate font-bold text-slate-100">{category.name}</span></div>;
 }
 
 function ActiveBadge({ active }) {

@@ -226,7 +226,7 @@ export default function ApiDocsPage() {
   const errorResponse = code({ status: "ERROR", code: 121, message: "Invalid API token" });
 
   return (
-    <main dir="ltr" className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(224,242,254,0.95),transparent_32%),linear-gradient(135deg,#FFFFFF_0%,#F8FCFF_46%,#FDF2F8_100%)] px-4 py-6 text-slate-900 dark:bg-[linear-gradient(180deg,#050816_0%,#0A1120_35%,#0D1324_100%)] dark:text-[#C4C9D4] sm:px-6 sm:py-8">
+    <main dir="ltr" className="min-h-screen px-4 py-6 text-slate-900 dark:text-[#C4C9D4] sm:px-6 sm:py-8">
       <div className="mx-auto max-w-7xl">
         <header className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0a1020] sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">

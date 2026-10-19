@@ -102,7 +102,11 @@ export default function ProductPurchaseModal({
     : fieldValues;
   const hasOrderFields = orderFields.length > 0;
   const canUseTopupFallbackField = providerFamilyKey === "TOPUPS" || providerFulfillmentMode === "TOPUP_WITH_FIELDS";
-  const showFallbackAccountInput = !hasOrderFields && canUseTopupFallbackField;
+  const regularProviderLinked = Boolean(
+    product?.provider || product?.providerId || product?.providerProduct || product?.providerProductId || product?.isProviderLinked,
+  ) && !xenaProduct && !providerFamilyKey && deliveryType !== "CODE_DELIVERY";
+  const showFallbackAccountInput = !hasOrderFields && (canUseTopupFallbackField || regularProviderLinked);
+  const fallbackAccountRequired = requireAccountId || regularProviderLinked;
   const manualConfigurationIncomplete = product?.purchaseDisabled === true
     || (deliveryType === "MANUAL_FULFILLMENT" && !hasOrderFields && !showFallbackAccountInput);
   const configurationError = manualConfigurationIncomplete
@@ -130,7 +134,7 @@ export default function ProductPurchaseModal({
     field.required !== false
     && !isRequiredFieldFilledForPurchase(field, requiredFieldValues, verifiedXenaUid),
   );
-  const missingFallbackAccount = showFallbackAccountInput && requireAccountId && !accountId.trim();
+  const missingFallbackAccount = showFallbackAccountInput && fallbackAccountRequired && !accountId.trim();
   const isQuantityWithinBounds = Number.isInteger(numericQuantity)
     && numericQuantity >= minQuantity
     && numericQuantity <= maxQuantity;
@@ -344,7 +348,7 @@ export default function ProductPurchaseModal({
     }
 
     const cleanAccountId = showFallbackAccountInput ? accountId.trim() : "";
-    if (showFallbackAccountInput && requireAccountId && !cleanAccountId) {
+    if (showFallbackAccountInput && fallbackAccountRequired && !cleanAccountId) {
       setLocalError(t("purchase.accountRequired"));
       return;
     }

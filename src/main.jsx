@@ -12,11 +12,22 @@ import { cleanupServiceWorkersAndCaches } from "./utils/disableServiceWorker.js"
 import "./i18n";
 import "./styles.css";
 
-// This is a one-time legacy cleanup and does not need to compete with first paint.
+// Remove legacy workers once, then cache public image requests for later visits.
+const prepareImageCache = async () => {
+  await cleanupServiceWorkersAndCaches();
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    try {
+      await navigator.serviceWorker.register("/image-cache-sw.js", { scope: "/" });
+    } catch (error) {
+      console.warn("[image-cache] registration failed", error);
+    }
+  }
+};
+
 if (typeof window.requestIdleCallback === "function") {
-  window.requestIdleCallback(() => void cleanupServiceWorkersAndCaches(), { timeout: 3000 });
+  window.requestIdleCallback(() => void prepareImageCache(), { timeout: 3000 });
 } else {
-  window.setTimeout(() => void cleanupServiceWorkersAndCaches(), 1500);
+  window.setTimeout(() => void prepareImageCache(), 1500);
 }
 
 createRoot(document.getElementById("root")).render(
