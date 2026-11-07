@@ -1,6 +1,6 @@
 import { createApiError, normalizeApiError } from "./errors";
 
-export const DEFAULT_API_BASE_URL = "http://localhost:5000/api";
+export const DEFAULT_API_BASE_URL = "/api";
 
 const DEFAULT_GET_CACHE_TTL_MS = 15_000;
 const MAX_CACHED_GET_REQUESTS = 150;
@@ -41,7 +41,14 @@ function cacheResponse(cacheKey, value, ttl) {
 }
 
 export function getApiBaseUrl() {
-  return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+  const configuredUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (configuredUrl) return configuredUrl.replace(/\/+$/, "");
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}${DEFAULT_API_BASE_URL}`;
+  }
+
+  return DEFAULT_API_BASE_URL;
 }
 
 function normalizeEndpoint(endpoint) {

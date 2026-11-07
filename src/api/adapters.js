@@ -1,5 +1,6 @@
+import { getApiBaseUrl } from "./client";
+
 export const DEFAULT_CURRENCY = "USD";
-const DEFAULT_API_BASE_URL = "http://localhost:5000/api";
 
 export function asArray(value) {
   if (Array.isArray(value)) return value;
@@ -152,8 +153,10 @@ export function resolveBackendAssetUrl(path) {
   if (!value) return "";
   if (/^https?:\/\//i.test(value) || /^data:/i.test(value) || /^blob:/i.test(value)) return value;
 
-  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
-  const apiUrl = new URL(apiBaseUrl);
+  const apiUrl = new URL(
+    getApiBaseUrl(),
+    typeof window !== "undefined" ? window.location.origin : "http://localhost",
+  );
   const uploadsMatch = value.match(/(?:^|\/)(uploads\/.*)$/i);
   if (!uploadsMatch) return value;
   const normalizedPath = `/${uploadsMatch[1]}`;
