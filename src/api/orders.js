@@ -63,7 +63,7 @@ export function normalizeCreatedOrder(order = {}) {
   return normalizeOrder(order);
 }
 
-export function buildCustomerOrderPayload({ accountId, product, quantity, orderFieldsValues, selectedPackage } = {}) {
+export function buildCustomerOrderPayload({ accountId, product, quantity, orderFieldsValues, selectedPackage, quote } = {}) {
   const productId = product?._id || product?.id || product?.productId;
   const safeQuantity = Math.max(1, Number.parseInt(quantity, 10) || 1);
   const packageId = selectedPackage?._id || selectedPackage?.id || selectedPackage?.packageId || selectedPackage?.name;
@@ -80,6 +80,7 @@ export function buildCustomerOrderPayload({ accountId, product, quantity, orderF
   return {
     productId,
     quantity: safeQuantity,
+    ...(quote?.quoteId ? { quoteId: quote.quoteId } : {}),
     ...(packageId ? { packageId } : {}),
     ...(cleanAccountId ? { accountId: cleanAccountId } : {}),
     ...(Object.keys(fieldValues).length ? { fields: fieldValues, orderFieldsValues: fieldValues } : {}),
@@ -118,6 +119,8 @@ export function normalizeOrderQuote(quote = {}) {
 
   return {
     ...quote,
+    quoteId: quote.quoteId || quote.id || null,
+    quoteExpiresAt: quote.quoteExpiresAt || null,
     chargedAmount,
     currency,
     displayTotal: quote.displayTotal || formatCurrency(chargedAmount, currency),

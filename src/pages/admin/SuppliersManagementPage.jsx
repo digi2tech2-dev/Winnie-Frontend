@@ -652,7 +652,7 @@ export default function SuppliersManagementPage() {
     if (!token || fazerLaunchOps.loading) return;
     const isAuto = providerExecutionMode === "AUTO_PROVIDER";
     const confirmMessage = isAuto
-      ? "تفعيل التنفيذ التلقائي للمنتجات المؤكدة؟ سيبدأ التنفيذ الفعلي فقط عند تفعيل إعدادات المورد من السيرفر."
+      ? "ضبط التنفيذ التلقائي للمنتجات المؤكدة؟ لا يتحقق هذا الإجراء من تنفيذ طلب حي لدى المورد."
       : "نشر المنتجات المؤهلة للعملاء؟ المنتجات غير المكتملة ستظهر كأخطاء ولن تُنشر.";
     if (!dryRun && !window.confirm(confirmMessage)) return;
 
@@ -666,8 +666,10 @@ export default function SuppliersManagementPage() {
       setFazerLaunchOps((current) => ({ ...current, bulkResult: result.result }));
       showToast({
         type: result.result.failed ? "warning" : "success",
-        title: isAuto ? "تم تحديث التنفيذ التلقائي" : "تم نشر المنتجات",
-        message: `${result.result.updated || result.result.wouldUpdate || 0} منتج جاهز، ${result.result.failed || 0} بحاجة لمراجعة.`,
+        title: isAuto ? "تم ضبط التنفيذ التلقائي" : "تم نشر المنتجات",
+        message: isAuto
+          ? `${result.result.updated || result.result.wouldUpdate || 0} منتج ضُبط للتنفيذ التلقائي، و${result.result.failed || 0} بحاجة لمراجعة. لم يتم التحقق من طلب حي لدى المورد.`
+          : `${result.result.updated || result.result.wouldUpdate || 0} منتج جاهز، ${result.result.failed || 0} بحاجة لمراجعة.`,
       });
       await refreshFazerLaunchSurfaces();
     } catch (error) {

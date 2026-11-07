@@ -21,7 +21,7 @@ import {
   unlinkAdminProductProvider,
   updateAdminProduct,
 } from "../../api/adminProducts";
-import { getFazerCardsImportPreview, getFazerCardsProviderProducts } from "../../api/adminProviders";
+import { getFazerCardsImportPreview, getFazerCardsProviderProducts, launchFazerCardsProduct } from "../../api/adminProviders";
 import CategoriesCatalog from "../../components/admin/products/CategoriesCatalog";
 import ConfirmDialog from "../../components/admin/products/ConfirmDialog";
 import ProductCard, { ProductMobileCard } from "../../components/admin/products/ProductCard";
@@ -38,6 +38,7 @@ import {
   normalizeFazerCardsOrderFields,
   readRetrievedFazerCardsCatalogs,
 } from "../../utils/fazerCardsCatalogs";
+import { getFazerCardsProductSavePlan } from "../../utils/fazerCardsAdminWorkflow";
 
 const CategoryFormModal = lazy(() => import("../../components/admin/products/CategoryFormModal"));
 const ProductFormModal = lazy(() => import("../../components/admin/products/ProductFormModal"));
@@ -49,6 +50,28 @@ const safeTrim = (value) => String(value ?? "").trim();
 const optionalTrim = (value) => {
   const trimmed = safeTrim(value);
   return trimmed || undefined;
+};
+const getFazerCardsAdminErrorMessage = (error) => {
+  const code = String(error?.code || "").toUpperCase();
+  const messages = {
+    FAZERCARDS_PROVIDER_LINK_REQUIRES_LAUNCH_OPS: "ربط عروض FazerCards يتم من صفحة تشغيل FazerCards بعد الاستيراد، وليس من الربط العام.",
+    PROVIDER_LINK_MISMATCH: "العرض المحدد لا يتبع للمورد المختار.",
+    PROVIDER_INACTIVE: "مورد FazerCards غير نشط حاليًا.",
+    AUTO_PROVIDER_REQUIRES_SUPPORTED_PROVIDER_PRODUCT: "العرض غير مدعوم للتنفيذ التلقائي.",
+    AUTO_PROVIDER_REQUIRES_UNBLOCKED_PROVIDER_PRODUCT: "العرض محظور ولا يمكن تفعيل تنفيذه التلقائي.",
+    AUTO_PROVIDER_REQUIRES_EXECUTION_UNBLOCKED: "التنفيذ التلقائي محظور لهذا العرض.",
+    CONTRACT_AUTO_EXECUTION_NOT_ALLOWED: "عائلة FazerCards المختارة لا تسمح بالتنفيذ التلقائي.",
+    FAZERCARDS_PROVIDER_EXECUTION_DISABLED: "التنفيذ التلقائي معطل لهذا المنتج.",
+    FAZERCARDS_PROVIDER_EXECUTION_BLOCKED: "التنفيذ التلقائي محظور لهذا المنتج.",
+    FAZERCARDS_PROVIDER_EXECUTION_MODE_INVALID: "وضع التنفيذ المختار غير صالح للتنفيذ التلقائي.",
+    AUTO_PROVIDER_REQUIRES_PROVIDER_PRODUCT: "المنتج يحتاج عرض FazerCards مرتبطًا قبل التفعيل التلقائي.",
+    FAZERCARDS_DISABLED: "تكامل FazerCards معطل بإعدادات التشغيل.",
+    FAZERCARDS_REAL_ORDERS_DISABLED: "طلبات FazerCards الحقيقية معطلة بإعدادات الأمان.",
+    FAZERCARDS_CODE_DELIVERY_DISABLED: "تسليم أكواد FazerCards معطل بإعدادات الأمان.",
+    UNAUTHORIZED: "ليس لديك صلاحية تنفيذ هذه العملية.",
+    AUTHORIZATION_ERROR: "ليس لديك صلاحية تنفيذ هذه العملية.",
+  };
+  return messages[code] || error?.userMessage || "تعذر تحديث إعدادات FazerCards. راجع جاهزية العرض وإعدادات التشغيل.";
 };
 const emptyProviderLinkState = {
   catalogKey: "",
@@ -244,23 +267,40 @@ export default function ProductsManagementPage() {
   const saveProduct = async (values) => {
     if (!token || saving) return;
 
-    const editing = Boolean(productModal.product);
+    const existingProduct = productModal.product;
+    const {
+      editing,
+      existingFazerCards,
+      requiresLaunchOps,
+      executionChanged,
+      ordinaryValues: ordinaryFazerCardsValues,
+    } = getFazerCardsProductSavePlan({ existingProduct, values });
     const wantsAutomaticExecution = values.linkType === "automatic" && values.providerExecutionEnabled === true;
-    const safeInitialValues = wantsAutomaticExecution
-      ? { ...values, providerExecutionEnabled: false, providerExecutionMode: "MANUAL_FULFILLMENT" }
-      : values;
+
+    // FazerCards offers are imported and linked by the dedicated launch flow.
+    // Do not create a partially configured product or invoke the incompatible
+    // generic provider-link endpoint for a new/remapped FazerCards offer.
+    if (requiresLaunchOps) {
+      showToast({
+        type: "warning",
+        title: "استخدم تشغيل FazerCards",
+        message: "لتغيير عرض FazerCards أو إضافته، استورد العرض ثم اضبط النشر والتنفيذ من صفحة تشغيل FazerCards.",
+      });
+      return;
+    }
+
     setSaving("product");
     let result;
 
     try {
       result = editing
-        ? await updateAdminProduct(token, productModal.product.id, safeInitialValues, categoryLookup, productModal.product)
-        : await createAdminProduct(token, safeInitialValues, categoryLookup);
+        ? await updateAdminProduct(token, existingProduct.id, ordinaryFazerCardsValues, categoryLookup, existingProduct)
+        : await createAdminProduct(token, ordinaryFazerCardsValues, categoryLookup);
     } catch (error) {
       showToast({
         type: "error",
         title: "فشل حفظ المنتج",
-        message: error.userMessage || "تعذر حفظ المنتج.",
+        message: existingFazerCards ? getFazerCardsAdminErrorMessage(error) : error.userMessage || "تعذر حفظ المنتج.",
       });
       setSaving("");
       return;
@@ -271,7 +311,25 @@ export default function ProductsManagementPage() {
     try {
       let finalProduct = savedProduct;
       let activationError = null;
-      if (values.linkType === "automatic") {
+      if (existingFazerCards) {
+        if (executionChanged) {
+          try {
+            await launchFazerCardsProduct(token, savedProduct.id, {
+              customerPurchaseEnabled: savedProduct.customerPurchaseEnabled,
+              isActive: savedProduct.isActive,
+              providerBlockReason: values.providerBlockReason || "",
+              providerExecutionBlocked: values.providerExecutionBlocked === true,
+              providerExecutionEnabled: values.providerExecutionEnabled === true,
+              providerExecutionMode: values.providerExecutionMode || "MANUAL_FULFILLMENT",
+              status: savedProduct.status,
+              visibleInStore: savedProduct.visibleInStore,
+            });
+            finalProduct = (await getAdminProduct(token, savedProduct.id, categoryLookup)).product;
+          } catch (error) {
+            activationError = error;
+          }
+        }
+      } else if (values.linkType === "automatic") {
         const linkResult = await linkAdminProductProvider(token, savedProduct.id, {
           fulfillmentMode: "AUTO",
           mode: "automatic",
@@ -306,18 +364,24 @@ export default function ProductsManagementPage() {
       closeProductForm();
       showToast({
         type: activationError ? "warning" : "success",
-        title: activationError ? "تم الربط والتنفيذ التلقائي ما زال معطلًا" : values.linkType === "automatic" ? "تم ربط المنتج" : editing ? "تم تحديث المنتج" : "تم إنشاء المنتج",
+        title: activationError
+          ? "حُفظت بيانات المنتج لكن لم يتغير التنفيذ التلقائي"
+          : existingFazerCards && executionChanged
+            ? "تم ضبط التنفيذ التلقائي لـ FazerCards"
+            : values.linkType === "automatic" ? "تم ربط المنتج" : editing ? "تم تحديث المنتج" : "تم إنشاء المنتج",
         message: activationError
-          ? activationError.userMessage || "حُفظت الحقول وتم ربط العرض، لكن الخادم رفض تفعيل التنفيذ التلقائي. راجع الحقول ثم حاول التفعيل مجددًا."
+          ? getFazerCardsAdminErrorMessage(activationError)
           : result.message || finalProduct.name,
       });
-    } catch {
+    } catch (error) {
       closeProductForm();
       await loadCatalog({ silent: true });
       showToast({
         type: "warning",
         title: "فشل ربط المورد",
-        message: values.linkType === "automatic"
+        message: existingFazerCards
+          ? getFazerCardsAdminErrorMessage(error)
+          : values.linkType === "automatic"
           ? "تم حفظ المنتج لكن فشل ربط المورد. افتح التعديل وحاول الربط مرة أخرى."
           : "تم حفظ المنتج لكن فشل إلغاء ربط المورد. افتح التعديل وحاول مجددًا.",
       });
@@ -547,6 +611,14 @@ export default function ProductsManagementPage() {
 
   const saveProviderLink = async () => {
     if (!token || saving || !providerLink.product || !providerLink.providerId || !providerLink.providerProductId) return;
+
+    if (providerLink.fazerCards) {
+      setProviderLink((current) => ({
+        ...current,
+        error: "تغيير ربط عروض FazerCards يتم عبر استيراد العرض ثم صفحة تشغيل FazerCards، للحفاظ على فحوصات الجاهزية.",
+      }));
+      return;
+    }
 
     setSaving("provider-link");
     try {

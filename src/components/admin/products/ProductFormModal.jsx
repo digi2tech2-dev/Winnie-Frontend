@@ -219,6 +219,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       providerCatalogKey: catalog?.key || "",
       providerId,
       providerProductId: selectedProviderProductId,
+      providerCode: safeTrim(provider?.providerCode || provider?.code || provider?.slug),
     }));
     setProviderLink((current) => ({ ...current, catalogs, fazerCards }));
     if (fazerCards && catalog) {
@@ -288,6 +289,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       ...current,
       providerCatalogKey: "",
       providerId,
+      providerCode: safeTrim(provider?.providerCode || provider?.code || provider?.slug),
       providerProductId: "",
       providerProductSearch: "",
     }));
@@ -523,6 +525,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
       extraFields: normalizedFields,
       orderFields: normalizedFields,
       providerId: safeTrim(effectiveForm.providerId),
+      providerCode: safeTrim(effectiveForm.providerCode),
       providerProductId: safeTrim(effectiveForm.providerProductId),
       providerProductExternalId: optionalTrim(effectiveForm.providerProductExternalId),
       syncLimits: Boolean(effectiveForm.syncLimitsFromProvider),

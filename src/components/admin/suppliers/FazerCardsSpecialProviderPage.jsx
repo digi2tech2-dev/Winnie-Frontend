@@ -867,8 +867,10 @@ function CatalogOffers({ catalog, onClose, token }) {
         || {};
       const visibleToCustomer = launchStatus.visibleToCustomer === true;
       const reasons = Array.isArray(launchStatus.reasons) ? launchStatus.reasons : [];
+      const runtimeReasons = result.result?.readiness?.configuration?.reasons || [];
+      const runtimeBlocked = isAuto && runtimeReasons.length > 0;
 
-      const updatedProduct = {
+      let updatedProduct = result.result?.product || {
         ...importState.product,
         customerPurchaseEnabled: true,
         customerVisibilityStatus: { visibleToCustomer, reasons },
@@ -879,20 +881,41 @@ function CatalogOffers({ catalog, onClose, token }) {
         visibleInStore: visibleToCustomer,
         visibleToCustomer,
       };
-      setState((current) => ({
-        ...current,
-        offers: current.offers.map((offer) => offer.id === selectedOffer.id
-          ? { ...offer, importedProduct: updatedProduct }
-          : offer),
-      }));
+
+      // Refresh the catalog-backed import state after the authoritative launch
+      // mutation. A successful configuration response is not a provider-order
+      // verification, so do not manufacture a stronger success state locally.
+      try {
+        const refreshed = await getFazerCardsProviderProducts(token, {
+          category: catalog.category,
+          familyKey: catalog.familyKey,
+          limit: OFFERS_PAGE_SIZE,
+          page,
+          search: query.trim() || undefined,
+        });
+        const refreshedOffer = refreshed.products.find((offer) => offer.id === selectedOffer.id);
+        if (refreshedOffer?.importedProduct) updatedProduct = refreshedOffer.importedProduct;
+        setState({ error: "", loading: false, offers: refreshed.products, pagination: refreshed.pagination });
+      } catch {
+        setState((current) => ({
+          ...current,
+          offers: current.offers.map((offer) => offer.id === selectedOffer.id
+            ? { ...offer, importedProduct: updatedProduct }
+            : offer),
+        }));
+      }
 
       setImportState((current) => ({
         ...current,
         action: "",
         launchMessage: visibleToCustomer
-          ? isAuto ? "تم نشر المنتج وتفعيل التنفيذ التلقائي بنجاح." : "تم نشر المنتج للعملاء بنجاح."
+          ? isAuto
+            ? runtimeBlocked
+              ? `تم حفظ التنفيذ التلقائي، لكن يوجد مانع تشغيل حالي: ${runtimeReasons.map((reason) => reason.code).join("، ")}. لم يتم التحقق من طلب حي لدى المورد.`
+              : "تم ضبط النشر والتنفيذ التلقائي. لم يتم التحقق من تنفيذ طلب حي لدى المورد."
+            : "تم نشر المنتج للعملاء بنجاح."
           : `تم حفظ إعدادات التشغيل، لكن المنتج غير ظاهر للعملاء: ${reasons.join("، ") || "راجع جاهزية المنتج."}`,
-        launchTone: visibleToCustomer ? "success" : "warning",
+        launchTone: visibleToCustomer && !runtimeBlocked ? "success" : "warning",
         product: updatedProduct,
       }));
     } catch (error) {

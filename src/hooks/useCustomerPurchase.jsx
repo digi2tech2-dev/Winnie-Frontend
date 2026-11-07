@@ -174,6 +174,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
   const [insufficientFundsPrompt, setInsufficientFundsPrompt] = useState(null);
   const [purchaseReceipt, setPurchaseReceipt] = useState(null);
   const [purchaseSubmitting, setPurchaseSubmitting] = useState(false);
+  const [quoteRefreshNonce, setQuoteRefreshNonce] = useState(0);
   const purchaseRequestInFlightRef = useRef(false);
   const isCustomerArea = basePath === "/customer" || basePath === "/admin/user";
 
@@ -260,6 +261,10 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
       setPurchaseError(t("purchase.missingProductId"));
       return;
     }
+    if (!payload.quoteId) {
+      setPurchaseError(t("purchase.quoteFailed", { defaultValue: "Please review the current price before ordering." }));
+      return;
+    }
 
     purchaseRequestInFlightRef.current = true;
     setPurchaseSubmitting(true);
@@ -287,6 +292,12 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
         message: `${receipt.orderId} - ${receipt.statusLabel}`,
       });
     } catch (error) {
+      const code = String(error.code || error.payload?.code || "").toUpperCase();
+      if (["QUOTE_PRICE_CHANGED", "QUOTE_EXPIRED", "QUOTE_INVALID", "QUOTE_ALREADY_USED"].includes(code)) {
+        setQuoteRefreshNonce((value) => value + 1);
+        setPurchaseError(error.userMessage || "The price has changed. Please review and confirm the updated price.");
+        return;
+      }
       if (isInsufficientFundsError(error)) {
         const details = getInsufficientFundsDetails(error);
         const message = buildInsufficientFundsMessage(error, t);
@@ -316,6 +327,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
           submitError={purchaseError}
           submitting={purchaseSubmitting}
           token={token}
+          quoteRefreshNonce={quoteRefreshNonce}
         />
         )}
       </AnimatePresence>
@@ -344,7 +356,7 @@ export function useCustomerPurchase({ basePath = "/customer", onSuccess, token }
         )}
       </AnimatePresence>
     </>
-  ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, insufficientFundsPrompt, showQuoteInsufficientFunds, submitPurchase, t, token]);
+  ), [basePath, closeInsufficientFundsPrompt, closePurchase, goToAddBalance, navigate, purchaseError, purchaseItem, purchaseReceipt, purchaseSubmitting, quoteRefreshNonce, insufficientFundsPrompt, showQuoteInsufficientFunds, submitPurchase, t, token]);
 
   return {
     openPurchase,

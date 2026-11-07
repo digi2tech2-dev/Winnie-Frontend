@@ -37,6 +37,7 @@ export default function ProductPurchaseModal({
   submitError = "",
   submitting = false,
   token = "",
+  quoteRefreshNonce = 0,
 }) {
   const { t, i18n } = useTranslation("products");
   const { user } = useAuth();
@@ -202,7 +203,7 @@ export default function ProductPurchaseModal({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [manualConfigurationIncomplete, productId, productUnavailable, quantity, t, token]);
+  }, [manualConfigurationIncomplete, productId, productUnavailable, quantity, quoteRefreshNonce, t, token]);
 
   useEffect(() => {
     setXenaVerification({
