@@ -629,6 +629,7 @@ export async function getFazerCardsProviderProducts(token, query = {}) {
       supportLevel: query.supportLevel,
       blockReason: query.blockReason,
     }),
+    signal: query.signal,
     token,
   });
   const products = asArray(response.data).map(normalizeAdminProviderProduct);

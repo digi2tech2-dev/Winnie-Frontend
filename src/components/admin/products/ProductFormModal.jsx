@@ -62,6 +62,7 @@ const emptyProviderLinkState = {
   fazerCards: false,
   fieldPreparationMessage: "",
   loadingProducts: false,
+  loadingMoreProducts: false,
   loadingProviders: false,
   pagination: null,
   preparingFields: false,
@@ -99,7 +100,14 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
   const [error, setError] = useState("");
   const [providerLink, setProviderLink] = useState(emptyProviderLinkState);
   const providerFieldsRequestRef = useRef(0);
+  const providerProductsRequestRef = useRef(0);
+  const providerProductsAbortRef = useRef(null);
   const providerOptionsLoaded = useRef(false);
+
+  useEffect(() => () => {
+    providerProductsRequestRef.current += 1;
+    providerProductsAbortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -112,11 +120,18 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     };
   }, [onClose]);
 
-  const loadProviderProducts = useCallback(async (providerId, search = "", selectedProductId = "", catalog = null) => {
+  const loadProviderProducts = useCallback(async (providerId, search = "", selectedProductId = "", catalog = null, page = 1, append = false) => {
+    providerProductsAbortRef.current?.abort();
+    const controller = new AbortController();
+    providerProductsAbortRef.current = controller;
+    const requestId = providerProductsRequestRef.current + 1;
+    providerProductsRequestRef.current = requestId;
+
     if (!token || !providerId) {
       setProviderLink((current) => ({
         ...current,
         loadingProducts: false,
+        loadingMoreProducts: false,
         pagination: null,
         providerProducts: [],
       }));
@@ -126,7 +141,8 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
     setProviderLink((current) => ({
       ...current,
       error: "",
-      loadingProducts: true,
+      loadingProducts: !append,
+      loadingMoreProducts: append,
     }));
 
     try {
@@ -134,32 +150,49 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
         ? await getFazerCardsProviderProducts(token, {
             category: catalog.category,
             familyKey: catalog.familyKey,
-            limit: 100,
-            page: 1,
+            limit: 40,
+            page,
             search,
+            signal: controller.signal,
           })
         : await getAdminProductProviderProductOptions(token, providerId, {
-            limit: 100,
-            page: 1,
+            limit: 40,
+            page,
             search,
+            signal: controller.signal,
           });
+      if (providerProductsRequestRef.current !== requestId) return;
       setProviderLink((current) => ({
         ...current,
         error: "",
         loadingProducts: false,
+        loadingMoreProducts: false,
         pagination: result.pagination,
-        providerProducts: mergeSelectedProductOption(result.products, selectedProductId, product),
+        providerProducts: append
+          ? mergeSelectedProductOption([...current.providerProducts, ...result.products.filter((item) => !current.providerProducts.some((existing) => existing.id === item.id))], selectedProductId, product)
+          : mergeSelectedProductOption(result.products, selectedProductId, product),
       }));
     } catch (loadError) {
+      if (loadError?.name === "AbortError" || providerProductsRequestRef.current !== requestId) return;
       setProviderLink((current) => ({
         ...current,
         error: loadError.userMessage || "تعذر تحميل منتجات المورد.",
         loadingProducts: false,
+        loadingMoreProducts: false,
         pagination: null,
         providerProducts: [],
       }));
     }
   }, [product, token]);
+
+  const loadMoreProviderProducts = useCallback(() => {
+    const nextPage = Number(providerLink.pagination?.page || 1) + 1;
+    if (!form.providerId || providerLink.loadingProducts || providerLink.loadingMoreProducts || nextPage > Number(providerLink.pagination?.pages || 1)) return;
+    const catalog = providerLink.fazerCards
+      ? providerLink.catalogs.find((item) => item.key === form.providerCatalogKey)
+      : null;
+    void loadProviderProducts(form.providerId, form.providerProductSearch || "", form.providerProductId, catalog, nextPage, true);
+  }, [form.providerCatalogKey, form.providerId, form.providerProductId, form.providerProductSearch, loadProviderProducts, providerLink]);
 
   const loadProviders = useCallback(async (preferredProviderId = "") => {
     if (!token) return "";
@@ -247,6 +280,8 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
   const changeLinkMode = (mode) => {
     setError("");
+    providerProductsAbortRef.current?.abort();
+    providerProductsRequestRef.current += 1;
     if (mode === "manual") {
       if (form.linkType === "automatic" && existingProviderLink && !window.confirm("سيتم إزالة ربط المورد الحالي وتحويل المنتج إلى تنفيذ يدوي. هل تريد المتابعة؟")) {
         return;
@@ -265,6 +300,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
         ...current,
         error: "",
         loadingProducts: false,
+        loadingMoreProducts: false,
         providerProducts: [],
       }));
       return;
@@ -282,6 +318,8 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
   const changeProvider = (providerId) => {
     providerFieldsRequestRef.current += 1;
+    providerProductsAbortRef.current?.abort();
+    providerProductsRequestRef.current += 1;
     const provider = providerLink.providers.find((item) => item.id === providerId);
     const fazerCards = isFazerCardsProvider(provider);
     const catalogs = fazerCards ? readRetrievedFazerCardsCatalogs() : [];
@@ -308,6 +346,8 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
 
   const changeProviderCatalog = (catalogKey) => {
     providerFieldsRequestRef.current += 1;
+    providerProductsAbortRef.current?.abort();
+    providerProductsRequestRef.current += 1;
     const catalog = providerLink.catalogs.find((item) => item.key === catalogKey);
     setForm((current) => ({
       ...current,
@@ -583,6 +623,7 @@ function ProductFormContent({ product, mainCategories, subCategories, onClose, o
               onLinkModeChange={changeLinkMode}
               onPatch={patch}
               onProductSearch={searchProviderProducts}
+              onLoadMore={loadMoreProviderProducts}
               onProviderChange={changeProvider}
               onProviderProductSelect={selectProviderProduct}
               providerLink={providerLink}

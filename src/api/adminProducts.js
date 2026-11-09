@@ -828,6 +828,8 @@ export function normalizeProductProviderProductOption(product = {}) {
     executionBlocked: product.executionBlocked === true,
     externalId: externalProductId,
     externalProductId,
+    offerId: safeTrim(product.offerId),
+    offerName: safeTrim(product.offerName),
     familyKey: safeTrim(product.familyKey),
     fulfillmentMode: safeTrim(product.fulfillmentMode),
     isActive: product.isActive !== false,
@@ -837,8 +839,6 @@ export function normalizeProductProviderProductOption(product = {}) {
     maxQty: product.maxQty ?? null,
     minQty: product.minQty ?? null,
     name: safeTrim(product.name) || "Provider product",
-    offerId: safeTrim(product.offerId),
-    offerName: safeTrim(product.offerName),
     platform: safeTrim(product.platform),
     rawPrice: toDecimalString(rawPrice),
     region: safeTrim(product.region),
@@ -850,6 +850,7 @@ export function normalizeProductProviderProductOption(product = {}) {
     priceLabel: formatSupplierPrice(rawPrice, currency),
     providerProductId: safeTrim(product.providerProductId || id),
     providerName: safeTrim(product.providerName),
+    supplierCode: safeTrim(product.supplierCode || product.offerId || externalProductId),
   };
 }
 
@@ -867,10 +868,11 @@ export async function getAdminProductProviderProductOptions(token, providerId, q
   const response = await apiRequest(`/admin/product-provider-options/${providerId}/products`, {
     query: compactObject({
       page: query.page || 1,
-      limit: query.limit || 600,
+      limit: query.limit || 40,
       includeInactive: query.includeInactive,
       search: query.search,
     }),
+    signal: query.signal,
     token,
   });
   const products = asArray(response.data).map(normalizeProductProviderProductOption);
@@ -879,7 +881,7 @@ export async function getAdminProductProviderProductOptions(token, providerId, q
     message: response.message,
     pagination: normalizePagination(response.pagination, {
       page: query.page || 1,
-      limit: query.limit || 600,
+      limit: query.limit || 40,
       total: products.length,
     }),
     products,

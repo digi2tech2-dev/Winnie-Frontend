@@ -19,6 +19,7 @@ export default function ProductPricing({
   onChange,
   onCatalogChange,
   onLinkModeChange,
+  onLoadMore,
   onPatch,
   onProductSearch,
   onProviderChange,
@@ -286,6 +287,18 @@ export default function ProductPricing({
               <EmptyProviderMessage text={searchValue ? "لا توجد منتجات مطابقة للبحث." : "لم تتم مزامنة منتجات لهذا المورد بعد."} />
             )}
           </div>
+
+          {providerLink.pagination?.page < providerLink.pagination?.pages && (
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={providerLink.loadingProducts || providerLink.loadingMoreProducts}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 text-[10px] font-black text-cyan-200 transition hover:bg-cyan-500/20 disabled:opacity-60"
+            >
+              {providerLink.loadingMoreProducts && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+              {providerLink.loadingMoreProducts ? "جارٍ تحميل المزيد..." : `تحميل المزيد (${Math.max(0, providerLink.pagination.total - providerLink.providerProducts.length).toLocaleString("ar-EG-u-nu-latn")})`}
+            </button>
+          )}
 
           {selectedProduct && (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] font-bold text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
