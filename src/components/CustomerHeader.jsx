@@ -18,6 +18,7 @@ export default function CustomerHeader({
   onOpenNotification,
   onOpenSidebar,
   onSearchOpen,
+  onSearch,
   searchProducts = [],
   searchCategories = [],
   unreadNotificationCount = 0,
@@ -240,6 +241,7 @@ export default function CustomerHeader({
           mode="customer"
           products={searchProducts}
           categories={searchCategories}
+          onSearch={onSearch}
         />
       </Suspense>}
     </>

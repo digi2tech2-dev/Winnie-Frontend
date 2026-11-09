@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Building2, CircleUserRound, Home, Languages, LayoutGrid, LogIn, Menu, Moon, SunMedium, UserPlus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getPublicCatalog } from "../api/catalog";
+import { getCategories, getPublicCatalog } from "../api/catalog";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -86,10 +86,10 @@ export default function PublicHeader() {
 
     const loadSearchProducts = async () => {
       try {
-        const result = await getPublicCatalog({ page: 1, limit: 100 });
+        const result = await getCategories();
         if (!cancelled) {
-          setSearchProducts(result.products);
-          setSearchCategories(result.categories);
+          setSearchProducts([]);
+          setSearchCategories(result);
           setSearchCatalogLoaded(true);
         }
       } catch {
@@ -106,6 +106,10 @@ export default function PublicHeader() {
       cancelled = true;
     };
   }, [searchCatalogLoaded, searchOpen]);
+
+  const searchPublicCatalog = useCallback((search, query = {}) => (
+    getPublicCatalog({ search, ...query })
+  ), []);
 
   useEffect(() => {
     const openSearchFromPage = () => setSearchOpen(true);
@@ -210,6 +214,7 @@ export default function PublicHeader() {
             mode="public"
             products={searchProducts}
             categories={searchCategories}
+            onSearch={searchPublicCatalog}
           />
         </Suspense>
       ) : null}

@@ -6,7 +6,7 @@ import CustomerHeader from "../components/CustomerHeader";
 import DashboardSidebar from "../components/DashboardSidebar";
 import IdentityVerificationRequiredModal from "../components/IdentityVerificationRequiredModal";
 import SiteFooter from "../components/SiteFooter";
-import { getCustomerCatalog } from "../api/catalog";
+import { getCategories, getCustomerProducts } from "../api/catalog";
 import {
   deleteNotification,
   getNotifications,
@@ -77,9 +77,8 @@ export default function CustomerLayout() {
   const loadSearchCatalog = useCallback(async () => {
     if (!token || searchCatalogLoaded) return;
     try {
-      const catalog = await getCustomerCatalog(token, { page: 1, limit: 100 });
-      setSearchProducts(catalog.products);
-      setSearchCategories(catalog.categories);
+      setSearchCategories(await getCategories());
+      setSearchProducts([]);
     } catch {
       setSearchProducts([]);
       setSearchCategories([]);
@@ -87,6 +86,11 @@ export default function CustomerLayout() {
       setSearchCatalogLoaded(true);
     }
   }, [searchCatalogLoaded, token]);
+
+  const searchCustomerCatalog = useCallback((search, query = {}) => {
+    if (!token) return Promise.resolve({ products: [], pagination: null });
+    return getCustomerProducts(token, { search, nameOnly: true, ...query });
+  }, [token]);
 
   const refreshNotifications = useCallback(async ({ showLoading = true } = {}) => {
     if (!token) {
@@ -290,6 +294,7 @@ export default function CustomerLayout() {
             searchResults={searchResults}
             searchProducts={searchProducts}
             searchCategories={searchCategories}
+            onSearch={searchCustomerCatalog}
             onSearchOpen={loadSearchCatalog}
             unreadNotificationCount={unreadNotificationCount}
             walletBalance={walletSummary?.balance ?? 0}

@@ -6,11 +6,17 @@ import { useTranslation } from "react-i18next";
 import FavoriteButton from "./FavoriteButton";
 import { iconMap } from "./icons";
 import { isProductUnavailable, isProductVisibleInStore } from "../utils/productAvailability";
-import { getCatalogSearchResults } from "../utils/catalogSearch";
+import { getCatalogSearchResults, getCategorySearchResults } from "../utils/catalogSearch";
 
-export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, mode = "public", categories = [], products: providedProducts = [] }) {
+export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, onSearch, mode = "public", categories = [], products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
+  const [productResults, setProductResults] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
+  const requestRef = useRef({ id: 0, controller: null });
   const { t } = useTranslation("common");
 
   const products = useMemo(() => {
@@ -35,8 +41,69 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       });
   }, [providedProducts, t]);
 
-  const results = useMemo(() => getCatalogSearchResults(categories, products, query), [categories, products, query]);
-  const resultCount = results.categories.length + results.products.length;
+  const categoryResults = useMemo(() => getCategorySearchResults(categories, query), [categories, query]);
+  const localResults = useMemo(() => getCatalogSearchResults(categories, products, query).products, [categories, products, query]);
+  const visibleProducts = onSearch ? productResults : localResults;
+  const resultCount = categoryResults.length || visibleProducts.length;
+
+  useEffect(() => () => requestRef.current.controller?.abort(), []);
+
+  useEffect(() => {
+    const term = query.trim();
+    requestRef.current.controller?.abort();
+    const requestId = requestRef.current.id + 1;
+    requestRef.current = { id: requestId, controller: null };
+    setError("");
+    setProductResults([]);
+    setPagination(null);
+    setLoadingMore(false);
+
+    if (!term || categoryResults.length || !onSearch) {
+      setLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    requestRef.current = { id: requestId, controller };
+    setLoading(true);
+    const timeout = window.setTimeout(async () => {
+      try {
+        const result = await onSearch(term, { page: 1, limit: 24, signal: controller.signal });
+        if (requestRef.current.id !== requestId) return;
+        setProductResults(result?.products || []);
+        setPagination(result?.pagination || null);
+      } catch (requestError) {
+        if (requestError?.name !== "AbortError" && requestError?.code !== "REQUEST_CANCELLED" && requestRef.current.id === requestId) {
+          setError(requestError?.userMessage || t("search.error"));
+        }
+      } finally {
+        if (requestRef.current.id === requestId) setLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [categoryResults.length, onSearch, query, t]);
+
+  const loadMore = async () => {
+    if (!onSearch || !pagination || pagination.page >= pagination.pages || loadingMore) return;
+    const controller = new AbortController();
+    const requestId = requestRef.current.id + 1;
+    requestRef.current = { id: requestId, controller };
+    setLoadingMore(true);
+    try {
+      const result = await onSearch(query.trim(), { page: pagination.page + 1, limit: pagination.limit || 24, signal: controller.signal });
+      if (requestRef.current.id !== requestId) return;
+      setProductResults((current) => [...current, ...(result?.products || [])]);
+      setPagination(result?.pagination || pagination);
+    } catch (requestError) {
+      if (requestError?.name !== "AbortError" && requestError?.code !== "REQUEST_CANCELLED") setError(requestError?.userMessage || t("search.error"));
+    } finally {
+      if (requestRef.current.id === requestId) setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return undefined;
@@ -61,6 +128,9 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
   useEffect(() => {
     if (!open) {
       setQuery("");
+      setProductResults([]);
+      setPagination(null);
+      setError("");
     }
   }, [open]);
 
@@ -148,15 +218,23 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                 {query.trim() && <span className="text-xs font-black text-[#8B5CF6] dark:text-[#C084FC]">{t("search.resultCount", { count: resultCount })}</span>}
               </div>
 
-              {resultCount ? (
+              {loading && !resultCount ? (
+                <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-sky-200 bg-sky-50/70 p-6 text-center dark:border-white/10 dark:bg-[#0D1324]">
+                  <p className="text-sm font-black text-slate-500 dark:text-slate-300">{t("search.loading")}</p>
+                </div>
+              ) : error && !resultCount ? (
+                <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-rose-200 bg-rose-50/70 p-6 text-center dark:border-rose-400/20 dark:bg-rose-950/20">
+                  <p className="text-sm font-black text-rose-600 dark:text-rose-300">{error}</p>
+                </div>
+              ) : resultCount ? (
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {results.categories.map((category) => (
+                  {categoryResults.map((category) => (
                     <button key={category.id} type="button" onClick={() => handleCategoryClick(category)} className="flex min-w-0 items-center gap-2 rounded-xl border border-sky-100 bg-white p-2 text-right transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-[#111827] dark:hover:bg-[#1A2335]">
                       <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">{category.image ? <img src={category.image} alt="" loading="lazy" className="h-full w-full object-cover" /> : <ShoppingBag className="h-5 w-5" />}</span>
                       <span className="min-w-0"><strong className="block truncate text-xs text-slate-950 dark:text-white">{category.title || category.name}</strong><small className="text-slate-500 dark:text-slate-400">{t("search.subcategory")}</small></span>
                     </button>
                   ))}
-                  {results.products.map((product) => (
+                  {!categoryResults.length && visibleProducts.map((product) => (
                     <SearchProductCard
                       key={product.id || `${product.groupId}-${product.name}`}
                       product={product}
@@ -164,6 +242,11 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                       unavailableLabel={t("products:purchase.productUnavailableBadge")}
                     />
                   ))}
+                  {!categoryResults.length && pagination && pagination.page < pagination.pages ? (
+                    <button type="button" onClick={loadMore} disabled={loadingMore} className="col-span-full mx-auto mt-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-700 transition hover:bg-violet-100 disabled:cursor-wait disabled:opacity-60 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20">
+                      {loadingMore ? t("search.loadingMore") : t("search.loadMore")}
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-sky-200 bg-sky-50/70 p-6 text-center dark:border-white/10 dark:bg-[#0D1324]">

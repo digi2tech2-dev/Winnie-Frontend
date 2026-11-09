@@ -179,12 +179,14 @@ export async function getCategories() {
 }
 
 export async function getCustomerProducts(token, query = {}) {
+  const { signal, ...requestQuery } = query;
   const response = await apiRequest("/me/products", {
     token,
+    signal,
     query: {
       includeUnavailable: true,
       limit: 100,
-      ...query,
+      ...requestQuery,
     },
   });
 
@@ -264,14 +266,16 @@ export async function getCustomerCatalog(token, query = {}) {
 }
 
 export async function getPublicCatalog(query = {}) {
+  const { signal, ...requestQuery } = query;
   const response = await apiRequest("/public/catalog", {
     // Public catalog data changes infrequently; retaining it briefly avoids a
     // full round-trip every time a visitor returns to the homepage.
     cacheTtl: 60_000,
+    signal,
     query: {
       includeUnavailable: true,
       limit: 100,
-      ...query,
+      ...requestQuery,
     },
   });
   const categories = asArray(response.data?.categories || response.categories).map(normalizeCategory);

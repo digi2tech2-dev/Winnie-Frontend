@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getCatalogSearchResults } from "./catalogSearch.js";
+import { getCatalogSearchResults, getCategorySearchResults } from "./catalogSearch.js";
 
 test("search returns matching subcategories and only products directly in main categories", () => {
   const categories = [
@@ -22,4 +22,16 @@ test("search returns matching subcategories and only products directly in main c
     categories: [],
     products: [],
   });
+});
+
+test("category search supports normalized Arabic/English names and identifiers", () => {
+  const categories = [
+    { id: "main", title: "Games", parentId: null },
+    { id: "child-1", title: "Game Cards", nameAr: "بطاقات الألعاب", slug: "game-cards", parentId: "main" },
+    { id: "child-2", title: "Hidden", nameAr: "مخفي", parentId: "main", isActive: false },
+  ];
+
+  assert.equal(getCategorySearchResults(categories, "بطاقات الالعاب")[0].id, "child-1");
+  assert.equal(getCategorySearchResults(categories, "game-cards")[0].id, "child-1");
+  assert.deepEqual(getCategorySearchResults(categories, ""), []);
 });
