@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { filterChildCategories, filterProductsByCategory, getCustomerCatalog } from "../../api/catalog";
+import { filterChildCategories, getCustomerCatalog } from "../../api/catalog";
 import EmptyState from "../../components/EmptyState";
 import HomeProductCard from "../../components/home/HomeProductCard";
 import { useAuth } from "../../context/AuthContext";
 import { useCustomerPurchase } from "../../hooks/useCustomerPurchase";
+
+const CATEGORY_PAGE_SIZE = 24;
+const SEARCH_DEBOUNCE_MS = 300;
+const EMPTY_PAGINATION = { page: 1, pages: 0, total: 0 };
 
 export default function CustomerCategoryProducts({ basePath = "/customer" }) {
   const { categoryId } = useParams();
@@ -15,10 +19,21 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
   const { t } = useTranslation("products");
   const outletContext = useOutletContext() || {};
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [pagination, setPagination] = useState(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialError, setInitialError] = useState("");
+  const [loadMoreError, setLoadMoreError] = useState("");
+  const [failedPage, setFailedPage] = useState(null);
+  const requestVersionRef = useRef(0);
+  const previousCategoryRef = useRef(categoryId);
+  const hasLoadedCategoriesRef = useRef(false);
+  const selectedCategoryRef = useRef(categoryId);
+  selectedCategoryRef.current = categoryId;
   const { openPurchase, purchaseModals } = useCustomerPurchase({
     basePath,
     onSuccess: outletContext.onWalletRefresh,
@@ -26,28 +41,59 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
   });
 
   useEffect(() => {
+    const timeoutId = setTimeout(() => setDebouncedQuery(query.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+  }, [query]);
+
+  // Invalidate the previous request immediately. The fetch effect below waits
+  // for the debounce window, while this prevents an old response from painting
+  // results during that window.
+  useEffect(() => {
+    const categoryChanged = previousCategoryRef.current !== categoryId;
+    previousCategoryRef.current = categoryId;
+    requestVersionRef.current += 1;
+    setLoading(categoryChanged || !hasLoadedCategoriesRef.current);
+    setSearchLoading(!categoryChanged && hasLoadedCategoriesRef.current);
+    setLoadingMore(false);
+    setProducts([]);
+    setPagination(EMPTY_PAGINATION);
+    setInitialError("");
+    setLoadMoreError("");
+    setFailedPage(null);
+  }, [categoryId, query]);
+
+  useEffect(() => {
     if (!token) return undefined;
 
     let cancelled = false;
+    const requestVersion = requestVersionRef.current;
 
     const loadCatalog = async () => {
-      setLoading(true);
-      setError("");
-
       try {
-        const catalog = await getCustomerCatalog(token);
-        if (!cancelled) {
+        const catalog = await getCustomerCatalog(token, {
+          category: categoryId,
+          ...(debouncedQuery ? { search: debouncedQuery } : {}),
+          limit: CATEGORY_PAGE_SIZE,
+          page: 1,
+        });
+        if (!cancelled && requestVersion === requestVersionRef.current) {
+          hasLoadedCategoriesRef.current = true;
           setCategories(catalog.categories);
           setProducts(catalog.products);
+          setPagination(catalog.pagination);
         }
       } catch (requestError) {
-        if (!cancelled) {
-          setError(requestError.userMessage || t("category.loadError"));
+        if (!cancelled && requestVersion === requestVersionRef.current) {
+          setInitialError(requestError.userMessage || t("category.loadError"));
           setCategories([]);
           setProducts([]);
+          setPagination(EMPTY_PAGINATION);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && requestVersion === requestVersionRef.current) {
+          setLoading(false);
+          setSearchLoading(false);
+        }
       }
     };
 
@@ -56,7 +102,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
     return () => {
       cancelled = true;
     };
-  }, [t, token]);
+  }, [categoryId, debouncedQuery, t, token]);
 
   const category = useMemo(
     () =>
@@ -68,21 +114,57 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
     [categories, categoryId],
   );
 
-  const categoryProducts = useMemo(() => {
-    const cleanQuery = query.trim().toLowerCase();
-    const matches = filterProductsByCategory(products, category);
-
-    if (!cleanQuery) return matches;
-
-    return matches.filter((product) =>
-      `${product.name} ${product.categoryTitle} ${product.displayPriceLabel}`.toLowerCase().includes(cleanQuery),
-    );
-  }, [category, products, query]);
+  const categoryProducts = products;
 
   const childCategories = useMemo(
     () => filterChildCategories(categories, category),
     [categories, category],
   );
+
+  const hasMoreProducts = pagination.page < pagination.pages;
+
+  const loadMoreProducts = async (requestedPage = pagination.page + 1) => {
+    if (!token || loadingMore || requestedPage < 1) return;
+    if (!hasMoreProducts && requestedPage !== failedPage) return;
+    if (requestedPage !== pagination.page + 1) return;
+
+    const requestedCategory = categoryId;
+    const requestedSearch = debouncedQuery;
+    const requestVersion = requestVersionRef.current;
+    setLoadingMore(true);
+    setLoadMoreError("");
+    setFailedPage(null);
+    try {
+      const catalog = await getCustomerCatalog(token, {
+        category: requestedCategory,
+        ...(requestedSearch ? { search: requestedSearch } : {}),
+        limit: CATEGORY_PAGE_SIZE,
+        page: requestedPage,
+      });
+      if (
+        selectedCategoryRef.current !== requestedCategory
+        || requestVersion !== requestVersionRef.current
+      ) return;
+      setProducts((currentProducts) => {
+        const currentIds = new Set(currentProducts.map((product) => String(product.id || product._id)));
+        return [...currentProducts, ...catalog.products.filter((product) => !currentIds.has(String(product.id || product._id)))];
+      });
+      setPagination(catalog.pagination);
+    } catch (requestError) {
+      if (
+        selectedCategoryRef.current === requestedCategory
+        && requestVersion === requestVersionRef.current
+      ) {
+        setLoadMoreError(requestError.userMessage || t("category.loadError"));
+        setFailedPage(requestedPage);
+      }
+    } finally {
+      if (
+        selectedCategoryRef.current === requestedCategory
+        && requestVersion === requestVersionRef.current
+      ) setLoadingMore(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -96,8 +178,8 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
     );
   }
 
-  if (error) {
-    return <EmptyState title={t("category.loadError")} description={error} />;
+  if (initialError) {
+    return <EmptyState title={t("category.loadError")} description={initialError} />;
   }
 
   if (!category) {
@@ -143,7 +225,7 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
         </form>
       </header>
 
-      {childCategories.length ? (
+      {!searchLoading && childCategories.length ? (
         <section className="marketplace-product-grid px-1" aria-label={t("common:nav.categories")}>
           {childCategories.map((child, index) => (
             <HomeProductCard
@@ -158,19 +240,47 @@ export default function CustomerCategoryProducts({ basePath = "/customer" }) {
         </section>
       ) : null}
 
-      {categoryProducts.length ? (
-        <section className="marketplace-product-grid px-1">
-          {categoryProducts.map((product, index) => (
-            <HomeProductCard
-              key={product.id || product._id || product.slug || product.name}
-              product={product}
-              index={index}
-              onSelect={(selectedProduct) => openPurchase(selectedProduct, category)}
-              variant="compact"
-            />
-          ))}
-        </section>
-      ) : !childCategories.length ? (
+      {searchLoading ? (
+        <ProductGridSkeleton />
+      ) : categoryProducts.length ? (
+        <>
+          <section className="marketplace-product-grid px-1">
+            {categoryProducts.map((product, index) => (
+              <HomeProductCard
+                key={product.id || product._id || product.slug || product.name}
+                product={product}
+                index={index}
+                onSelect={(selectedProduct) => openPurchase(selectedProduct, category)}
+                variant="compact"
+              />
+            ))}
+          </section>
+          {loadMoreError ? (
+            <div role="alert" className="flex flex-wrap items-center justify-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-200">
+              <span>{loadMoreError}</span>
+              <button
+                type="button"
+                onClick={() => loadMoreProducts(failedPage)}
+                disabled={loadingMore || !failedPage}
+                className="rounded-lg border border-rose-300 px-3 py-1.5 font-black transition hover:bg-rose-100 disabled:cursor-wait disabled:opacity-60 dark:border-rose-300/40 dark:hover:bg-rose-400/10"
+              >
+                {loadingMore ? t("common:states.loading") : t("common:actions.retry")}
+              </button>
+            </div>
+          ) : hasMoreProducts ? (
+            <div className="flex justify-center px-1">
+              <button
+                type="button"
+                onClick={() => loadMoreProducts()}
+                disabled={loadingMore}
+                className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-violet-700 disabled:cursor-wait disabled:opacity-60"
+              >
+                {loadingMore ? t("common:states.loading") : t("common:actions.loadMore")}
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : query.trim() || !childCategories.length ? (
         <EmptyState
           title={t("category.noProductsFound")}
           description={t("category.emptyDescription")}
