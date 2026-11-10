@@ -173,8 +173,9 @@ function buildCategoryLookup(categories) {
   return lookup;
 }
 
-export async function getCategories() {
-  const response = await apiRequest("/categories");
+export async function getCategories(query = {}) {
+  const { signal, ...requestQuery } = query;
+  const response = await apiRequest("/categories", { signal, query: requestQuery });
   return asArray(response.data?.categories || response.data).map(normalizeCategory);
 }
 

@@ -19,7 +19,11 @@ const product = (id, name) => ({
 describe("HeaderSearchOverlay global search", () => {
   afterEach(() => cleanup());
   it("starts empty and gives categories priority over products", async () => {
-    const onSearch = vi.fn().mockResolvedValue({ products: [product("p1", "Game Card")], pagination: { page: 1, pages: 1, total: 1 } });
+    const onSearch = vi.fn().mockResolvedValue({
+      categories: [{ id: "sub-1", title: "Game Cards", parentId: "main", isActive: true }],
+      products: [product("p1", "Game Card")],
+      pagination: { page: 1, pages: 1, total: 1 },
+    });
     render(
       <HeaderSearchOverlay
         open
@@ -37,17 +41,19 @@ describe("HeaderSearchOverlay global search", () => {
     const input = screen.getByRole("searchbox");
     await userEvent.setup().type(input, "game");
     expect(await screen.findByText("Game Cards")).toBeInTheDocument();
-    expect(onSearch).not.toHaveBeenCalled();
+    await waitFor(() => expect(onSearch).toHaveBeenCalledWith("game", expect.anything()));
+    expect(screen.queryByText("Game Card")).not.toBeInTheDocument();
   });
 
   it("returns a matching parent category and navigates to its category page", async () => {
     const onNavigate = vi.fn();
+    const onSearch = vi.fn().mockResolvedValue({ categories: [{ id: "pubg", title: "PUBG", slug: "pubg", isActive: true }] });
     render(
       <HeaderSearchOverlay
         open
         onClose={vi.fn()}
         onNavigate={onNavigate}
-        onSearch={vi.fn()}
+        onSearch={onSearch}
         categories={[{ id: "pubg", title: "PUBG", slug: "pubg", parentId: null, isActive: true }]}
       />,
     );
@@ -63,13 +69,22 @@ describe("HeaderSearchOverlay global search", () => {
     ["customer", "/customer/categories/pubg"],
   ])("searches and navigates to PUBG in %s mode when its parent is absent", async (mode, target) => {
     const onNavigate = vi.fn();
+    const onSearch = vi.fn().mockResolvedValue({ categories: [{
+      id: "65f0c4f7387abd79e3cb92b8",
+      _id: "65f0c4f7387abd79e3cb92b8",
+      name: "PUBG",
+      title: "PUBG",
+      slug: "pubg",
+      isActive: true,
+      parentCategory: "6a4da4f7387abd79e3cb92b8",
+    }] });
     render(
       <HeaderSearchOverlay
         open
         mode={mode}
         onClose={vi.fn()}
         onNavigate={onNavigate}
-        onSearch={vi.fn()}
+        onSearch={onSearch}
         categories={[{
           id: "65f0c4f7387abd79e3cb92b8",
           _id: "65f0c4f7387abd79e3cb92b8",

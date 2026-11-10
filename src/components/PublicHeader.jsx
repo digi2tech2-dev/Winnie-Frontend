@@ -107,9 +107,11 @@ export default function PublicHeader() {
     };
   }, [searchCatalogLoaded, searchOpen]);
 
-  const searchPublicCatalog = useCallback((search, query = {}) => (
-    getPublicCatalog({ search, ...query })
-  ), []);
+  const searchPublicCatalog = useCallback(async (search, query = {}) => {
+    const categories = await getCategories({ search, signal: query.signal });
+    if (categories.length) return { categories, products: [], pagination: null };
+    return getPublicCatalog({ search, ...query });
+  }, []);
 
   useEffect(() => {
     const openSearchFromPage = () => setSearchOpen(true);

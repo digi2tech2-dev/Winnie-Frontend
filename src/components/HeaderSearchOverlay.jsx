@@ -10,6 +10,8 @@ import { getCatalogSearchResults, getCategorySearchResults } from "../utils/cata
 
 export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProductSelect, onSearch, mode = "public", categories = [], products: providedProducts = [] }) {
   const [query, setQuery] = useState("");
+  const [serverCategoryResults, setServerCategoryResults] = useState([]);
+  const [serverSearchComplete, setServerSearchComplete] = useState(false);
   const [productResults, setProductResults] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,8 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       });
   }, [providedProducts, t]);
 
-  const categoryResults = useMemo(() => getCategorySearchResults(categories, query), [categories, query]);
+  const localCategoryResults = useMemo(() => getCategorySearchResults(categories, query), [categories, query]);
+  const categoryResults = serverSearchComplete ? serverCategoryResults : localCategoryResults;
   const localResults = useMemo(() => getCatalogSearchResults(categories, products, query).products, [categories, products, query]);
   const visibleProducts = onSearch ? productResults : localResults;
   const resultCount = categoryResults.length || visibleProducts.length;
@@ -54,11 +57,13 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
     const requestId = requestRef.current.id + 1;
     requestRef.current = { id: requestId, controller: null };
     setError("");
+    setServerCategoryResults([]);
+    setServerSearchComplete(false);
     setProductResults([]);
     setPagination(null);
     setLoadingMore(false);
 
-    if (!term || categoryResults.length || !onSearch) {
+    if (!term || !onSearch) {
       setLoading(false);
       return undefined;
     }
@@ -70,8 +75,10 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       try {
         const result = await onSearch(term, { page: 1, limit: 24, signal: controller.signal });
         if (requestRef.current.id !== requestId) return;
+        setServerCategoryResults(result?.categories || []);
         setProductResults(result?.products || []);
         setPagination(result?.pagination || null);
+        setServerSearchComplete(true);
       } catch (requestError) {
         if (requestError?.name !== "AbortError" && requestError?.code !== "REQUEST_CANCELLED" && requestRef.current.id === requestId) {
           setError(requestError?.userMessage || t("search.error"));
@@ -85,7 +92,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [categoryResults.length, onSearch, query, t]);
+  }, [onSearch, query, t]);
 
   const loadMore = async () => {
     if (!onSearch || !pagination || pagination.page >= pagination.pages || loadingMore) return;
@@ -128,6 +135,8 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
   useEffect(() => {
     if (!open) {
       setQuery("");
+      setServerCategoryResults([]);
+      setServerSearchComplete(false);
       setProductResults([]);
       setPagination(null);
       setError("");

@@ -87,8 +87,10 @@ export default function CustomerLayout() {
     }
   }, [searchCatalogLoaded, token]);
 
-  const searchCustomerCatalog = useCallback((search, query = {}) => {
-    if (!token) return Promise.resolve({ products: [], pagination: null });
+  const searchCustomerCatalog = useCallback(async (search, query = {}) => {
+    if (!token) return { categories: [], products: [], pagination: null };
+    const categories = await getCategories({ search, signal: query.signal });
+    if (categories.length) return { categories, products: [], pagination: null };
     return getCustomerProducts(token, { search, nameOnly: true, ...query });
   }, [token]);
 
