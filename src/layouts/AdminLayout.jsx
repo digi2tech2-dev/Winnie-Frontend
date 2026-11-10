@@ -18,7 +18,7 @@ import { adminNav } from "../data/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { getNotificationTarget } from "../utils/notificationNavigation";
 import i18n from "../i18n";
-import { getCustomerCatalog } from "../api/catalog";
+import { getCategories, getCustomerCatalog, getCustomerProducts } from "../api/catalog";
 
 export default function AdminLayout() {
   const { favorites } = useFavorites();
@@ -37,6 +37,7 @@ export default function AdminLayout() {
   const [notificationsError, setNotificationsError] = useState("");
   const [notificationAction, setNotificationAction] = useState("");
   const [searchProducts, setSearchProducts] = useState([]);
+  const [searchCategories, setSearchCategories] = useState([]);
 
   useEffect(() => {
     void i18n.changeLanguage("ar");
@@ -72,6 +73,7 @@ export default function AdminLayout() {
   useEffect(() => {
     if (!token) {
       setSearchProducts([]);
+      setSearchCategories([]);
       return undefined;
     }
 
@@ -80,9 +82,15 @@ export default function AdminLayout() {
     const loadSearchProducts = async () => {
       try {
         const result = await getCustomerCatalog(token, { page: 1, limit: 100 });
-        if (!cancelled) setSearchProducts(result.products);
+        if (!cancelled) {
+          setSearchProducts(result.products);
+          setSearchCategories(result.categories);
+        }
       } catch {
-        if (!cancelled) setSearchProducts([]);
+        if (!cancelled) {
+          setSearchProducts([]);
+          setSearchCategories([]);
+        }
       }
     };
 
@@ -90,6 +98,13 @@ export default function AdminLayout() {
     return () => {
       cancelled = true;
     };
+  }, [token]);
+
+  const searchAdminCatalog = useCallback(async (search, query = {}) => {
+    if (!token) return { categories: [], products: [], pagination: null };
+    const categories = await getCategories({ search, signal: query.signal });
+    if (categories.length) return { categories, products: [], pagination: null };
+    return getCustomerProducts(token, { search, nameOnly: true, ...query });
   }, [token]);
 
   const refreshNotifications = useCallback(async ({ showLoading = true } = {}) => {
@@ -225,6 +240,8 @@ export default function AdminLayout() {
             onOpenNotification={handleOpenNotification}
             onOpenSidebar={() => setSidebarOpen(true)}
             searchProducts={searchProducts}
+            searchCategories={searchCategories}
+            onSearch={searchAdminCatalog}
             unreadNotificationCount={unreadNotificationCount}
             walletBalance={walletSummary?.balance ?? 0}
             walletCurrency={walletSummary?.currency || "USD"}

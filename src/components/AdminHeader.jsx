@@ -15,6 +15,8 @@ export default function AdminHeader({
   onNotificationsOpened,
   onOpenNotification,
   onOpenSidebar,
+  onSearch,
+  searchCategories = [],
   searchProducts = [],
   unreadNotificationCount = 0,
   walletBalance = 0,
@@ -175,6 +177,8 @@ export default function AdminHeader({
         onNavigate={navigate}
         mode="admin-user"
         products={searchProducts}
+        categories={searchCategories}
+        onSearch={onSearch}
       />
     </>
   );
