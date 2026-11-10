@@ -46,3 +46,24 @@ test("category search includes active parent categories for navigation", () => {
 
   assert.deepEqual(getCategorySearchResults(categories, "PUBG").map((category) => category.id), ["pubg-mobile", "pubg"]);
 });
+
+test("real PUBG records remain searchable when the parent is omitted from a partial list", () => {
+  const pubg = {
+    _id: "65f0c4f7387abd79e3cb92b8",
+    name: "PUBG",
+    slug: "pubg",
+    isActive: true,
+    parentCategory: "6a4da4f7387abd79e3cb92b8",
+  };
+
+  assert.deepEqual(getCategorySearchResults([pubg], "PUBG"), [pubg]);
+});
+
+test("known inactive parents still suppress child categories", () => {
+  const categories = [
+    { _id: "inactive-child", name: "PUBG Hidden", parentCategory: "inactive-parent", isActive: true },
+    { _id: "inactive-parent", name: "Hidden Games", parentCategory: null, isActive: false },
+  ];
+
+  assert.deepEqual(getCategorySearchResults(categories, "PUBG"), []);
+});

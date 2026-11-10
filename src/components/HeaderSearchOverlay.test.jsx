@@ -58,6 +58,35 @@ describe("HeaderSearchOverlay global search", () => {
     expect(onNavigate).toHaveBeenCalledWith("/categories/pubg");
   });
 
+  it.each([
+    ["public", "/categories/pubg"],
+    ["customer", "/customer/categories/pubg"],
+  ])("searches and navigates to PUBG in %s mode when its parent is absent", async (mode, target) => {
+    const onNavigate = vi.fn();
+    render(
+      <HeaderSearchOverlay
+        open
+        mode={mode}
+        onClose={vi.fn()}
+        onNavigate={onNavigate}
+        onSearch={vi.fn()}
+        categories={[{
+          id: "65f0c4f7387abd79e3cb92b8",
+          _id: "65f0c4f7387abd79e3cb92b8",
+          name: "PUBG",
+          slug: "pubg",
+          isActive: true,
+          parentCategory: "6a4da4f7387abd79e3cb92b8",
+        }]}
+      />,
+    );
+
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("searchbox"), "PUBG");
+    await user.click(await screen.findByRole("button", { name: /PUBG/ }));
+    expect(onNavigate).toHaveBeenCalledWith(target);
+  });
+
   it("falls back to the server for products beyond the first 100 and loads another page", async () => {
     const onSearch = vi.fn()
       .mockResolvedValueOnce({ products: [product("p101", "Product 101")], pagination: { page: 1, pages: 2, total: 25, limit: 24 } })

@@ -25,17 +25,28 @@ const getCategoryParentId = (category = {}) => String(
   category.parentId || category.parentCategory?._id || category.parentCategory || "",
 );
 
+const hasInactiveKnownParent = (category, categories) => {
+  const parentId = getCategoryParentId(category);
+  if (!parentId) return false;
+
+  const embeddedParent = category.parentCategory && typeof category.parentCategory === "object"
+    ? category.parentCategory
+    : null;
+  if (embeddedParent?.isActive === false || category.parentIsActive === false) return true;
+
+  const knownParent = categories.find((candidate) => (
+    [candidate.id, candidate._id, candidate.slug].filter(Boolean).map(String).includes(parentId)
+  ));
+  return Boolean(knownParent && knownParent.isActive === false);
+};
+
 export function getCategorySearchResults(categories = [], query = "") {
   const term = normalizeSearchValue(query);
   if (!term) return [];
-  const activeCategoryIds = new Set(categories
-    .filter((category) => category.isActive !== false)
-    .flatMap((category) => [category.id, category._id, category.slug].filter(Boolean).map(String)));
-
   return categories
     .filter((category) => (
       category.isActive !== false
-      && (!getCategoryParentId(category) || activeCategoryIds.has(getCategoryParentId(category)))
+      && !hasInactiveKnownParent(category, categories)
       && normalizeSearchValue(categorySearchText(category)).includes(term)
     ))
     .sort((left, right) => {
