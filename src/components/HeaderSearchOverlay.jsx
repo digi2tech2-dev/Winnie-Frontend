@@ -231,7 +231,7 @@ export default function HeaderSearchOverlay({ open, onClose, onNavigate, onProdu
                   {categoryResults.map((category) => (
                     <button key={category.id} type="button" onClick={() => handleCategoryClick(category)} className="flex min-w-0 items-center gap-2 rounded-xl border border-sky-100 bg-white p-2 text-right transition hover:border-violet-300 hover:bg-violet-50 dark:border-white/10 dark:bg-[#111827] dark:hover:bg-[#1A2335]">
                       <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">{category.image ? <img src={category.image} alt="" loading="lazy" className="h-full w-full object-cover" /> : <ShoppingBag className="h-5 w-5" />}</span>
-                      <span className="min-w-0"><strong className="block truncate text-xs text-slate-950 dark:text-white">{category.title || category.name}</strong><small className="text-slate-500 dark:text-slate-400">{t("search.subcategory")}</small></span>
+                      <span className="min-w-0"><strong className="block truncate text-xs text-slate-950 dark:text-white">{category.title || category.name}</strong><small className="text-slate-500 dark:text-slate-400">{category.parentId || category.parentCategory ? t("search.subcategory") : t("search.category")}</small></span>
                     </button>
                   ))}
                   {!categoryResults.length && visibleProducts.map((product) => (

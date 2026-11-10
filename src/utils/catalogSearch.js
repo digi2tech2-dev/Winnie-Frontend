@@ -21,6 +21,10 @@ const categorySearchText = (category = {}) => [
   category.compatCategoryId,
 ].filter(Boolean).join(" ");
 
+const getCategoryParentId = (category = {}) => String(
+  category.parentId || category.parentCategory?._id || category.parentCategory || "",
+);
+
 export function getCategorySearchResults(categories = [], query = "") {
   const term = normalizeSearchValue(query);
   if (!term) return [];
@@ -31,8 +35,7 @@ export function getCategorySearchResults(categories = [], query = "") {
   return categories
     .filter((category) => (
       category.isActive !== false
-      && Boolean(category.parentId || category.parentCategory)
-      && (!category.parentId || activeCategoryIds.has(String(category.parentId)))
+      && (!getCategoryParentId(category) || activeCategoryIds.has(getCategoryParentId(category)))
       && normalizeSearchValue(categorySearchText(category)).includes(term)
     ))
     .sort((left, right) => {
@@ -42,7 +45,11 @@ export function getCategorySearchResults(categories = [], query = "") {
       };
       const leftExact = rank(left);
       const rightExact = rank(right);
-      return leftExact - rightExact || String(left.title || left.name || "").localeCompare(String(right.title || right.name || ""));
+      const leftLevel = getCategoryParentId(left) ? 0 : 1;
+      const rightLevel = getCategoryParentId(right) ? 0 : 1;
+      return leftLevel - rightLevel
+        || leftExact - rightExact
+        || String(left.title || left.name || "").localeCompare(String(right.title || right.name || ""));
     })
     .slice(0, 24);
 }

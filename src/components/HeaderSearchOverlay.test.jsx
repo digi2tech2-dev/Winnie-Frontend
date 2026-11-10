@@ -33,11 +33,29 @@ describe("HeaderSearchOverlay global search", () => {
       />,
     );
 
-    expect(screen.getByText(/اكتب اسم القسم الفرعي|Type a subcategory/i)).toBeInTheDocument();
+    expect(screen.getByText(/اكتب اسم القسم|Type a category/i)).toBeInTheDocument();
     const input = screen.getByRole("searchbox");
     await userEvent.setup().type(input, "game");
     expect(await screen.findByText("Game Cards")).toBeInTheDocument();
     expect(onSearch).not.toHaveBeenCalled();
+  });
+
+  it("returns a matching parent category and navigates to its category page", async () => {
+    const onNavigate = vi.fn();
+    render(
+      <HeaderSearchOverlay
+        open
+        onClose={vi.fn()}
+        onNavigate={onNavigate}
+        onSearch={vi.fn()}
+        categories={[{ id: "pubg", title: "PUBG", slug: "pubg", parentId: null, isActive: true }]}
+      />,
+    );
+
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("searchbox"), "PUBG");
+    await user.click(await screen.findByRole("button", { name: /PUBG/ }));
+    expect(onNavigate).toHaveBeenCalledWith("/categories/pubg");
   });
 
   it("falls back to the server for products beyond the first 100 and loads another page", async () => {
